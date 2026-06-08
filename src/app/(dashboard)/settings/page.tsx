@@ -7,6 +7,93 @@ import type { Service } from "@/types";
 
 type Tab = "business" | "services" | "hours" | "dates";
 
+function SetupForm({ supabase, onCreated }: { supabase: ReturnType<typeof import("@/lib/supabase/client").createClient>; onCreated: () => Promise<void> }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function createBusiness() {
+    if (!name.trim()) { setError("Business name is required"); return; }
+    setSaving(true);
+    setError("");
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setError("Not logged in"); setSaving(false); return; }
+
+    const { error: insertError } = await supabase
+      .from("businesses")
+      .insert({
+        owner_id: user.id,
+        name: name.trim(),
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+      });
+
+    if (insertError) {
+      setError(insertError.message);
+      setSaving(false);
+      return;
+    }
+
+    await onCreated();
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-white">
+      <div className="shrink-0 px-4 py-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
+        <h1 className="text-xl font-black" style={{ color: "var(--color-dark)" }}>Set up your business</h1>
+        <p className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>Fill in your details to get started</p>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div>
+          <label className="text-sm font-bold mb-1 block">Business name *</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Dana Hair Studio"
+            className="w-full px-4 py-3 rounded-xl border"
+            style={{ borderColor: "var(--color-cream-2)" }}
+          />
+        </div>
+        <div>
+          <label className="text-sm font-bold mb-1 block">Phone</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="050-000-0000"
+            className="w-full px-4 py-3 rounded-xl border"
+            style={{ borderColor: "var(--color-cream-2)" }}
+          />
+        </div>
+        <div>
+          <label className="text-sm font-bold mb-1 block">Address</label>
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="Street, City"
+            className="w-full px-4 py-3 rounded-xl border"
+            style={{ borderColor: "var(--color-cream-2)" }}
+          />
+        </div>
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <button
+          onClick={createBusiness}
+          disabled={saving || !name.trim()}
+          className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+          style={{ background: "var(--color-amber)" }}
+        >
+          {saving ? "Creating..." : "Create business"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { business, loading: bizLoading, refresh } = useBusiness();
   const supabase = createClient();
@@ -136,11 +223,7 @@ export default function SettingsPage() {
   }
 
   if (!business) {
-    return (
-      <div className="flex flex-col h-full items-center justify-center p-6 text-center">
-        <p className="text-sm" style={{ color: "var(--color-muted)" }}>Loading business info...</p>
-      </div>
-    );
+    return <SetupForm supabase={supabase} onCreated={refresh} />;
   }
 
   return (
