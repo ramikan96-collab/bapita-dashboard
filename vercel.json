@@ -1,6 +1,0 @@
-{
-  "framework": "nextjs",
-  "nodeVersion": "22.x",
-  "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npm run build"
-}
