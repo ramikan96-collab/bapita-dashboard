@@ -8,16 +8,11 @@ import { useBusiness } from "@/hooks/useBusiness";
 import type { Customer, Booking, Service } from "@/types";
 
 interface BookingWithService extends Booking {
-  service: Service;
+  service: Service | null;
 }
 
 function initials(name: string): string {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+  return name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
 }
 
 function formatPhone(phone: string): string {
@@ -41,14 +36,15 @@ export default function ClientProfilePage() {
   const [savingNotes, setSavingNotes] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch client and booking history
   useEffect(() => {
-    if (!business || !clientId) return;
-
     async function fetchData() {
+      if (!business || !clientId) {
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       
-      // Fetch client
       const { data: clientData } = await supabase
         .from("customers")
         .select("*")
@@ -59,13 +55,12 @@ export default function ClientProfilePage() {
       setClient(clientData);
       setNotes(clientData?.notes || "");
       
-      // Fetch booking history
       const { data: bookingsData } = await supabase
         .from("bookings")
         .select("*, service:services(name, duration, price)")
         .eq("customer_id", clientId)
         .eq("business_id", business.id)
-        .order("appointment_datetime", { ascending: false });
+        .order("appointment_date", { ascending: false });
       
       setBookings(bookingsData as BookingWithService[] || []);
       setLoading(false);
@@ -74,7 +69,6 @@ export default function ClientProfilePage() {
     fetchData();
   }, [business, clientId, supabase]);
 
-  // Save notes
   async function saveNotes() {
     if (!client) return;
     setSavingNotes(true);
@@ -87,7 +81,6 @@ export default function ClientProfilePage() {
     setSavingNotes(false);
   }
 
-  // Book again
   function bookAgain() {
     if (!client) return;
     router.push(`/new-booking?clientId=${client.id}`);
@@ -122,23 +115,15 @@ export default function ClientProfilePage() {
 
   return (
     <div className="flex flex-col h-full bg-white overflow-y-auto">
-      {/* Header */}
       <div className="shrink-0 px-4 py-4 border-b flex items-center gap-3" style={{ borderColor: "var(--color-cream-2)" }}>
         <button onClick={() => router.back()} className="text-xl">←</button>
         <div className="flex-1">
           <h1 className="text-xl font-black" style={{ color: "var(--color-dark)" }}>{client.name}</h1>
           <p className="text-xs" style={{ color: "var(--color-muted)" }}>{formatPhone(client.phone)}</p>
         </div>
-        <button
-          onClick={bookAgain}
-          className="px-4 py-2 rounded-xl text-sm font-bold text-white"
-          style={{ background: "var(--color-amber)" }}
-        >
-          Book again
-        </button>
+        <button onClick={bookAgain} className="px-4 py-2 rounded-xl text-sm font-bold text-white" style={{ background: "var(--color-amber)" }}>Book again</button>
       </div>
       
-      {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3 p-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
         <div className="text-center">
           <div className="text-2xl font-black" style={{ color: "var(--color-dark)" }}>{client.total_visits || 0}</div>
@@ -156,32 +141,18 @@ export default function ClientProfilePage() {
         </div>
       </div>
       
-      {/* Notes Section */}
       <div className="p-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
         <div className="flex justify-between items-center mb-2">
           <label className="text-sm font-bold" style={{ color: "var(--color-dark)" }}>Internal notes</label>
           {notes !== (client.notes || "") && (
-            <button
-              onClick={saveNotes}
-              disabled={savingNotes}
-              className="text-xs px-3 py-1 rounded-lg font-bold text-white disabled:opacity-50"
-              style={{ background: "var(--color-amber)" }}
-            >
+            <button onClick={saveNotes} disabled={savingNotes} className="text-xs px-3 py-1 rounded-lg font-bold text-white disabled:opacity-50" style={{ background: "var(--color-amber)" }}>
               {savingNotes ? "Saving..." : "Save"}
             </button>
           )}
         </div>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-          className="w-full px-3 py-2 rounded-lg border text-sm"
-          style={{ borderColor: "var(--color-cream-2)" }}
-          placeholder="Add notes about this client (preferences, allergies, special requests...)"
-        />
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg border text-sm" style={{ borderColor: "var(--color-cream-2)" }} placeholder="Add notes about this client..." />
       </div>
       
-      {/* Booking History */}
       <div className="flex-1 p-4">
         <h2 className="font-bold mb-3" style={{ color: "var(--color-dark)" }}>Booking history</h2>
         {bookings.length === 0 ? (
@@ -192,16 +163,12 @@ export default function ClientProfilePage() {
         ) : (
           <div className="space-y-2">
             {bookings.map((booking) => (
-              <div
-                key={booking.id}
-                className="p-3 rounded-xl border"
-                style={{ borderColor: "var(--color-cream-2)" }}
-              >
+              <div key={booking.id} className="p-3 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }}>
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="font-bold text-sm">{booking.service?.name || "Unknown service"}</div>
                     <div className="text-xs" style={{ color: "var(--color-muted)" }}>
-                      {format(parseISO(booking.appointment_datetime), "EEE, MMM d, yyyy 'at' h:mm a")}
+                      {format(parseISO(booking.appointment_date), "EEE, MMM d, yyyy 'at' h:mm a")}
                     </div>
                   </div>
                   <div className="text-right">

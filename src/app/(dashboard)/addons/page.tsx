@@ -33,22 +33,23 @@ const ADDON_CONFIG = {
 };
 
 export default function AddonsPage() {
-  const { business } = useBusiness();
+  const { business, loading: bizLoading } = useBusiness();
   const supabase = createClient();
   const [addons, setAddons] = useState<Addon[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activating, setActivating] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!business) return;
-
     async function fetchAddons() {
+      if (!business) {
+        setLoading(false);
+        return;
+      }
+      
       const { data } = await supabase
         .from("addons")
         .select("*")
         .eq("business_id", business.id);
       
-      // If no addons exist, create default entries
       if (!data || data.length === 0) {
         const defaultAddons = [
           { business_id: business.id, type: "whatsapp", active: false },
@@ -72,17 +73,11 @@ export default function AddonsPage() {
     fetchAddons();
   }, [business, supabase]);
 
-  async function toggleAddon(addonId: string, currentActive: boolean) {
-    setActivating(addonId);
-    
-    // This would normally contact your backend to activate/deactivate
-    // For MVP, just show a contact CTA
+  async function toggleAddon(addonId: string) {
     alert("To activate add-ons, please contact us directly: WhatsApp 050-123-4567");
-    
-    setActivating(null);
   }
 
-  if (loading) {
+  if (bizLoading || loading) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
@@ -91,24 +86,28 @@ export default function AddonsPage() {
     );
   }
 
+  if (!business) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center p-6 text-center">
+        <p className="text-sm" style={{ color: "var(--color-muted)" }}>Set up your business first in Settings</p>
+        <a href="/settings" className="mt-4 px-5 py-2 rounded-xl text-sm font-bold text-white" style={{ background: "var(--color-amber)" }}>Go to Settings</a>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-white overflow-y-auto">
-      {/* Header */}
       <div className="shrink-0 px-4 py-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
         <h1 className="text-xl font-black" style={{ color: "var(--color-dark)" }}>Add-ons</h1>
-        <p className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>
-          Supercharge your business with powerful integrations
-        </p>
+        <p className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>Supercharge your business with powerful integrations</p>
       </div>
       
-      {/* Active Add-ons Section */}
       <div className="p-4">
         <h2 className="text-sm font-bold mb-3" style={{ color: "var(--color-dark)" }}>Active</h2>
         {addons.filter(a => a.active).length === 0 ? (
           <div className="text-center py-8 rounded-xl border-2 border-dashed" style={{ borderColor: "var(--color-cream-2)" }}>
             <span style={{ fontSize: 32 }}>🔌</span>
             <p className="text-sm mt-2" style={{ color: "var(--color-muted)" }}>No active add-ons yet</p>
-            <p className="text-xs mt-1">Activate one below to get started</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -131,7 +130,6 @@ export default function AddonsPage() {
         )}
       </div>
       
-      {/* Available Add-ons Section */}
       <div className="p-4 pt-0">
         <h2 className="text-sm font-bold mb-3" style={{ color: "var(--color-dark)" }}>Available</h2>
         <div className="space-y-3">
@@ -147,12 +145,11 @@ export default function AddonsPage() {
                     <div className="text-xs font-bold mt-2" style={{ color: "var(--color-amber)" }}>{config.price}</div>
                   </div>
                   <button
-                    onClick={() => toggleAddon(addon.id, addon.active)}
-                    disabled={activating === addon.id}
-                    className="px-4 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                    onClick={() => toggleAddon(addon.id)}
+                    className="px-4 py-2 rounded-xl text-sm font-bold text-white"
                     style={{ background: "var(--color-amber)" }}
                   >
-                    {activating === addon.id ? "..." : "Contact us"}
+                    Contact us
                   </button>
                 </div>
               </div>
@@ -161,7 +158,6 @@ export default function AddonsPage() {
         </div>
       </div>
       
-      {/* Contact Info */}
       <div className="p-4 mt-auto">
         <div className="p-4 rounded-xl text-center" style={{ background: "var(--color-cream-2)" }}>
           <p className="text-sm font-bold mb-1" style={{ color: "var(--color-dark)" }}>Need a custom add-on?</p>

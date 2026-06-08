@@ -6,6 +6,7 @@ import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import type { Service, Customer } from "@/types";
+// @ts-ignore
 
 type Step = "client" | "service" | "datetime" | "confirm";
 
@@ -47,6 +48,7 @@ export default function NewBookingPage() {
     }
     
     const delay = setTimeout(async () => {
+      if (!business) return;
       const { data } = await supabase
         .from("customers")
         .select("*")
@@ -64,6 +66,7 @@ export default function NewBookingPage() {
     if (!business) return;
     
     async function fetchServices() {
+      if (!business) return;
       const { data } = await supabase
         .from("services")
         .select("*")
@@ -81,8 +84,9 @@ export default function NewBookingPage() {
     if (!selectedDate || !selectedService || !business || step !== "datetime") return;
     
     async function fetchSlots() {
+      if (!business || !selectedService) return;
       setLoadingSlots(true);
-      
+
       const { data: existingBookings } = await supabase
         .from("bookings")
         .select("appointment_time")

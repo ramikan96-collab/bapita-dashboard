@@ -8,12 +8,7 @@ import { ClientsSkeleton } from "@/components/LoadingSkeleton";
 import type { Customer } from "@/types";
 
 function initials(name: string): string {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+  return name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
 }
 
 function formatPhone(phone: string): string {
@@ -35,11 +30,13 @@ export default function ClientsPage() {
   const [sortBy, setSortBy] = useState<"recent" | "name" | "visits">("recent");
   const [totalCount, setTotalCount] = useState(0);
 
-  // Fetch clients
   useEffect(() => {
-    if (!business) return;
-
     async function fetchClients() {
+      if (!business) {
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       
       let query = supabase
@@ -72,40 +69,17 @@ export default function ClientsPage() {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Header */}
       <div className="shrink-0 px-4 py-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
         <h1 className="text-xl font-black" style={{ color: "var(--color-dark)" }}>Clients</h1>
-        <p className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>
-          {totalCount} client{totalCount !== 1 ? "s" : ""}
-        </p>
+        <p className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>{totalCount} client{totalCount !== 1 ? "s" : ""}</p>
       </div>
       
-      {/* Search + Sort */}
       <div className="shrink-0 px-4 py-3 space-y-3">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or phone..."
-          className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2"
-          style={{ borderColor: "var(--color-cream-2)" }}
-        />
+        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or phone..." className="w-full px-4 py-3 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }} />
         
         <div className="flex gap-2">
           {(["recent", "name", "visits"] as const).map((option) => (
-            <button
-              key={option}
-              onClick={() => setSortBy(option)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                sortBy === option
-                  ? "text-white"
-                  : "opacity-60"
-              }`}
-              style={{
-                background: sortBy === option ? "var(--color-amber)" : "var(--color-cream-2)",
-                color: sortBy === option ? "#fff" : "var(--color-dark)",
-              }}
-            >
+            <button key={option} onClick={() => setSortBy(option)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${sortBy === option ? "text-white" : "opacity-60"}`} style={{ background: sortBy === option ? "var(--color-amber)" : "var(--color-cream-2)", color: sortBy === option ? "#fff" : "var(--color-dark)" }}>
               {option === "recent" && "Recently active"}
               {option === "name" && "Name A-Z"}
               {option === "visits" && "Most visits"}
@@ -114,44 +88,17 @@ export default function ClientsPage() {
         </div>
       </div>
       
-      {/* Client List */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
-                 style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
-          </div>
+          <div className="flex justify-center py-8"><div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} /></div>
         ) : clients.length === 0 ? (
-          <div className="text-center py-12">
-            <span style={{ fontSize: 48 }}>👥</span>
-            <p className="mt-3 font-bold" style={{ color: "var(--color-dark)" }}>No clients yet</p>
-            <p className="text-sm mt-1" style={{ color: "var(--color-muted)" }}>
-              Clients appear here after they book or you add them manually.
-            </p>
-          </div>
+          <div className="text-center py-12"><span style={{ fontSize: 48 }}>👥</span><p className="mt-3 font-bold" style={{ color: "var(--color-dark)" }}>No clients yet</p></div>
         ) : (
           <div className="space-y-2">
             {clients.map((client) => (
-              <button
-                key={client.id}
-                onClick={() => router.push(`/clients/${client.id}`)}
-                className="w-full flex items-center gap-3 p-3 rounded-xl border transition hover:border-amber-300 active:bg-gray-50"
-                style={{ borderColor: "var(--color-cream-2)" }}
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
-                  style={{ background: "var(--color-amber)", color: "#fff" }}
-                >
-                  {initials(client.name)}
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-bold text-sm" style={{ color: "var(--color-dark)" }}>
-                    {client.name}
-                  </div>
-                  <div className="text-xs" style={{ color: "var(--color-muted)" }}>
-                    {formatPhone(client.phone)} • {client.total_visits || 0} visit{client.total_visits !== 1 ? "s" : ""}
-                  </div>
-                </div>
+              <button key={client.id} onClick={() => router.push(`/clients/${client.id}`)} className="w-full flex items-center gap-3 p-3 rounded-xl border transition hover:border-amber-300" style={{ borderColor: "var(--color-cream-2)" }}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm" style={{ background: "var(--color-amber)", color: "#fff" }}>{initials(client.name)}</div>
+                <div className="flex-1 text-left"><div className="font-bold text-sm" style={{ color: "var(--color-dark)" }}>{client.name}</div><div className="text-xs" style={{ color: "var(--color-muted)" }}>{formatPhone(client.phone)} • {client.total_visits || 0} visit{client.total_visits !== 1 ? "s" : ""}</div></div>
                 <div className="text-xs opacity-40">→</div>
               </button>
             ))}

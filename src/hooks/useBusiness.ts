@@ -1,24 +1,39 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Business } from "@/types";
 
 export function useBusiness() {
   const [business, setBusiness] = useState<Business | null>(null);
   const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
-  useEffect(() => {
-    const supabase = createClient();
-    supabase
+  const fetchBusiness = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const { data } = await supabase
       .from("businesses")
       .select("*")
-      .single()
-      .then(({ data }) => {
-        setBusiness(data ?? null);
-        setLoading(false);
-      });
-  }, []);
+      .eq("owner_id", user.id)
+      .single();
 
-  return { business, loading };
+    setBusiness(data);
+    setLoading(false);
+  }, [supabase]);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    await fetchBusiness();
+  }, [fetchBusiness]);
+
+  useEffect(() => {
+    fetchBusiness();
+  }, [fetchBusiness]);
+
+  return { business, loading, refresh };
 }

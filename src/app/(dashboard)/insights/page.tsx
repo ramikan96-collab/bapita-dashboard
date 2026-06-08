@@ -31,9 +31,10 @@ export default function InsightsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!business) return;
+    if (!business) { setLoading(false); return; }
 
     async function fetchStats() {
+      if (!business) return;
       setLoading(true);
       
       let startDate: Date;

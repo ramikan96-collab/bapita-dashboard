@@ -3,7 +3,7 @@ export type PaymentStatus = "none" | "cash" | "transfer" | "stripe";
 
 export interface BookingService {
   name: string;
-  duration: number; // minutes
+  duration: number;
   price: number;
 }
 
@@ -15,8 +15,8 @@ export interface Booking {
   customer_name: string;
   customer_phone: string | null;
   customer_email: string | null;
-  appointment_date: string; // YYYY-MM-DD
-  appointment_time: string; // HH:MM:SS from Supabase
+  appointment_date: string;
+  appointment_time: string;
   status: BookingStatus;
   payment_status: PaymentStatus;
   notes: string | null;
@@ -31,6 +31,32 @@ export interface Business {
   name: string;
   phone: string | null;
   email: string | null;
+  address: string | null;
+  instagram_url: string | null;
+  google_review_link: string | null;
+}
+
+export interface Customer {
+  id: string;
+  business_id: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  notes?: string;
+  total_visits: number;
+  last_visit_at: string | null;
+  created_at: string;
+}
+
+export interface Service {
+  id: string;
+  business_id: string;
+  name: string;
+  duration: number;
+  price: number;
+  active: boolean;
+  display_order: number;
+  created_at?: string;
 }
 
 export const STATUS_COLOR: Record<BookingStatus, string> = {
@@ -53,6 +79,6 @@ export const STATUS_LABEL: Record<BookingStatus, string> = {
   pending:   "Pending",
   confirmed: "Confirmed",
   completed: "Completed",
-  cancelled:  "Cancelled",
+  cancelled: "Cancelled",
   no_show:   "No-show",
 };
