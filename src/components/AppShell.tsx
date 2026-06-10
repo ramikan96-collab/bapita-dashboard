@@ -350,11 +350,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             )}
           </>
         ) : (
-          <>
-            <div className="flex-1 text-center font-black text-[18px] tracking-tight text-dark">
-              bapita
-            </div>
-          </>
+          <div className="flex-1" />
         )}
 
         <button
