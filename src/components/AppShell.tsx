@@ -454,7 +454,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       {/* ─── Left Sidebar (Calendar only) ────────────────────────────── */}
       {onCalendar && chrome && (
         <aside
-          className="hidden md:flex flex-col fixed top-12 start-0 bottom-0 w-64 z-20 border-e overflow-y-auto"
+          className="hidden md:flex flex-col fixed top-12 start-0 bottom-0 w-56 z-20 border-e overflow-y-auto"
           style={{ 
             background: "var(--color-cream)",
             borderColor: "var(--color-cream-2)",
@@ -515,35 +515,50 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
           <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
 
-          {/* Status filter */}
+          {/* Status filter - collapsible */}
           <div className="px-3 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--color-muted)" }}>
+            <button
+              onClick={() => setViewMenuOpen(!viewMenuOpen)}
+              className="w-full flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide mb-2 transition-colors"
+              style={{ color: "var(--color-muted)" }}
+            >
               Filter
-            </div>
-            <div className="space-y-0.5">
-              {filterOptions.map((opt) => {
-                const active = chrome.statusFilter === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    onClick={() => chrome.setStatusFilter(opt.value)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] text-start transition-colors hover:bg-cream-2"
-                    style={{
-                      background: active ? "rgba(232,146,10,0.08)" : "transparent",
-                      color: active ? "var(--color-amber)" : "var(--color-dark)",
-                      fontWeight: active ? 600 : 400,
-                    }}
-                  >
-                    {opt.label}
-                    {active && (
-                      <span style={{ color: "var(--color-amber)" }}>
-                        <IconCheck size={14} />
+              <span style={{ transform: viewMenuOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                <IconChevronDown size={12} />
+              </span>
+            </button>
+            {viewMenuOpen && (
+              <div className="space-y-0.5 mt-1">
+                {filterOptions.map((opt) => {
+                  const active = chrome.statusFilter === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => chrome.setStatusFilter(opt.value)}
+                      className="w-full flex items-center gap-3 px-2 py-1.5 rounded-lg text-[13px] text-start transition-colors hover:bg-cream-2"
+                      style={{
+                        color: active ? "var(--color-amber)" : "var(--color-dark)",
+                      }}
+                    >
+                      <span
+                        className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors"
+                        style={{
+                          borderColor: active ? "var(--color-amber)" : "var(--color-cream-2)",
+                          background: active ? "var(--color-amber)" : "transparent",
+                        }}
+                      >
+                        {active && (
+                          <span style={{ color: "#fff" }}>
+                            <IconCheck size={10} />
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Jump to today */}
@@ -565,7 +580,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ─── Main Content ─────────────────────────────────────────────── */}
-      <main className={`pt-28 pb-16 md:pt-28 md:pb-0 h-full ${onCalendar ? "md:ps-64" : ""}`}>{children}</main>
+      <main className={`pt-28 pb-16 md:pt-28 md:pb-0 h-full ${onCalendar ? "md:ps-56" : ""}`}>{children}</main>
 
       {/* ─── Hamburger Drawer (slide from end/right) ──────────────────── */}
       <div
