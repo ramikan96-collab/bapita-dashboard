@@ -419,8 +419,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         })}
       </nav>
 
-      {/* ─── FAB → New Booking ────────────────────────────────────────── */}
-      {!drawerOpen && (
+      {/* ─── FAB → New Booking (calendar-only) ────────────────────────── */}
+      {onCalendar && !drawerOpen && (
         <button
           onClick={() => router.push("/new-booking")}
           className="md:hidden fixed end-4 z-40 w-14 h-14 rounded-full bg-amber text-white flex items-center justify-center active:scale-95 transition-transform"

@@ -1,55 +1,32 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
-import type { Service, Customer, BusinessHours, DayKey } from "@/types";
+import { useToast } from "@/components/Toast";
+import { getAvailableSlots, type TimeSlot } from "@/lib/availability";
+import type { Service, Customer } from "@/types";
 
-const DAY_NAMES: DayKey[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
-function getAvailableSlots(
-  date: Date,
-  durationMinutes: number,
-  businessHours: BusinessHours | undefined | null,
-  existingBookings: { appointment_time: string; service?: { duration: number } | null }[]
-): string[] {
-  const dayKey = DAY_NAMES[date.getDay()];
-  const dayHours = businessHours?.[dayKey];
-
-  const start = dayHours?.open ? dayHours.start : dayHours ? null : "09:00";
-  const end   = dayHours?.open ? dayHours.end   : dayHours ? null : "19:00";
-  if (!start || !end) return [];
-
-  const [startH, startM] = start.split(":").map(Number);
-  const [endH,   endM]   = end.split(":").map(Number);
-  const openMinutes  = startH * 60 + startM;
-  const closeMinutes = endH   * 60 + endM;
-
-  const bookedRanges = existingBookings.map(b => {
-    const [h, m] = b.appointment_time.split(":").map(Number);
-    const s = h * 60 + m;
-    return { start: s, end: s + (b.service?.duration ?? 30) };
-  });
-
-  const slots: string[] = [];
-  for (let t = openMinutes; t + durationMinutes <= closeMinutes; t += durationMinutes) {
-    const overlaps = bookedRanges.some(r => t < r.end && t + durationMinutes > r.start);
-    if (!overlaps) {
-      const hh = String(Math.floor(t / 60)).padStart(2, "0");
-      const mm = String(t % 60).padStart(2, "0");
-      slots.push(`${hh}:${mm}`);
-    }
-  }
-  return slots;
-}
+const CARD_SHADOW = "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)";
 
 type Step = "client" | "service" | "datetime" | "confirm";
+const STEP_ORDER: Step[] = ["client", "service", "datetime", "confirm"];
+const STEP_LABEL: Record<Step, string> = {
+  client: "Client",
+  service: "Service",
+  datetime: "Time",
+  confirm: "Confirm",
+};
 
-interface AvailableSlot {
-  time: Date;
-  available: boolean;
+function Spinner() {
+  return (
+    <div
+      className="w-6 h-6 rounded-full border-2 animate-spin"
+      style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }}
+    />
+  );
 }
 
 function NewBookingInner() {
@@ -57,177 +34,155 @@ function NewBookingInner() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get("date"); // yyyy-MM-dd, from tap-to-book
   const timeParam = searchParams.get("time"); // HH:MM, from tap-to-book
+  const clientIdParam = searchParams.get("clientId"); // from client profile
   const { business, loading: bizLoading } = useBusiness();
+  const { showToast } = useToast();
   const supabase = createClient();
 
   const [step, setStep] = useState<Step>("client");
   const [submitting, setSubmitting] = useState(false);
-  
+  const [success, setSuccess] = useState(false);
+
   const [clientSearch, setClientSearch] = useState("");
   const [clients, setClients] = useState<Customer[]>([]);
   const [selectedClient, setSelectedClient] = useState<Customer | null>(null);
+  const [preselecting, setPreselecting] = useState(!!clientIdParam);
   const [showNewClient, setShowNewClient] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
   const [newClientEmail, setNewClientEmail] = useState("");
-  
+
   const [services, setServices] = useState<Service[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  
+
   const [selectedDate, setSelectedDate] = useState<Date>(dateParam ? parseISO(dateParam) : new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(timeParam ?? null);
-  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+  const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
-  
+
   const [notes, setNotes] = useState("");
 
+  // ─── Preselect client from ?clientId= → jump to Service step ───────────
   useEffect(() => {
-    if (!business || clientSearch.length < 2) {
-      setClients([]);
-      return;
-    }
-    
-    const delay = setTimeout(async () => {
-      if (!business) return;
+    if (!business || !clientIdParam) return;
+    let cancelled = false;
+    (async () => {
       const { data } = await supabase
         .from("customers")
         .select("*")
         .eq("business_id", business.id)
-        .ilike("name", `%${clientSearch}%`)
+        .eq("id", clientIdParam)
+        .single();
+      if (cancelled) return;
+      if (data) {
+        setSelectedClient(data);
+        setStep("service");
+      }
+      setPreselecting(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [business, clientIdParam, supabase]);
+
+  // ─── Client search (name OR phone) ─────────────────────────────────────
+  useEffect(() => {
+    if (!business || clientSearch.trim().length < 2) {
+      setClients([]);
+      return;
+    }
+    const q = clientSearch.trim();
+    const delay = setTimeout(async () => {
+      const { data } = await supabase
+        .from("customers")
+        .select("*")
+        .eq("business_id", business.id)
+        .or(`name.ilike.%${q}%,phone.ilike.%${q}%`)
         .limit(10);
-      
       setClients(data || []);
     }, 300);
-    
     return () => clearTimeout(delay);
   }, [clientSearch, business, supabase]);
 
+  // ─── Services ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!business) return;
-    
-    async function fetchServices() {
-      if (!business) return;
+    (async () => {
       const { data } = await supabase
         .from("services")
         .select("id, name, duration:duration_minutes, price:price_nis, active, display_order, business_id")
         .eq("business_id", business.id)
         .eq("active", true)
         .order("display_order");
-      
       setServices(data || []);
-    }
-    
-    fetchServices();
+    })();
   }, [business, supabase]);
 
+  // ─── Available slots ───────────────────────────────────────────────────
   useEffect(() => {
-    if (!selectedDate || !selectedService || !business || step !== "datetime") return;
-    
-    async function fetchSlots() {
-      if (!business || !selectedService) return;
+    if (!business || !selectedService || step !== "datetime") return;
+    let cancelled = false;
+    (async () => {
       setLoadingSlots(true);
-
-      const { data: existingBookings } = await supabase
+      const { data: existing } = await supabase
         .from("bookings")
         .select("appointment_time, service:services(duration:duration_minutes)")
         .eq("business_id", business.id)
         .eq("appointment_date", format(selectedDate, "yyyy-MM-dd"))
         .not("status", "eq", "cancelled");
 
-      const slotStrings = getAvailableSlots(
+      if (cancelled) return;
+
+      const next = getAvailableSlots(
         selectedDate,
         selectedService.duration,
         business.business_hours,
-        (existingBookings || []) as unknown as { appointment_time: string; service?: { duration: number } | null }[]
+        (existing || []) as unknown as { appointment_time: string; service?: { duration: number } | null }[]
       );
 
-      const slots: AvailableSlot[] = slotStrings.map(timeStr => ({
-        time: parseISO(`${format(selectedDate, "yyyy-MM-dd")}T${timeStr}`),
-        available: true,
-      }));
-
-      setAvailableSlots(slots);
+      // Keep a prefilled time only if it's still bookable.
+      if (selectedTime && !next.some((s) => s.time === selectedTime && s.available)) {
+        setSelectedTime(null);
+      }
+      setSlots(next);
       setLoadingSlots(false);
-    }
-    
-    fetchSlots();
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedService, business, step, supabase]);
 
   async function createNewClient(): Promise<Customer | null> {
     if (!business) return null;
-    
     const { data, error } = await supabase
       .from("customers")
       .insert({
         business_id: business.id,
-        name: newClientName,
-        phone: newClientPhone,
-        email: newClientEmail || null,
-        total_visits: 0
+        name: newClientName.trim(),
+        phone: newClientPhone.trim(),
+        email: newClientEmail.trim() || null,
+        total_visits: 0,
       })
       .select()
       .single();
-    
     if (error) {
-      alert("Error creating client");
+      showToast("Couldn't save the client. Please try again.", "error");
       return null;
     }
-    
     return data;
-  }
-
-  async function createBooking() {
-    if (!business || !selectedClient || !selectedService || !selectedTime) return;
-    
-    setSubmitting(true);
-    
-    const appointmentDateTime = parseISO(
-      `${format(selectedDate, "yyyy-MM-dd")}T${selectedTime}`
-    );
-    
-    const { error } = await supabase
-      .from("bookings")
-      .insert({
-        business_id: business.id,
-        customer_id: selectedClient.id,
-        service_id: selectedService.id,
-        appointment_date: format(selectedDate, "yyyy-MM-dd"),
-        appointment_time: selectedTime,
-        appointment_datetime: appointmentDateTime.toISOString(),
-        status: "confirmed",
-        payment_status: "none",
-        notes: notes || null
-      });
-    
-    if (error) {
-      alert("Error creating booking");
-      setSubmitting(false);
-      return;
-    }
-
-    if (selectedClient?.email || newClientEmail) {
-      fetch("/api/send-confirmation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerName: selectedClient?.name || newClientName,
-          customerEmail: selectedClient?.email || newClientEmail || "",
-          businessName: business?.name || "",
-          serviceName: selectedService?.name || "",
-          date: format(selectedDate, "yyyy-MM-dd"),
-          time: selectedTime,
-        }),
-      }).catch(console.error);
-    }
-
-    router.push("/calendar");
   }
 
   async function handleClientNext() {
     if (showNewClient) {
-      const newClient = await createNewClient();
-      if (newClient) {
-        setSelectedClient(newClient);
+      if (!newClientName.trim() || !newClientPhone.trim()) {
+        showToast("Name and phone are required.", "error");
+        return;
+      }
+      const created = await createNewClient();
+      if (created) {
+        setSelectedClient(created);
+        setShowNewClient(false);
         setStep("service");
       }
     } else if (selectedClient) {
@@ -235,100 +190,247 @@ function NewBookingInner() {
     }
   }
 
-  if (bizLoading) {
+  async function createBooking() {
+    if (!business || !selectedClient || !selectedService || !selectedTime) {
+      showToast("Something's missing. Check the booking details.", "error");
+      return;
+    }
+    setSubmitting(true);
+
+    const appointmentDateTime = parseISO(`${format(selectedDate, "yyyy-MM-dd")}T${selectedTime}`);
+
+    const { error } = await supabase.from("bookings").insert({
+      business_id: business.id,
+      customer_id: selectedClient.id,
+      service_id: selectedService.id,
+      appointment_date: format(selectedDate, "yyyy-MM-dd"),
+      appointment_time: selectedTime,
+      appointment_datetime: appointmentDateTime.toISOString(),
+      status: "confirmed",
+      payment_status: "none",
+      notes: notes.trim() || null,
+    });
+
+    if (error) {
+      showToast("Couldn't create the booking. Please try again.", "error");
+      setSubmitting(false);
+      return;
+    }
+
+    if (selectedClient.email) {
+      fetch("/api/send-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: selectedClient.name,
+          customerEmail: selectedClient.email,
+          businessName: business.name || "",
+          serviceName: selectedService.name || "",
+          date: format(selectedDate, "yyyy-MM-dd"),
+          time: selectedTime,
+        }),
+      }).catch(console.error);
+    }
+
+    setSubmitting(false);
+    setSuccess(true);
+  }
+
+  const resetWizard = useCallback(() => {
+    setSuccess(false);
+    setSelectedService(null);
+    setSelectedTime(timeParam ?? null);
+    setSelectedDate(dateParam ? parseISO(dateParam) : new Date());
+    setNotes("");
+    setSlots([]);
+    if (selectedClient && clientIdParam) {
+      // Keep the pinned client, go straight to picking another service.
+      setStep("service");
+    } else {
+      setSelectedClient(null);
+      setClientSearch("");
+      setClients([]);
+      setShowNewClient(false);
+      setNewClientName("");
+      setNewClientPhone("");
+      setNewClientEmail("");
+      setStep("client");
+    }
+  }, [clientIdParam, selectedClient, dateParam, timeParam]);
+
+  function goBack() {
+    const i = STEP_ORDER.indexOf(step);
+    if (i > 0) setStep(STEP_ORDER[i - 1]);
+  }
+
+  // ─── Render states ─────────────────────────────────────────────────────
+
+  if (bizLoading || preselecting) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" 
-             style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
+      <div className="flex h-full items-center justify-center" style={{ background: "var(--color-cream)" }}>
+        <Spinner />
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col h-full bg-white">
-      <div className="shrink-0 px-4 py-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
-        <h1 className="text-xl font-black" style={{ color: "var(--color-dark)" }}>New Booking</h1>
-        <p className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>
-          Step {step === "client" ? "1" : step === "service" ? "2" : step === "datetime" ? "3" : "4"} of 4
+  if (success) {
+    return (
+      <div
+        className="flex flex-col h-full items-center justify-center px-8 text-center"
+        style={{ background: "var(--color-cream)" }}
+      >
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center mb-5"
+          style={{ background: "var(--color-amber)", color: "#fff" }}
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <h1 className="text-[22px] font-extrabold text-dark">Booking confirmed</h1>
+        <p className="text-[15px] mt-1 max-w-[280px]" style={{ color: "var(--color-muted)" }}>
+          {selectedClient?.name} · {selectedService?.name}
+          <br />
+          {format(selectedDate, "EEEE, MMM d")} at {selectedTime}
         </p>
+        <div className="flex flex-col gap-3 w-full max-w-[280px] mt-8">
+          <button
+            onClick={() => router.push("/calendar")}
+            className="w-full bg-amber text-white font-semibold text-[15px] py-3.5 rounded-xl hover:bg-[#D4830A] active:bg-[#B86800] transition-colors"
+          >
+            Go to calendar
+          </button>
+          <button
+            onClick={resetWizard}
+            className="w-full font-medium text-[15px] py-3.5 rounded-xl border bg-transparent text-dark hover:bg-cream transition-colors"
+            style={{ borderColor: "var(--color-cream-2)" }}
+          >
+            Add another booking
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const stepIndex = STEP_ORDER.indexOf(step);
+
+  return (
+    <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
+      {/* Header + step indicator */}
+      <div className="shrink-0 px-4 pt-4 pb-3 bg-white border-b" style={{ borderColor: "var(--color-cream-2)" }}>
+        <div className="flex items-baseline justify-between">
+          <h1 className="text-[22px] font-extrabold text-dark">New booking</h1>
+          <span className="text-[13px] font-medium" style={{ color: "var(--color-muted)" }}>
+            Step {stepIndex + 1} of 4 · {STEP_LABEL[step]}
+          </span>
+        </div>
+        <div className="flex gap-1.5 mt-3">
+          {STEP_ORDER.map((s, i) => (
+            <div
+              key={s}
+              className="h-1.5 flex-1 rounded-full transition-colors"
+              style={{ background: i <= stepIndex ? "var(--color-amber)" : "var(--color-cream-2)" }}
+            />
+          ))}
+        </div>
       </div>
 
+      {/* Step body */}
       <div className="flex-1 overflow-y-auto p-4">
+        {/* ─── Step 1: Client ─────────────────────────────────────────── */}
         {step === "client" && (
           <div className="space-y-4">
             {!showNewClient ? (
               <>
-                <div>
-                  <label className="text-sm font-bold mb-1 block">Search existing client</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-medium text-dark">Search existing client</label>
                   <input
                     type="text"
                     value={clientSearch}
                     onChange={(e) => setClientSearch(e.target.value)}
-                    placeholder="Type name or phone..."
-                    className="w-full px-4 py-3 rounded-xl border"
+                    placeholder="Search by name or phone"
+                    className="h-12 px-4 rounded-[10px] border bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
                     style={{ borderColor: "var(--color-cream-2)" }}
                   />
                 </div>
-                
+
                 {clients.length > 0 && (
                   <div className="space-y-2">
-                    {clients.map((client) => (
-                      <button
-                        key={client.id}
-                        onClick={() => setSelectedClient(client)}
-                        className={`w-full text-left p-3 rounded-xl border transition ${
-                          selectedClient?.id === client.id ? "border-amber-500 bg-amber-50" : "border-gray-200"
-                        }`}
-                      >
-                        <div className="font-bold">{client.name}</div>
-                        <div className="text-xs" style={{ color: "var(--color-muted)" }}>
-                          {client.phone} {client.email && `· ${client.email}`}
-                        </div>
-                      </button>
-                    ))}
+                    {clients.map((client) => {
+                      const active = selectedClient?.id === client.id;
+                      return (
+                        <button
+                          key={client.id}
+                          onClick={() => setSelectedClient(client)}
+                          className="w-full text-start p-3 rounded-xl border bg-white transition-colors"
+                          style={{
+                            borderColor: active ? "var(--color-amber)" : "var(--color-cream-2)",
+                            boxShadow: active ? "0 0 0 1px var(--color-amber)" : "none",
+                          }}
+                        >
+                          <div className="text-[15px] font-bold text-dark">{client.name}</div>
+                          <div className="text-[13px]" style={{ color: "var(--color-muted)" }}>
+                            {client.phone}
+                            {client.email && ` · ${client.email}`}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
-                
+
+                {clientSearch.trim().length >= 2 && clients.length === 0 && (
+                  <p className="text-[14px] text-center py-2" style={{ color: "var(--color-muted)" }}>
+                    No client matches &quot;{clientSearch.trim()}&quot;.
+                  </p>
+                )}
+
                 <button
                   onClick={() => setShowNewClient(true)}
-                  className="w-full py-3 rounded-xl text-sm font-bold"
-                  style={{ background: "var(--color-cream-2)", color: "var(--color-dark)" }}
+                  className="w-full py-3.5 rounded-xl text-[15px] font-semibold border bg-transparent text-dark hover:bg-cream transition-colors"
+                  style={{ borderColor: "var(--color-cream-2)" }}
                 >
                   + New client
                 </button>
               </>
             ) : (
               <>
-                <div>
-                  <label className="text-sm font-bold mb-1 block">Full name *</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-medium text-dark">Full name *</label>
                   <input
                     type="text"
                     value={newClientName}
                     onChange={(e) => setNewClientName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200"
+                    placeholder="e.g. Avi Cohen"
+                    className="h-12 px-4 rounded-[10px] border bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+                    style={{ borderColor: "var(--color-cream-2)" }}
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-bold mb-1 block">Phone *</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-medium text-dark">Phone *</label>
                   <input
                     type="tel"
                     value={newClientPhone}
                     onChange={(e) => setNewClientPhone(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200"
+                    placeholder="05X-XXX-XXXX"
+                    className="h-12 px-4 rounded-[10px] border bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+                    style={{ borderColor: "var(--color-cream-2)" }}
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-bold mb-1 block">Email (optional)</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-medium text-dark">Email (optional)</label>
                   <input
                     type="email"
                     value={newClientEmail}
                     onChange={(e) => setNewClientEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200"
+                    placeholder="name@example.com"
+                    className="h-12 px-4 rounded-[10px] border bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+                    style={{ borderColor: "var(--color-cream-2)" }}
                   />
                 </div>
                 <button
                   onClick={() => setShowNewClient(false)}
-                  className="w-full py-3 rounded-xl text-sm"
+                  className="w-full py-3 rounded-xl text-[14px] font-medium"
                   style={{ color: "var(--color-muted)" }}
                 >
                   ← Back to search
@@ -338,147 +440,226 @@ function NewBookingInner() {
           </div>
         )}
 
+        {/* ─── Step 2: Service ────────────────────────────────────────── */}
         {step === "service" && (
-          <div className="space-y-3">
-            {services.map((service) => (
-              <button
-                key={service.id}
-                onClick={() => {
-                  setSelectedService(service);
-                  setStep("datetime");
-                }}
-                className="w-full text-left p-4 rounded-xl border border-gray-200 hover:border-amber-300 transition"
-              >
-                <div className="font-bold">{service.name}</div>
-                <div className="text-sm flex gap-3 mt-1" style={{ color: "var(--color-muted)" }}>
-                  <span>{service.duration} min</span>
-                  <span>₪{service.price}</span>
-                </div>
-              </button>
-            ))}
-            
+          <div className="space-y-2.5">
+            {selectedClient && (
+              <p className="text-[13px] mb-1" style={{ color: "var(--color-muted)" }}>
+                Booking for <span className="font-semibold text-dark">{selectedClient.name}</span>
+              </p>
+            )}
+            {services.map((service) => {
+              const active = selectedService?.id === service.id;
+              return (
+                <button
+                  key={service.id}
+                  onClick={() => {
+                    setSelectedService(service);
+                    setStep("datetime");
+                  }}
+                  className="w-full text-start bg-white rounded-2xl p-4 border transition-colors active:scale-[0.98]"
+                  style={{
+                    borderColor: active ? "var(--color-amber)" : "transparent",
+                    boxShadow: CARD_SHADOW,
+                  }}
+                >
+                  <div className="text-[16px] font-bold text-dark">{service.name}</div>
+                  <div className="text-[14px] flex gap-3 mt-1" style={{ color: "var(--color-muted)" }}>
+                    <span>{service.duration} min</span>
+                    <span>₪{service.price}</span>
+                  </div>
+                </button>
+              );
+            })}
+
             {services.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-sm" style={{ color: "var(--color-muted)" }}>No services found. Add services in Settings first.</p>
-                <a href="/settings" className="inline-block mt-4 px-5 py-2 rounded-xl text-sm font-bold" style={{ background: "var(--color-amber)", color: "#fff" }}>Go to Settings</a>
+              <div className="text-center py-12">
+                <p className="text-[15px] font-bold text-dark">No services yet</p>
+                <p className="text-[14px] mt-1" style={{ color: "var(--color-muted)" }}>
+                  Add a service in Settings before you can book.
+                </p>
+                <button
+                  onClick={() => router.push("/settings")}
+                  className="inline-block mt-5 bg-amber text-white font-semibold text-[15px] px-5 py-3 rounded-xl hover:bg-[#D4830A] active:bg-[#B86800] transition-colors"
+                >
+                  Go to Settings
+                </button>
               </div>
             )}
           </div>
         )}
 
+        {/* ─── Step 3: Date + time ────────────────────────────────────── */}
         {step === "datetime" && selectedService && (
           <div className="space-y-6">
-            <div>
-              <label className="text-sm font-bold mb-2 block">Date</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-dark">Date</label>
               <input
                 type="date"
                 value={format(selectedDate, "yyyy-MM-dd")}
                 min={format(new Date(), "yyyy-MM-dd")}
-                onChange={(e) => setSelectedDate(parseISO(e.target.value))}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200"
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSelectedDate(parseISO(e.target.value));
+                    setSelectedTime(null);
+                  }
+                }}
+                className="h-12 px-4 rounded-[10px] border bg-white text-[15px] text-dark focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+                style={{ borderColor: "var(--color-cream-2)" }}
               />
             </div>
-            
+
             <div>
-              <label className="text-sm font-bold mb-2 block">Available times ({selectedService.duration} min)</label>
+              <label className="text-[13px] font-medium text-dark mb-2 block">
+                Available times · {selectedService.duration} min
+              </label>
               {loadingSlots ? (
-                <div className="flex justify-center py-8">
-                  <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
+                <div className="flex justify-center py-10">
+                  <Spinner />
+                </div>
+              ) : slots.length === 0 ? (
+                <div className="text-center py-10 px-6 bg-white rounded-2xl" style={{ boxShadow: CARD_SHADOW }}>
+                  <p className="text-[15px] font-bold text-dark">No times available</p>
+                  <p className="text-[14px] mt-1" style={{ color: "var(--color-muted)" }}>
+                    The day is full or closed. Try another date.
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
-                  {availableSlots.map((slot, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedTime(format(slot.time, "HH:mm"))}
-                      disabled={!slot.available}
-                      className={`py-2 rounded-lg text-sm font-medium transition ${
-                        selectedTime === format(slot.time, "HH:mm")
-                          ? "bg-amber-500 text-white"
-                          : slot.available ? "bg-gray-100 text-gray-800" : "bg-gray-100 text-gray-400 line-through cursor-not-allowed"
-                      }`}
-                    >
-                      {format(slot.time, "h:mm a")}
-                    </button>
-                  ))}
+                  {slots.map((slot) => {
+                    const active = selectedTime === slot.time;
+                    return (
+                      <button
+                        key={slot.time}
+                        onClick={() => slot.available && setSelectedTime(slot.time)}
+                        disabled={!slot.available}
+                        className="py-2.5 rounded-xl text-[14px] font-semibold transition-colors border"
+                        style={
+                          active
+                            ? { background: "var(--color-amber)", color: "#fff", borderColor: "var(--color-amber)" }
+                            : slot.available
+                            ? { background: "#fff", color: "var(--color-dark)", borderColor: "var(--color-cream-2)" }
+                            : {
+                                background: "var(--color-cream-2)",
+                                color: "var(--color-muted)",
+                                borderColor: "transparent",
+                                textDecoration: "line-through",
+                                cursor: "not-allowed",
+                              }
+                        }
+                      >
+                        {slot.time}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
         )}
 
+        {/* ─── Step 4: Confirm ────────────────────────────────────────── */}
         {step === "confirm" && selectedClient && selectedService && selectedTime && (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl" style={{ background: "var(--color-cream-2)" }}>
-              <div className="font-bold mb-2">Booking summary</div>
-              <div className="text-sm space-y-2">
-                <div><span className="opacity-60">Client:</span> {selectedClient.name}</div>
-                <div><span className="opacity-60">Service:</span> {selectedService.name}</div>
-                <div><span className="opacity-60">When:</span> {format(selectedDate, "EEEE, MMM d")} at {selectedTime}</div>
-                <div><span className="opacity-60">Duration:</span> {selectedService.duration} min</div>
-                <div><span className="opacity-60">Price:</span> ₪{selectedService.price}</div>
+            <div className="bg-white rounded-2xl p-4" style={{ boxShadow: CARD_SHADOW }}>
+              <div className="text-[16px] font-bold text-dark mb-3">Booking summary</div>
+              <div className="space-y-2.5 text-[15px]">
+                <Row label="Client" value={selectedClient.name} />
+                <Row label="Service" value={selectedService.name} />
+                <Row label="When" value={`${format(selectedDate, "EEEE, MMM d")} at ${selectedTime}`} />
+                <Row label="Duration" value={`${selectedService.duration} min`} />
+                <Row label="Price" value={`₪${selectedService.price}`} />
               </div>
             </div>
-            
-            <div>
-              <label className="text-sm font-bold mb-1 block">Internal notes (optional)</label>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-dark">Internal notes (optional)</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200"
-                placeholder="Any special requests or notes for this booking..."
+                placeholder="Special requests or notes for this booking…"
+                className="px-4 py-3 rounded-[10px] border bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors resize-none"
+                style={{ borderColor: "var(--color-cream-2)" }}
               />
             </div>
           </div>
         )}
       </div>
 
-      <div className="shrink-0 p-4 border-t flex gap-3" style={{ borderColor: "var(--color-cream-2)" }}>
+      {/* Footer actions */}
+      <div className="shrink-0 p-4 bg-white border-t flex gap-3" style={{ borderColor: "var(--color-cream-2)" }}>
         {step !== "client" && (
           <button
-            onClick={() => {
-              if (step === "service") setStep("client");
-              else if (step === "datetime") setStep("service");
-              else if (step === "confirm") setStep("datetime");
-            }}
-            className="flex-1 py-3 rounded-xl text-sm font-bold"
-            style={{ background: "var(--color-cream-2)", color: "var(--color-dark)" }}
+            onClick={goBack}
+            className="flex-1 py-3.5 rounded-xl text-[15px] font-semibold border bg-transparent text-dark hover:bg-cream transition-colors"
+            style={{ borderColor: "var(--color-cream-2)" }}
           >
             Back
           </button>
         )}
-        
-        {step === "datetime" && selectedTime && (
-          <button onClick={() => setStep("confirm")} className="flex-1 py-3 rounded-xl text-sm font-bold text-white" style={{ background: "var(--color-amber)" }}>Continue</button>
-        )}
-        
-        {step === "confirm" && (
-          <button onClick={createBooking} disabled={submitting} className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50" style={{ background: "var(--color-amber)" }}>
-            {submitting ? "Creating..." : "Confirm Booking"}
+
+        {step === "client" && (selectedClient || showNewClient) && (
+          <button
+            onClick={handleClientNext}
+            disabled={showNewClient ? !newClientName.trim() || !newClientPhone.trim() : !selectedClient}
+            className="flex-1 bg-amber text-white font-semibold text-[15px] py-3.5 rounded-xl hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
+          >
+            Continue
           </button>
         )}
-        
-        {(step === "client" && (selectedClient || showNewClient)) && (
-          <button onClick={handleClientNext} disabled={showNewClient ? !newClientName : !selectedClient} className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50" style={{ background: "var(--color-amber)" }}>Continue</button>
-        )}
-        
+
         {step === "service" && selectedService && (
-          <button onClick={() => setStep("datetime")} className="flex-1 py-3 rounded-xl text-sm font-bold text-white" style={{ background: "var(--color-amber)" }}>Continue</button>
+          <button
+            onClick={() => setStep("datetime")}
+            className="flex-1 bg-amber text-white font-semibold text-[15px] py-3.5 rounded-xl hover:bg-[#D4830A] active:bg-[#B86800] transition-colors"
+          >
+            Continue
+          </button>
+        )}
+
+        {step === "datetime" && (
+          <button
+            onClick={() => setStep("confirm")}
+            disabled={!selectedTime}
+            className="flex-1 bg-amber text-white font-semibold text-[15px] py-3.5 rounded-xl hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
+          >
+            Continue
+          </button>
+        )}
+
+        {step === "confirm" && (
+          <button
+            onClick={createBooking}
+            disabled={submitting}
+            className="flex-1 bg-amber text-white font-semibold text-[15px] py-3.5 rounded-xl hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
+          >
+            {submitting ? "Confirming…" : "Confirm booking"}
+          </button>
         )}
       </div>
     </div>
   );
 }
 
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <span style={{ color: "var(--color-muted)" }}>{label}</span>
+      <span className="font-medium text-dark text-end">{value}</span>
+    </div>
+  );
+}
+
 export default function NewBookingPage() {
   return (
-    <Suspense fallback={
-      <div className="flex h-full items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
-             style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center" style={{ background: "var(--color-cream)" }}>
+          <Spinner />
+        </div>
+      }
+    >
       <NewBookingInner />
     </Suspense>
   );
