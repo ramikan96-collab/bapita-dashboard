@@ -366,9 +366,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         </button>
       </header>
 
-      {/* ─── Desktop Sidebar ──────────────────────────────────────────── */}
-      <aside
-        className="hidden md:flex fixed start-0 top-16 bottom-0 w-20 flex-col items-stretch py-4 gap-1 border-e z-30"
+      {/* ─── Desktop Top Tabs (Airbnb style) ──────────────────────────── */}
+      <nav
+        className="hidden md:flex fixed top-16 start-0 end-0 h-12 items-stretch border-b z-20 px-4 gap-1"
         style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)" }}
       >
         {navItems.map((item) => {
@@ -378,19 +378,18 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <button
               key={item.path}
               onClick={() => router.push(item.path)}
-              className="mx-2 h-16 flex flex-col items-center justify-center gap-1 rounded-xl transition-colors"
+              className="flex items-center gap-2 px-4 rounded-xl transition-colors"
               style={{
                 background: active ? "var(--color-amber)" : "transparent",
                 color: active ? "#fff" : "var(--color-muted)",
               }}
-              title={item.label}
             >
-              <Icon />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <Icon size={18} />
+              <span className="text-[13px] font-medium">{item.label}</span>
             </button>
           );
         })}
-      </aside>
+      </nav>
 
       {/* ─── Mobile Bottom Nav ────────────────────────────────────────── */}
       <nav
@@ -434,9 +433,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ─── Main Content ─────────────────────────────────────────────── */}
-      <main className="pt-16 pb-16 md:pb-0 md:ps-20 h-full">{children}</main>
+      <main className="pt-28 pb-16 md:pt-28 md:pb-0 h-full">{children}</main>
 
-      {/* ─── Hamburger Drawer (slide from start) ──────────────────────── */}
+      {/* ─── Hamburger Drawer (slide from end/right) ──────────────────── */}
       <div
         className={`fixed inset-0 z-40 transition-opacity duration-200 ${
           drawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -446,10 +445,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         aria-hidden={!drawerOpen}
       />
       <div
-        className={`fixed top-0 bottom-0 start-0 z-50 bg-white flex flex-col transition-transform duration-200 ease-out ${
-          drawerOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full"
+        className={`fixed top-0 bottom-0 end-0 z-50 bg-white flex flex-col transition-transform duration-200 ease-out ${
+          drawerOpen ? "translate-x-0" : "translate-x-full"
         }`}
-        style={{ width: "min(320px, 85vw)", boxShadow: "4px 0 24px rgba(30,26,20,0.12)" }}
+        style={{ width: "min(320px, 85vw)", boxShadow: "-4px 0 24px rgba(30,26,20,0.12)" }}
         role="dialog"
         aria-label="Navigation menu"
       >
