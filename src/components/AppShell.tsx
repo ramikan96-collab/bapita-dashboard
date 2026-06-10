@@ -322,36 +322,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         className="fixed top-0 start-0 end-0 h-16 flex items-center px-4 z-30 bg-white border-b"
         style={{ borderColor: "var(--color-cream-2)" }}
       >
-        {onCalendar && chrome ? (
-          <>
-            <button
-              onClick={chrome.openDatePicker}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2"
-              aria-label="Pick date"
-            >
-              <span className="font-bold text-[16px] text-dark">{chrome.monthYear}</span>
-              <span style={{ color: "var(--color-muted)" }}>
-                <IconChevronDown />
-              </span>
-            </button>
-            <button
-              onClick={() => setViewMenuOpen((o) => !o)}
-              className="p-2 -me-2 rounded-xl text-dark hover:bg-cream transition-colors"
-              aria-label="Calendar options"
-            >
-              <IconMore />
-            </button>
-            {viewMenuOpen && (
-              <CalendarViewMenu
-                chrome={chrome}
-                onClose={() => setViewMenuOpen(false)}
-                onSettings={() => router.push("/settings")}
-              />
-            )}
-          </>
-        ) : (
-          <div className="flex-1" />
-        )}
+        {/* Empty - all controls moved to left sidebar */}
       </header>
 
       {/* ─── Desktop Top Nav with underline indicator ─────────────────── */}
