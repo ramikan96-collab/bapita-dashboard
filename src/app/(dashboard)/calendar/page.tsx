@@ -124,15 +124,61 @@ export default function CalendarPage() {
 
   if (!business) {
     return (
-      <div className="flex flex-col h-full items-center justify-center gap-3 px-6 text-center">
-        <span style={{ fontSize: 40 }}>🏪</span>
-        <p className="font-black text-base" style={{ color: "var(--color-dark)" }}>Set up your business</p>
-        <p className="text-sm" style={{ color: "var(--color-muted)" }}>
-          Go to Settings → Business Info to complete your profile.
-        </p>
-        <a href="/settings" className="mt-2 px-5 py-2.5 rounded-xl text-sm font-bold" style={{ background: "var(--color-amber)", color: "#fff" }}>
-          Open Settings
-        </a>
+      <div className="h-full overflow-y-auto flex items-center justify-center px-4 py-8" style={{ background: "var(--color-cream)" }}>
+        <div
+          className="w-full max-w-sm bg-white rounded-2xl p-6"
+          style={{ boxShadow: "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)" }}
+        >
+          {/* Icon */}
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+            style={{ background: "rgba(232,146,10,0.12)" }}
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+          </div>
+
+          <h1 className="text-[22px] font-extrabold leading-snug" style={{ color: "var(--color-dark)" }}>
+            Welcome to Bapita
+          </h1>
+          <p className="text-[15px] mt-1.5 leading-relaxed" style={{ color: "var(--color-muted)" }}>
+            Set up your business and your calendar comes to life. Takes about two minutes.
+          </p>
+
+          {/* Steps */}
+          <div className="flex flex-col gap-3 mt-6">
+            {[
+              { n: 1, title: "Business info", desc: "Name, phone, address" },
+              { n: 2, title: "Services", desc: "What you offer + prices" },
+              { n: 3, title: "Business hours", desc: "When you're open" },
+            ].map((s) => (
+              <div key={s.n} className="flex items-center gap-3">
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0"
+                  style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)" }}
+                >
+                  {s.n}
+                </div>
+                <div>
+                  <div className="text-[15px] font-semibold leading-tight" style={{ color: "var(--color-dark)" }}>{s.title}</div>
+                  <div className="text-[12px] leading-tight" style={{ color: "var(--color-muted)" }}>{s.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <a
+            href="/settings"
+            className="mt-6 w-full flex items-center justify-center py-3.5 rounded-xl text-[15px] font-semibold transition-colors"
+            style={{ background: "var(--color-amber)", color: "#fff" }}
+          >
+            Set up your business
+          </a>
+        </div>
       </div>
     );
   }
