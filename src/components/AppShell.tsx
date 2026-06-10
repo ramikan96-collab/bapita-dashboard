@@ -543,7 +543,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ─── Main Content ─────────────────────────────────────────────── */}
-      <main className={`pt-28 pb-16 md:pt-28 md:pb-0 h-full ${onCalendar ? "md:ps-56" : ""}`}>{children}</main>
+      <main className={`pt-4 pb-16 md:pt-12 md:pb-0 h-full ${onCalendar ? "md:ps-56" : ""}`}>{children}</main>
 
       {/* ─── Hamburger Drawer (slide from end/right) ──────────────────── */}
       <div
