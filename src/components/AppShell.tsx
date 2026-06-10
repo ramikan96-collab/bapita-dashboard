@@ -360,10 +360,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)" }}
       >
         {/* Logo */}
-        <span className="font-black text-[16px] text-dark tracking-tight">bapita</span>
+        <span className="font-black text-[16px] text-dark tracking-tight w-32">bapita</span>
         
         {/* Centered tabs with smooth underline */}
-        <nav className="flex items-center gap-1 absolute start-1/2 -translate-x-1/2">
+        <nav className="flex-1 flex justify-center gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -403,7 +403,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         {/* Hamburger menu - far right */}
         <button
           onClick={() => setDrawerOpen(true)}
-          className="ms-auto pe-1 rounded-xl text-dark hover:bg-cream transition-colors"
+          className="w-32 flex justify-end pe-1 rounded-xl text-dark hover:bg-cream transition-colors"
           aria-label="Open menu"
         >
           <IconMenu size={20} />
