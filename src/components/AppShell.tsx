@@ -378,14 +378,27 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <button
               key={item.path}
               onClick={() => router.push(item.path)}
-              className="flex items-center gap-2 px-4 rounded-xl transition-colors"
+              className="flex items-center gap-2 px-4 rounded-full transition-all duration-200"
               style={{
                 background: active ? "var(--color-amber)" : "transparent",
                 color: active ? "#fff" : "var(--color-muted)",
+                fontWeight: active ? 600 : 500,
+              }}
+              onMouseEnter={(e) => {
+                if (!active) {
+                  e.currentTarget.style.background = "rgba(232, 146, 10, 0.08)";
+                  e.currentTarget.style.color = "var(--color-dark)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = "var(--color-muted)";
+                }
               }}
             >
               <Icon size={18} />
-              <span className="text-[13px] font-medium">{item.label}</span>
+              <span className="text-[13px]">{item.label}</span>
             </button>
           );
         })}
