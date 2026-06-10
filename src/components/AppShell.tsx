@@ -366,43 +366,49 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         </button>
       </header>
 
-      {/* ─── Desktop Top Tabs (Airbnb style) ──────────────────────────── */}
-      <nav
-        className="hidden md:flex fixed top-16 start-0 end-0 h-12 items-stretch border-b z-20 px-4 gap-1"
+      {/* ─── Desktop Top Tabs (centered, bapita left) ─────────────────── */}
+      <div
+        className="hidden md:flex fixed top-12 start-0 end-0 h-10 items-center border-b z-20 px-6"
         style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)" }}
       >
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.path);
-          return (
-            <button
-              key={item.path}
-              onClick={() => router.push(item.path)}
-              className="flex items-center gap-2 px-4 rounded-full transition-all duration-200"
-              style={{
-                background: active ? "var(--color-amber)" : "transparent",
-                color: active ? "#fff" : "var(--color-muted)",
-                fontWeight: active ? 600 : 500,
-              }}
-              onMouseEnter={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = "rgba(232, 146, 10, 0.08)";
-                  e.currentTarget.style.color = "var(--color-dark)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.color = "var(--color-muted)";
-                }
-              }}
-            >
-              <Icon size={18} />
-              <span className="text-[13px]">{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+        {/* Logo */}
+        <span className="font-black text-[16px] text-dark tracking-tight me-auto">bapita</span>
+        
+        {/* Centered tabs */}
+        <nav className="flex items-center gap-1 absolute start-1/2 -translate-x-1/2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            return (
+              <button
+                key={item.path}
+                onClick={() => router.push(item.path)}
+                className="flex items-center gap-2 px-4 py-1.5 rounded-full transition-all duration-200"
+                style={{
+                  background: active ? "var(--color-amber)" : "transparent",
+                  color: active ? "#fff" : "var(--color-muted)",
+                  fontWeight: active ? 600 : 500,
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.background = "rgba(232, 146, 10, 0.08)";
+                    e.currentTarget.style.color = "var(--color-dark)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "var(--color-muted)";
+                  }
+                }}
+              >
+                <Icon size={16} />
+                <span className="text-[13px]">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
       {/* ─── Mobile Bottom Nav ────────────────────────────────────────── */}
       <nav
