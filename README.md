@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bapita Dashboard
 
-## Getting Started
+Done-for-you booking platform for Israeli appointment businesses (solo barbers first).
+Next.js 16 (App Router) · Tailwind CSS v4 · Supabase auth · Heebo font · PWA.
+Lives at `dashboard.bapita.com`.
 
-First, run the development server:
+Design system: `/Users/admin/Desktop/bapita/v2/docs/design-system.md` — **read before any UI work**.
+
+---
+
+## Running
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev      # http://localhost:3000
+npm run build    # production build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Decision Log (locked)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Decisions confirmed with the owner. Do not silently reverse — change here first.
 
-## Learn More
+| # | Date | Decision | Notes |
+|---|------|----------|-------|
+| D1 | 2026-06-10 | **English LTR now, RTL-ready** | Keep `<html lang="en">`. Build with logical CSS props (`ms/me/ps/pe`, `border-s`, `start/end`, `rtl:` variants) so a Hebrew RTL flip later = set `dir="rtl"` + add Heebo `hebrew` subset. No physical `left/right/ml/mr`. |
+| D2 | 2026-06-10 | **Bottom nav = Calendar · Clients · Insights · Financials** | Matches design system. `New Booking` moved to FAB; `Add-ons` moved to drawer. `Financials` page is a "Coming soon" stub for now. |
+| D3 | 2026-06-10 | **Drawer shows real business name + slug** | Pulled from Supabase via existing `useBusiness()` hook, not hardcoded. |
+| D4 | 2026-06-10 | **Calendar top bar built in AppShell (not deferred)** | Done in Chat 3. The design's `☰ + Month ▾ + ⋮` calendar bar lives in AppShell, driven by a shared `CalendarChrome` context (`src/components/calendar/CalendarChrome.tsx`). The calendar page publishes its state (month label, view, status filter, date-picker, today) into the context; its old in-page toolbar was removed to avoid a double bar. Chat 4 fills the grid inside this frame. |
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Changelog
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Chat 3 — App Shell + Login (2026-06-10)
+- **AppShell rewrite** to design system:
+  - Bottom nav cut from 5 tabs to 4 (Calendar · Clients · Insights · Financials). `New Booking` + `Add-ons` removed from tabs.
+  - FAB added (amber `+`, fixed bottom-end, above nav) → routes to `/new-booking`. Hidden while drawer open.
+  - Drawer rebuilt: real business name + slug (via `useBusiness`), items Settings · Add-ons · Usage · Profile · Sign out, slide-in animation, `dark/40` overlay, `min(320px,85vw)` width, amber active-item border.
+  - Desktop sidebar: cream bg, icons **+ labels**, amber active indicator (was white bg, icons only).
+  - All physical props → logical (RTL-ready per D1).
+  - z-index scale normalized: top bar/nav/sidebar `z-30`, FAB `z-40`, drawer overlay `z-40`, drawer panel `z-50`, calendar ⋮ menu `z-40`.
+  - Bottom nav: `env(safe-area-inset-bottom)` padding for iPhone notch.
+  - **Calendar top bar** (`☰ + Month ▾ + ⋮`): built in AppShell via new `CalendarChrome` context (D4). ⋮ menu = Day/Week/Month toggle + status filter (All/Pending/Confirmed/Completed/Cancelled/No-show) + Jump to today + Calendar settings. Month ▾ opens the native date picker. Calendar page now publishes state to it and its in-page toolbar was removed; status filter applies to the day/week/month views.
+- **Login rewrite** to design system: white inputs `h-12`, ≥15px text (mobile-min rule), CSS amber focus ring (was inline-JS focus hack), error border state, labels 13px medium dark, amber button with hover/active states, trust line "Free consultation. No commitment.", tabs "Login / Create account".
+- **Root layout**: Heebo weights extended to include 500/600/800 (design uses medium/semibold/extrabold; were faux-rendering).
+- **New stub pages**: `/financials`, `/usage` — "Coming soon" placeholders so nav + drawer don't 404 (per D2).
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Bug / Fix Log
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Area | Bug found | Status |
+|------|-----------|--------|
+| AppShell | Physical props (`left-0`, `-ml-2`, `md:pl-20`) break RTL | Fixed (logical props) |
+| AppShell | 5 nav tabs incl. New Booking + Add-ons (design = 4) | Fixed |
+| AppShell | No FAB | Fixed |
+| AppShell | Drawer business name hardcoded `"Owner Dashboard"` | Fixed (`useBusiness`) |
+| AppShell | Drawer missing Add-ons + Usage items | Fixed |
+| AppShell | Drawer popped in (no animation), overlay `black/50` | Fixed (slide + `dark/40`) |
+| AppShell | Bottom nav no safe-area inset | Fixed |
+| AppShell | Desktop sidebar white bg, icons only | Fixed (cream + labels) |
+| AppShell | z-index scale inconsistent | Fixed (normalized) |
+| Login | Inputs 14px (violates 15px-min-mobile rule) | Fixed |
+| Login | Focus via inline JS hack, no amber ring | Fixed (CSS ring) |
+| Login | No error border state on inputs | Fixed |
+| Login | Missing trust line | Fixed |
+| Root | Heebo missing weights 500/600/800 | Fixed |
+| Calendar | In-page toolbar duplicated the design's AppShell calendar bar | Fixed (moved to `CalendarChrome` context) |
+| Calendar | Status filter from design ⋮ menu had no implementation | Fixed (filters day/week/month views) |
+
+---
+
+## Deferred / TODO
+
+- **Calendar week strip + prev/next nav** — the old in-page `‹ ›` arrows were removed with the toolbar; interim week/day navigation is the Month ▾ date picker + "Jump to today". Chat 4 adds the swipeable week strip per design system.
+- **FAB → bottom-sheet new-booking drawer** — currently routes to `/new-booking` page; design wants an in-place drawer pre-filled with next slot.
+- **Financials** + **Usage** real pages (currently stubs — Chat 8 builds them out).
+- **Hebrew RTL** flip when ready (D1): `dir="rtl"`, Heebo `hebrew` subset, translate labels.

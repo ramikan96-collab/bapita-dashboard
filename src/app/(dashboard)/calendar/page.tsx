@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   format, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
-  addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
   isSameDay, parseISO,
 } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
+import { useCalendarChrome, type StatusFilter } from "@/components/calendar/CalendarChrome";
 import DayView from "@/components/calendar/DayView";
 import WeekView from "@/components/calendar/WeekView";
 import MonthView from "@/components/calendar/MonthView";
@@ -16,27 +16,6 @@ import { CalendarSkeleton } from "@/components/LoadingSkeleton";
 import type { Booking } from "@/types";
 
 type CalView = "day" | "week" | "month";
-
-function headerLabel(date: Date, view: CalView): string {
-  if (view === "day") {
-    if (isSameDay(date, new Date())) return "Today";
-    return format(date, "EEE, d MMM");
-  }
-  if (view === "week") {
-    const s = startOfWeek(date, { weekStartsOn: 1 });
-    const e = endOfWeek(date, { weekStartsOn: 1 });
-    if (format(s, "MMM") === format(e, "MMM"))
-      return `${format(s, "d")} – ${format(e, "d MMM")}`;
-    return `${format(s, "d MMM")} – ${format(e, "d MMM")}`;
-  }
-  return format(date, "MMMM yyyy");
-}
-
-function navigate(date: Date, view: CalView, dir: -1 | 1): Date {
-  if (view === "day")   return dir === 1 ? addDays(date, 1)    : subDays(date, 1);
-  if (view === "week")  return dir === 1 ? addWeeks(date, 1)   : subWeeks(date, 1);
-  return                       dir === 1 ? addMonths(date, 1)  : subMonths(date, 1);
-}
 
 function applyPatch(bookings: Booking[], id: string, patch: Partial<Booking>): Booking[] {
   return bookings.map((b) => (b.id === id ? { ...b, ...patch } : b));
@@ -49,8 +28,10 @@ export default function CalendarPage() {
   const [bookings, setBookings]   = useState<Booking[]>([]);
   const [loading, setLoading]     = useState(false);
   const [selected, setSelected]   = useState<Booking | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const dateInputRef              = useRef<HTMLInputElement>(null);
   const supabase                  = createClient();
+  const { setChrome }             = useCalendarChrome();
 
   const fetchBookings = useCallback(async () => {
     if (!business) return;
@@ -106,6 +87,25 @@ export default function CalendarPage() {
     return () => { supabase.removeChannel(channel); };
   }, [business, supabase, fetchBookings]);
 
+  // Publish state to the AppShell top bar (☰ + Month ▾ + ⋮).
+  const isTodaySelected = isSameDay(date, new Date());
+  useEffect(() => {
+    setChrome({
+      monthYear: format(date, "MMMM yyyy"),
+      view,
+      setView,
+      isToday: isTodaySelected,
+      onToday: () => setDate(new Date()),
+      openDatePicker: () =>
+        dateInputRef.current?.showPicker?.() ?? dateInputRef.current?.click(),
+      statusFilter,
+      setStatusFilter,
+    });
+  }, [date, view, statusFilter, isTodaySelected, setChrome]);
+
+  // Clear the top bar when leaving the calendar.
+  useEffect(() => () => setChrome(null), [setChrome]);
+
   if (bizLoading) return <CalendarSkeleton />;
 
   if (!business) {
@@ -134,28 +134,19 @@ export default function CalendarPage() {
     setSelected((prev) => prev ? { ...prev, ...patch } : null);
   }
 
+  const visibleBookings =
+    statusFilter === "all" ? bookings : bookings.filter((b) => b.status === statusFilter);
+
   return (
     <div className="flex flex-col h-full">
-      <div className="shrink-0 px-4 py-3 flex flex-col gap-2 border-b" style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)" }}>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setDate((d) => navigate(d, view, -1))} className="w-8 h-8 flex items-center justify-center rounded-lg" style={{ background: "var(--color-cream-2)", color: "var(--color-dark)" }}>‹</button>
-          <button className="flex-1 text-center text-sm font-bold" style={{ color: "var(--color-dark)" }} onClick={() => dateInputRef.current?.showPicker?.() ?? dateInputRef.current?.click()}>
-            {headerLabel(date, view)}
-          </button>
-          <input ref={dateInputRef} type="date" value={format(date, "yyyy-MM-dd")} onChange={(e) => e.target.value && setDate(parseISO(e.target.value))} className="absolute opacity-0 pointer-events-none w-0 h-0" />
-          <button onClick={() => setDate((d) => navigate(d, view, 1))} className="w-8 h-8 flex items-center justify-center rounded-lg" style={{ background: "var(--color-cream-2)", color: "var(--color-dark)" }}>›</button>
-          {!isSameDay(date, new Date()) && (
-            <button onClick={() => setDate(new Date())} className="px-3 py-1.5 rounded-lg text-xs font-bold" style={{ background: "var(--color-amber)", color: "#fff" }}>Today</button>
-          )}
-        </div>
-        <div className="flex rounded-xl p-0.5 self-center" style={{ background: "var(--color-cream-2)" }}>
-          {(["day", "week", "month"] as CalView[]).map((v) => (
-            <button key={v} onClick={() => setView(v)} className={`px-4 py-1.5 rounded-[10px] text-xs font-bold transition-all capitalize`} style={{ background: view === v ? "var(--color-amber)" : "transparent", color: view === v ? "#fff" : "var(--color-muted)" }}>
-              {v}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Hidden date input driven by the AppShell "Month ▾" picker */}
+      <input
+        ref={dateInputRef}
+        type="date"
+        value={format(date, "yyyy-MM-dd")}
+        onChange={(e) => e.target.value && setDate(parseISO(e.target.value))}
+        className="absolute opacity-0 pointer-events-none w-0 h-0"
+      />
 
       {/* Today summary strip — day view on today only */}
       {view === "day" && isSameDay(date, new Date()) && (() => {
@@ -192,9 +183,9 @@ export default function CalendarPage() {
             <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
           </div>
         )}
-        {view === "day" && <DayView date={date} bookings={bookings} onSelectBooking={setSelected} />}
-        {view === "week" && <WeekView date={date} bookings={bookings} onSelectBooking={setSelected} onSelectDay={handleSelectDay} />}
-        {view === "month" && <MonthView date={date} bookings={bookings} onSelectDay={handleSelectDay} />}
+        {view === "day" && <DayView date={date} bookings={visibleBookings} onSelectBooking={setSelected} />}
+        {view === "week" && <WeekView date={date} bookings={visibleBookings} onSelectBooking={setSelected} onSelectDay={handleSelectDay} />}
+        {view === "month" && <MonthView date={date} bookings={visibleBookings} onSelectDay={handleSelectDay} />}
       </div>
 
       {selected && <BookingDrawer booking={selected} onClose={() => setSelected(null)} onUpdated={handleUpdated} />}

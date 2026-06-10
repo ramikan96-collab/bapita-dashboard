@@ -45,95 +45,88 @@ export default function LoginPage() {
     setLoading(false);
   }
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4"
-      style={{ background: "var(--color-cream)" }}>
+  const inputClass =
+    "h-12 w-full px-4 rounded-[10px] border bg-white text-[15px] text-dark " +
+    "placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 " +
+    "focus:ring-amber/30 transition-colors";
 
-      {/* Logo */}
+  return (
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-10"
+      style={{ background: "var(--color-cream)" }}
+    >
+      {/* Wordmark */}
       <div className="mb-8 text-center">
-        <span className="text-3xl font-black tracking-tight" style={{ color: "var(--color-dark)" }}>
-          bapita
-        </span>
+        <span className="text-[32px] font-black tracking-tight text-dark">bapita</span>
       </div>
 
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div
+        className="w-full max-w-sm bg-white rounded-2xl overflow-hidden"
+        style={{ boxShadow: "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)" }}
+      >
         {/* Tabs */}
         <div className="flex border-b" style={{ borderColor: "var(--color-cream-2)" }}>
           {(["login", "signup"] as const).map((t) => (
             <button
               key={t}
-              onClick={() => { setTab(t); setError(""); setSignupDone(false); }}
-              className="flex-1 py-3.5 text-sm font-bold transition-colors"
+              onClick={() => {
+                setTab(t);
+                setError("");
+                setSignupDone(false);
+              }}
+              className="flex-1 py-4 text-[15px] font-bold transition-colors"
               style={{
                 color: tab === t ? "var(--color-amber)" : "var(--color-muted)",
                 borderBottom: tab === t ? "2px solid var(--color-amber)" : "2px solid transparent",
                 background: "transparent",
               }}
             >
-              {t === "login" ? "Log In" : "Sign Up"}
+              {t === "login" ? "Login" : "Create account"}
             </button>
           ))}
         </div>
 
         <div className="p-6">
           {signupDone ? (
-            <div className="text-center py-4">
-              <div className="text-2xl mb-3">✉️</div>
-              <p className="font-bold mb-1" style={{ color: "var(--color-dark)" }}>Check your email</p>
-              <p className="text-sm" style={{ color: "var(--color-muted)" }}>
-                We sent a confirmation link to <strong>{email}</strong>
+            <div className="text-center py-6">
+              <div className="text-3xl mb-3">✉️</div>
+              <p className="text-[18px] font-bold mb-1 text-dark">Check your email</p>
+              <p className="text-[15px]" style={{ color: "var(--color-muted)" }}>
+                We sent a confirmation link to <strong className="text-dark">{email}</strong>
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               {tab === "signup" && (
-                <div>
-                  <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--color-muted)" }}>
-                    Full name
-                  </label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-medium text-dark">Full name</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
                     placeholder="Your name"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-sm border outline-none transition-colors"
-                    style={{
-                      borderColor: "var(--color-cream-2)",
-                      background: "var(--color-cream)",
-                      color: "var(--color-dark)",
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = "var(--color-amber)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--color-cream-2)")}
+                    className={inputClass}
+                    style={{ borderColor: "var(--color-cream-2)" }}
                   />
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--color-muted)" }}>
-                  Email
-                </label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-dark">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="you@example.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm border outline-none transition-colors"
-                  style={{
-                    borderColor: "var(--color-cream-2)",
-                    background: "var(--color-cream)",
-                    color: "var(--color-dark)",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "var(--color-amber)")}
-                  onBlur={(e) => (e.target.style.borderColor = "var(--color-cream-2)")}
+                  className={inputClass}
+                  style={{ borderColor: error ? "var(--color-cancelled)" : "var(--color-cream-2)" }}
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--color-muted)" }}>
-                  Password
-                </label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-dark">Password</label>
                 <input
                   type="password"
                   value={password}
@@ -141,19 +134,13 @@ export default function LoginPage() {
                   required
                   minLength={6}
                   placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm border outline-none transition-colors"
-                  style={{
-                    borderColor: "var(--color-cream-2)",
-                    background: "var(--color-cream)",
-                    color: "var(--color-dark)",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "var(--color-amber)")}
-                  onBlur={(e) => (e.target.style.borderColor = "var(--color-cream-2)")}
+                  className={inputClass}
+                  style={{ borderColor: error ? "var(--color-cancelled)" : "var(--color-cream-2)" }}
                 />
               </div>
 
               {error && (
-                <p className="text-xs text-center" style={{ color: "var(--color-cancelled)" }}>
+                <p className="text-[12px] -mt-2" style={{ color: "var(--color-cancelled)" }}>
                   {error}
                 </p>
               )}
@@ -161,18 +148,17 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl text-sm font-bold mt-1 transition-opacity disabled:opacity-60"
-                style={{ background: "var(--color-amber)", color: "#fff" }}
+                className="w-full py-3.5 rounded-xl text-[15px] font-bold text-white transition-colors disabled:opacity-60 bg-amber hover:bg-[var(--color-amber-hover)] active:bg-[var(--color-amber-dark)]"
               >
-                {loading ? "…" : tab === "login" ? "Log In" : "Create Account"}
+                {loading ? "…" : tab === "login" ? "Login" : "Create account"}
               </button>
             </form>
           )}
         </div>
       </div>
 
-      <p className="mt-6 text-xs" style={{ color: "var(--color-muted)" }}>
-        © 2026 Bapita
+      <p className="mt-6 text-[13px]" style={{ color: "var(--color-muted)" }}>
+        Free consultation. No commitment.
       </p>
     </div>
   );
