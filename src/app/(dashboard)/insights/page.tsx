@@ -282,9 +282,9 @@ export default function InsightsPage() {
                   <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "var(--color-muted)" }} width={30} />
                   <Tooltip
                     contentStyle={{ borderRadius: 8, border: "none", background: "var(--color-cream)", fontSize: 12 }}
-                    formatter={(value: number) => [value, "Bookings"]}
-                    labelFormatter={(label: string) => {
-                      const parts = label.split("-");
+                    formatter={(value) => [value, "Bookings"]}
+                    labelFormatter={(label) => {
+                      const parts = String(label).split("-");
                       return `${parts[2]}/${parts[1]}/${parts[0]}`;
                     }}
                   />

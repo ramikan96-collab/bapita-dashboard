@@ -47,6 +47,7 @@ export interface Business {
   id: string;
   owner_id: string;
   name: string;
+  slug: string | null;
   phone: string | null;
   email: string | null;
   address: string | null;

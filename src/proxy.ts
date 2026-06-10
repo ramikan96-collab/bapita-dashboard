@@ -31,11 +31,16 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Public routes
+  // Redirect logged-in users away from auth pages
   if (pathname.startsWith("/login") || pathname.startsWith("/auth")) {
     if (user) {
       return NextResponse.redirect(new URL("/calendar", request.url));
     }
+    return supabaseResponse;
+  }
+
+  // Public routes — allow without auth (no redirect)
+  if (pathname.startsWith("/book") || pathname.startsWith("/api/public")) {
     return supabaseResponse;
   }
 

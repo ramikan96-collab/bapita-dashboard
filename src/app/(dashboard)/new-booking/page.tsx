@@ -135,7 +135,7 @@ export default function NewBookingPage() {
         selectedDate,
         selectedService.duration,
         business.business_hours,
-        existingBookings || []
+        (existingBookings || []) as unknown as { appointment_time: string; service?: { duration: number } | null }[]
       );
 
       const slots: AvailableSlot[] = slotStrings.map(timeStr => ({
