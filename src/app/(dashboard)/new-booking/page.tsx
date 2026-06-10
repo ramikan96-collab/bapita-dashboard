@@ -5,8 +5,45 @@ import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
-import type { Service, Customer } from "@/types";
-// @ts-ignore
+import type { Service, Customer, BusinessHours, DayKey } from "@/types";
+
+const DAY_NAMES: DayKey[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+function getAvailableSlots(
+  date: Date,
+  durationMinutes: number,
+  businessHours: BusinessHours | undefined | null,
+  existingBookings: { appointment_time: string; service?: { duration: number } | null }[]
+): string[] {
+  const dayKey = DAY_NAMES[date.getDay()];
+  const dayHours = businessHours?.[dayKey];
+
+  const start = dayHours?.open ? dayHours.start : dayHours ? null : "09:00";
+  const end   = dayHours?.open ? dayHours.end   : dayHours ? null : "19:00";
+  if (!start || !end) return [];
+
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH,   endM]   = end.split(":").map(Number);
+  const openMinutes  = startH * 60 + startM;
+  const closeMinutes = endH   * 60 + endM;
+
+  const bookedRanges = existingBookings.map(b => {
+    const [h, m] = b.appointment_time.split(":").map(Number);
+    const s = h * 60 + m;
+    return { start: s, end: s + (b.service?.duration ?? 30) };
+  });
+
+  const slots: string[] = [];
+  for (let t = openMinutes; t + durationMinutes <= closeMinutes; t += durationMinutes) {
+    const overlaps = bookedRanges.some(r => t < r.end && t + durationMinutes > r.start);
+    if (!overlaps) {
+      const hh = String(Math.floor(t / 60)).padStart(2, "0");
+      const mm = String(t % 60).padStart(2, "0");
+      slots.push(`${hh}:${mm}`);
+    }
+  }
+  return slots;
+}
 
 type Step = "client" | "service" | "datetime" | "confirm";
 
@@ -89,28 +126,23 @@ export default function NewBookingPage() {
 
       const { data: existingBookings } = await supabase
         .from("bookings")
-        .select("appointment_time")
+        .select("appointment_time, service:services(duration)")
         .eq("business_id", business.id)
         .eq("appointment_date", format(selectedDate, "yyyy-MM-dd"))
         .not("status", "eq", "cancelled");
-      
-      const bookedTimes = new Set(
-        existingBookings?.map(b => b.appointment_time) || []
+
+      const slotStrings = getAvailableSlots(
+        selectedDate,
+        selectedService.duration,
+        business.business_hours,
+        existingBookings || []
       );
-      
-      const slots: AvailableSlot[] = [];
-      const startHour = 9;
-      const endHour = 19;
-      const durationHours = selectedService.duration / 60;
-      
-      for (let hour = startHour; hour < endHour; hour += durationHours) {
-        const timeStr = `${hour.toString().padStart(2, "0")}:00`;
-        slots.push({
-          time: parseISO(`${format(selectedDate, "yyyy-MM-dd")}T${timeStr}`),
-          available: !bookedTimes.has(timeStr)
-        });
-      }
-      
+
+      const slots: AvailableSlot[] = slotStrings.map(timeStr => ({
+        time: parseISO(`${format(selectedDate, "yyyy-MM-dd")}T${timeStr}`),
+        available: true,
+      }));
+
       setAvailableSlots(slots);
       setLoadingSlots(false);
     }
@@ -169,7 +201,22 @@ export default function NewBookingPage() {
       setSubmitting(false);
       return;
     }
-    
+
+    if (selectedClient?.email || newClientEmail) {
+      fetch("/api/send-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: selectedClient?.name || newClientName,
+          customerEmail: selectedClient?.email || newClientEmail || "",
+          businessName: business?.name || "",
+          serviceName: selectedService?.name || "",
+          date: format(selectedDate, "yyyy-MM-dd"),
+          time: selectedTime,
+        }),
+      }).catch(console.error);
+    }
+
     router.push("/calendar");
   }
 

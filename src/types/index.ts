@@ -25,6 +25,24 @@ export interface Booking {
   service: BookingService | null;
 }
 
+export interface DayHours {
+  open: boolean;
+  start: string; // "HH:MM"
+  end: string;   // "HH:MM"
+}
+
+export interface BusinessHours {
+  monday:    DayHours;
+  tuesday:   DayHours;
+  wednesday: DayHours;
+  thursday:  DayHours;
+  friday:    DayHours;
+  saturday:  DayHours;
+  sunday:    DayHours;
+}
+
+export type DayKey = keyof BusinessHours;
+
 export interface Business {
   id: string;
   owner_id: string;
@@ -34,6 +52,7 @@ export interface Business {
   address: string | null;
   instagram_url: string | null;
   google_review_link: string | null;
+  business_hours?: BusinessHours;
 }
 
 export interface Customer {

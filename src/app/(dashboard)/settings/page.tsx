@@ -3,9 +3,29 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
-import type { Service } from "@/types";
+import type { Service, BusinessHours, DayKey } from "@/types";
 
 type Tab = "business" | "services" | "hours" | "dates";
+
+const DAYS: { key: DayKey; label: string }[] = [
+  { key: "monday",    label: "Monday" },
+  { key: "tuesday",   label: "Tuesday" },
+  { key: "wednesday", label: "Wednesday" },
+  { key: "thursday",  label: "Thursday" },
+  { key: "friday",    label: "Friday" },
+  { key: "saturday",  label: "Saturday" },
+  { key: "sunday",    label: "Sunday" },
+];
+
+const DEFAULT_HOURS: BusinessHours = {
+  monday:    { open: true,  start: "09:00", end: "19:00" },
+  tuesday:   { open: true,  start: "09:00", end: "19:00" },
+  wednesday: { open: true,  start: "09:00", end: "19:00" },
+  thursday:  { open: true,  start: "09:00", end: "19:00" },
+  friday:    { open: true,  start: "09:00", end: "19:00" },
+  saturday:  { open: true,  start: "09:00", end: "14:00" },
+  sunday:    { open: false, start: "09:00", end: "17:00" },
+};
 
 function SetupForm({ supabase, onCreated }: { supabase: ReturnType<typeof import("@/lib/supabase/client").createClient>; onCreated: () => Promise<void> }) {
   const [name, setName] = useState("");
@@ -99,7 +119,9 @@ export default function SettingsPage() {
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState<Tab>("business");
   const [saving, setSaving] = useState(false);
-  
+  const [hours, setHours] = useState<BusinessHours>(DEFAULT_HOURS);
+  const [savingHours, setSavingHours] = useState(false);
+
   const [businessName, setBusinessName] = useState("");
   const [businessPhone, setBusinessPhone] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
@@ -119,6 +141,7 @@ export default function SettingsPage() {
       setBusinessAddress(business.address || "");
       setInstagramUrl(business.instagram_url || "");
       setGoogleReviewLink(business.google_review_link || "");
+      if (business.business_hours) setHours(business.business_hours);
     }
   }, [business]);
 
@@ -157,6 +180,15 @@ export default function SettingsPage() {
     setSaving(false);
     await refresh();
     alert("Business info saved");
+  }
+
+  async function saveHours() {
+    if (!business) return;
+    setSavingHours(true);
+    await supabase.from("businesses").update({ business_hours: hours }).eq("id", business.id);
+    setSavingHours(false);
+    await refresh();
+    alert("Hours saved");
   }
 
   async function addService() {
@@ -314,7 +346,51 @@ export default function SettingsPage() {
         )}
         
         {activeTab === "hours" && (
-          <p className="text-sm text-center opacity-60 py-8">Business hours configuration coming soon.<br />Default hours: Mon-Fri 9am-7pm, Sat 9am-2pm, Sun closed.</p>
+          <div className="space-y-3">
+            {DAYS.map(({ key, label }) => (
+              <div key={key} className="flex items-center gap-3 p-3 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }}>
+                <button
+                  onClick={() => setHours(h => ({ ...h, [key]: { ...h[key], open: !h[key].open } }))}
+                  className="w-11 h-6 rounded-full transition-colors shrink-0 relative"
+                  style={{ background: hours[key].open ? "var(--color-amber)" : "var(--color-cream-2)" }}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${hours[key].open ? "left-5" : "left-0.5"}`} />
+                </button>
+                <div className="w-24 text-sm font-medium" style={{ color: hours[key].open ? "var(--color-dark)" : "var(--color-muted)" }}>
+                  {label}
+                </div>
+                {hours[key].open ? (
+                  <div className="flex items-center gap-2 text-sm">
+                    <input
+                      type="time"
+                      value={hours[key].start}
+                      onChange={(e) => setHours(h => ({ ...h, [key]: { ...h[key], start: e.target.value } }))}
+                      className="px-2 py-1 rounded-lg border text-sm"
+                      style={{ borderColor: "var(--color-cream-2)" }}
+                    />
+                    <span style={{ color: "var(--color-muted)" }}>to</span>
+                    <input
+                      type="time"
+                      value={hours[key].end}
+                      onChange={(e) => setHours(h => ({ ...h, [key]: { ...h[key], end: e.target.value } }))}
+                      className="px-2 py-1 rounded-lg border text-sm"
+                      style={{ borderColor: "var(--color-cream-2)" }}
+                    />
+                  </div>
+                ) : (
+                  <span className="text-sm" style={{ color: "var(--color-muted)" }}>Closed</span>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={saveHours}
+              disabled={savingHours}
+              className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+              style={{ background: "var(--color-amber)" }}
+            >
+              {savingHours ? "Saving..." : "Save hours"}
+            </button>
+          </div>
         )}
         
         {activeTab === "dates" && (
