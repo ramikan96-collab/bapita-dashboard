@@ -368,7 +368,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)" }}
       >
         {/* Logo */}
-        <span className="font-black text-[16px] text-dark tracking-tight me-auto">bapita</span>
+        <span className="font-black text-[16px] text-dark tracking-tight">bapita</span>
         
         {/* Centered tabs with smooth underline */}
         <nav className="flex items-center gap-1 absolute start-1/2 -translate-x-1/2">
@@ -407,6 +407,15 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+
+        {/* Hamburger menu - moved down to tab level */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="ms-auto p-2 -me-2 rounded-xl text-dark hover:bg-cream transition-colors"
+          aria-label="Open menu"
+        >
+          <IconMenu />
+        </button>
       </div>
 
       {/* ─── Mobile Bottom Nav ────────────────────────────────────────── */}
