@@ -400,13 +400,13 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Hamburger menu - moved down to tab level */}
+        {/* Hamburger menu - far right */}
         <button
           onClick={() => setDrawerOpen(true)}
-          className="ms-auto p-2 -me-2 rounded-xl text-dark hover:bg-cream transition-colors"
+          className="ms-auto pe-1 rounded-xl text-dark hover:bg-cream transition-colors"
           aria-label="Open menu"
         >
-          <IconMenu />
+          <IconMenu size={20} />
         </button>
       </div>
 
