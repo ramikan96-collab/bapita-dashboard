@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format, subDays, subWeeks, subMonths, startOfWeek, endOfWeek } from "date-fns";
+import { format, subDays, subWeeks, subMonths, startOfWeek } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { InsightsSkeleton } from "@/components/LoadingSkeleton";
@@ -15,13 +15,15 @@ interface Stats {
   bookings: number;
   previousBookings: number;
   completed: number;
+  confirmed: number;
   cancelled: number;
   noShow: number;
+  pending: number;
   noShowRate: number;
   newCustomers: number;
   returningCustomers: number;
   topServices: { name: string; count: number; revenue: number }[];
-  dailyBookings: { date: string; count: number; revenue: number }[];
+  dailyRevenue: { date: string; label: string; revenue: number }[];
 }
 
 export default function InsightsPage() {
@@ -37,11 +39,11 @@ export default function InsightsPage() {
     async function fetchStats() {
       if (!business) return;
       setLoading(true);
-      
+
       let startDate: Date;
       let previousStartDate: Date;
       const endDate = new Date();
-      
+
       if (dateRange === "week") {
         startDate = startOfWeek(endDate, { weekStartsOn: 1 });
         previousStartDate = subWeeks(startDate, 1);
@@ -52,40 +54,38 @@ export default function InsightsPage() {
         startDate = subMonths(endDate, 1);
         previousStartDate = subMonths(startDate, 1);
       }
-      
+
       const startStr = format(startDate, "yyyy-MM-dd");
       const endStr = format(endDate, "yyyy-MM-dd");
       const prevStartStr = format(previousStartDate, "yyyy-MM-dd");
       const prevEndStr = format(startDate, "yyyy-MM-dd");
-      
-      // Current period bookings
+
       const { data: currentBookings } = await supabase
         .from("bookings")
-        .select("*, service:services(price)")
+        .select("*, service:services(name, price)")
         .eq("business_id", business.id)
         .gte("appointment_date", startStr)
         .lte("appointment_date", endStr);
-      
-      // Previous period bookings
+
       const { data: previousBookings } = await supabase
         .from("bookings")
         .select("*, service:services(price)")
         .eq("business_id", business.id)
         .gte("appointment_date", prevStartStr)
         .lte("appointment_date", prevEndStr);
-      
-      // Calculate revenue
+
       const revenue = (currentBookings || []).reduce((sum, b) => sum + (b.service?.price || 0), 0);
       const previousRevenue = (previousBookings || []).reduce((sum, b) => sum + (b.service?.price || 0), 0);
-      
-      // Count by status
+
       const bookings = currentBookings?.length || 0;
       const previousBookingsCount = previousBookings?.length || 0;
       const completed = (currentBookings || []).filter(b => b.status === "completed").length;
+      const confirmed = (currentBookings || []).filter(b => b.status === "confirmed").length;
       const cancelled = (currentBookings || []).filter(b => b.status === "cancelled").length;
       const noShow = (currentBookings || []).filter(b => b.status === "no_show").length;
+      const pending = (currentBookings || []).filter(b => b.status === "pending").length;
       const noShowRate = bookings > 0 ? (noShow / bookings) * 100 : 0;
-      
+
       // Top services
       const serviceMap = new Map<string, { name: string; count: number; revenue: number }>();
       (currentBookings || []).forEach(b => {
@@ -100,217 +100,298 @@ export default function InsightsPage() {
         }
       });
       const topServices = Array.from(serviceMap.values()).sort((a, b) => b.count - a.count).slice(0, 5);
-      
-      // Daily bookings for chart
-      const dailyMap = new Map<string, { count: number; revenue: number }>();
+
+      // Daily revenue for chart — T12:00:00 prevents UTC midnight → local-day rollback
+      const dailyMap = new Map<string, number>();
       (currentBookings || []).forEach(b => {
-        const date = b.appointment_date;
-        const existing = dailyMap.get(date);
-        if (existing) {
-          existing.count++;
-          existing.revenue += b.service?.price || 0;
-        } else {
-          dailyMap.set(date, { count: 1, revenue: b.service?.price || 0 });
-        }
+        dailyMap.set(b.appointment_date, (dailyMap.get(b.appointment_date) || 0) + (b.service?.price || 0));
       });
-      const dailyBookings = Array.from(dailyMap.entries())
-        .map(([date, data]) => ({ date, count: data.count, revenue: data.revenue }))
+      const dailyRevenue = Array.from(dailyMap.entries())
+        .map(([date, rev]) => ({
+          date,
+          label: format(new Date(date + "T12:00:00"), "EEE"),
+          revenue: rev,
+        }))
         .sort((a, b) => a.date.localeCompare(b.date));
-      
-      // New vs returning customers (simplified for MVP)
+
+      // New vs returning
       const { data: allCustomers } = await supabase
         .from("customers")
         .select("created_at")
         .eq("business_id", business.id);
-      
+
       const newCustomers = (allCustomers || []).filter(c => c.created_at && c.created_at >= startStr).length;
-      const returningCustomers = (currentBookings?.length || 0) - newCustomers;
-      
+      const returningCustomers = Math.max(0, bookings - newCustomers);
+
       setStats({
-        revenue,
-        previousRevenue,
-        bookings,
-        previousBookings: previousBookingsCount,
-        completed,
-        cancelled,
-        noShow,
-        noShowRate,
-        newCustomers,
-        returningCustomers,
-        topServices,
-        dailyBookings,
+        revenue, previousRevenue,
+        bookings, previousBookings: previousBookingsCount,
+        completed, confirmed, cancelled, noShow, pending,
+        noShowRate, newCustomers, returningCustomers,
+        topServices, dailyRevenue,
       });
-      
+
       setLoading(false);
     }
-    
+
     fetchStats();
   }, [business, dateRange, supabase]);
 
   if (bizLoading) return <InsightsSkeleton />;
 
-  const revenueChange = stats?.previousRevenue ? ((stats.revenue - stats.previousRevenue) / stats.previousRevenue) * 100 : 0;
-  const bookingsChange = stats?.previousBookings ? ((stats.bookings - stats.previousBookings) / stats.previousBookings) * 100 : 0;
+  const revenueChange = stats?.previousRevenue
+    ? ((stats.revenue - stats.previousRevenue) / stats.previousRevenue) * 100
+    : 0;
+  const bookingsChange = stats?.previousBookings
+    ? ((stats.bookings - stats.previousBookings) / stats.previousBookings) * 100
+    : 0;
+
+  const rangeLabel =
+    dateRange === "week" ? "This week" :
+    dateRange === "month" ? "Last 30 days" :
+    "Last month";
+
+  const cardStyle = {
+    background: "var(--color-surface)",
+    boxShadow: "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)",
+  };
 
   return (
-    <div className="flex flex-col h-full bg-white overflow-y-auto">
+    <div className="flex flex-col min-h-full" style={{ background: "var(--color-cream)" }}>
       {/* Header */}
-      <div className="shrink-0 px-4 py-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
-        <h1 className="text-xl font-black" style={{ color: "var(--color-dark)" }}>Insights</h1>
+      <div className="shrink-0 px-4 pt-5 pb-3">
+        <h1 className="text-[28px] font-extrabold leading-tight" style={{ color: "var(--color-dark)" }}>
+          Insights
+        </h1>
+        <p className="text-[13px] font-medium mt-0.5" style={{ color: "var(--color-muted)" }}>
+          {rangeLabel}
+        </p>
       </div>
-      
-      {/* Date range selector */}
-      <div className="shrink-0 px-4 py-3 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
+
+      {/* Date range tabs */}
+      <div className="shrink-0 px-4 pb-4">
         <div className="flex gap-2">
           {(["week", "month", "lastMonth"] as DateRange[]).map((range) => (
             <button
               key={range}
               onClick={() => setDateRange(range)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
-                dateRange === range ? "text-white" : "opacity-60"
-              }`}
+              className="px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors"
               style={{
-                background: dateRange === range ? "var(--color-amber)" : "var(--color-cream-2)",
-                color: dateRange === range ? "#fff" : "var(--color-dark)",
+                background: dateRange === range ? "var(--color-dark)" : "var(--color-surface)",
+                color: dateRange === range ? "#fff" : "var(--color-muted)",
+                boxShadow: dateRange === range ? "none" : "0 1px 2px rgba(30,26,20,0.06)",
               }}
             >
-              {range === "week" && "This week"}
-              {range === "month" && "Last 30 days"}
-              {range === "lastMonth" && "Last month"}
+              {range === "week" ? "This week" : range === "month" ? "30 days" : "Last month"}
             </button>
           ))}
         </div>
       </div>
-      
+
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
-               style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
+        <div className="flex justify-center py-16">
+          <div
+            className="w-7 h-7 rounded-full border-2 animate-spin"
+            style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }}
+          />
         </div>
       ) : stats ? (
-        <div className="flex-1 p-4 space-y-4">
-          {/* Key metrics — 2-column grid */}
+        <div className="flex-1 px-4 pb-8 space-y-3">
+
+          {/* Revenue hero */}
+          <div
+            className="rounded-2xl p-5"
+            style={{
+              background: "var(--color-amber)",
+              boxShadow: "0 4px 16px rgba(232,146,10,0.25)",
+            }}
+          >
+            <p className="text-[12px] font-semibold text-white/70 uppercase tracking-widest mb-2">
+              Revenue
+            </p>
+            <p className="text-[48px] font-black text-white leading-none">
+              ₪{stats.revenue.toLocaleString()}
+            </p>
+            {revenueChange !== 0 && (
+              <p
+                className="text-[13px] mt-2 font-medium"
+                style={{ color: revenueChange > 0 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.6)" }}
+              >
+                {revenueChange > 0 ? "↑" : "↓"} {Math.abs(revenueChange).toFixed(1)}% vs previous period
+              </p>
+            )}
+          </div>
+
+          {/* 2-col stat grid */}
           <div className="grid grid-cols-2 gap-3">
-            {/* Revenue */}
-            <div className="col-span-2 p-5 rounded-2xl" style={{ background: "var(--color-amber)" }}>
-              <div className="text-xs font-medium text-white/70 mb-1 uppercase tracking-wide">Revenue</div>
-              <div className="text-4xl font-black text-white">₪{stats.revenue.toLocaleString()}</div>
-              {revenueChange !== 0 && (
-                <div className={`text-xs mt-2 font-medium ${revenueChange > 0 ? "text-white/90" : "text-white/60"}`}>
-                  {revenueChange > 0 ? "↑" : "↓"} {Math.abs(revenueChange).toFixed(1)}% vs prev period
-                </div>
-              )}
-            </div>
-
-            {/* Bookings */}
-            <div className="p-4 rounded-2xl" style={{ background: "var(--color-cream-2)" }}>
-              <div className="text-xs font-medium mb-1 uppercase tracking-wide" style={{ color: "var(--color-muted)" }}>Bookings</div>
-              <div className="text-3xl font-black" style={{ color: "var(--color-dark)" }}>{stats.bookings}</div>
+            <div className="rounded-2xl p-4" style={cardStyle}>
+              <p className="text-[12px] font-medium mb-2" style={{ color: "var(--color-muted)" }}>Bookings</p>
+              <p className="text-[36px] font-black leading-none" style={{ color: "var(--color-dark)" }}>
+                {stats.bookings}
+              </p>
               {bookingsChange !== 0 && (
-                <div className={`text-xs mt-1 font-medium ${bookingsChange > 0 ? "text-green-600" : "text-red-500"}`}>
-                  {bookingsChange > 0 ? "+" : ""}{Math.abs(bookingsChange).toFixed(1)}%
-                </div>
+                <p
+                  className="text-[12px] mt-1.5 font-medium"
+                  style={{ color: bookingsChange > 0 ? "#16A34A" : "#DC2626" }}
+                >
+                  {bookingsChange > 0 ? "+" : ""}{bookingsChange.toFixed(0)}%
+                </p>
               )}
             </div>
 
-            {/* No-show rate */}
-            <div className="p-4 rounded-2xl" style={{ background: "var(--color-cream-2)" }}>
-              <div className="text-xs font-medium mb-1 uppercase tracking-wide" style={{ color: "var(--color-muted)" }}>No-shows</div>
-              <div className="text-3xl font-black" style={{
-                color: stats.noShowRate > 20 ? "#ef4444" : stats.noShowRate > 10 ? "#eab308" : "var(--color-dark)"
-              }}>
+            <div className="rounded-2xl p-4" style={cardStyle}>
+              <p className="text-[12px] font-medium mb-2" style={{ color: "var(--color-muted)" }}>No-shows</p>
+              <p
+                className="text-[36px] font-black leading-none"
+                style={{
+                  color: stats.noShowRate > 20 ? "#DC2626" : stats.noShowRate > 10 ? "#D97706" : "var(--color-dark)"
+                }}
+              >
                 {stats.noShowRate.toFixed(0)}%
-              </div>
-              <div className="text-xs mt-1" style={{ color: "var(--color-muted)" }}>{stats.noShow} of {stats.bookings}</div>
+              </p>
+              <p className="text-[12px] mt-1.5" style={{ color: "var(--color-muted)" }}>
+                {stats.noShow} of {stats.bookings}
+              </p>
+            </div>
+
+            <div className="rounded-2xl p-4" style={cardStyle}>
+              <p className="text-[12px] font-medium mb-2" style={{ color: "var(--color-muted)" }}>New clients</p>
+              <p className="text-[36px] font-black leading-none" style={{ color: "#16A34A" }}>
+                {stats.newCustomers}
+              </p>
+            </div>
+
+            <div className="rounded-2xl p-4" style={cardStyle}>
+              <p className="text-[12px] font-medium mb-2" style={{ color: "var(--color-muted)" }}>Returning</p>
+              <p className="text-[36px] font-black leading-none" style={{ color: "var(--color-amber)" }}>
+                {stats.returningCustomers}
+              </p>
             </div>
           </div>
 
-          {/* Status Breakdown */}
-          <div className="p-4 rounded-2xl border" style={{ borderColor: "var(--color-cream-2)" }}>
-            <div className="text-sm font-bold mb-3" style={{ color: "var(--color-dark)" }}>Status breakdown</div>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: "Completed", count: stats.completed, color: "#22c55e" },
-                { label: "Cancelled", count: stats.cancelled, color: "#ef4444" },
-                { label: "No-show", count: stats.noShow, color: "#f97316" },
-                { label: "Pending", count: stats.bookings - stats.completed - stats.cancelled - stats.noShow, color: "var(--color-muted)" },
-              ]
-                .filter(s => s.count > 0)
-                .map((s) => (
-                  <div key={s.label} className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "var(--color-cream-2)" }}>
-                    <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
-                    <span className="text-sm font-medium" style={{ color: "var(--color-dark)" }}>{s.count}</span>
-                    <span className="text-xs" style={{ color: "var(--color-muted)" }}>{s.label}</span>
-                  </div>
-                ))}
-            </div>
-          </div>
-          
-          {/* Top Services */}
-          <div className="p-4 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }}>
-            <div className="text-sm font-bold mb-3" style={{ color: "var(--color-dark)" }}>Top services</div>
-            <div className="space-y-2">
-              {stats.topServices.map((service, idx) => (
-                <div key={idx} className="flex justify-between items-center">
-                  <div>
-                    <div className="text-sm font-medium">{service.name}</div>
-                    <div className="text-xs opacity-60">{service.count} bookings</div>
-                  </div>
-                  <div className="font-bold">₪{service.revenue}</div>
-                </div>
-              ))}
-              {stats.topServices.length === 0 && (
-                <div className="text-center text-sm opacity-60 py-4">No service data yet</div>
-              )}
-            </div>
-          </div>
-          
-          {/* Daily chart */}
-          {stats.dailyBookings.length > 1 && (
-            <div className="p-4 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }}>
-              <div className="text-sm font-bold mb-4" style={{ color: "var(--color-dark)" }}>Daily bookings</div>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={stats.dailyBookings} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
+          {/* Revenue bar chart */}
+          {stats.dailyRevenue.length > 1 && (
+            <div className="rounded-2xl p-4" style={cardStyle}>
+              <p className="text-[15px] font-bold mb-4" style={{ color: "var(--color-dark)" }}>
+                Revenue by day
+              </p>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={stats.dailyRevenue} margin={{ top: 4, right: 0, bottom: 0, left: -8 }}>
                   <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 10, fill: "var(--color-muted)" }}
-                    tickFormatter={(d: string) => {
-                      const parts = d.split("-");
-                      return `${parts[2]}/${parts[1]}`;
-                    }}
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: "var(--color-muted)", fontFamily: "Heebo" }}
+                    axisLine={false}
+                    tickLine={false}
                   />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "var(--color-muted)" }} width={30} />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fontSize: 11, fill: "var(--color-muted)", fontFamily: "Heebo" }}
+                    tickFormatter={(v: number) => `₪${v}`}
+                    axisLine={false}
+                    tickLine={false}
+                    width={44}
+                  />
                   <Tooltip
-                    contentStyle={{ borderRadius: 8, border: "none", background: "var(--color-cream)", fontSize: 12 }}
-                    formatter={(value) => [value, "Bookings"]}
-                    labelFormatter={(label) => {
-                      const parts = String(label).split("-");
-                      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    contentStyle={{
+                      borderRadius: 10,
+                      border: "none",
+                      background: "var(--color-dark)",
+                      color: "#fff",
+                      fontSize: 13,
+                      fontFamily: "Heebo",
+                      padding: "8px 12px",
                     }}
+                    itemStyle={{ color: "#fff" }}
+                    labelStyle={{ color: "rgba(255,255,255,0.65)", marginBottom: 2 }}
+                    formatter={(value: number) => [`₪${value.toLocaleString()}`, "Revenue"]}
+                    cursor={{ fill: "rgba(30,26,20,0.04)" }}
                   />
-                  <Bar dataKey="count" fill="var(--color-amber)" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                  <Bar dataKey="revenue" fill="var(--color-amber)" radius={[5, 5, 0, 0]} maxBarSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
 
-          {/* New vs Returning */}
-          <div className="p-4 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }}>
-            <div className="text-sm font-bold mb-3" style={{ color: "var(--color-dark)" }}>Customers</div>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-black text-green-600">{stats.newCustomers}</div>
-                <div className="text-xs opacity-60">New</div>
-              </div>
-              <div>
-                <div className="text-2xl font-black text-amber-600">{stats.returningCustomers}</div>
-                <div className="text-xs opacity-60">Returning</div>
-              </div>
+          {/* Status breakdown */}
+          <div className="rounded-2xl p-4" style={cardStyle}>
+            <p className="text-[15px] font-bold mb-3" style={{ color: "var(--color-dark)" }}>
+              By status
+            </p>
+            <div className="space-y-2.5">
+              {[
+                { key: "completed", label: "Completed", count: stats.completed, pillBg: "rgba(34,197,94,0.15)", pillText: "#16A34A", dot: "#22C55E" },
+                { key: "confirmed", label: "Confirmed", count: stats.confirmed, pillBg: "rgba(232,146,10,0.15)", pillText: "#B86800", dot: "var(--color-amber)" },
+                { key: "pending",   label: "Pending",   count: stats.pending,   pillBg: "rgba(148,163,184,0.15)", pillText: "#64748B", dot: "#94A3B8" },
+                { key: "cancelled", label: "Cancelled", count: stats.cancelled, pillBg: "rgba(239,68,68,0.15)",  pillText: "#DC2626", dot: "#EF4444" },
+                { key: "no_show",   label: "No-show",   count: stats.noShow,    pillBg: "rgba(239,68,68,0.15)",  pillText: "#DC2626", dot: "#EF4444" },
+              ]
+                .filter(s => s.count > 0)
+                .map((s) => {
+                  const pct = stats.bookings > 0 ? Math.round((s.count / stats.bookings) * 100) : 0;
+                  return (
+                    <div key={s.key} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.dot }} />
+                        <span className="text-[15px]" style={{ color: "var(--color-dark)" }}>{s.label}</span>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium"
+                          style={{ background: s.pillBg, color: s.pillText }}
+                        >
+                          {pct}%
+                        </span>
+                        <span className="text-[15px] font-semibold w-5 text-end" style={{ color: "var(--color-dark)" }}>
+                          {s.count}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </div>
+
+          {/* Top services */}
+          <div className="rounded-2xl p-4" style={cardStyle}>
+            <p className="text-[15px] font-bold mb-3" style={{ color: "var(--color-dark)" }}>
+              Top services
+            </p>
+            {stats.topServices.length > 0 ? (
+              <div className="space-y-3">
+                {stats.topServices.map((service, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <span
+                      className="text-[12px] font-bold w-4 text-center flex-shrink-0"
+                      style={{ color: "var(--color-muted)" }}
+                    >
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[15px] font-medium truncate" style={{ color: "var(--color-dark)" }}>
+                        {service.name}
+                      </p>
+                      <p className="text-[12px]" style={{ color: "var(--color-muted)" }}>
+                        {service.count} {service.count === 1 ? "booking" : "bookings"}
+                      </p>
+                    </div>
+                    <span className="text-[15px] font-semibold flex-shrink-0" style={{ color: "var(--color-dark)" }}>
+                      ₪{service.revenue.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[15px] text-center py-4" style={{ color: "var(--color-muted)" }}>
+                No service data yet
+              </p>
+            )}
+          </div>
+
         </div>
       ) : (
-        <div className="text-center py-12 text-sm opacity-60">No data available</div>
+        <div className="flex justify-center py-16">
+          <p className="text-[15px]" style={{ color: "var(--color-muted)" }}>No data available</p>
+        </div>
       )}
     </div>
   );
