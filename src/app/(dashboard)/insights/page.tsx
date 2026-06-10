@@ -303,7 +303,7 @@ export default function InsightsPage() {
                     }}
                     itemStyle={{ color: "#fff" }}
                     labelStyle={{ color: "rgba(255,255,255,0.65)", marginBottom: 2 }}
-                    formatter={(value: number) => [`₪${value.toLocaleString()}`, "Revenue"]}
+                    formatter={(value) => [`₪${Number(value).toLocaleString()}`, "Revenue"]}
                     cursor={{ fill: "rgba(30,26,20,0.04)" }}
                   />
                   <Bar dataKey="revenue" fill="var(--color-amber)" radius={[5, 5, 0, 0]} maxBarSize={40} />
