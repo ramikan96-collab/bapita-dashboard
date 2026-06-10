@@ -5,6 +5,7 @@ import { format, subDays, subWeeks, subMonths, startOfWeek, endOfWeek } from "da
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { InsightsSkeleton } from "@/components/LoadingSkeleton";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 type DateRange = "week" | "month" | "lastMonth";
 
@@ -188,62 +189,60 @@ export default function InsightsPage() {
         </div>
       ) : stats ? (
         <div className="flex-1 p-4 space-y-4">
-          {/* Revenue Card */}
-          <div className="p-4 rounded-xl" style={{ background: "var(--color-cream-2)" }}>
-            <div className="text-xs opacity-60 mb-1">Revenue</div>
-            <div className="text-3xl font-black" style={{ color: "var(--color-dark)" }}>₪{stats.revenue.toLocaleString()}</div>
-            {revenueChange !== 0 && (
-              <div className={`text-xs mt-1 ${revenueChange > 0 ? "text-green-600" : "text-red-600"}`}>
-                {revenueChange > 0 ? "↑" : "↓"} {Math.abs(revenueChange).toFixed(1)}% from previous period
+          {/* Key metrics — 2-column grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Revenue */}
+            <div className="col-span-2 p-5 rounded-2xl" style={{ background: "var(--color-amber)" }}>
+              <div className="text-xs font-medium text-white/70 mb-1 uppercase tracking-wide">Revenue</div>
+              <div className="text-4xl font-black text-white">₪{stats.revenue.toLocaleString()}</div>
+              {revenueChange !== 0 && (
+                <div className={`text-xs mt-2 font-medium ${revenueChange > 0 ? "text-white/90" : "text-white/60"}`}>
+                  {revenueChange > 0 ? "↑" : "↓"} {Math.abs(revenueChange).toFixed(1)}% vs prev period
+                </div>
+              )}
+            </div>
+
+            {/* Bookings */}
+            <div className="p-4 rounded-2xl" style={{ background: "var(--color-cream-2)" }}>
+              <div className="text-xs font-medium mb-1 uppercase tracking-wide" style={{ color: "var(--color-muted)" }}>Bookings</div>
+              <div className="text-3xl font-black" style={{ color: "var(--color-dark)" }}>{stats.bookings}</div>
+              {bookingsChange !== 0 && (
+                <div className={`text-xs mt-1 font-medium ${bookingsChange > 0 ? "text-green-600" : "text-red-500"}`}>
+                  {bookingsChange > 0 ? "+" : ""}{Math.abs(bookingsChange).toFixed(1)}%
+                </div>
+              )}
+            </div>
+
+            {/* No-show rate */}
+            <div className="p-4 rounded-2xl" style={{ background: "var(--color-cream-2)" }}>
+              <div className="text-xs font-medium mb-1 uppercase tracking-wide" style={{ color: "var(--color-muted)" }}>No-shows</div>
+              <div className="text-3xl font-black" style={{
+                color: stats.noShowRate > 20 ? "#ef4444" : stats.noShowRate > 10 ? "#eab308" : "var(--color-dark)"
+              }}>
+                {stats.noShowRate.toFixed(0)}%
               </div>
-            )}
+              <div className="text-xs mt-1" style={{ color: "var(--color-muted)" }}>{stats.noShow} of {stats.bookings}</div>
+            </div>
           </div>
-          
-          {/* Bookings Card */}
-          <div className="p-4 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }}>
-            <div className="text-xs opacity-60 mb-1">Total bookings</div>
-            <div className="text-3xl font-black" style={{ color: "var(--color-dark)" }}>{stats.bookings}</div>
-            {bookingsChange !== 0 && (
-              <div className={`text-xs mt-1 ${bookingsChange > 0 ? "text-green-600" : "text-red-600"}`}>
-                {bookingsChange > 0 ? "↑" : "↓"} {Math.abs(bookingsChange).toFixed(1)}% from previous period
-              </div>
-            )}
-          </div>
-          
+
           {/* Status Breakdown */}
-          <div className="p-4 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }}>
-            <div className="text-sm font-bold mb-3" style={{ color: "var(--color-dark)" }}>Booking status</div>
-            <div className="space-y-2">
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span>Completed</span>
-                  <span>{stats.completed} ({((stats.completed / stats.bookings) * 100).toFixed(0)}%)</span>
-                </div>
-                <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                  <div className="h-full rounded-full bg-green-500" style={{ width: `${(stats.completed / stats.bookings) * 100}%` }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span>Cancelled</span>
-                  <span>{stats.cancelled}</span>
-                </div>
-                <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                  <div className="h-full rounded-full bg-red-500" style={{ width: `${(stats.cancelled / stats.bookings) * 100}%` }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span>No-show rate</span>
-                  <span>{stats.noShowRate.toFixed(1)}%</span>
-                </div>
-                <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                  <div className="h-full rounded-full" style={{ 
-                    width: `${stats.noShowRate}%`,
-                    background: stats.noShowRate > 20 ? "#ef4444" : stats.noShowRate > 10 ? "#eab308" : "#22c55e"
-                  }} />
-                </div>
-              </div>
+          <div className="p-4 rounded-2xl border" style={{ borderColor: "var(--color-cream-2)" }}>
+            <div className="text-sm font-bold mb-3" style={{ color: "var(--color-dark)" }}>Status breakdown</div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "Completed", count: stats.completed, color: "#22c55e" },
+                { label: "Cancelled", count: stats.cancelled, color: "#ef4444" },
+                { label: "No-show", count: stats.noShow, color: "#f97316" },
+                { label: "Pending", count: stats.bookings - stats.completed - stats.cancelled - stats.noShow, color: "var(--color-muted)" },
+              ]
+                .filter(s => s.count > 0)
+                .map((s) => (
+                  <div key={s.label} className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "var(--color-cream-2)" }}>
+                    <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+                    <span className="text-sm font-medium" style={{ color: "var(--color-dark)" }}>{s.count}</span>
+                    <span className="text-xs" style={{ color: "var(--color-muted)" }}>{s.label}</span>
+                  </div>
+                ))}
             </div>
           </div>
           
@@ -266,6 +265,35 @@ export default function InsightsPage() {
             </div>
           </div>
           
+          {/* Daily chart */}
+          {stats.dailyBookings.length > 1 && (
+            <div className="p-4 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }}>
+              <div className="text-sm font-bold mb-4" style={{ color: "var(--color-dark)" }}>Daily bookings</div>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={stats.dailyBookings} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10, fill: "var(--color-muted)" }}
+                    tickFormatter={(d: string) => {
+                      const parts = d.split("-");
+                      return `${parts[2]}/${parts[1]}`;
+                    }}
+                  />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "var(--color-muted)" }} width={30} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, border: "none", background: "var(--color-cream)", fontSize: 12 }}
+                    formatter={(value: number) => [value, "Bookings"]}
+                    labelFormatter={(label: string) => {
+                      const parts = label.split("-");
+                      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    }}
+                  />
+                  <Bar dataKey="count" fill="var(--color-amber)" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
           {/* New vs Returning */}
           <div className="p-4 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }}>
             <div className="text-sm font-bold mb-3" style={{ color: "var(--color-dark)" }}>Customers</div>

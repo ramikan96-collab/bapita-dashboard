@@ -92,7 +92,21 @@ export default function ClientsPage() {
         {loading ? (
           <div className="flex justify-center py-8"><div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} /></div>
         ) : clients.length === 0 ? (
-          <div className="text-center py-12"><span style={{ fontSize: 48 }}>👥</span><p className="mt-3 font-bold" style={{ color: "var(--color-dark)" }}>No clients yet</p></div>
+          search ? (
+            <div className="text-center py-12">
+              <p className="font-bold" style={{ color: "var(--color-dark)" }}>No results for &quot;{search}&quot;</p>
+              <p className="text-sm mt-1" style={{ color: "var(--color-muted)" }}>Try a different name or phone number.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+              <div className="text-5xl mb-4">👥</div>
+              <div className="text-base font-bold mb-1" style={{ color: "var(--color-dark)" }}>No clients yet</div>
+              <div className="text-sm mb-6" style={{ color: "var(--color-muted)" }}>Clients appear here when you create your first booking.</div>
+              <a href="/new-booking" className="px-6 py-3 rounded-xl text-sm font-bold text-white" style={{ background: "var(--color-amber)" }}>
+                New booking
+              </a>
+            </div>
+          )
         ) : (
           <div className="space-y-2">
             {clients.map((client) => (

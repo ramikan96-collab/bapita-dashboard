@@ -157,6 +157,35 @@ export default function CalendarPage() {
         </div>
       </div>
 
+      {/* Today summary strip — day view on today only */}
+      {view === "day" && isSameDay(date, new Date()) && (() => {
+        const todayRevenue = bookings.filter(b => b.status === "completed").reduce((s, b) => s + (b.service?.price || 0), 0);
+        const nextBooking = bookings
+          .filter(b => b.status === "confirmed" || b.status === "pending")
+          .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))[0];
+        return (
+          <div className="shrink-0 px-4 py-3 flex gap-3 overflow-x-auto border-b" style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)" }}>
+            <div className="shrink-0 px-4 py-2 rounded-xl text-center min-w-[80px]" style={{ background: "var(--color-cream-2)" }}>
+              <div className="text-xl font-black" style={{ color: "var(--color-dark)" }}>{bookings.length}</div>
+              <div className="text-xs" style={{ color: "var(--color-muted)" }}>Today</div>
+            </div>
+            <div className="shrink-0 px-4 py-2 rounded-xl text-center min-w-[80px]" style={{ background: "var(--color-cream-2)" }}>
+              <div className="text-xl font-black" style={{ color: "var(--color-amber)" }}>₪{todayRevenue}</div>
+              <div className="text-xs" style={{ color: "var(--color-muted)" }}>Earned</div>
+            </div>
+            {nextBooking && (
+              <div className="shrink-0 px-4 py-2 rounded-xl flex items-center gap-2 min-w-[140px]" style={{ background: "var(--color-amber)", color: "#fff" }}>
+                <div>
+                  <div className="text-xs font-medium opacity-80">Up next</div>
+                  <div className="text-sm font-bold">{nextBooking.customer_name}</div>
+                  <div className="text-xs opacity-80">{nextBooking.appointment_time.slice(0, 5)}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       <div className="flex-1 overflow-hidden relative">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/60 z-20">
