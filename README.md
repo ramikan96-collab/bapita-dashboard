@@ -55,6 +55,18 @@ Decisions confirmed with the owner. Do not silently reverse — change here firs
 - Clients list: cream bg, white cards, debounced name+phone search (`.or`), Recent/Name/Visits sort pills, warm empty state.
 - Client profile: header stats, booking history, internal notes, "New booking for X" → `/new-booking?clientId=`.
 
+### Chat 7 — Insights (2026-06-10) · `08d956d`
+- **Full redesign** to design system: cream bg, white cards, warm shadows, 15px+ type scale.
+- Revenue hero: `₪` at 48px font-black, amber bg + amber-tinted shadow.
+- Stat grid: 2-col (Bookings, No-show %, New clients, Returning).
+- Chart switched from daily booking count → **revenue by day**, amber bars, dark tooltip.
+- Status breakdown: all 5 statuses (confirmed was missing), pill badges with % + count.
+- Top services: ranked list with booking count + revenue.
+- **Bug: `service:services(price)` missing `name`** — service names were always undefined; top services always empty. Fixed.
+- **Bug: `returningCustomers` went negative** — added `Math.max(0, ...)`.
+- **Bug: no-show color was `#f97316` (orange)** — corrected to `#EF4444` (matches design system).
+- **Bug: `confirmed` status absent from breakdown** — added.
+
 ### Chat 6 — New Booking Flow + entry-point cleanup (2026-06-10) · `65aefa4`
 - **Booking entry points (D5)**: FAB gated to `/calendar` only (was every screen). Clients tab gets an add-customer `+` → `AddCustomerSheet` (name + phone + optional email, with an optional attach-booking step: service + date + time). Empty-state CTA repointed to add-customer.
 - **New-booking wizard rebuilt** to design system (cream page, white cards, amber, cream-2 tokens — was `bg-white`/`gray`/`amber-500`): 4-step progress indicator (Client → Service → Time → Confirm), Back never loses data, success screen with "Go to calendar" / "Add another" (replaced hard redirect).
@@ -91,6 +103,12 @@ Decisions confirmed with the owner. Do not silently reverse — change here firs
 | New booking | Past times shown on today; no "no slots" state; booked slots silently dropped | Fixed (past-filter + empty state + distinct unavailable) |
 | New booking | Hard redirect on success, no confirmation | Fixed (success screen) |
 | Clients | No add-customer entry point | Fixed (`+` header → `AddCustomerSheet`) |
+| Insights | `service:services(price)` query missing `name` — top services always empty | Fixed |
+| Insights | `returningCustomers` could go negative | Fixed (`Math.max(0,...)`) |
+| Insights | No-show status color was `#f97316` (orange, wrong) | Fixed (`#EF4444`) |
+| Insights | `confirmed` status missing from breakdown | Fixed |
+| Insights | Chart Y-axis showed booking count, not revenue | Fixed (revenue by day) |
+| Insights | Page bg was `bg-white` (should be cream) | Fixed |
 
 ---
 
