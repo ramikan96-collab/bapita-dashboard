@@ -3,18 +3,20 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
+import { useToast } from "@/components/Toast";
 import type { Service, BusinessHours, DayKey } from "@/types";
 
-type Tab = "business" | "services" | "hours" | "dates";
+type Tab = "business" | "services" | "hours";
 
-const DAYS: { key: DayKey; label: string }[] = [
-  { key: "monday",    label: "Monday" },
-  { key: "tuesday",   label: "Tuesday" },
-  { key: "wednesday", label: "Wednesday" },
-  { key: "thursday",  label: "Thursday" },
-  { key: "friday",    label: "Friday" },
-  { key: "saturday",  label: "Saturday" },
-  { key: "sunday",    label: "Sunday" },
+// Israeli calendar order: Sun first
+const DAYS: { key: DayKey; label: string; labelShort: string }[] = [
+  { key: "sunday",    label: "ראשון",   labelShort: "א'" },
+  { key: "monday",    label: "שני",     labelShort: "ב'" },
+  { key: "tuesday",   label: "שלישי",   labelShort: "ג'" },
+  { key: "wednesday", label: "רביעי",   labelShort: "ד'" },
+  { key: "thursday",  label: "חמישי",   labelShort: "ה'" },
+  { key: "friday",    label: "שישי",    labelShort: "ו'" },
+  { key: "saturday",  label: "שבת",     labelShort: "ש'" },
 ];
 
 const DEFAULT_HOURS: BusinessHours = {
@@ -22,37 +24,99 @@ const DEFAULT_HOURS: BusinessHours = {
   tuesday:   { open: true,  start: "09:00", end: "19:00" },
   wednesday: { open: true,  start: "09:00", end: "19:00" },
   thursday:  { open: true,  start: "09:00", end: "19:00" },
-  friday:    { open: true,  start: "09:00", end: "19:00" },
-  saturday:  { open: true,  start: "09:00", end: "14:00" },
-  sunday:    { open: false, start: "09:00", end: "17:00" },
+  friday:    { open: true,  start: "09:00", end: "16:00" },
+  saturday:  { open: false, start: "09:00", end: "14:00" },
+  sunday:    { open: true,  start: "09:00", end: "17:00" },
 };
 
-function SetupForm({ supabase, onCreated }: { supabase: ReturnType<typeof import("@/lib/supabase/client").createClient>; onCreated: () => Promise<void> }) {
+function InputField({
+  label,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  readOnly,
+}: {
+  label: string;
+  type?: string;
+  value: string;
+  onChange?: (v: string) => void;
+  placeholder?: string;
+  readOnly?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[13px] font-medium text-dark">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
+        placeholder={placeholder}
+        readOnly={readOnly}
+        className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)]
+          bg-white text-[15px] text-dark placeholder:text-muted
+          focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30
+          transition-colors disabled:opacity-50"
+        style={readOnly ? { opacity: 0.6, cursor: "not-allowed" } : {}}
+      />
+    </div>
+  );
+}
+
+function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      className="w-11 h-6 rounded-full transition-colors shrink-0 relative"
+      style={{ background: on ? "var(--color-amber)" : "var(--color-cream-2)" }}
+      aria-checked={on}
+      role="switch"
+    >
+      <div
+        className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
+        style={{ insetInlineStart: on ? "22px" : "2px" }}
+      />
+    </button>
+  );
+}
+
+function SetupForm({
+  supabase,
+  onCreated,
+}: {
+  supabase: ReturnType<typeof createClient>;
+  onCreated: () => Promise<void>;
+}) {
+  const { showToast } = useToast();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
   async function createBusiness() {
-    if (!name.trim()) { setError("Business name is required"); return; }
+    if (!name.trim()) {
+      showToast("Business name is required", "error");
+      return;
+    }
     setSaving(true);
-    setError("");
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setError("Not logged in"); setSaving(false); return; }
+    if (!user) {
+      showToast("Not logged in", "error");
+      setSaving(false);
+      return;
+    }
 
-    const { error: insertError } = await supabase
-      .from("businesses")
-      .insert({
-        owner_id: user.id,
-        name: name.trim(),
-        phone: phone.trim() || null,
-        address: address.trim() || null,
-      });
+    const { error } = await supabase.from("businesses").insert({
+      owner_id: user.id,
+      name: name.trim(),
+      phone: phone.trim() || null,
+      address: address.trim() || null,
+    });
 
-    if (insertError) {
-      setError(insertError.message);
+    if (error) {
+      showToast(error.message, "error");
       setSaving(false);
       return;
     }
@@ -61,53 +125,24 @@ function SetupForm({ supabase, onCreated }: { supabase: ReturnType<typeof import
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      <div className="shrink-0 px-4 py-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
-        <h1 className="text-xl font-black" style={{ color: "var(--color-dark)" }}>Set up your business</h1>
-        <p className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>Fill in your details to get started</p>
+    <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
+      <div className="shrink-0 px-4 pt-6 pb-4 border-b border-[var(--color-cream-2)] bg-white">
+        <h1 className="text-[28px] font-extrabold leading-tight text-dark">הגדרת העסק</h1>
+        <p className="text-[15px] mt-1 text-muted">מלא את הפרטים כדי להתחיל</p>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div>
-          <label className="text-sm font-bold mb-1 block">Business name *</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Dana Hair Studio"
-            className="w-full px-4 py-3 rounded-xl border"
-            style={{ borderColor: "var(--color-cream-2)" }}
-          />
+        <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] space-y-4">
+          <InputField label="שם העסק *" value={name} onChange={setName} placeholder='לדוגמה: סטודיו שיער דנה' />
+          <InputField label="טלפון" type="tel" value={phone} onChange={setPhone} placeholder="050-000-0000" />
+          <InputField label="כתובת" value={address} onChange={setAddress} placeholder="רחוב, עיר" />
         </div>
-        <div>
-          <label className="text-sm font-bold mb-1 block">Phone</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="050-000-0000"
-            className="w-full px-4 py-3 rounded-xl border"
-            style={{ borderColor: "var(--color-cream-2)" }}
-          />
-        </div>
-        <div>
-          <label className="text-sm font-bold mb-1 block">Address</label>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Street, City"
-            className="w-full px-4 py-3 rounded-xl border"
-            style={{ borderColor: "var(--color-cream-2)" }}
-          />
-        </div>
-        {error && <p className="text-sm text-red-500">{error}</p>}
         <button
           onClick={createBusiness}
           disabled={saving || !name.trim()}
-          className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50"
-          style={{ background: "var(--color-amber)" }}
+          className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white
+            bg-amber hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
         >
-          {saving ? "Creating..." : "Create business"}
+          {saving ? "יוצר..." : "צור עסק"}
         </button>
       </div>
     </div>
@@ -116,6 +151,7 @@ function SetupForm({ supabase, onCreated }: { supabase: ReturnType<typeof import
 
 export default function SettingsPage() {
   const { business, loading: bizLoading, refresh } = useBusiness();
+  const { showToast } = useToast();
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState<Tab>("business");
   const [saving, setSaving] = useState(false);
@@ -125,93 +161,90 @@ export default function SettingsPage() {
   const [businessName, setBusinessName] = useState("");
   const [businessPhone, setBusinessPhone] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
-  const [instagramUrl, setInstagramUrl] = useState("");
-  const [googleReviewLink, setGoogleReviewLink] = useState("");
-  
+  const [businessSlug, setBusinessSlug] = useState("");
+
   const [services, setServices] = useState<Service[]>([]);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [newServiceName, setNewServiceName] = useState("");
   const [newServiceDuration, setNewServiceDuration] = useState(30);
   const [newServicePrice, setNewServicePrice] = useState(100);
+  const [savingService, setSavingService] = useState(false);
 
   useEffect(() => {
     if (business) {
       setBusinessName(business.name || "");
       setBusinessPhone(business.phone || "");
       setBusinessAddress(business.address || "");
-      setInstagramUrl(business.instagram_url || "");
-      setGoogleReviewLink(business.google_review_link || "");
+      setBusinessSlug(business.slug || "");
       if (business.business_hours) setHours(business.business_hours);
     }
   }, [business]);
 
   useEffect(() => {
     if (!business) return;
-    
-    async function fetchServices() {
-      if (!business) return;
-      const { data } = await supabase
-        .from("services")
-        .select("*")
-        .eq("business_id", business.id)
-        .order("display_order");
-
-      setServices(data || []);
-    }
-
-    fetchServices();
+    supabase
+      .from("services")
+      .select("*")
+      .eq("business_id", business.id)
+      .order("display_order")
+      .then(({ data }) => setServices(data || []));
   }, [business, supabase]);
 
   async function saveBusinessInfo() {
     if (!business) return;
     setSaving(true);
-    
-    await supabase
+    const { error } = await supabase
       .from("businesses")
       .update({
         name: businessName,
-        phone: businessPhone,
-        address: businessAddress,
-        instagram_url: instagramUrl || null,
-        google_review_link: googleReviewLink || null,
+        phone: businessPhone || null,
+        address: businessAddress || null,
+        slug: businessSlug || null,
       })
       .eq("id", business.id);
-    
     setSaving(false);
-    await refresh();
-    alert("Business info saved");
+    if (error) {
+      showToast("שגיאה בשמירה", "error");
+    } else {
+      await refresh();
+      showToast("הפרטים נשמרו בהצלחה", "success");
+    }
   }
 
   async function saveHours() {
     if (!business) return;
     setSavingHours(true);
-    await supabase.from("businesses").update({ business_hours: hours }).eq("id", business.id);
+    const { error } = await supabase
+      .from("businesses")
+      .update({ business_hours: hours })
+      .eq("id", business.id);
     setSavingHours(false);
-    await refresh();
-    alert("Hours saved");
+    if (error) {
+      showToast("שגיאה בשמירה", "error");
+    } else {
+      await refresh();
+      showToast("שעות הפעילות נשמרו", "success");
+    }
   }
 
   async function addService() {
-    if (!business || !newServiceName) return;
-    setSaving(true);
-    
-    const { error } = await supabase
-      .from("services")
-      .insert({
-        business_id: business.id,
-        name: newServiceName,
-        duration: newServiceDuration,
-        price: newServicePrice,
-        active: true,
-        display_order: services.length,
-      });
-    
-    if (!error) {
+    if (!business || !newServiceName.trim()) return;
+    setSavingService(true);
+    const { error } = await supabase.from("services").insert({
+      business_id: business.id,
+      name: newServiceName.trim(),
+      duration: newServiceDuration,
+      price: newServicePrice,
+      active: true,
+      display_order: services.length,
+    });
+    if (error) {
+      showToast("שגיאה בהוספת שירות", "error");
+    } else {
       setNewServiceName("");
       setNewServiceDuration(30);
       setNewServicePrice(100);
       setShowServiceForm(false);
-      
       const { data } = await supabase
         .from("services")
         .select("*")
@@ -219,37 +252,28 @@ export default function SettingsPage() {
         .order("display_order");
       setServices(data || []);
     }
-    
-    setSaving(false);
+    setSavingService(false);
   }
 
   async function deleteService(serviceId: string) {
-    if (!confirm("Delete this service?")) return;
-    
-    await supabase
-      .from("services")
-      .delete()
-      .eq("id", serviceId);
-    
-    setServices(services.filter(s => s.id !== serviceId));
+    await supabase.from("services").delete().eq("id", serviceId);
+    setServices((prev) => prev.filter((s) => s.id !== serviceId));
   }
 
   async function toggleServiceActive(serviceId: string, currentActive: boolean) {
-    await supabase
-      .from("services")
-      .update({ active: !currentActive })
-      .eq("id", serviceId);
-    
-    setServices(services.map(s => 
-      s.id === serviceId ? { ...s, active: !currentActive } : s
-    ));
+    await supabase.from("services").update({ active: !currentActive }).eq("id", serviceId);
+    setServices((prev) =>
+      prev.map((s) => (s.id === serviceId ? { ...s, active: !currentActive } : s))
+    );
   }
 
   if (bizLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
-             style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
+      <div className="flex h-full items-center justify-center" style={{ background: "var(--color-cream)" }}>
+        <div
+          className="w-6 h-6 rounded-full border-2 animate-spin"
+          style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }}
+        />
       </div>
     );
   }
@@ -258,143 +282,275 @@ export default function SettingsPage() {
     return <SetupForm supabase={supabase} onCreated={refresh} />;
   }
 
+  const tabs = [
+    { id: "business" as Tab, label: "פרטי העסק" },
+    { id: "services" as Tab, label: "שירותים" },
+    { id: "hours" as Tab, label: "שעות פעילות" },
+  ];
+
   return (
-    <div className="flex flex-col h-full bg-white">
-      <div className="shrink-0 px-4 py-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
-        <h1 className="text-xl font-black" style={{ color: "var(--color-dark)" }}>Settings</h1>
+    <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
+      {/* Header */}
+      <div className="shrink-0 px-4 pt-5 pb-0 bg-white border-b border-[var(--color-cream-2)]">
+        <h1 className="text-[28px] font-extrabold leading-tight text-dark mb-4">הגדרות</h1>
+        {/* Tabs */}
+        <div className="flex gap-0 overflow-x-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className="px-4 pb-3 pt-1 text-[14px] font-semibold whitespace-nowrap transition-colors relative"
+              style={{
+                color: activeTab === tab.id ? "var(--color-dark)" : "var(--color-muted)",
+              }}
+            >
+              {tab.label}
+              {activeTab === tab.id && (
+                <span
+                  className="absolute bottom-0 start-2 end-2 h-0.5 rounded-full"
+                  style={{ background: "var(--color-amber)" }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
       </div>
-      
-      <div className="shrink-0 px-4 py-2 border-b flex gap-1 overflow-x-auto" style={{ borderColor: "var(--color-cream-2)" }}>
-        {[
-          { id: "business", label: "Business" },
-          { id: "services", label: "Services" },
-          { id: "hours", label: "Hours" },
-          { id: "dates", label: "Blocked dates" },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as Tab)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              activeTab === tab.id ? "text-white" : "opacity-60"
-            }`}
-            style={{
-              background: activeTab === tab.id ? "var(--color-amber)" : "transparent",
-              color: activeTab === tab.id ? "#fff" : "var(--color-dark)",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      
-      <div className="flex-1 overflow-y-auto p-4">
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* ─── Business Info ─── */}
         {activeTab === "business" && (
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-bold mb-1 block">Business name</label>
-              <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} className="w-full px-4 py-3 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }} />
-            </div>
-            <div>
-              <label className="text-sm font-bold mb-1 block">Phone</label>
-              <input type="tel" value={businessPhone} onChange={(e) => setBusinessPhone(e.target.value)} className="w-full px-4 py-3 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }} />
-            </div>
-            <div>
-              <label className="text-sm font-bold mb-1 block">Address</label>
-              <input type="text" value={businessAddress} onChange={(e) => setBusinessAddress(e.target.value)} className="w-full px-4 py-3 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }} />
-            </div>
-            <div>
-              <label className="text-sm font-bold mb-1 block">Instagram URL (optional)</label>
-              <input type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/yourbusiness" className="w-full px-4 py-3 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }} />
-            </div>
-            <div>
-              <label className="text-sm font-bold mb-1 block">Google review link (optional)</label>
-              <input type="url" value={googleReviewLink} onChange={(e) => setGoogleReviewLink(e.target.value)} placeholder="https://g.page/r/.../review" className="w-full px-4 py-3 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }} />
-            </div>
-            <button onClick={saveBusinessInfo} disabled={saving} className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50" style={{ background: "var(--color-amber)" }}>{saving ? "Saving..." : "Save changes"}</button>
-          </div>
-        )}
-        
-        {activeTab === "services" && (
-          <div className="space-y-3">
-            {services.map((service) => (
-              <div key={service.id} className="flex items-center gap-3 p-3 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }}>
-                <div className="flex-1">
-                  <div className="font-bold">{service.name}</div>
-                  <div className="text-xs opacity-60">{service.duration} min · ₪{service.price}</div>
+            <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] space-y-4">
+              <InputField label="שם העסק" value={businessName} onChange={setBusinessName} placeholder='לדוגמה: סטודיו שיער דנה' />
+              <InputField label="טלפון" type="tel" value={businessPhone} onChange={setBusinessPhone} placeholder="050-000-0000" />
+              <InputField label="כתובת" value={businessAddress} onChange={setBusinessAddress} placeholder="רחוב, עיר" />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-dark">כתובת דף ההזמנה</label>
+                <div className="flex items-center h-12 rounded-[10px] border border-[var(--color-cream-2)] bg-white overflow-hidden
+                  focus-within:border-amber focus-within:ring-1 focus-within:ring-amber/30 transition-colors">
+                  <span className="px-3 text-[13px] font-medium text-muted bg-[var(--color-cream)] border-e border-[var(--color-cream-2)] h-full flex items-center shrink-0">
+                    bapita.com/
+                  </span>
+                  <input
+                    type="text"
+                    value={businessSlug}
+                    onChange={(e) => setBusinessSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                    placeholder="slug-שלך"
+                    className="flex-1 h-full px-3 text-[15px] text-dark placeholder:text-muted bg-transparent outline-none"
+                  />
                 </div>
-                <button onClick={() => toggleServiceActive(service.id, service.active)} className={`px-3 py-1 rounded-lg text-xs font-bold ${service.active ? "bg-green-500 text-white" : "bg-gray-200 text-gray-600"}`}>{service.active ? "Active" : "Inactive"}</button>
-                <button onClick={() => deleteService(service.id)} className="text-red-500 text-xl">×</button>
+                <p className="text-[12px] text-muted">רק אותיות לטיניות קטנות, מספרים ומקפים</p>
               </div>
-            ))}
-            
-            {showServiceForm ? (
-              <div className="p-4 rounded-xl border-2" style={{ borderColor: "var(--color-amber)" }}>
-                <input type="text" value={newServiceName} onChange={(e) => setNewServiceName(e.target.value)} placeholder="Service name" className="w-full px-4 py-2 rounded-lg border mb-2" />
-                <div className="flex gap-2 mb-2">
-                  <input type="number" value={newServiceDuration} onChange={(e) => setNewServiceDuration(parseInt(e.target.value))} placeholder="Duration (min)" className="flex-1 px-4 py-2 rounded-lg border" />
-                  <input type="number" value={newServicePrice} onChange={(e) => setNewServicePrice(parseInt(e.target.value))} placeholder="Price (₪)" className="flex-1 px-4 py-2 rounded-lg border" />
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={addService} disabled={saving || !newServiceName} className="flex-1 py-2 rounded-lg text-sm font-bold text-white disabled:opacity-50" style={{ background: "var(--color-amber)" }}>Add</button>
-                  <button onClick={() => setShowServiceForm(false)} className="flex-1 py-2 rounded-lg text-sm font-bold" style={{ background: "var(--color-cream-2)" }}>Cancel</button>
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => setShowServiceForm(true)} className="w-full py-3 rounded-xl text-sm font-bold" style={{ background: "var(--color-cream-2)", color: "var(--color-dark)" }}>+ Add service</button>
-            )}
-          </div>
-        )}
-        
-        {activeTab === "hours" && (
-          <div className="space-y-3">
-            {DAYS.map(({ key, label }) => (
-              <div key={key} className="flex items-center gap-3 p-3 rounded-xl border" style={{ borderColor: "var(--color-cream-2)" }}>
-                <button
-                  onClick={() => setHours(h => ({ ...h, [key]: { ...h[key], open: !h[key].open } }))}
-                  className="w-11 h-6 rounded-full transition-colors shrink-0 relative"
-                  style={{ background: hours[key].open ? "var(--color-amber)" : "var(--color-cream-2)" }}
-                >
-                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${hours[key].open ? "left-5" : "left-0.5"}`} />
-                </button>
-                <div className="w-24 text-sm font-medium" style={{ color: hours[key].open ? "var(--color-dark)" : "var(--color-muted)" }}>
-                  {label}
-                </div>
-                {hours[key].open ? (
-                  <div className="flex items-center gap-2 text-sm">
-                    <input
-                      type="time"
-                      value={hours[key].start}
-                      onChange={(e) => setHours(h => ({ ...h, [key]: { ...h[key], start: e.target.value } }))}
-                      className="px-2 py-1 rounded-lg border text-sm"
-                      style={{ borderColor: "var(--color-cream-2)" }}
-                    />
-                    <span style={{ color: "var(--color-muted)" }}>to</span>
-                    <input
-                      type="time"
-                      value={hours[key].end}
-                      onChange={(e) => setHours(h => ({ ...h, [key]: { ...h[key], end: e.target.value } }))}
-                      className="px-2 py-1 rounded-lg border text-sm"
-                      style={{ borderColor: "var(--color-cream-2)" }}
-                    />
-                  </div>
-                ) : (
-                  <span className="text-sm" style={{ color: "var(--color-muted)" }}>Closed</span>
-                )}
-              </div>
-            ))}
+            </div>
             <button
-              onClick={saveHours}
-              disabled={savingHours}
-              className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50"
-              style={{ background: "var(--color-amber)" }}
+              onClick={saveBusinessInfo}
+              disabled={saving}
+              className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white
+                bg-amber hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
             >
-              {savingHours ? "Saving..." : "Save hours"}
+              {saving ? "שומר..." : "שמור שינויים"}
             </button>
           </div>
         )}
-        
-        {activeTab === "dates" && (
-          <p className="text-sm text-center opacity-60 py-8">Blocked dates (holidays, vacations) coming soon.<br />Contact support to block dates.</p>
+
+        {/* ─── Services ─── */}
+        {activeTab === "services" && (
+          <div className="space-y-3">
+            {services.length === 0 && !showServiceForm && (
+              <div className="bg-white rounded-2xl p-8 text-center shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
+                <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center"
+                  style={{ background: "rgba(232,146,10,0.1)" }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                  </svg>
+                </div>
+                <p className="text-[15px] font-semibold text-dark mb-1">אין שירותים עדיין</p>
+                <p className="text-[13px] text-muted">הוסף את השירותים שאתה מציע</p>
+              </div>
+            )}
+
+            {services.map((service) => (
+              <div
+                key={service.id}
+                className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[15px] font-semibold text-dark truncate">{service.name}</div>
+                    <div className="text-[13px] text-muted mt-0.5">
+                      {service.duration} דקות · ₪{service.price}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => toggleServiceActive(service.id, service.active)}
+                      className="px-3 py-1 rounded-full text-[12px] font-medium transition-colors"
+                      style={
+                        service.active
+                          ? { background: "rgba(34,197,94,0.12)", color: "#16A34A" }
+                          : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
+                      }
+                    >
+                      {service.active ? "פעיל" : "לא פעיל"}
+                    </button>
+                    <button
+                      onClick={() => deleteService(service.id)}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors hover:bg-[#EF4444]/8"
+                      style={{ color: "#EF4444" }}
+                      aria-label="מחק שירות"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {showServiceForm ? (
+              <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] space-y-3">
+                <h3 className="text-[16px] font-bold text-dark">שירות חדש</h3>
+                <InputField
+                  label="שם השירות"
+                  value={newServiceName}
+                  onChange={setNewServiceName}
+                  placeholder='לדוגמה: תספורת גברים'
+                />
+                <div className="flex gap-3">
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <label className="text-[13px] font-medium text-dark">משך (דקות)</label>
+                    <input
+                      type="number"
+                      value={newServiceDuration}
+                      onChange={(e) => setNewServiceDuration(parseInt(e.target.value) || 30)}
+                      min={5}
+                      step={5}
+                      className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)]
+                        bg-white text-[15px] text-dark focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+                    />
+                  </div>
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <label className="text-[13px] font-medium text-dark">מחיר (₪)</label>
+                    <input
+                      type="number"
+                      value={newServicePrice}
+                      onChange={(e) => setNewServicePrice(parseInt(e.target.value) || 0)}
+                      min={0}
+                      className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)]
+                        bg-white text-[15px] text-dark focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={addService}
+                    disabled={savingService || !newServiceName.trim()}
+                    className="flex-1 py-3 rounded-xl text-[15px] font-semibold text-white
+                      bg-amber hover:bg-[#D4830A] transition-colors disabled:opacity-50"
+                  >
+                    {savingService ? "מוסיף..." : "הוסף שירות"}
+                  </button>
+                  <button
+                    onClick={() => { setShowServiceForm(false); setNewServiceName(""); }}
+                    className="flex-1 py-3 rounded-xl text-[15px] font-medium text-dark
+                      bg-transparent border border-[var(--color-cream-2)] hover:bg-cream transition-colors"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowServiceForm(true)}
+                className="w-full py-3.5 rounded-xl text-[15px] font-semibold flex items-center justify-center gap-2
+                  bg-white border border-[var(--color-cream-2)] text-dark
+                  hover:border-amber hover:text-amber transition-colors
+                  shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                הוסף שירות
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ─── Business Hours ─── */}
+        {activeTab === "hours" && (
+          <div className="space-y-3">
+            <div className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
+              {DAYS.map(({ key, label }, idx) => (
+                <div
+                  key={key}
+                  className="flex items-center gap-3 px-4 py-3"
+                  style={{
+                    borderBottom: idx < DAYS.length - 1 ? "1px solid var(--color-cream-2)" : "none",
+                    background: hours[key].open ? "white" : "var(--color-cream)",
+                  }}
+                >
+                  <Toggle
+                    on={hours[key].open}
+                    onChange={() =>
+                      setHours((h) => ({
+                        ...h,
+                        [key]: { ...h[key], open: !h[key].open },
+                      }))
+                    }
+                  />
+                  <span
+                    className="w-14 text-[15px] font-semibold shrink-0"
+                    style={{ color: hours[key].open ? "var(--color-dark)" : "var(--color-muted)" }}
+                  >
+                    {label}
+                  </span>
+                  {hours[key].open ? (
+                    <div className="flex items-center gap-2 flex-1 justify-end">
+                      <input
+                        type="time"
+                        value={hours[key].start}
+                        onChange={(e) =>
+                          setHours((h) => ({
+                            ...h,
+                            [key]: { ...h[key], start: e.target.value },
+                          }))
+                        }
+                        className="h-9 px-2 rounded-[8px] border border-[var(--color-cream-2)]
+                          text-[14px] text-dark focus:outline-none focus:border-amber transition-colors"
+                      />
+                      <span className="text-[13px] text-muted">–</span>
+                      <input
+                        type="time"
+                        value={hours[key].end}
+                        onChange={(e) =>
+                          setHours((h) => ({
+                            ...h,
+                            [key]: { ...h[key], end: e.target.value },
+                          }))
+                        }
+                        className="h-9 px-2 rounded-[8px] border border-[var(--color-cream-2)]
+                          text-[14px] text-dark focus:outline-none focus:border-amber transition-colors"
+                      />
+                    </div>
+                  ) : (
+                    <span className="flex-1 text-end text-[13px] text-muted">סגור</span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={saveHours}
+              disabled={savingHours}
+              className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white
+                bg-amber hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
+            >
+              {savingHours ? "שומר..." : "שמור שעות"}
+            </button>
+          </div>
         )}
       </div>
     </div>

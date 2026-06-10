@@ -1,121 +1,184 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/Toast";
 
 export default function ProfilePage() {
   const router = useRouter();
   const supabase = createClient();
-  const [currentPassword, setCurrentPassword] = useState("");
+  const { showToast } = useToast();
+  const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setEmail(data.user.email);
+    });
+  }, [supabase]);
 
   async function updatePassword() {
     if (newPassword !== confirmPassword) {
-      setMessage({ type: "error", text: "New passwords don't match" });
+      showToast("הסיסמאות אינן תואמות", "error");
       return;
     }
-    
     if (newPassword.length < 6) {
-      setMessage({ type: "error", text: "Password must be at least 6 characters" });
+      showToast("הסיסמה חייבת להכיל לפחות 6 תווים", "error");
       return;
     }
-    
     setLoading(true);
-    setMessage(null);
-    
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-    
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setLoading(false);
     if (error) {
-      setMessage({ type: "error", text: error.message });
+      showToast(error.message, "error");
     } else {
-      setMessage({ type: "success", text: "Password updated successfully" });
-      setCurrentPassword("");
+      showToast("הסיסמה עודכנה בהצלחה", "success");
       setNewPassword("");
       setConfirmPassword("");
     }
-    
-    setLoading(false);
   }
 
   return (
-    <div className="flex flex-col h-full bg-white overflow-y-auto">
+    <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
       {/* Header */}
-      <div className="shrink-0 px-4 py-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
-        <h1 className="text-xl font-black" style={{ color: "var(--color-dark)" }}>Profile</h1>
-        <p className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>
-          Manage your account settings
-        </p>
+      <div className="shrink-0 px-4 pt-5 pb-4 border-b border-[var(--color-cream-2)] bg-white">
+        <h1 className="text-[28px] font-extrabold leading-tight text-dark">פרופיל</h1>
+        <p className="text-[15px] mt-1 text-muted">ניהול חשבון</p>
       </div>
-      
-      <div className="flex-1 p-4 space-y-6">
-        {/* Email Section */}
-        <div className="p-4 rounded-xl" style={{ background: "var(--color-cream-2)" }}>
-          <div className="text-sm font-bold mb-1" style={{ color: "var(--color-dark)" }}>Email address</div>
-          <div className="text-sm opacity-60">Your email is managed by Supabase. Contact support to change it.</div>
-        </div>
-        
-        {/* Change Password Section */}
-        <div className="space-y-4">
-          <h2 className="text-sm font-bold" style={{ color: "var(--color-dark)" }}>Change password</h2>
-          
-          {message && (
-            <div className={`p-3 rounded-lg text-sm ${
-              message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-            }`}>
-              {message.text}
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Email card */}
+        <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              style={{ background: "rgba(232,146,10,0.12)" }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
             </div>
-          )}
-          
-          <div>
-            <label className="text-sm font-bold mb-1 block">New password</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border"
-              style={{ borderColor: "var(--color-cream-2)" }}
-              placeholder="Minimum 6 characters"
-            />
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-medium text-muted">כתובת מייל</div>
+              <div className="text-[15px] font-semibold text-dark truncate mt-0.5">
+                {email || "..."}
+              </div>
+            </div>
+            <span className="text-[12px] font-medium px-2.5 py-0.5 rounded-full"
+              style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}>
+              קריאה בלבד
+            </span>
           </div>
-          
-          <div>
-            <label className="text-sm font-bold mb-1 block">Confirm new password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border"
-              style={{ borderColor: "var(--color-cream-2)" }}
-            />
+        </div>
+
+        {/* Password change */}
+        <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] space-y-4">
+          <h2 className="text-[18px] font-bold text-dark">שינוי סיסמה</h2>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-dark">סיסמה חדשה</label>
+            <div className="relative">
+              <input
+                type={showNew ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="לפחות 6 תווים"
+                className="h-12 w-full px-4 pe-11 rounded-[10px] border border-[var(--color-cream-2)]
+                  bg-white text-[15px] text-dark placeholder:text-muted
+                  focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew((v) => !v)}
+                className="absolute inset-y-0 end-3 flex items-center text-muted hover:text-dark transition-colors"
+              >
+                {showNew ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
-          
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-dark">אישור סיסמה</label>
+            <div className="relative">
+              <input
+                type={showConfirm ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="חזור על הסיסמה החדשה"
+                className="h-12 w-full px-4 pe-11 rounded-[10px] border border-[var(--color-cream-2)]
+                  bg-white text-[15px] text-dark placeholder:text-muted
+                  focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+                style={
+                  confirmPassword && newPassword !== confirmPassword
+                    ? { borderColor: "#EF4444" }
+                    : {}
+                }
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm((v) => !v)}
+                className="absolute inset-y-0 end-3 flex items-center text-muted hover:text-dark transition-colors"
+              >
+                {showConfirm ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                )}
+              </button>
+            </div>
+            {confirmPassword && newPassword !== confirmPassword && (
+              <p className="text-[12px]" style={{ color: "#EF4444" }}>הסיסמאות אינן תואמות</p>
+            )}
+          </div>
+
           <button
             onClick={updatePassword}
-            disabled={loading || !newPassword}
-            className="w-full py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50"
-            style={{ background: "var(--color-amber)" }}
+            disabled={loading || !newPassword || newPassword !== confirmPassword}
+            className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white
+              bg-amber hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
           >
-            {loading ? "Updating..." : "Update password"}
+            {loading ? "מעדכן..." : "עדכן סיסמה"}
           </button>
         </div>
-        
-        {/* Sign Out Section */}
-        <div className="pt-4 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
+
+        {/* Sign out */}
+        <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
           <button
             onClick={async () => {
               await supabase.auth.signOut();
               router.push("/login");
             }}
-            className="w-full py-3 rounded-xl text-sm font-bold"
-            style={{ background: "#ef4444", color: "#fff" }}
+            className="w-full py-3.5 rounded-xl text-[15px] font-medium flex items-center justify-center gap-2
+              text-[#EF4444] border border-[#EF4444]/30 hover:bg-[#EF4444]/8 transition-colors"
           >
-            Sign out
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            התנתקות
           </button>
         </div>
       </div>
