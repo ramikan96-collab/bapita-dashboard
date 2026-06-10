@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   });
 
   const { error } = await resend.emails.send({
-    from: "Bapita <bookings@bapita.com>",
+    from: "Bapita <noreply@bapita.com>",
     to: customerEmail,
     subject: `Booking confirmed - ${esc(businessName)}`,
     html: `
