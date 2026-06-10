@@ -451,8 +451,121 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         </button>
       )}
 
+      {/* ─── Left Sidebar (Calendar only) ────────────────────────────── */}
+      {onCalendar && chrome && (
+        <aside
+          className="hidden md:flex flex-col fixed top-12 start-0 bottom-0 w-64 z-20 border-e overflow-y-auto"
+          style={{ 
+            background: "var(--color-cream)",
+            borderColor: "var(--color-cream-2)",
+            paddingTop: 40,
+          }}
+        >
+          {/* +Create button */}
+          <div className="px-3 pb-4">
+            <button
+              onClick={() => router.push("/new-booking")}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white font-semibold text-[14px] transition-all hover:brightness-105 active:scale-[0.98]"
+              style={{ background: "var(--color-amber)" }}
+            >
+              <IconPlus size={18} />
+              New Booking
+            </button>
+          </div>
+
+          {/* Mini calendar / date picker */}
+          <div className="px-3 pb-4">
+            <button
+              onClick={chrome.openDatePicker}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border text-[14px] font-medium transition-colors hover:bg-cream"
+              style={{ borderColor: "var(--color-cream-2)", color: "var(--color-dark)" }}
+            >
+              <IconCalendar size={16} />
+              {chrome.monthYear}
+              <IconChevronDown size={14} />
+            </button>
+          </div>
+
+          <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
+
+          {/* View toggles */}
+          <div className="px-3 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--color-muted)" }}>
+              View
+            </div>
+            <div className="flex rounded-xl p-0.5" style={{ background: "var(--color-cream-2)" }}>
+              {calViews.map((v) => {
+                const active = chrome.view === v.value;
+                return (
+                  <button
+                    key={v.value}
+                    onClick={() => chrome.setView(v.value)}
+                    className="flex-1 py-2 rounded-[10px] text-[13px] font-bold transition-colors"
+                    style={{
+                      background: active ? "var(--color-amber)" : "transparent",
+                      color: active ? "#fff" : "var(--color-muted)",
+                    }}
+                  >
+                    {v.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
+
+          {/* Status filter */}
+          <div className="px-3 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--color-muted)" }}>
+              Filter
+            </div>
+            <div className="space-y-0.5">
+              {filterOptions.map((opt) => {
+                const active = chrome.statusFilter === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => chrome.setStatusFilter(opt.value)}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[13px] text-start transition-colors hover:bg-cream-2"
+                    style={{
+                      background: active ? "rgba(232,146,10,0.08)" : "transparent",
+                      color: active ? "var(--color-amber)" : "var(--color-dark)",
+                      fontWeight: active ? 600 : 400,
+                    }}
+                  >
+                    {opt.label}
+                    {active && (
+                      <span style={{ color: "var(--color-amber)" }}>
+                        <IconCheck size={14} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Jump to today */}
+          {!chrome.isToday && (
+            <>
+              <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
+              <div className="px-3 py-2">
+                <button
+                  onClick={chrome.onToday}
+                  className="w-full px-3 py-2 rounded-xl text-[13px] font-medium text-start transition-colors hover:bg-cream-2"
+                  style={{ color: "var(--color-amber)" }}
+                >
+                  Jump to today
+                </button>
+              </div>
+            </>
+          )}
+        </aside>
+      )}
+
       {/* ─── Main Content ─────────────────────────────────────────────── */}
-      <main className="pt-28 pb-16 md:pt-28 md:pb-0 h-full">{children}</main>
+      <main className={`pt-28 pb-16 md:pt-28 md:pb-0 h-full ${onCalendar ? "md:ps-64" : ""}`}>{children}</main>
 
       {/* ─── Hamburger Drawer (slide from end/right) ──────────────────── */}
       <div
