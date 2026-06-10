@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
@@ -52,8 +52,11 @@ interface AvailableSlot {
   available: boolean;
 }
 
-export default function NewBookingPage() {
+function NewBookingInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const dateParam = searchParams.get("date"); // yyyy-MM-dd, from tap-to-book
+  const timeParam = searchParams.get("time"); // HH:MM, from tap-to-book
   const { business, loading: bizLoading } = useBusiness();
   const supabase = createClient();
 
@@ -71,8 +74,8 @@ export default function NewBookingPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(dateParam ? parseISO(dateParam) : new Date());
+  const [selectedTime, setSelectedTime] = useState<string | null>(timeParam ?? null);
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   
@@ -106,7 +109,7 @@ export default function NewBookingPage() {
       if (!business) return;
       const { data } = await supabase
         .from("services")
-        .select("*")
+        .select("id, name, duration:duration_minutes, price:price_nis, active, display_order, business_id")
         .eq("business_id", business.id)
         .eq("active", true)
         .order("display_order");
@@ -126,7 +129,7 @@ export default function NewBookingPage() {
 
       const { data: existingBookings } = await supabase
         .from("bookings")
-        .select("appointment_time, service:services(duration)")
+        .select("appointment_time, service:services(duration:duration_minutes)")
         .eq("business_id", business.id)
         .eq("appointment_date", format(selectedDate, "yyyy-MM-dd"))
         .not("status", "eq", "cancelled");
@@ -465,5 +468,18 @@ export default function NewBookingPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function NewBookingPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-full items-center justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
+             style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
+      </div>
+    }>
+      <NewBookingInner />
+    </Suspense>
   );
 }

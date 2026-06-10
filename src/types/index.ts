@@ -56,6 +56,15 @@ export interface Business {
   business_hours?: BusinessHours;
 }
 
+export interface BlockedTime {
+  id: string;
+  business_id: string;
+  block_date: string;  // yyyy-MM-dd
+  start_time: string;  // "HH:MM[:SS]"
+  end_time: string;    // "HH:MM[:SS]"
+  label: string | null;
+}
+
 export interface Customer {
   id: string;
   business_id: string;

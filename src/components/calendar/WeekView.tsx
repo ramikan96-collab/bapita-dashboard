@@ -1,164 +1,255 @@
 "use client";
 
-import { useMemo } from "react";
-import { startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, format } from "date-fns";
-import type { Booking } from "@/types";
-import { STATUS_COLOR, STATUS_BG } from "@/types";
-
-const GRID_START = 8 * 60;
-const GRID_END   = 20 * 60;
-const PX_PER_MIN = 1.2;
-const HOUR_H     = 60 * PX_PER_MIN;
-const TOTAL_H    = (GRID_END - GRID_START) * PX_PER_MIN;
-const HOURS      = Array.from({ length: 13 }, (_, i) => 8 + i);
-const COL_W      = 44; // px per day column
-const TIME_W     = 36; // px for time label column
-
-function timeToMins(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
+import { useMemo, useRef, useEffect } from "react";
+import {
+  startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, format,
+} from "date-fns";
+import type { Booking, BlockedTime } from "@/types";
+import { STATUS_COLOR } from "@/types";
+import {
+  PX_PER_HOUR, PX_PER_MIN, TOTAL_H, HOURS, GRID_LINE, GRID_LINE_HALF,
+  timeToMins, firstName, packLanes, useGridGestures, useSwipe,
+} from "./grid";
 
 interface Props {
   date: Date;
   bookings: Booking[];
+  blocked: BlockedTime[];
+  openHour: number;
   onSelectBooking: (b: Booking) => void;
+  onCreateAt: (date: Date, mins: number) => void;
+  onLongPressAt: (date: Date, mins: number) => void;
+  onBlockClick: (b: BlockedTime) => void;
   onSelectDay: (d: Date) => void;
+  onPrev: () => void;
+  onNext: () => void;
 }
 
-export default function WeekView({ date, bookings, onSelectBooking, onSelectDay }: Props) {
+export default function WeekView({
+  date, bookings, blocked, openHour,
+  onSelectBooking, onCreateAt, onLongPressAt, onBlockClick, onSelectDay, onPrev, onNext,
+}: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const weekStart = startOfWeek(date, { weekStartsOn: 1 });
   const weekEnd   = endOfWeek(date, { weekStartsOn: 1 });
   const days      = eachDayOfInterval({ start: weekStart, end: weekEnd });
   const today     = new Date();
+  const nowMins   = today.getHours() * 60 + today.getMinutes();
 
+  const swipe = useSwipe(onNext, onPrev);
+
+  // Bucket bookings + blocked by day key once.
   const byDay = useMemo(() => {
-    const map: Record<string, Booking[]> = {};
-    bookings.forEach((b) => {
-      const key = b.appointment_date;
-      if (!map[key]) map[key] = [];
-      map[key].push(b);
-    });
+    const map: Record<string, { bookings: Booking[]; blocked: BlockedTime[] }> = {};
+    for (const b of bookings) {
+      (map[b.appointment_date] ??= { bookings: [], blocked: [] }).bookings.push(b);
+    }
+    for (const bl of blocked) {
+      (map[bl.block_date] ??= { bookings: [], blocked: [] }).blocked.push(bl);
+    }
     return map;
-  }, [bookings]);
+  }, [bookings, blocked]);
+
+  // Auto-scroll to opening hour on mount / week change.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: Math.max(0, openHour * PX_PER_HOUR - 32) });
+  }, [openHour, weekStart.getTime()]);
 
   return (
-    <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: "calc(100vh - 120px)" }}>
-      <div style={{ width: TIME_W + days.length * COL_W, minWidth: "100%" }}>
-        {/* Day header row */}
-        <div className="flex sticky top-0 z-20" style={{ background: "var(--color-cream)", borderBottom: "1px solid var(--color-cream-2)" }}>
-          <div style={{ width: TIME_W }} />
-          {days.map((day) => {
-            const isToday = isSameDay(day, today);
-            return (
-              <button
-                key={day.toISOString()}
-                onClick={() => onSelectDay(day)}
-                style={{
-                  width: COL_W,
-                  padding: "6px 0",
-                  textAlign: "center",
-                  fontSize: 10,
-                  fontWeight: isToday ? 800 : 600,
-                  color: isToday ? "var(--color-amber)" : "var(--color-muted)",
-                  borderLeft: "1px solid var(--color-cream-2)",
-                }}
+    <div
+      ref={scrollRef}
+      className="h-full overflow-y-auto overscroll-contain"
+      style={{ background: "var(--color-cream)" }}
+      onTouchStart={swipe.onTouchStart}
+      onTouchEnd={swipe.onTouchEnd}
+    >
+      {/* Sticky week strip */}
+      <div
+        className="sticky top-0 z-20 flex"
+        style={{ height: 56, background: "var(--color-cream)", borderBottom: `1px solid var(--color-cream-2)` }}
+      >
+        <div className="shrink-0" style={{ width: 44 }} />
+        {days.map((day) => {
+          const isToday    = isSameDay(day, today);
+          const isSelected = isSameDay(day, date);
+          const pill = isToday
+            ? { background: "var(--color-amber)", color: "#fff" }
+            : isSelected
+              ? { background: "var(--color-dark)", color: "#fff" }
+              : { background: "transparent", color: "var(--color-dark)" };
+          return (
+            <button
+              key={day.toISOString()}
+              onClick={() => onSelectDay(day)}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5"
+            >
+              <span style={{ fontSize: 11, fontWeight: 500, color: "var(--color-muted)" }}>
+                {format(day, "EEE")}
+              </span>
+              <span
+                className="flex items-center justify-center rounded-full"
+                style={{ width: 32, height: 32, fontSize: 15, fontWeight: 600, ...pill }}
               >
-                <div>{format(day, "EEE")}</div>
-                <div style={{ fontSize: 12 }}>{format(day, "d")}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Grid body */}
-        <div className="flex relative" style={{ height: TOTAL_H }}>
-          {/* Time labels */}
-          <div style={{ width: TIME_W, position: "relative", flexShrink: 0 }}>
-            {HOURS.map((h) => (
-              <div
-                key={h}
-                style={{
-                  position: "absolute",
-                  top: (h * 60 - GRID_START) * PX_PER_MIN - 7,
-                  right: 4,
-                  fontSize: 9,
-                  color: "var(--color-muted)",
-                  fontWeight: 600,
-                }}
-              >
-                {String(h).padStart(2, "0")}:00
-              </div>
-            ))}
-          </div>
-
-          {/* Day columns */}
-          {days.map((day) => {
-            const key = format(day, "yyyy-MM-dd");
-            const dayBookings = byDay[key] ?? [];
-
-            return (
-              <div
-                key={key}
-                style={{
-                  width: COL_W,
-                  position: "relative",
-                  flexShrink: 0,
-                  borderLeft: "1px solid var(--color-cream-2)",
-                }}
-              >
-                {/* Hour lines */}
-                {HOURS.map((h) => (
-                  <div
-                    key={h}
-                    style={{
-                      position: "absolute",
-                      top: (h * 60 - GRID_START) * PX_PER_MIN,
-                      left: 0,
-                      right: 0,
-                      height: 1,
-                      background: "var(--color-cream-2)",
-                    }}
-                  />
-                ))}
-
-                {/* Booking blocks */}
-                {dayBookings.map((b) => {
-                  const startMins = timeToMins(b.appointment_time);
-                  const duration  = b.service?.duration ?? 30;
-                  const top       = (startMins - GRID_START) * PX_PER_MIN;
-                  const height    = Math.max(duration * PX_PER_MIN, 18);
-                  const color     = STATUS_COLOR[b.status];
-
-                  return (
-                    <button
-                      key={b.id}
-                      onClick={() => onSelectBooking(b)}
-                      style={{
-                        position: "absolute",
-                        top,
-                        left: 2,
-                        right: 2,
-                        height,
-                        background: STATUS_BG[b.status],
-                        borderLeft: `3px solid ${color}`,
-                        borderRadius: 5,
-                        overflow: "hidden",
-                        zIndex: 5,
-                        padding: "2px 3px",
-                      }}
-                    >
-                      <div style={{ fontSize: 9, fontWeight: 700, color, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {b.customer_name}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
+                {format(day, "d")}
+              </span>
+            </button>
+          );
+        })}
       </div>
+
+      {/* Time grid */}
+      <div className="flex" style={{ height: TOTAL_H }}>
+        {/* Time labels */}
+        <div className="shrink-0 relative" style={{ width: 44 }}>
+          {HOURS.map((h) => (
+            <div
+              key={h}
+              style={{
+                position: "absolute", top: h * PX_PER_HOUR - 6, insetInlineEnd: 6,
+                fontSize: 11, color: "var(--color-muted)", fontWeight: 500,
+              }}
+            >
+              {h === 0 ? "" : `${String(h).padStart(2, "0")}:00`}
+            </div>
+          ))}
+        </div>
+
+        {/* Day columns */}
+        {days.map((day) => {
+          const key = format(day, "yyyy-MM-dd");
+          const bucket = byDay[key];
+          return (
+            <WeekDayColumn
+              key={key}
+              day={day}
+              isToday={isSameDay(day, today)}
+              nowMins={nowMins}
+              bookings={bucket?.bookings ?? []}
+              blocked={bucket?.blocked ?? []}
+              onSelectBooking={onSelectBooking}
+              onCreateAt={onCreateAt}
+              onLongPressAt={onLongPressAt}
+              onBlockClick={onBlockClick}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Single day column ──────────────────────────────────────────────────────
+
+interface ColProps {
+  day: Date;
+  isToday: boolean;
+  nowMins: number;
+  bookings: Booking[];
+  blocked: BlockedTime[];
+  onSelectBooking: (b: Booking) => void;
+  onCreateAt: (date: Date, mins: number) => void;
+  onLongPressAt: (date: Date, mins: number) => void;
+  onBlockClick: (b: BlockedTime) => void;
+}
+
+function WeekDayColumn({
+  day, isToday, nowMins, bookings, blocked,
+  onSelectBooking, onCreateAt, onLongPressAt, onBlockClick,
+}: ColProps) {
+  const gestures = useGridGestures(
+    (mins) => onCreateAt(day, mins),
+    (mins) => onLongPressAt(day, mins),
+  );
+
+  const laid = useMemo(
+    () =>
+      packLanes(
+        bookings.map((b) => {
+          const start = timeToMins(b.appointment_time);
+          return { start, end: start + (b.service?.duration ?? 30), booking: b };
+        }),
+      ),
+    [bookings],
+  );
+
+  return (
+    <div
+      className="flex-1 relative border-s touch-none"
+      style={{ borderColor: GRID_LINE, background: isToday ? "rgba(232,146,10,0.04)" : "transparent" }}
+      {...gestures}
+    >
+      {/* Hour + half-hour lines */}
+      {HOURS.map((h) => (
+        <div key={h} style={{ pointerEvents: "none" }}>
+          <div style={{ position: "absolute", top: h * PX_PER_HOUR, left: 0, right: 0, height: 1, background: GRID_LINE }} />
+          <div style={{ position: "absolute", top: h * PX_PER_HOUR + PX_PER_HOUR / 2, left: 0, right: 0, height: 1, background: GRID_LINE_HALF }} />
+        </div>
+      ))}
+
+      {/* Blocked time blocks */}
+      {blocked.map((bl) => {
+        const start = timeToMins(bl.start_time);
+        const top = start * PX_PER_MIN;
+        const height = Math.max((timeToMins(bl.end_time) - start) * PX_PER_MIN, 18);
+        return (
+          <button
+            key={bl.id}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onBlockClick(bl); }}
+            className="absolute rounded-[6px] overflow-hidden text-start"
+            style={{
+              top, height, insetInlineStart: 2, insetInlineEnd: 2, zIndex: 4,
+              background: "var(--color-cream-2)",
+              backgroundImage:
+                "repeating-linear-gradient(45deg, rgba(107,96,82,0.16) 0, rgba(107,96,82,0.16) 1px, transparent 1px, transparent 7px)",
+            }}
+          />
+        );
+      })}
+
+      {/* Booking blocks */}
+      {laid.map(({ item, lane, lanes }) => {
+        const b = item.booking;
+        const duration = b.service?.duration ?? 30;
+        const top = item.start * PX_PER_MIN;
+        const height = Math.max(duration * PX_PER_MIN, 24);
+        const color = STATUS_COLOR[b.status];
+        const widthPct = 100 / lanes;
+        const tall = height >= 48;
+        return (
+          <button
+            key={b.id}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onSelectBooking(b); }}
+            className="absolute rounded-[6px] overflow-hidden text-start border-s-[3px] transition-opacity active:opacity-70"
+            style={{
+              top, height,
+              insetInlineStart: `calc(${lane * widthPct}% + 2px)`,
+              width: `calc(${widthPct}% - 4px)`,
+              borderColor: color,
+              background: `${color}14`,
+              padding: "2px 4px",
+              zIndex: 6,
+            }}
+          >
+            <div className="text-[11px] font-semibold leading-tight truncate" style={{ color: "var(--color-dark)" }}>
+              {firstName(b.customer_name)}
+            </div>
+            {tall && b.service?.name && (
+              <div className="text-[10px] leading-tight truncate" style={{ color: "var(--color-muted)" }}>
+                {b.service.name}
+              </div>
+            )}
+          </button>
+        );
+      })}
+
+      {/* Current-time indicator (today only) */}
+      {isToday && (
+        <div style={{ position: "absolute", top: nowMins * PX_PER_MIN, left: 0, right: 0, height: 2, background: "var(--color-amber)", zIndex: 10, pointerEvents: "none" }}>
+          <div style={{ position: "absolute", insetInlineStart: -3, top: -3, width: 8, height: 8, borderRadius: "50%", background: "var(--color-amber)" }} />
+        </div>
+      )}
     </div>
   );
 }

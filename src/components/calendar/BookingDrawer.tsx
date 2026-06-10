@@ -59,7 +59,7 @@ function CheckoutModal({ booking, onDone, onClose }: CheckoutProps) {
         style={{ background: "#fff" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: "#E5E7EB" }} />
+        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: "var(--color-cream-2)" }} />
         <p className="text-center font-black text-lg mb-1" style={{ color: "var(--color-dark)" }}>
           How did they pay?
         </p>
@@ -159,12 +159,12 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
 
       {/* Drawer */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl shadow-2xl flex flex-col"
-        style={{ background: "#fff", maxHeight: "85vh" }}
+        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[20px] flex flex-col"
+        style={{ background: "#fff", maxHeight: "85vh", boxShadow: "0 -4px 24px rgba(30,26,20,0.12)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}
-        <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-2 shrink-0" style={{ background: "#E5E7EB" }} />
+        <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-2 shrink-0" style={{ background: "var(--color-cream-2)" }} />
 
         {/* Close */}
         <button

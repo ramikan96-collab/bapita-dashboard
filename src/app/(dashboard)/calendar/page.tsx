@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   format, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
-  isSameDay, parseISO,
+  isSameDay, parseISO, addDays, addMonths,
 } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
@@ -12,8 +13,10 @@ import DayView from "@/components/calendar/DayView";
 import WeekView from "@/components/calendar/WeekView";
 import MonthView from "@/components/calendar/MonthView";
 import BookingDrawer from "@/components/calendar/BookingDrawer";
+import BlockTimeSheet, { type BlockDraft } from "@/components/calendar/BlockTimeSheet";
+import { openHourFor, minsToTime } from "@/components/calendar/grid";
 import { CalendarSkeleton } from "@/components/LoadingSkeleton";
-import type { Booking } from "@/types";
+import type { Booking, BlockedTime } from "@/types";
 
 type CalView = "day" | "week" | "month";
 
@@ -21,13 +24,25 @@ function applyPatch(bookings: Booking[], id: string, patch: Partial<Booking>): B
   return bookings.map((b) => (b.id === id ? { ...b, ...patch } : b));
 }
 
+// Visible date range [start, end] for the active view.
+function rangeFor(view: CalView, date: Date): [Date, Date] {
+  if (view === "day") return [date, date];
+  if (view === "week") {
+    return [startOfWeek(date, { weekStartsOn: 1 }), endOfWeek(date, { weekStartsOn: 1 })];
+  }
+  return [startOfMonth(date), endOfMonth(date)];
+}
+
 export default function CalendarPage() {
   const { business, loading: bizLoading } = useBusiness();
-  const [view, setView]           = useState<CalView>("day");
+  const router = useRouter();
+  const [view, setView]           = useState<CalView>("week");
   const [date, setDate]           = useState<Date>(new Date());
   const [bookings, setBookings]   = useState<Booking[]>([]);
+  const [blocked, setBlocked]     = useState<BlockedTime[]>([]);
   const [loading, setLoading]     = useState(false);
   const [selected, setSelected]   = useState<Booking | null>(null);
+  const [blockDraft, setBlockDraft] = useState<BlockDraft | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const dateInputRef              = useRef<HTMLInputElement>(null);
   const supabase                  = createClient();
@@ -36,37 +51,36 @@ export default function CalendarPage() {
   const fetchBookings = useCallback(async () => {
     if (!business) return;
     setLoading(true);
+    const [s, e] = rangeFor(view, date);
 
-    let query = supabase
+    const { data } = await supabase
       .from("bookings")
-      .select("*, service:services(name, duration, price)")
+      .select("*, service:services(name, duration:duration_minutes, price:price_nis)")
       .eq("business_id", business.id)
+      .gte("appointment_date", format(s, "yyyy-MM-dd"))
+      .lte("appointment_date", format(e, "yyyy-MM-dd"))
       .order("appointment_time");
 
-    if (view === "day") {
-      query = query.eq("appointment_date", format(date, "yyyy-MM-dd"));
-    } else if (view === "week") {
-      const s = startOfWeek(date, { weekStartsOn: 1 });
-      const e = endOfWeek(date, { weekStartsOn: 1 });
-      query = query
-        .gte("appointment_date", format(s, "yyyy-MM-dd"))
-        .lte("appointment_date", format(e, "yyyy-MM-dd"));
-    } else {
-      const s = startOfMonth(date);
-      const e = endOfMonth(date);
-      query = query
-        .gte("appointment_date", format(s, "yyyy-MM-dd"))
-        .lte("appointment_date", format(e, "yyyy-MM-dd"));
-    }
-
-    const { data } = await query;
     setBookings((data as Booking[]) ?? []);
     setLoading(false);
   }, [business, view, date, supabase]);
 
+  const fetchBlocked = useCallback(async () => {
+    if (!business) return;
+    const [s, e] = rangeFor(view, date);
+    const { data } = await supabase
+      .from("blocked_times")
+      .select("*")
+      .eq("business_id", business.id)
+      .gte("block_date", format(s, "yyyy-MM-dd"))
+      .lte("block_date", format(e, "yyyy-MM-dd"));
+    setBlocked((data as BlockedTime[]) ?? []);
+  }, [business, view, date, supabase]);
+
   useEffect(() => {
     fetchBookings();
-  }, [fetchBookings]);
+    fetchBlocked();
+  }, [fetchBookings, fetchBlocked]);
 
   useEffect(() => {
     if (!business) return;
@@ -134,6 +148,41 @@ export default function CalendarPage() {
     setSelected((prev) => prev ? { ...prev, ...patch } : null);
   }
 
+  // Tap an empty slot → new booking pre-filled with that date + time.
+  function handleCreateAt(d: Date, mins: number) {
+    const params = new URLSearchParams({
+      date: format(d, "yyyy-MM-dd"),
+      time: minsToTime(mins),
+    });
+    router.push(`/new-booking?${params.toString()}`);
+  }
+
+  // Long-press an empty slot → block time sheet (create mode).
+  function handleLongPressAt(d: Date, mins: number) {
+    if (!business) return;
+    setBlockDraft({
+      business_id: business.id,
+      block_date: format(d, "yyyy-MM-dd"),
+      start_time: minsToTime(mins),
+      end_time: minsToTime(mins + 60),
+      label: null,
+    });
+  }
+
+  // Tap a blocked slot → block time sheet (remove mode).
+  function handleBlockClick(bl: BlockedTime) {
+    setBlockDraft({
+      id: bl.id,
+      business_id: bl.business_id,
+      block_date: bl.block_date,
+      start_time: bl.start_time,
+      end_time: bl.end_time,
+      label: bl.label,
+    });
+  }
+
+  const openHour = openHourFor(business, view === "day" ? date : undefined);
+
   const visibleBookings =
     statusFilter === "all" ? bookings : bookings.filter((b) => b.status === statusFilter);
 
@@ -183,12 +232,54 @@ export default function CalendarPage() {
             <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
           </div>
         )}
-        {view === "day" && <DayView date={date} bookings={visibleBookings} onSelectBooking={setSelected} />}
-        {view === "week" && <WeekView date={date} bookings={visibleBookings} onSelectBooking={setSelected} onSelectDay={handleSelectDay} />}
-        {view === "month" && <MonthView date={date} bookings={visibleBookings} onSelectDay={handleSelectDay} />}
+        {view === "day" && (
+          <DayView
+            date={date}
+            bookings={visibleBookings}
+            blocked={blocked}
+            openHour={openHour}
+            onSelectBooking={setSelected}
+            onCreateAt={handleCreateAt}
+            onLongPressAt={handleLongPressAt}
+            onBlockClick={handleBlockClick}
+            onPrev={() => setDate((d) => addDays(d, -1))}
+            onNext={() => setDate((d) => addDays(d, 1))}
+          />
+        )}
+        {view === "week" && (
+          <WeekView
+            date={date}
+            bookings={visibleBookings}
+            blocked={blocked}
+            openHour={openHour}
+            onSelectBooking={setSelected}
+            onCreateAt={handleCreateAt}
+            onLongPressAt={handleLongPressAt}
+            onBlockClick={handleBlockClick}
+            onSelectDay={handleSelectDay}
+            onPrev={() => setDate((d) => addDays(d, -7))}
+            onNext={() => setDate((d) => addDays(d, 7))}
+          />
+        )}
+        {view === "month" && (
+          <MonthView
+            date={date}
+            bookings={visibleBookings}
+            onSelectDay={handleSelectDay}
+            onPrev={() => setDate((d) => addMonths(d, -1))}
+            onNext={() => setDate((d) => addMonths(d, 1))}
+          />
+        )}
       </div>
 
       {selected && <BookingDrawer booking={selected} onClose={() => setSelected(null)} onUpdated={handleUpdated} />}
+      {blockDraft && (
+        <BlockTimeSheet
+          draft={blockDraft}
+          onClose={() => setBlockDraft(null)}
+          onSaved={fetchBlocked}
+        />
+      )}
     </div>
   );
 }
