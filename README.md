@@ -27,6 +27,7 @@ Decisions confirmed with the owner. Do not silently reverse — change here firs
 | D2 | 2026-06-10 | **Bottom nav = Calendar · Clients · Insights · Financials** | Matches design system. `New Booking` moved to FAB; `Add-ons` moved to drawer. `Financials` page is a "Coming soon" stub for now. |
 | D3 | 2026-06-10 | **Drawer shows real business name + slug** | Pulled from Supabase via existing `useBusiness()` hook, not hardcoded. |
 | D4 | 2026-06-10 | **Calendar top bar built in AppShell (not deferred)** | Done in Chat 3. The design's `☰ + Month ▾ + ⋮` calendar bar lives in AppShell, driven by a shared `CalendarChrome` context (`src/components/calendar/CalendarChrome.tsx`). The calendar page publishes its state (month label, view, status filter, date-picker, today) into the context; its old in-page toolbar was removed to avoid a double bar. Chat 4 fills the grid inside this frame. |
+| D5 | 2026-06-10 | **Booking entry points — canonical** | Exactly two ways to start a booking, one way to add a contact. Booking `+` (FAB) lives **only on the calendar** (+ tap empty slot). Clients tab `+` = add-customer (name + phone), with an optional attach-booking step. Client profile "New booking for X" pre-fills the wizard. No booking `+` anywhere else. Done in Chat 6. |
 
 ---
 
@@ -45,6 +46,20 @@ Decisions confirmed with the owner. Do not silently reverse — change here firs
 - **Login rewrite** to design system: white inputs `h-12`, ≥15px text (mobile-min rule), CSS amber focus ring (was inline-JS focus hack), error border state, labels 13px medium dark, amber button with hover/active states, trust line "Free consultation. No commitment.", tabs "Login / Create account".
 - **Root layout**: Heebo weights extended to include 500/600/800 (design uses medium/semibold/extrabold; were faux-rendering).
 - **New stub pages**: `/financials`, `/usage` — "Coming soon" placeholders so nav + drawer don't 404 (per D2).
+
+### Chat 4 — Calendar (2026-06-10) · `152fa95`, `323a145`
+- Premium week / day / month views inside the AppShell calendar frame (D4): swipeable week strip, scrollable time grid with auto-scroll to opening hour, status-colored booking blocks, tap-empty-slot-to-book, BookingDrawer.
+- Premium empty state for the no-business case (welcome card + onboarding steps).
+
+### Chat 5 — Clients List + Client Profile (2026-06-10) · `e5b61eb`
+- Clients list: cream bg, white cards, debounced name+phone search (`.or`), Recent/Name/Visits sort pills, warm empty state.
+- Client profile: header stats, booking history, internal notes, "New booking for X" → `/new-booking?clientId=`.
+
+### Chat 6 — New Booking Flow + entry-point cleanup (2026-06-10) · `65aefa4`
+- **Booking entry points (D5)**: FAB gated to `/calendar` only (was every screen). Clients tab gets an add-customer `+` → `AddCustomerSheet` (name + phone + optional email, with an optional attach-booking step: service + date + time). Empty-state CTA repointed to add-customer.
+- **New-booking wizard rebuilt** to design system (cream page, white cards, amber, cream-2 tokens — was `bg-white`/`gray`/`amber-500`): 4-step progress indicator (Client → Service → Time → Confirm), Back never loses data, success screen with "Go to calendar" / "Add another" (replaced hard redirect).
+- **Wizard bug fixes**: reads `?clientId=` → preselects customer + jumps to Service step; client search now matches phone too (`.or(name.ilike,phone.ilike)`); `alert()` → `useToast(...,"error")` everywhere; slot grid filters past times on today, renders booked slots as distinct/disabled, shows "No times available" empty state.
+- **New shared lib** `src/lib/availability.ts` (`getAvailableSlots`) used by both the wizard and `AddCustomerSheet`.
 
 ---
 
@@ -68,12 +83,19 @@ Decisions confirmed with the owner. Do not silently reverse — change here firs
 | Root | Heebo missing weights 500/600/800 | Fixed |
 | Calendar | In-page toolbar duplicated the design's AppShell calendar bar | Fixed (moved to `CalendarChrome` context) |
 | Calendar | Status filter from design ⋮ menu had no implementation | Fixed (filters day/week/month views) |
+| AppShell | Booking FAB rendered on every screen (should be calendar-only, D5) | Fixed (gated on `onCalendar`) |
+| New booking | `?clientId=` from client profile was ignored | Fixed (preselect + jump to Service) |
+| New booking | Client search matched name only despite "name or phone" | Fixed (`.or` name+phone) |
+| New booking | Errors used `alert()` | Fixed (`useToast`) |
+| New booking | Off-system styling (`bg-white`/`gray`/`amber-500`) | Fixed (design-system tokens) |
+| New booking | Past times shown on today; no "no slots" state; booked slots silently dropped | Fixed (past-filter + empty state + distinct unavailable) |
+| New booking | Hard redirect on success, no confirmation | Fixed (success screen) |
+| Clients | No add-customer entry point | Fixed (`+` header → `AddCustomerSheet`) |
 
 ---
 
 ## Deferred / TODO
 
-- **Calendar week strip + prev/next nav** — the old in-page `‹ ›` arrows were removed with the toolbar; interim week/day navigation is the Month ▾ date picker + "Jump to today". Chat 4 adds the swipeable week strip per design system.
 - **FAB → bottom-sheet new-booking drawer** — currently routes to `/new-booking` page; design wants an in-place drawer pre-filled with next slot.
 - **Financials** + **Usage** real pages (currently stubs — Chat 8 builds them out).
 - **Hebrew RTL** flip when ready (D1): `dir="rtl"`, Heebo `hebrew` subset, translate labels.
