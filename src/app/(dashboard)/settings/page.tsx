@@ -108,11 +108,17 @@ function SetupForm({
       return;
     }
 
+    // Generate slug from name
+    const baseSlug = name.trim().toLowerCase().replace(/[^a-z0-9א-ת]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    const randomSuffix = Math.random().toString(36).substring(2, 7);
+    const slug = `${baseSlug}-${randomSuffix}`;
+
     const { error } = await supabase.from("businesses").insert({
       owner_id: user.id,
       name: name.trim(),
       phone: phone.trim() || null,
       address: address.trim() || null,
+      slug,
     });
 
     if (error) {
