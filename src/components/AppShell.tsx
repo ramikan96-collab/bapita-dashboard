@@ -317,17 +317,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* ─── Top Bar ──────────────────────────────────────────────────── */}
-      <header
-        className="fixed top-0 start-0 end-0 h-16 flex items-center px-4 z-30 bg-white border-b"
-        style={{ borderColor: "var(--color-cream-2)" }}
-      >
-        {/* Empty - all controls moved to left sidebar */}
-      </header>
-
       {/* ─── Desktop Top Nav with underline indicator ─────────────────── */}
       <div
-        className="hidden md:flex fixed top-12 start-0 end-0 h-10 items-center border-b z-20 px-6"
+        className="hidden md:flex fixed top-0 start-0 end-0 h-12 items-center border-b z-20 px-6"
         style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)" }}
       >
         {/* Logo */}
@@ -429,7 +421,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           style={{ 
             background: "var(--color-cream)",
             borderColor: "var(--color-cream-2)",
-            paddingTop: 40,
+            paddingTop: 12,
           }}
         >
           {/* +Create button */}
