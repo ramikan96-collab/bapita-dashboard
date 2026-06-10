@@ -352,14 +352,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         ) : (
           <div className="flex-1" />
         )}
-
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="p-2 -me-2 rounded-xl text-dark hover:bg-cream transition-colors"
-          aria-label="Open menu"
-        >
-          <IconMenu />
-        </button>
       </header>
 
       {/* ─── Desktop Top Nav with underline indicator ─────────────────── */}
