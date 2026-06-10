@@ -322,14 +322,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         className="fixed top-0 start-0 end-0 h-16 flex items-center px-4 z-30 bg-white border-b"
         style={{ borderColor: "var(--color-cream-2)" }}
       >
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="p-2 -ms-2 rounded-xl text-dark hover:bg-cream transition-colors"
-          aria-label="Open menu"
-        >
-          <IconMenu />
-        </button>
-
         {onCalendar && chrome ? (
           <>
             <button
@@ -362,9 +354,16 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <div className="flex-1 text-center font-black text-[18px] tracking-tight text-dark">
               bapita
             </div>
-            <div className="w-10" />
           </>
         )}
+
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="p-2 -me-2 rounded-xl text-dark hover:bg-cream transition-colors"
+          aria-label="Open menu"
+        >
+          <IconMenu />
+        </button>
       </header>
 
       {/* ─── Desktop Sidebar ──────────────────────────────────────────── */}
