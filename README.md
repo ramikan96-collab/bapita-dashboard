@@ -67,6 +67,14 @@ Decisions confirmed with the owner. Do not silently reverse — change here firs
 - **Bug: no-show color was `#f97316` (orange)** — corrected to `#EF4444` (matches design system).
 - **Bug: `confirmed` status absent from breakdown** — added.
 
+### Chat 8 — Settings + Profile + Add-ons + Financials + Usage (2026-06-11)
+- **Settings** full redesign: Hebrew tabs (פרטי העסק / שירותים / שעות פעילות), Sunday-first Israeli day order, slug field with inline `bapita.com/` prefix, all `alert()` → `useToast()`, service add/toggle/delete, proper `InputField` component.
+- **Profile**: reads real email from `supabase.auth.getUser()`, show/hide password toggles, live mismatch inline error, danger ghost sign-out button.
+- **Add-ons**: expanded from 3 to 5 cards (WhatsApp, Stripe, Google Business, Social Media, Ads), WhatsApp green CTA with pre-filled message, amber active badge, custom add-on footer CTA.
+- **Usage**: per-add-on stat cards; inactive add-ons show empty state with link to `/addons`; active add-ons show stat rows ready for real data.
+- **Financials**: checks `addons` table for Stripe `active: true`; not connected → premium upsell page with feature bullets + WA CTA; connected → revenue hero (amber), payout summary with fee calc, transaction list.
+- All 5 pages: cream page background, white cards with warm shadows, design-system tokens throughout.
+
 ### Chat 6 — New Booking Flow + entry-point cleanup (2026-06-10) · `65aefa4`
 - **Booking entry points (D5)**: FAB gated to `/calendar` only (was every screen). Clients tab gets an add-customer `+` → `AddCustomerSheet` (name + phone + optional email, with an optional attach-booking step: service + date + time). Empty-state CTA repointed to add-customer.
 - **New-booking wizard rebuilt** to design system (cream page, white cards, amber, cream-2 tokens — was `bg-white`/`gray`/`amber-500`): 4-step progress indicator (Client → Service → Time → Confirm), Back never loses data, success screen with "Go to calendar" / "Add another" (replaced hard redirect).
@@ -109,11 +117,23 @@ Decisions confirmed with the owner. Do not silently reverse — change here firs
 | Insights | `confirmed` status missing from breakdown | Fixed |
 | Insights | Chart Y-axis showed booking count, not revenue | Fixed (revenue by day) |
 | Insights | Page bg was `bg-white` (should be cream) | Fixed |
+| Settings | `alert()` used for save feedback | Fixed (`useToast`) |
+| Settings | Days in Mon-first order (should be Sun-first for Israel) | Fixed |
+| Settings | Missing `slug` field in Business Info form | Fixed |
+| Settings | "Blocked dates" tab was dead content (coming soon) | Removed (cleaned up) |
+| Profile | Email field showed placeholder text, not real email | Fixed (reads from `supabase.auth.getUser()`) |
+| Profile | No password visibility toggle | Fixed |
+| Profile | Sign-out was full red bg (design = ghost danger button) | Fixed |
+| Add-ons | Only 3 add-ons (missing Social Media, Ads) | Fixed (5 add-ons) |
+| Add-ons | Toggle called `alert()` with phone number | Fixed (WhatsApp CTA with pre-filled message) |
+| Financials | Was "coming soon" stub | Built out (Stripe check + upsell/connected views) |
+| Usage | Was "coming soon" stub | Built out (per-add-on stats with empty states) |
 
 ---
 
 ## Deferred / TODO
 
 - **FAB → bottom-sheet new-booking drawer** — currently routes to `/new-booking` page; design wants an in-place drawer pre-filled with next slot.
-- **Financials** + **Usage** real pages (currently stubs — Chat 8 builds them out).
+- **Usage stats API** — stat cards are ready but data feed not wired yet; needs backend aggregation per add-on type.
+- **Financials transactions** — connected view ready but `transactions` list is empty; needs Stripe webhook or DB query.
 - **Hebrew RTL** flip when ready (D1): `dir="rtl"`, Heebo `hebrew` subset, translate labels.
