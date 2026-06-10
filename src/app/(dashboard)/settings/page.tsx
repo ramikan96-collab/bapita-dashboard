@@ -199,13 +199,23 @@ export default function SettingsPage() {
   async function saveBusinessInfo() {
     if (!business) return;
     setSaving(true);
+    
+    // Auto-generate slug if empty
+    let finalSlug = businessSlug;
+    if (!finalSlug?.trim()) {
+      const baseSlug = businessName.trim().toLowerCase().replace(/[^a-z0-9א-ת]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+      const randomSuffix = Math.random().toString(36).substring(2, 7);
+      finalSlug = `${baseSlug}-${randomSuffix}`;
+      setBusinessSlug(finalSlug);
+    }
+    
     const { error } = await supabase
       .from("businesses")
       .update({
         name: businessName,
         phone: businessPhone || null,
         address: businessAddress || null,
-        slug: businessSlug || null,
+        slug: finalSlug,
       })
       .eq("id", business.id);
     setSaving(false);
