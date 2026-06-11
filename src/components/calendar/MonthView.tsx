@@ -7,7 +7,7 @@ import {
 } from "date-fns";
 import type { Booking } from "@/types";
 import { STATUS_COLOR } from "@/types";
-import { useSwipe } from "./grid";
+import { firstName, useSwipe } from "./grid";
 
 interface Props {
   date: Date;
@@ -18,6 +18,7 @@ interface Props {
 }
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MAX_CHIPS = 3;
 
 export default function MonthView({ date, bookings, onSelectDay, onPrev, onNext }: Props) {
   const today = new Date();
@@ -32,6 +33,10 @@ export default function MonthView({ date, bookings, onSelectDay, onPrev, onNext 
     bookings.forEach((b) => {
       (map[b.appointment_date] ??= []).push(b);
     });
+    // keep each day sorted by time
+    Object.values(map).forEach((list) =>
+      list.sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
+    );
     return map;
   }, [bookings]);
 
@@ -40,77 +45,95 @@ export default function MonthView({ date, bookings, onSelectDay, onPrev, onNext 
 
   return (
     <div
-      className="h-full overflow-y-auto px-3 py-2"
+      className="flex flex-col h-full overflow-hidden"
       style={{ background: "var(--color-cream)" }}
       onTouchStart={swipe.onTouchStart}
       onTouchEnd={swipe.onTouchEnd}
     >
-      {/* Header row */}
-      <div className="grid grid-cols-7 mb-1">
+      {/* Weekday header row */}
+      <div className="grid grid-cols-7 shrink-0" style={{ borderBottom: "1px solid var(--color-cream-2)" }}>
         {DAYS.map((d) => (
-          <div key={d} className="text-center" style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", paddingBottom: 4 }}>
+          <div
+            key={d}
+            className="text-center"
+            style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", paddingBlock: 6, textTransform: "uppercase", letterSpacing: 0.4 }}
+          >
             {d}
           </div>
         ))}
       </div>
 
-      {/* Weeks */}
-      <div className="flex flex-col gap-1">
+      {/* Month grid — weeks fill remaining height */}
+      <div className="flex-1 grid" style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}>
         {weeks.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7 gap-1">
+          <div key={wi} className="grid grid-cols-7">
             {week.map((day) => {
-              const key        = format(day, "yyyy-MM-dd");
-              const dayBkgs    = byDay[key] ?? [];
-              const isToday    = isSameDay(day, today);
-              const inMonth    = isSameMonth(day, date);
-              const isSelected = isSameDay(day, date);
+              const key     = format(day, "yyyy-MM-dd");
+              const dayBkgs = byDay[key] ?? [];
+              const isToday = isSameDay(day, today);
+              const inMonth = isSameMonth(day, date);
 
-              const dots = dayBkgs.slice(0, 3);
-              const extra = dayBkgs.length - dots.length;
+              const chips = dayBkgs.slice(0, MAX_CHIPS);
+              const extra = dayBkgs.length - chips.length;
 
               return (
                 <button
                   key={key}
                   onClick={() => onSelectDay(day)}
-                  className="flex flex-col items-center justify-start rounded-xl active:scale-[0.97] transition-transform"
+                  className="flex flex-col items-stretch text-start overflow-hidden transition-colors hover:bg-white/40"
                   style={{
-                    opacity: inMonth ? 1 : 0.35,
-                    background: isSelected ? "rgba(232,146,10,0.10)" : "transparent",
-                    minHeight: 58,
+                    borderInlineStart: "1px solid var(--color-cream-2)",
+                    borderBottom: "1px solid var(--color-cream-2)",
+                    background: inMonth ? "transparent" : "rgba(107,96,82,0.03)",
                     paddingTop: 4,
+                    paddingInline: 4,
                   }}
                 >
                   {/* Day number */}
-                  <div
-                    className="flex items-center justify-center rounded-full"
-                    style={{
-                      width: 30,
-                      height: 30,
-                      fontSize: 14,
-                      fontWeight: isToday ? 800 : 500,
-                      background: isToday ? "var(--color-amber)" : "transparent",
-                      color: isToday ? "#fff" : isSelected ? "var(--color-amber)" : "var(--color-dark)",
-                    }}
-                  >
-                    {format(day, "d")}
+                  <div className="flex justify-center md:justify-start">
+                    <div
+                      className="flex items-center justify-center rounded-full"
+                      style={{
+                        width: 24,
+                        height: 24,
+                        fontSize: 13,
+                        fontWeight: isToday ? 800 : 500,
+                        background: isToday ? "var(--color-amber)" : "transparent",
+                        color: isToday ? "#fff" : inMonth ? "var(--color-dark)" : "var(--color-muted)",
+                      }}
+                    >
+                      {format(day, "d")}
+                    </div>
                   </div>
 
-                  {/* Status dots + overflow count */}
-                  {dayBkgs.length > 0 && (
-                    <div className="flex items-center gap-0.5 mt-1">
-                      {dots.map((b, i) => (
-                        <span
-                          key={i}
-                          style={{ width: 5, height: 5, borderRadius: "50%", background: STATUS_COLOR[b.status] }}
-                        />
-                      ))}
-                      {extra > 0 && (
-                        <span style={{ fontSize: 9, color: "var(--color-muted)", fontWeight: 700, marginInlineStart: 1 }}>
-                          +{extra}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {/* Event chips */}
+                  <div className="flex flex-col gap-0.5 mt-0.5 w-full">
+                    {chips.map((b) => {
+                      const color = STATUS_COLOR[b.status];
+                      return (
+                        <div
+                          key={b.id}
+                          className="rounded-[4px] truncate"
+                          style={{
+                            fontSize: 10,
+                            lineHeight: "15px",
+                            paddingInline: 4,
+                            color: "var(--color-dark)",
+                            background: `${color}1f`,
+                            borderInlineStart: `2px solid ${color}`,
+                          }}
+                        >
+                          <span style={{ fontWeight: 600 }}>{b.appointment_time.slice(0, 5)}</span>{" "}
+                          {firstName(b.customer_name)}
+                        </div>
+                      );
+                    })}
+                    {extra > 0 && (
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", paddingInline: 4 }}>
+                        +{extra} more
+                      </div>
+                    )}
+                  </div>
                 </button>
               );
             })}

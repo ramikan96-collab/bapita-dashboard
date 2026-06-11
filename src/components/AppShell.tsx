@@ -414,11 +414,13 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         </button>
       )}
 
+      {/* ─── Body row: sidebar + main (flex, sits below fixed top nav) ── */}
+      <div className="flex h-dvh md:pt-12">
       {/* ─── Left Sidebar (Calendar only) ────────────────────────────── */}
       {onCalendar && chrome && (
         <aside
-          className="hidden md:flex flex-col fixed top-12 start-0 bottom-0 w-56 z-20 border-e overflow-y-auto"
-          style={{ 
+          className="hidden md:flex flex-col w-56 shrink-0 border-e overflow-y-auto"
+          style={{
             background: "var(--color-cream)",
             borderColor: "var(--color-cream-2)",
             paddingTop: 12,
@@ -543,7 +545,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ─── Main Content ─────────────────────────────────────────────── */}
-      <main className={`pt-4 pb-16 md:pt-12 md:pb-0 h-dvh flex flex-col ${onCalendar ? "md:ps-56" : ""}`}>{children}</main>
+      <main className="flex-1 min-w-0 flex flex-col pt-4 pb-16 md:pt-0 md:pb-0">{children}</main>
+      </div>
 
       {/* ─── Hamburger Drawer (slide from end/right) ──────────────────── */}
       <div
