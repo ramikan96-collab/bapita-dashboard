@@ -202,7 +202,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="05X-XXX-XXXX"
+              placeholder="05X XXX XXXX"
               className="h-12 px-4 rounded-[10px] border bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
               style={{ borderColor: "var(--color-cream-2)" }}
             />

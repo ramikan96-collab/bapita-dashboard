@@ -15,31 +15,21 @@ type SortBy = "recent" | "name" | "visits";
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "recent", label: "Recent" },
-  { value: "name", label: "Name A-Z" },
-  { value: "visits", label: "Most visits" },
+  { value: "name", label: "A to Z" },
+  { value: "visits", label: "Most booked" },
 ];
 
-function initials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+// Avatar shows the first initial only, per the design spec.
+function firstInitial(name: string): string {
+  return name.trim().charAt(0).toUpperCase() || "?";
 }
 
 function formatPhone(phone: string): string {
   if (!phone) return "No phone";
   if (phone.length === 10 && phone.startsWith("05")) {
-    return `${phone.slice(0, 3)}-${phone.slice(3, 6)}-${phone.slice(6)}`;
+    return `${phone.slice(0, 3)}.${phone.slice(3, 6)}.${phone.slice(6)}`;
   }
   return phone;
-}
-
-function lastVisitLabel(iso: string | null): string {
-  if (!iso) return "No visits yet";
-  return `Last visit ${format(parseISO(iso), "MMM d")}`;
 }
 
 export default function ClientsPage() {
@@ -111,13 +101,14 @@ export default function ClientsPage() {
         </div>
         <button
           onClick={() => setShowAdd(true)}
-          className="w-11 h-11 rounded-xl bg-amber text-white flex items-center justify-center active:scale-95 transition-transform shrink-0"
+          className="h-11 ps-3 pe-4 rounded-xl bg-amber text-white flex items-center gap-1.5 font-semibold text-[15px] active:scale-95 transition-transform shrink-0"
           aria-label="Add client"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
+          Add
         </button>
       </div>
 
@@ -206,26 +197,32 @@ export default function ClientsPage() {
                 style={{ boxShadow: CARD_SHADOW }}
               >
                 <div
-                  className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-[15px] shrink-0"
+                  className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-[17px] shrink-0"
                   style={{ background: "var(--color-amber)", color: "#fff" }}
                 >
-                  {initials(client.name)}
+                  {firstInitial(client.name)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[16px] font-bold text-dark truncate">{client.name}</div>
-                  <div className="text-[13px]" style={{ color: "var(--color-muted)" }}>
-                    {formatPhone(client.phone)} · {client.total_visits || 0} visit
-                    {client.total_visits !== 1 ? "s" : ""}
-                  </div>
-                  <div className="text-[12px] mt-0.5" style={{ color: "var(--color-muted)" }}>
-                    {lastVisitLabel(client.last_visit_at)}
+                  <div className="text-[13px] truncate" style={{ color: "var(--color-muted)" }}>
+                    {formatPhone(client.phone)}
                   </div>
                 </div>
-                <span style={{ color: "var(--color-muted)" }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="text-end">
+                    <div className="text-[13px] font-medium text-dark">
+                      {client.last_visit_at ? format(parseISO(client.last_visit_at), "MMM d") : "New"}
+                    </div>
+                    <div className="text-[11px]" style={{ color: "var(--color-muted)" }}>
+                      {client.last_visit_at ? "Last visit" : "No visits yet"}
+                    </div>
+                  </div>
+                  <span style={{ color: "var(--color-muted)" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </span>
+                </div>
               </button>
             ))}
           </div>
