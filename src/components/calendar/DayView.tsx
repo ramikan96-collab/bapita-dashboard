@@ -69,7 +69,7 @@ export default function DayView({
               key={h}
               style={{
                 position: "absolute", top: h * PX_PER_HOUR - 6, insetInlineEnd: 6,
-                fontSize: 11, color: "var(--color-muted)", fontWeight: 500,
+                fontSize: 12, color: "rgba(30,26,20,0.55)", fontWeight: 600,
               }}
             >
               {h === 0 ? "" : `${String(h).padStart(2, "0")}:00`}

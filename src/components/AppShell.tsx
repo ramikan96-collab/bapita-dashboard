@@ -319,7 +319,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     <>
       {/* ─── Desktop Top Nav with underline indicator ─────────────────── */}
       <div
-        className="hidden md:flex fixed top-0 start-0 end-0 h-12 items-center border-b z-20 px-6"
+        className="hidden md:flex fixed top-0 start-0 end-0 h-12 items-center border-b z-30 px-6"
         style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)" }}
       >
         {/* Logo */}

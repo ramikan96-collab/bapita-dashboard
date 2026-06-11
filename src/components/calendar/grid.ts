@@ -12,8 +12,8 @@ export const DAY_MIN = 24 * 60;
 export const TOTAL_H = DAY_MIN * PX_PER_MIN; // full 24h grid height
 export const HOURS = Array.from({ length: 24 }, (_, i) => i); // 0..23
 
-export const GRID_LINE = "rgba(30,26,20,0.07)";
-export const GRID_LINE_HALF = "rgba(30,26,20,0.035)";
+export const GRID_LINE = "rgba(30,26,20,0.10)";
+export const GRID_LINE_HALF = "rgba(30,26,20,0.05)";
 
 const DAY_KEYS: DayKey[] = [
   "sunday", "monday", "tuesday", "wednesday",

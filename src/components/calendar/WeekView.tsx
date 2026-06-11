@@ -65,7 +65,7 @@ export default function WeekView({
     >
       {/* Sticky week strip */}
       <div
-        className="sticky top-0 z-20 flex"
+        className="sticky top-0 z-10 flex"
         style={{ height: 56, background: "var(--color-cream)", borderBottom: `1px solid var(--color-cream-2)` }}
       >
         <div className="shrink-0" style={{ width: 44 }} />
@@ -106,7 +106,7 @@ export default function WeekView({
               key={h}
               style={{
                 position: "absolute", top: h * PX_PER_HOUR - 6, insetInlineEnd: 6,
-                fontSize: 11, color: "var(--color-muted)", fontWeight: 500,
+                fontSize: 12, color: "rgba(30,26,20,0.55)", fontWeight: 600,
               }}
             >
               {h === 0 ? "" : `${String(h).padStart(2, "0")}:00`}
