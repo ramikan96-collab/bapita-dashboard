@@ -317,9 +317,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/* Root column: nav in normal flow on top, body fills the rest */}
+      <div className="flex flex-col h-dvh">
       {/* ─── Desktop Top Nav with underline indicator ─────────────────── */}
       <div
-        className="hidden md:flex fixed top-0 start-0 end-0 h-12 items-center border-b z-30 px-6"
+        className="hidden md:flex h-12 shrink-0 items-center border-b z-30 px-6"
         style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)" }}
       >
         {/* Logo */}
@@ -414,8 +416,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         </button>
       )}
 
-      {/* ─── Body row: sidebar + main (flex, sits below fixed top nav) ── */}
-      <div className="flex h-dvh md:pt-12">
+      {/* ─── Body row: sidebar + main fill remaining height ──────────── */}
+      <div className="flex flex-1 min-h-0">
       {/* ─── Left Sidebar (Calendar only) ────────────────────────────── */}
       {onCalendar && chrome && (
         <aside
@@ -546,6 +548,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
       {/* ─── Main Content ─────────────────────────────────────────────── */}
       <main className="flex-1 min-w-0 flex flex-col pt-4 pb-16 md:pt-0 md:pb-0">{children}</main>
+      </div>
       </div>
 
       {/* ─── Hamburger Drawer (slide from end/right) ──────────────────── */}
