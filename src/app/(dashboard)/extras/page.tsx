@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 
@@ -17,6 +17,18 @@ const WA_NUMBER = "972501234567";
 const MONTHLY: AddonType[] = ["whatsapp", "stripe", "google", "ads"];
 const ONETIME: AddonType[] = ["google_business"];
 const ALL_TYPES: AddonType[] = [...MONTHLY, ...ONETIME];
+
+// Usage data per channel (for WhatsApp, SMS, Email tags)
+type ChannelUsage = {
+  used: number;
+  total: number;
+};
+
+const CHANNEL_USAGE: Record<string, ChannelUsage> = {
+  WhatsApp: { used: 1247, total: 2500 },
+  SMS: { used: 342, total: 1000 },
+  Email: { used: 2890, total: 5000 },
+};
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -72,6 +84,7 @@ interface Entry {
   waMsg: string;
   tags?: string[];
   statLabel: string;
+  recurring: boolean; // true = monthly, false = one-time
 }
 
 const CATALOG: Record<AddonType, Entry> = {
@@ -83,6 +96,7 @@ const CATALOG: Record<AddonType, Entry> = {
     waMsg: "Hi, I want to enable Reminders & Confirmations",
     tags: ["WhatsApp", "SMS", "Email"],
     statLabel: "Reminders sent",
+    recurring: true,
   },
   stripe: {
     name: "Online Payments",
@@ -91,6 +105,7 @@ const CATALOG: Record<AddonType, Entry> = {
     icon: <IconCard />,
     waMsg: "Hi, I want to set up Online Payments",
     statLabel: "Payments collected",
+    recurring: true,
   },
   google: {
     name: "Google Reviews",
@@ -99,6 +114,7 @@ const CATALOG: Record<AddonType, Entry> = {
     icon: <IconStar />,
     waMsg: "Hi, I want to enable Google Reviews automation",
     statLabel: "Reviews collected",
+    recurring: true,
   },
   ads: {
     name: "Paid Ads",
@@ -107,6 +123,7 @@ const CATALOG: Record<AddonType, Entry> = {
     icon: <IconTarget />,
     waMsg: "Hi, I want to run Paid Ads",
     statLabel: "Ad impressions",
+    recurring: true,
   },
   google_business: {
     name: "Google Business Setup",
@@ -115,6 +132,7 @@ const CATALOG: Record<AddonType, Entry> = {
     icon: <IconPin />,
     waMsg: "Hi, I want to set up my Google Business profile",
     statLabel: "Profile views",
+    recurring: false,
   },
 };
 
@@ -185,31 +203,29 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
 }
 
 // ─── Usage Bar — Premium Claude-style thin horizontal bar ─────────────────────
-// This creates a thin (4px tall) elegant horizontal bar showing usage capacity.
-// Inactive: Shows 100% full with subtle green gradient.
-// Active: Shows used percentage (amber gradient) from left.
 
-function BarChart({ active }: { active: boolean }) {
-  const BAR_HEIGHT = 4;          // ultra thin — premium Claude aesthetic
-  const usedPct = active ? 73 : 0;      // simulate usage when active
-  const remainingPct = 100 - usedPct;
+function BarChart({ active, selectedTag }: { active: boolean; selectedTag: string | null }) {
+  const BAR_HEIGHT = 4;
+
+  // Determine usage data based on selected tag
+  let usedPct = 0;
+  let totalFormatted = "";
+  let usedFormatted = "";
 
   if (!active) {
-    // INACTIVE: Full 100% green bar — shows all capacity available
+    // INACTIVE: Full 100% green bar
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {/* Thin horizontal bar container */}
         <div
           style={{
             width: "100%",
             height: BAR_HEIGHT,
             borderRadius: 4,
-            backgroundColor: "#E5EFE8",      // soft muted green track
+            backgroundColor: "#E5EFE8",
             position: "relative",
             overflow: "hidden",
           }}
         >
-          {/* Fill — 100% of capacity, subtle green gradient */}
           <div
             style={{
               position: "absolute",
@@ -222,42 +238,87 @@ function BarChart({ active }: { active: boolean }) {
             }}
           />
         </div>
-
-        {/* Stats text — minimal inline */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}>
             100% available
           </span>
-          <span style={{ fontSize: 11, fontWeight: 500, color: "#8E9AAB" }}>
-            Unlimited
+          <span style={{ fontSize: 13, fontWeight: 500, color: "#1E2A3A" }}>
+            100%
           </span>
         </div>
       </div>
     );
   }
 
-  // ACTIVE: Thin horizontal bar shows used vs remaining
-  const fillWidth = usedPct;
+  // ACTIVE: Show usage based on selected tag or default (73%)
+  if (selectedTag && CHANNEL_USAGE[selectedTag]) {
+    const usage = CHANNEL_USAGE[selectedTag];
+    usedPct = Math.round((usage.used / usage.total) * 100);
+    usedFormatted = `${usage.used.toLocaleString()}/${usage.total.toLocaleString()}`;
+    totalFormatted = `${usage.total.toLocaleString()}`;
+  } else {
+    // Default usage (no tag selected) — all at 100%
+    usedPct = 0;
+    usedFormatted = "0";
+    totalFormatted = "∞";
+  }
+
+  const remainingPct = 100 - usedPct;
+
+  // If no tag selected, show full green (all available)
+  if (!selectedTag) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div
+          style={{
+            width: "100%",
+            height: BAR_HEIGHT,
+            borderRadius: 4,
+            backgroundColor: "#E5EFE8",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              width: "100%",
+              height: "100%",
+              background: "linear-gradient(90deg, #7EDB9E 0%, #3B9B54 100%)",
+              borderRadius: 4,
+            }}
+          />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}>
+            100% available
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: "#1E2A3A" }}>
+            100%
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {/* Thin horizontal bar container */}
       <div
         style={{
           width: "100%",
           height: BAR_HEIGHT,
           borderRadius: 4,
-          backgroundColor: "#F0F2F5",        // light gray track
+          backgroundColor: "#F0F2F5",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Used portion — amber gradient from left */}
         <div
           style={{
             position: "absolute",
             left: 0,
-            width: `${fillWidth}%`,
+            width: `${usedPct}%`,
             height: "100%",
             background: "linear-gradient(90deg, #F5B042 0%, #E8890A 100%)",
             borderRadius: 4,
@@ -265,23 +326,115 @@ function BarChart({ active }: { active: boolean }) {
           }}
         />
       </div>
-
-      {/* Stats — remaining + used */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}>
           {remainingPct}% remaining
         </span>
-        <span style={{ fontSize: 11, fontWeight: 500, color: "#B0B8C4" }}>
-          {usedPct}% used
+        <span style={{ fontSize: 12, fontWeight: 500, color: "#B0B8C4" }}>
+          {usedFormatted} used
         </span>
       </div>
     </div>
   );
 }
 
-// ─── Request Modal ────────────────────────────────────────────────────────────
+// ─── Custom Request Modal ────────────────────────────────────────────────────
 
-function RequestModal({
+function CustomRequestModal({ onClose }: { onClose: () => void }) {
+  const [notes, setNotes] = useState("");
+  const [contact, setContact] = useState("");
+
+  function send() {
+    const msg = `Custom integration request.${notes ? ` Notes: ${notes}` : ""}${contact ? ` Contact: ${contact}` : ""}`;
+    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
+    onClose();
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{
+        background: "rgba(30,26,20,0.45)",
+        backdropFilter: "saturate(140%) blur(4px)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white w-full sm:w-auto sm:min-w-[360px] sm:max-w-sm p-6"
+        style={{
+          borderRadius: "20px 20px 0 0",
+          boxShadow: "0 -8px 48px rgba(30,26,20,0.16), 0 0 0 1px rgba(30,26,20,0.04)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <style>{`@media(min-width:640px){.extras-modal{border-radius:20px!important}}`}</style>
+        <div className="extras-modal">
+          <div className="flex items-start justify-between mb-5">
+            <div>
+              <p className="text-[18px] font-extrabold" style={{ color: "var(--color-dark)" }}>
+                Need something custom?
+              </p>
+              <p className="text-[13px] mt-1 leading-snug" style={{ color: "var(--color-muted)" }}>
+                Tell us what you need, we'll build it.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full transition-colors hover:bg-[var(--color-cream-2)] ml-4 shrink-0"
+              style={{ color: "var(--color-muted)" }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Describe the integration you need..."
+            rows={4}
+            className="w-full rounded-xl px-4 py-3 text-[14px] resize-none outline-none transition-all mb-3"
+            style={{
+              border: "1.5px solid var(--color-cream-2)",
+              background: "var(--color-cream)",
+              color: "var(--color-dark)",
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+          />
+
+          <input
+            type="text"
+            value={contact}
+            onChange={(e) => setContact(e.target.value)}
+            placeholder="Your email or phone (optional)"
+            className="w-full rounded-xl px-4 py-3 text-[14px] outline-none transition-all mb-4"
+            style={{
+              border: "1.5px solid var(--color-cream-2)",
+              background: "var(--color-cream)",
+              color: "var(--color-dark)",
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+          />
+
+          <button
+            onClick={send}
+            className="mt-2 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+            style={{ background: "var(--wash-amber)", boxShadow: "0 6px 18px rgba(232,146,10,0.32)" }}
+          >
+            Send request <span aria-hidden>→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Request Modal (for addon enable) ────────────────────────────────────────
+
+function EnableRequestModal({
   addonName,
   waMsg,
   onClose,
@@ -313,7 +466,6 @@ function RequestModal({
           borderRadius: "20px 20px 0 0",
           boxShadow: "0 -8px 48px rgba(30,26,20,0.16), 0 0 0 1px rgba(30,26,20,0.04)",
         }}
-        /* Inline style can't conditionally set border-radius for sm: so we use a style tag */
         onClick={(e) => e.stopPropagation()}
       >
         <style>{`@media(min-width:640px){.extras-modal{border-radius:20px!important}}`}</style>
@@ -368,18 +520,29 @@ function RequestModal({
 
 // ─── Addon Card ───────────────────────────────────────────────────────────────
 
-function AddonCard({ addon, onRequest }: { addon: Addon; onRequest: (t: AddonType) => void }) {
+function AddonCard({ 
+  addon, 
+  onRequest,
+  selectedTag,
+  onTagClick,
+}: { 
+  addon: Addon; 
+  onRequest: (t: AddonType) => void;
+  selectedTag: string | null;
+  onTagClick: (tag: string) => void;
+}) {
   const cfg = CATALOG[addon.type];
+  const isActive = addon.active;
 
   return (
     <div
       className="bg-white rounded-2xl"
       style={{
         padding: "20px 24px",
-        boxShadow: addon.active
+        boxShadow: isActive
           ? "0 4px 20px rgba(232,146,10,0.12), 0 1px 4px rgba(30,26,20,0.04)"
           : "var(--shadow-md)",
-        border: addon.active
+        border: isActive
           ? "1.5px solid var(--color-amber)"
           : "1.5px solid transparent",
       }}
@@ -401,32 +564,51 @@ function AddonCard({ addon, onRequest }: { addon: Addon; onRequest: (t: AddonTyp
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[15px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
-                {cfg.name}
-              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[15px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
+                  {cfg.name}
+                </p>
+                {/* Subtle recurring/one-time badge */}
+                <span
+                  className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                  style={{
+                    background: cfg.recurring ? "#E8F0FE" : "#F0E8FE",
+                    color: cfg.recurring ? "#1A73E8" : "#8B5CF6",
+                  }}
+                >
+                  {cfg.recurring ? "monthly" : "one-time"}
+                </span>
+              </div>
               {cfg.tags && (
-                <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                <div className="flex gap-2 mt-2 flex-wrap">
                   {cfg.tags.map((t) => (
-                    <span
+                    <button
                       key={t}
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                      style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}
+                      onClick={() => onTagClick(t)}
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full transition-all hover:scale-105"
+                      style={{
+                        background: selectedTag === t ? cfg.color : "var(--color-cream-2)",
+                        color: selectedTag === t ? "white" : "var(--color-muted)",
+                        opacity: isActive ? 1 : 0.5,
+                        cursor: isActive ? "pointer" : "not-allowed",
+                      }}
+                      disabled={!isActive}
                     >
                       {t}
-                    </span>
+                    </button>
                   ))}
                 </div>
               )}
-              <p className="text-[13px] mt-1.5 leading-relaxed" style={{ color: "var(--color-muted)" }}>
+              <p className="text-[13px] mt-2 leading-relaxed" style={{ color: "var(--color-muted)" }}>
                 {cfg.blurb}
               </p>
             </div>
-            <Toggle active={addon.active} onEnable={() => onRequest(addon.type)} />
+            <Toggle active={isActive} onEnable={() => onRequest(addon.type)} />
           </div>
         </div>
       </div>
 
-      {/* Chart row - now using premium thin horizontal bar */}
+      {/* Chart row - with selected tag */}
       <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
         <div className="flex items-center justify-between mb-2.5">
           <span
@@ -435,30 +617,42 @@ function AddonCard({ addon, onRequest }: { addon: Addon; onRequest: (t: AddonTyp
           >
             {cfg.statLabel}
           </span>
-          {addon.active && (
+          {isActive && selectedTag && (
             <span className="text-[11px] font-medium" style={{ color: "var(--color-muted)" }}>
-              Last 30 days
+              {selectedTag} channel
+            </span>
+          )}
+          {isActive && !selectedTag && (
+            <span className="text-[11px] font-medium" style={{ color: "var(--color-muted)" }}>
+              All channels
             </span>
           )}
         </div>
-        <BarChart active={addon.active} />
+        <BarChart active={isActive} selectedTag={selectedTag} />
       </div>
     </div>
   );
 }
 
-// ─── Section Label ────────────────────────────────────────────────────────────
+// ─── Section Links ────────────────────────────────────────────────────────────
 
-function Section({ label }: { label: string }) {
+function SectionLinks({ onRecurringClick, onOnetimeClick }: { onRecurringClick: () => void; onOnetimeClick: () => void }) {
   return (
-    <div className="flex items-center gap-3 mb-4">
-      <span
-        className="text-[11px] font-bold uppercase tracking-widest shrink-0"
-        style={{ color: "var(--color-muted)" }}
+    <div className="flex gap-6 mb-6 pb-2 border-b" style={{ borderBottomColor: "var(--color-cream-2)" }}>
+      <button
+        onClick={onRecurringClick}
+        className="text-[14px] font-semibold transition-colors hover:opacity-70"
+        style={{ color: "var(--color-dark)" }}
       >
-        {label}
-      </span>
-      <div className="flex-1 h-px" style={{ background: "var(--color-cream-2)" }} />
+        Recurring
+      </button>
+      <button
+        onClick={onOnetimeClick}
+        className="text-[14px] font-semibold transition-colors hover:opacity-70"
+        style={{ color: "var(--color-dark)" }}
+      >
+        One-time
+      </button>
     </div>
   );
 }
@@ -471,6 +665,11 @@ export default function ExtrasPage() {
   const [addons, setAddons] = useState<Addon[]>([]);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState<AddonType | null>(null);
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  
+  const recurringRef = useRef<HTMLDivElement>(null);
+  const onetimeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -500,6 +699,14 @@ export default function ExtrasPage() {
     load();
   }, [business, supabase]);
 
+  const scrollToRecurring = () => {
+    recurringRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const scrollToOnetime = () => {
+    onetimeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   if (bizLoading || (business && loading)) {
     return (
       <div className="flex h-full items-center justify-center" style={{ background: "var(--color-cream)" }}>
@@ -515,49 +722,63 @@ export default function ExtrasPage() {
     return addons.find((a) => a.type === type) ?? { id: type, type, active: false, activated_at: null };
   }
 
+  const handleTagClick = (tag: string) => {
+    setSelectedTag(selectedTag === tag ? null : tag);
+  };
+
   return (
     <>
       <div className="flex-1 overflow-y-auto" style={{ background: "var(--color-cream)" }}>
-        {/* Force centering — inline max-width bypasses any Tailwind flex quirks */}
         <div style={{ maxWidth: 660, margin: "0 auto", width: "100%", padding: "28px 16px 80px" }}>
 
-          {/* Header */}
-          <div style={{ marginBottom: 32 }}>
-            <h1
-              style={{
-                fontSize: 30,
-                fontWeight: 800,
-                lineHeight: 1.2,
-                color: "var(--color-dark)",
-                marginBottom: 6,
-              }}
-            >
-              Layer in what you need.
-            </h1>
-            <p style={{ fontSize: 14, color: "var(--color-muted)", lineHeight: 1.6 }}>
-              Everything below plugs straight into your system. Pick what fits, turn it on, we handle the rest.
-            </p>
+          {/* Header - just "Extras" */}
+          <h1
+            style={{
+              fontSize: 28,
+              fontWeight: 700,
+              color: "var(--color-dark)",
+              marginBottom: 20,
+            }}
+          >
+            Extras
+          </h1>
+
+          {/* Section Links */}
+          <SectionLinks onRecurringClick={scrollToRecurring} onOnetimeClick={scrollToOnetime} />
+
+          {/* Recurring Section */}
+          <div ref={recurringRef} style={{ marginBottom: 32 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {MONTHLY.map((t) => (
+                <AddonCard 
+                  key={t} 
+                  addon={get(t)} 
+                  onRequest={setRequesting}
+                  selectedTag={selectedTag}
+                  onTagClick={handleTagClick}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* Monthly */}
-          <Section label="Runs every month" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 40 }}>
-            {MONTHLY.map((t) => (
-              <AddonCard key={t} addon={get(t)} onRequest={setRequesting} />
-            ))}
-          </div>
-
-          {/* One-time */}
-          <Section label="Done once, works forever" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 40 }}>
-            {ONETIME.map((t) => (
-              <AddonCard key={t} addon={get(t)} onRequest={setRequesting} />
-            ))}
+          {/* One-time Section */}
+          <div ref={onetimeRef} style={{ marginBottom: 40 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {ONETIME.map((t) => (
+                <AddonCard 
+                  key={t} 
+                  addon={get(t)} 
+                  onRequest={setRequesting}
+                  selectedTag={selectedTag}
+                  onTagClick={handleTagClick}
+                />
+              ))}
+            </div>
           </div>
 
           {/* Custom CTA */}
           <div
-            className="bg-white rounded-2xl"
+            className="bg-white rounded-2xl cursor-pointer transition-all hover:shadow-md"
             style={{
               padding: "18px 22px",
               boxShadow: "var(--shadow-sm)",
@@ -565,6 +786,7 @@ export default function ExtrasPage() {
               alignItems: "center",
               gap: 16,
             }}
+            onClick={() => setShowCustomModal(true)}
           >
             <div
               className="rounded-xl flex items-center justify-center shrink-0"
@@ -583,15 +805,16 @@ export default function ExtrasPage() {
               </p>
             </div>
             <button
-              onClick={() => {
-                window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hi, I need a custom integration")}`, "_blank");
-              }}
               className="shrink-0 font-semibold rounded-full transition-colors hover:opacity-80"
               style={{
                 fontSize: 13,
                 padding: "7px 16px",
                 background: "var(--amber-soft)",
                 color: "var(--color-amber)",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCustomModal(true);
               }}
             >
               Talk to us
@@ -602,11 +825,15 @@ export default function ExtrasPage() {
       </div>
 
       {requesting && (
-        <RequestModal
+        <EnableRequestModal
           addonName={CATALOG[requesting].name}
           waMsg={CATALOG[requesting].waMsg}
           onClose={() => setRequesting(null)}
         />
+      )}
+
+      {showCustomModal && (
+        <CustomRequestModal onClose={() => setShowCustomModal(false)} />
       )}
     </>
   );
