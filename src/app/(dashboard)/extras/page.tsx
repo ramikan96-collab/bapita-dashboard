@@ -98,6 +98,7 @@ interface Entry {
   statLabel: string;
   recurring: boolean;
   emailOnly?: boolean;
+  defaultActive?: boolean;
 }
 
 const CATALOG: Record<AddonType, Entry> = {
@@ -110,6 +111,7 @@ const CATALOG: Record<AddonType, Entry> = {
     statLabel: "Emails sent",
     recurring: true,
     emailOnly: true,
+    defaultActive: true,
   },
   whatsapp: {
     name: "Reminders & Confirmations",
@@ -161,7 +163,7 @@ const CATALOG: Record<AddonType, Entry> = {
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
 
-function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void }) {
+function Toggle({ active, onEnable, disabled }: { active: boolean; onEnable: () => void; disabled?: boolean }) {
   const [tip, setTip] = useState(false);
 
   return (
@@ -170,7 +172,7 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
       onMouseEnter={() => setTip(true)}
       onMouseLeave={() => setTip(false)}
     >
-      {tip && !active && (
+      {tip && !active && !disabled && (
         <div
           className="absolute pointer-events-none whitespace-nowrap text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg z-20"
           style={{
@@ -195,7 +197,7 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
         </div>
       )}
       <button
-        onClick={active ? undefined : onEnable}
+        onClick={disabled ? undefined : (active ? undefined : onEnable)}
         aria-pressed={active}
         aria-label={active ? "Active" : "Enable"}
         className="relative transition-colors duration-200"
@@ -204,10 +206,11 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
           height: 24,
           borderRadius: 12,
           background: active ? "var(--color-amber)" : "var(--color-cream-2)",
-          cursor: active ? "default" : "pointer",
+          cursor: disabled ? "default" : (active ? "default" : "pointer"),
           display: "flex",
           alignItems: "center",
           flexShrink: 0,
+          opacity: disabled ? 0.7 : 1,
         }}
       >
         <span
@@ -587,12 +590,13 @@ function AddonCard({
   const cfg = CATALOG[addon.type];
   const isActive = addon.active;
   const isEmailCard = addon.type === "email";
+  const isDefaultActive = cfg.defaultActive === true;
 
   return (
     <div
       className="bg-white rounded-xl"
       style={{
-        padding: "14px 18px",
+        padding: "16px 20px",
         boxShadow: isActive
           ? "0 2px 12px rgba(232,146,10,0.1), 0 1px 2px rgba(30,26,20,0.04)"
           : "var(--shadow-sm)",
@@ -653,13 +657,17 @@ function AddonCard({
                 {cfg.blurb}
               </p>
             </div>
-            <Toggle active={isActive} onEnable={() => onRequest(addon.type)} />
+            <Toggle 
+              active={isActive} 
+              onEnable={() => onRequest(addon.type)} 
+              disabled={isDefaultActive}
+            />
           </div>
         </div>
       </div>
 
-      {/* Chart row - more space above now */}
-      <div className="mt-5 pt-3 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
+      {/* Chart row - more space above (mt-6 for separation) */}
+      <div className="mt-6 pt-3 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
         <div className="flex items-center justify-between mb-2">
           <span
             className="text-[10px] font-semibold uppercase tracking-wide"
@@ -742,7 +750,12 @@ export default function ExtrasPage() {
       const { data } = await supabase.from("addons").select("*").eq("business_id", business.id);
 
       if (!data || data.length === 0) {
-        const ins = ALL_TYPES.map((type) => ({ business_id: business.id, type, active: false }));
+        // Create default addons with email active by default
+        const ins = ALL_TYPES.map((type) => ({ 
+          business_id: business.id, 
+          type, 
+          active: type === "email" ? true : false,
+        }));
         const { data: nd } = await supabase.from("addons").insert(ins).select();
         setAddons((nd || []) as Addon[]);
       } else {
@@ -750,13 +763,20 @@ export default function ExtrasPage() {
         const miss = ALL_TYPES.filter((t) => !have.has(t)).map((type) => ({
           business_id: business.id,
           type,
-          active: false,
+          active: type === "email" ? true : false,
         }));
         if (miss.length) {
           const { data: nd } = await supabase.from("addons").insert(miss).select();
           setAddons([...data, ...(nd || [])] as Addon[]);
         } else {
-          setAddons(data as Addon[]);
+          // Ensure email is active by default if it exists in data
+          const updatedData = data.map((item: Addon) => {
+            if (item.type === "email" && item.active === false) {
+              return { ...item, active: true };
+            }
+            return item;
+          });
+          setAddons(updatedData as Addon[]);
         }
       }
       setLoading(false);
@@ -784,12 +804,17 @@ export default function ExtrasPage() {
   }
 
   function get(type: AddonType): Addon {
-    return addons.find((a) => a.type === type) ?? { id: type, type, active: false, activated_at: null };
+    const found = addons.find((a) => a.type === type);
+    if (found) return found;
+    return { id: type, type, active: type === "email" ? true : false, activated_at: null };
   }
 
   const handleTagClick = (tag: string) => {
     setSelectedTag(selectedTag === tag ? null : tag);
   };
+
+  // Order: email first, then other monthly addons
+  const orderedMonthly = ["email", ...MONTHLY.filter(t => t !== "email")];
 
   return (
     <>
@@ -813,7 +838,7 @@ export default function ExtrasPage() {
           {/* Recurring Section */}
           <div ref={recurringRef} style={{ marginBottom: 28 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {MONTHLY.map((t) => (
+              {orderedMonthly.map((t) => (
                 <AddonCard
                   key={t}
                   addon={get(t)}
