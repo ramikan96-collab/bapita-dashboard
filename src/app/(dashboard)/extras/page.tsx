@@ -189,20 +189,21 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
 // Inactive: Shows 100% full with subtle green gradient.
 // Active: Shows used percentage (amber gradient) from bottom.
 
+// ─── Usage Bar — Premium Claude-style thin horizontal bar ─────────────────────
+
 function BarChart({ active }: { active: boolean }) {
-  const BAR_HEIGHT = 56;        // elegant vertical bar height
-  const BAR_WIDTH = 4;          // ultra thin — premium Claude aesthetic
-  const usedPct = active ? 73 : 0;      // simulate usage when active
+  const BAR_HEIGHT = 4;          // ultra thin — premium Claude aesthetic
+  const usedPct = active ? 73 : 0;
   const remainingPct = 100 - usedPct;
 
   if (!active) {
-    // INACTIVE: Clean, full 100% green bar — shows all capacity available
+    // INACTIVE: Full 100% green bar — shows all capacity available
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        {/* Thin vertical bar container */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* Thin horizontal bar container */}
         <div
           style={{
-            width: BAR_WIDTH,
+            width: "100%",
             height: BAR_HEIGHT,
             borderRadius: 4,
             backgroundColor: "#E5EFE8",      // soft muted green track
@@ -214,28 +215,71 @@ function BarChart({ active }: { active: boolean }) {
           <div
             style={{
               position: "absolute",
-              bottom: 0,
+              left: 0,
               width: "100%",
               height: "100%",
-              background: "linear-gradient(180deg, #7EDB9E 0%, #3B9B54 100%)",
+              background: "linear-gradient(90deg, #7EDB9E 0%, #3B9B54 100%)",
               borderRadius: 4,
-              transition: "height 0.4s ease-out",
+              transition: "width 0.4s ease-out",
             }}
           />
         </div>
 
-        {/* Stats text — minimal typography */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "#1E2A3A", lineHeight: 1.2 }}>
-            100%
+        {/* Stats text — minimal inline */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}>
+            100% available
           </span>
-          <span style={{ fontSize: 10, fontWeight: 500, color: "#8E9AAB", letterSpacing: "0.03em" }}>
-            available
+          <span style={{ fontSize: 11, fontWeight: 500, color: "#8E9AAB" }}>
+            Unlimited
           </span>
         </div>
       </div>
     );
   }
+
+  // ACTIVE: Thin horizontal bar shows used vs remaining
+  const fillWidth = usedPct;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Thin horizontal bar container */}
+      <div
+        style={{
+          width: "100%",
+          height: BAR_HEIGHT,
+          borderRadius: 4,
+          backgroundColor: "#F0F2F5",        // light gray track
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* Used portion — amber gradient from left */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            width: `${fillWidth}%`,
+            height: "100%",
+            background: "linear-gradient(90deg, #F5B042 0%, #E8890A 100%)",
+            borderRadius: 4,
+            transition: "width 0.4s ease-out",
+          }}
+        />
+      </div>
+
+      {/* Stats — remaining + used */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}>
+          {remainingPct}% remaining
+        </span>
+        <span style={{ fontSize: 11, fontWeight: 500, color: "#B0B8C4" }}>
+          {usedPct}% used
+        </span>
+      </div>
+    </div>
+  );
+}
 
   // ACTIVE: Thin bar shows used vs remaining proportion
   const fillHeight = usedPct; // percentage of bar filled from bottom
