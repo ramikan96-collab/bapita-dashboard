@@ -310,9 +310,11 @@ export default function ExtrasPage() {
     );
   }
 
-  const ordered = ORDER
-    .map((type) => addons.find((a) => a.type === type))
-    .filter(Boolean) as Addon[];
+  // Always render all 5 cards — DB data merged in when available, defaults to inactive.
+  const ordered: Addon[] = ORDER.map((type) => {
+    const db = addons.find((a) => a.type === type);
+    return db ?? { id: type, type, active: false, activated_at: null };
+  });
 
   const active = ordered.filter((a) => a.active);
   const available = ordered.filter((a) => !a.active);
