@@ -4,7 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 
-type AddonType = "whatsapp" | "stripe" | "google" | "ads" | "google_business" | "email";
+type AddonType = "whatsapp" | "stripe" | "google" | "ads" | "google_business";
+
+// NOTE: Email is a special UI-only card - it's NOT stored in the addons table
+// It's always active by default with 500 free emails/month
 
 interface Addon {
   id: string;
@@ -14,7 +17,7 @@ interface Addon {
 }
 
 const WA_NUMBER = "972501234567";
-const MONTHLY: AddonType[] = ["whatsapp", "stripe", "google", "ads", "email"];
+const MONTHLY: AddonType[] = ["whatsapp", "stripe", "google", "ads"];
 const ONETIME: AddonType[] = ["google_business"];
 const ALL_TYPES: AddonType[] = [...MONTHLY, ...ONETIME];
 
@@ -30,7 +33,7 @@ const CHANNEL_USAGE: Record<string, ChannelUsage> = {
   SMS: { used: 342, total: 1000, label: "SMS messages" },
 };
 
-// Email usage data (500 free, monthly)
+// Email usage data (500 free, monthly) - UI only, not in DB
 const EMAIL_USAGE = { used: 0, total: 500, label: "emails sent" };
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
@@ -97,22 +100,9 @@ interface Entry {
   tags?: string[];
   statLabel: string;
   recurring: boolean;
-  emailOnly?: boolean;
-  defaultActive?: boolean;
 }
 
 const CATALOG: Record<AddonType, Entry> = {
-  email: {
-    name: "Email Notifications",
-    blurb: "Send booking confirmations, reminders, and updates via email. 500 free emails/month included.",
-    color: "#EA4335",
-    icon: <IconMail />,
-    waMsg: "Hi, I want to enable Email Notifications",
-    statLabel: "Emails sent",
-    recurring: true,
-    emailOnly: true,
-    defaultActive: true,
-  },
   whatsapp: {
     name: "Reminders & Confirmations",
     blurb: "Automatic booking confirmations and reminders over WhatsApp or SMS.",
@@ -161,9 +151,19 @@ const CATALOG: Record<AddonType, Entry> = {
   },
 };
 
+// Email card data (separate, not in addons table)
+const EMAIL_CARD = {
+  name: "Email Notifications",
+  blurb: "Send booking confirmations, reminders, and updates via email. 500 free emails/month included.",
+  color: "#EA4335",
+  icon: <IconMail />,
+  statLabel: "Emails sent",
+  recurring: true,
+};
+
 // ─── Toggle ───────────────────────────────────────────────────────────────────
 
-function Toggle({ active, onEnable, disabled }: { active: boolean; onEnable: () => void; disabled?: boolean }) {
+function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void }) {
   const [tip, setTip] = useState(false);
 
   return (
@@ -172,7 +172,7 @@ function Toggle({ active, onEnable, disabled }: { active: boolean; onEnable: () 
       onMouseEnter={() => setTip(true)}
       onMouseLeave={() => setTip(false)}
     >
-      {tip && !active && !disabled && (
+      {tip && !active && (
         <div
           className="absolute pointer-events-none whitespace-nowrap text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg z-20"
           style={{
@@ -197,7 +197,7 @@ function Toggle({ active, onEnable, disabled }: { active: boolean; onEnable: () 
         </div>
       )}
       <button
-        onClick={disabled ? undefined : (active ? undefined : onEnable)}
+        onClick={active ? undefined : onEnable}
         aria-pressed={active}
         aria-label={active ? "Active" : "Enable"}
         className="relative transition-colors duration-200"
@@ -206,11 +206,10 @@ function Toggle({ active, onEnable, disabled }: { active: boolean; onEnable: () 
           height: 24,
           borderRadius: 12,
           background: active ? "var(--color-amber)" : "var(--color-cream-2)",
-          cursor: disabled ? "default" : (active ? "default" : "pointer"),
+          cursor: active ? "default" : "pointer",
           display: "flex",
           alignItems: "center",
           flexShrink: 0,
-          opacity: disabled ? 0.7 : 1,
         }}
       >
         <span
@@ -574,6 +573,100 @@ function EnableRequestModal({
   );
 }
 
+// ─── Email Card (separate component, always active) ──────────────────────────
+
+function EmailCard({ selectedTag, onTagClick }: { selectedTag: string | null; onTagClick: (tag: string) => void }) {
+  const isActive = true; // Always active, no toggle needed
+
+  return (
+    <div
+      className="bg-white rounded-xl"
+      style={{
+        padding: "16px 20px",
+        boxShadow: "0 2px 12px rgba(232,146,10,0.1), 0 1px 2px rgba(30,26,20,0.04)",
+        border: "1.5px solid var(--color-amber)",
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="rounded-lg flex items-center justify-center shrink-0"
+          style={{
+            width: 36,
+            height: 36,
+            background: `${EMAIL_CARD.color}15`,
+            color: EMAIL_CARD.color,
+          }}
+        >
+          {EMAIL_CARD.icon}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[14px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
+                  {EMAIL_CARD.name}
+                </p>
+                <span
+                  className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full"
+                  style={{
+                    background: "#E8F0FE",
+                    color: "#1A73E8",
+                  }}
+                >
+                  monthly
+                </span>
+              </div>
+              <p className="text-[12px] mt-1.5 leading-relaxed" style={{ color: "var(--color-muted)" }}>
+                {EMAIL_CARD.blurb}
+              </p>
+            </div>
+            {/* Email has no toggle - always on, just a visual indicator */}
+            <div
+              style={{
+                width: 40,
+                height: 24,
+                borderRadius: 12,
+                background: "var(--color-amber)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  background: "white",
+                  display: "block",
+                  marginLeft: 19,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Chart row */}
+      <div className="mt-6 pt-3 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
+        <div className="flex items-center justify-between mb-2">
+          <span
+            className="text-[10px] font-semibold uppercase tracking-wide"
+            style={{ color: "var(--color-muted)" }}
+          >
+            {EMAIL_CARD.statLabel}
+          </span>
+          <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
+            Monthly quota
+          </span>
+        </div>
+        <BarChart active={true} selectedTag={null} emailMode={true} />
+      </div>
+    </div>
+  );
+}
+
 // ─── Addon Card ───────────────────────────────────────────────────────────────
 
 function AddonCard({
@@ -589,8 +682,6 @@ function AddonCard({
 }) {
   const cfg = CATALOG[addon.type];
   const isActive = addon.active;
-  const isEmailCard = addon.type === "email";
-  const isDefaultActive = cfg.defaultActive === true;
 
   return (
     <div
@@ -633,7 +724,7 @@ function AddonCard({
                   {cfg.recurring ? "monthly" : "one-time"}
                 </span>
               </div>
-              {cfg.tags && !isEmailCard && (
+              {cfg.tags && (
                 <div className="flex gap-1.5 mt-1.5 flex-wrap">
                   {cfg.tags.map((t) => (
                     <button
@@ -657,16 +748,12 @@ function AddonCard({
                 {cfg.blurb}
               </p>
             </div>
-            <Toggle 
-              active={isActive} 
-              onEnable={() => onRequest(addon.type)} 
-              disabled={isDefaultActive}
-            />
+            <Toggle active={isActive} onEnable={() => onRequest(addon.type)} />
           </div>
         </div>
       </div>
 
-      {/* Chart row - more space above (mt-6 for separation) */}
+      {/* Chart row - more space above */}
       <div className="mt-6 pt-3 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
         <div className="flex items-center justify-between mb-2">
           <span
@@ -675,23 +762,18 @@ function AddonCard({
           >
             {cfg.statLabel}
           </span>
-          {isActive && selectedTag && !isEmailCard && (
+          {isActive && selectedTag && (
             <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
               {selectedTag} channel
             </span>
           )}
-          {isActive && !selectedTag && !isEmailCard && (
+          {isActive && !selectedTag && (
             <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
               All channels
             </span>
           )}
-          {isEmailCard && isActive && (
-            <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
-              Monthly quota
-            </span>
-          )}
         </div>
-        <BarChart active={isActive} selectedTag={selectedTag} emailMode={isEmailCard} />
+        <BarChart active={isActive} selectedTag={selectedTag} emailMode={false} />
       </div>
     </div>
   );
@@ -750,11 +832,10 @@ export default function ExtrasPage() {
       const { data } = await supabase.from("addons").select("*").eq("business_id", business.id);
 
       if (!data || data.length === 0) {
-        // Create default addons with email active by default
         const ins = ALL_TYPES.map((type) => ({ 
           business_id: business.id, 
           type, 
-          active: type === "email" ? true : false,
+          active: false,
         }));
         const { data: nd } = await supabase.from("addons").insert(ins).select();
         setAddons((nd || []) as Addon[]);
@@ -763,20 +844,13 @@ export default function ExtrasPage() {
         const miss = ALL_TYPES.filter((t) => !have.has(t)).map((type) => ({
           business_id: business.id,
           type,
-          active: type === "email" ? true : false,
+          active: false,
         }));
         if (miss.length) {
           const { data: nd } = await supabase.from("addons").insert(miss).select();
           setAddons([...data, ...(nd || [])] as Addon[]);
         } else {
-          // Ensure email is active by default if it exists in data
-          const updatedData = data.map((item: Addon) => {
-            if (item.type === "email" && item.active === false) {
-              return { ...item, active: true };
-            }
-            return item;
-          });
-          setAddons(updatedData as Addon[]);
+          setAddons(data as Addon[]);
         }
       }
       setLoading(false);
@@ -806,15 +880,12 @@ export default function ExtrasPage() {
   function get(type: AddonType): Addon {
     const found = addons.find((a) => a.type === type);
     if (found) return found;
-    return { id: type, type, active: type === "email" ? true : false, activated_at: null };
+    return { id: type, type, active: false, activated_at: null };
   }
 
   const handleTagClick = (tag: string) => {
     setSelectedTag(selectedTag === tag ? null : tag);
   };
-
-  // Order: email first, then other monthly addons
-  const orderedMonthly = ["email", ...MONTHLY.filter(t => t !== "email")];
 
   return (
     <>
@@ -835,10 +906,15 @@ export default function ExtrasPage() {
           {/* Section Links */}
           <SectionLinks onRecurringClick={scrollToRecurring} onOnetimeClick={scrollToOnetime} />
 
-          {/* Recurring Section */}
+          {/* Email Card - always at top, always active */}
+          <div style={{ marginBottom: 12 }}>
+            <EmailCard selectedTag={selectedTag} onTagClick={handleTagClick} />
+          </div>
+
+          {/* Recurring Section (without email, since email is separate) */}
           <div ref={recurringRef} style={{ marginBottom: 28 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {orderedMonthly.map((t) => (
+              {MONTHLY.map((t) => (
                 <AddonCard
                   key={t}
                   addon={get(t)}
