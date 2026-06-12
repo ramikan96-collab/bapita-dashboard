@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 
-type AddonType = "whatsapp" | "stripe" | "google" | "ads" | "google_business";
+type AddonType = "whatsapp" | "stripe" | "google" | "ads" | "google_business" | "email";
 
 interface Addon {
   id: string;
@@ -14,21 +14,24 @@ interface Addon {
 }
 
 const WA_NUMBER = "972501234567";
-const MONTHLY: AddonType[] = ["whatsapp", "stripe", "google", "ads"];
+const MONTHLY: AddonType[] = ["whatsapp", "stripe", "google", "ads", "email"];
 const ONETIME: AddonType[] = ["google_business"];
 const ALL_TYPES: AddonType[] = [...MONTHLY, ...ONETIME];
 
-// Usage data per channel (for WhatsApp, SMS, Email tags)
+// Usage data per channel (for WhatsApp, SMS tags)
 type ChannelUsage = {
   used: number;
   total: number;
+  label: string;
 };
 
 const CHANNEL_USAGE: Record<string, ChannelUsage> = {
-  WhatsApp: { used: 1247, total: 2500 },
-  SMS: { used: 342, total: 1000 },
-  Email: { used: 2890, total: 5000 },
+  WhatsApp: { used: 1247, total: 2500, label: "WhatsApp messages" },
+  SMS: { used: 342, total: 1000, label: "SMS messages" },
 };
+
+// Email usage data (500 free, monthly)
+const EMAIL_USAGE = { used: 0, total: 500, label: "emails sent" };
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -74,6 +77,15 @@ function IconPin({ size = 20 }: IP) {
   );
 }
 
+function IconMail({ size = 20 }: IP) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m22 7-10 7L2 7" />
+    </svg>
+  );
+}
+
 // ─── Catalog ─────────────────────────────────────────────────────────────────
 
 interface Entry {
@@ -85,17 +97,28 @@ interface Entry {
   tags?: string[];
   statLabel: string;
   recurring: boolean;
+  emailOnly?: boolean;
 }
 
 const CATALOG: Record<AddonType, Entry> = {
+  email: {
+    name: "Email Notifications",
+    blurb: "Send booking confirmations, reminders, and updates via email. 500 free emails/month included.",
+    color: "#EA4335",
+    icon: <IconMail />,
+    waMsg: "Hi, I want to enable Email Notifications",
+    statLabel: "Emails sent",
+    recurring: true,
+    emailOnly: true,
+  },
   whatsapp: {
     name: "Reminders & Confirmations",
-    blurb: "Automatic booking confirmations and reminders over WhatsApp, SMS, or Email.",
+    blurb: "Automatic booking confirmations and reminders over WhatsApp or SMS.",
     color: "#25D366",
     icon: <IconWA />,
     waMsg: "Hi, I want to enable Reminders & Confirmations",
-    tags: ["WhatsApp", "SMS", "Email"],
-    statLabel: "Reminders sent",
+    tags: ["WhatsApp", "SMS"],
+    statLabel: "Messages sent",
     recurring: true,
   },
   stripe: {
@@ -177,9 +200,9 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
         aria-label={active ? "Active" : "Enable"}
         className="relative transition-colors duration-200"
         style={{
-          width: 44,
-          height: 26,
-          borderRadius: 13,
+          width: 40,
+          height: 24,
+          borderRadius: 12,
           background: active ? "var(--color-amber)" : "var(--color-cream-2)",
           cursor: active ? "default" : "pointer",
           display: "flex",
@@ -190,10 +213,10 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
         <span
           className="absolute transition-all duration-200 bg-white"
           style={{
-            width: 20,
-            height: 20,
+            width: 18,
+            height: 18,
             borderRadius: "50%",
-            left: active ? 21 : 3,
+            left: active ? 19 : 3,
             boxShadow: "0 1px 4px rgba(30,26,20,0.25)",
           }}
         />
@@ -204,13 +227,21 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
 
 // ─── Usage Bar — Premium Claude-style thin horizontal bar ─────────────────────
 
-function BarChart({ active, selectedTag }: { active: boolean; selectedTag: string | null }) {
+function BarChart({ 
+  active, 
+  selectedTag, 
+  emailMode = false,
+}: { 
+  active: boolean; 
+  selectedTag: string | null;
+  emailMode?: boolean;
+}) {
   const BAR_HEIGHT = 4;
 
-  // INACTIVE: Full 100% green bar — only shows "100%" on the right
+  // INACTIVE: Full 100% green bar
   if (!active) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <div
           style={{
             width: "100%",
@@ -233,23 +264,22 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
           />
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline" }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: "#1E2A3A" }}>
-            100%
+          <span style={{ fontSize: 12, fontWeight: 500, color: "#1E2A3A" }}>
+            {emailMode ? `${EMAIL_USAGE.total} emails left` : "100%"}
           </span>
         </div>
       </div>
     );
   }
 
-  // ACTIVE: Show usage based on selected tag
-  if (selectedTag && CHANNEL_USAGE[selectedTag]) {
-    const usage = CHANNEL_USAGE[selectedTag];
-    const usedPct = Math.round((usage.used / usage.total) * 100);
+  // Email mode active
+  if (emailMode) {
+    const usedPct = Math.round((EMAIL_USAGE.used / EMAIL_USAGE.total) * 100);
     const remainingPct = 100 - usedPct;
-    const usedFormatted = `${usage.used.toLocaleString()}/${usage.total.toLocaleString()}`;
+    const remainingEmails = EMAIL_USAGE.total - EMAIL_USAGE.used;
 
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <div
           style={{
             width: "100%",
@@ -273,11 +303,54 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
           />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#1E2A3A" }}>
             {remainingPct}% remaining
           </span>
-          <span style={{ fontSize: 12, fontWeight: 500, color: "#B0B8C4" }}>
-            {usedFormatted} used
+          <span style={{ fontSize: 11, fontWeight: 500, color: "#B0B8C4" }}>
+            {remainingEmails} emails left
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // ACTIVE: Show usage based on selected tag (WhatsApp or SMS)
+  if (selectedTag && CHANNEL_USAGE[selectedTag]) {
+    const usage = CHANNEL_USAGE[selectedTag];
+    const usedPct = Math.round((usage.used / usage.total) * 100);
+    const remainingPct = 100 - usedPct;
+    const remainingAmount = usage.total - usage.used;
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div
+          style={{
+            width: "100%",
+            height: BAR_HEIGHT,
+            borderRadius: 4,
+            backgroundColor: "#F0F2F5",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              width: `${usedPct}%`,
+              height: "100%",
+              background: "linear-gradient(90deg, #F5B042 0%, #E8890A 100%)",
+              borderRadius: 4,
+              transition: "width 0.4s ease-out",
+            }}
+          />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#1E2A3A" }}>
+            {remainingPct}% remaining
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 500, color: "#B0B8C4" }}>
+            {remainingAmount} {usage.label} left
           </span>
         </div>
       </div>
@@ -286,7 +359,7 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
 
   // No tag selected but active — show full green (all channels available)
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div
         style={{
           width: "100%",
@@ -309,8 +382,8 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
         />
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline" }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: "#1E2A3A" }}>
-          100%
+        <span style={{ fontSize: 12, fontWeight: 500, color: "#1E2A3A" }}>
+          100% available
         </span>
       </div>
     </div>
@@ -348,12 +421,12 @@ function CustomRequestModal({ onClose }: { onClose: () => void }) {
       >
         <style>{`@media(min-width:640px){.extras-modal{border-radius:20px!important}}`}</style>
         <div className="extras-modal">
-          <div className="flex items-start justify-between mb-5">
+          <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-[18px] font-extrabold" style={{ color: "var(--color-dark)" }}>
                 Need something custom?
               </p>
-              <p className="text-[13px] mt-1 leading-snug" style={{ color: "var(--color-muted)" }}>
+              <p className="text-[12px] mt-1 leading-snug" style={{ color: "var(--color-muted)" }}>
                 Tell us what you need, we'll build it.
               </p>
             </div>
@@ -362,7 +435,7 @@ function CustomRequestModal({ onClose }: { onClose: () => void }) {
               className="p-1.5 rounded-full transition-colors hover:bg-[var(--color-cream-2)] ml-4 shrink-0"
               style={{ color: "var(--color-muted)" }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
@@ -372,12 +445,13 @@ function CustomRequestModal({ onClose }: { onClose: () => void }) {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Describe the integration you need..."
-            rows={4}
-            className="w-full rounded-xl px-4 py-3 text-[14px] resize-none outline-none transition-all mb-3"
+            rows={3}
+            className="w-full rounded-xl px-3 py-2 text-[13px] resize-none outline-none transition-all mb-3"
             style={{
               border: "1.5px solid var(--color-cream-2)",
               background: "var(--color-cream)",
               color: "var(--color-dark)",
+              fontSize: 13,
             }}
             onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
             onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
@@ -388,7 +462,7 @@ function CustomRequestModal({ onClose }: { onClose: () => void }) {
             value={contact}
             onChange={(e) => setContact(e.target.value)}
             placeholder="Your email or phone (optional)"
-            className="w-full rounded-xl px-4 py-3 text-[14px] outline-none transition-all mb-4"
+            className="w-full rounded-xl px-3 py-2 text-[13px] outline-none transition-all mb-4"
             style={{
               border: "1.5px solid var(--color-cream-2)",
               background: "var(--color-cream)",
@@ -400,7 +474,7 @@ function CustomRequestModal({ onClose }: { onClose: () => void }) {
 
           <button
             onClick={send}
-            className="mt-2 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+            className="mt-1 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
             style={{ background: "var(--wash-amber)", boxShadow: "0 6px 18px rgba(232,146,10,0.32)" }}
           >
             Send request <span aria-hidden>→</span>
@@ -449,12 +523,12 @@ function EnableRequestModal({
       >
         <style>{`@media(min-width:640px){.extras-modal{border-radius:20px!important}}`}</style>
         <div className="extras-modal">
-          <div className="flex items-start justify-between mb-5">
+          <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-[18px] font-extrabold" style={{ color: "var(--color-dark)" }}>
                 Enable {addonName}
               </p>
-              <p className="text-[13px] mt-1 leading-snug" style={{ color: "var(--color-muted)" }}>
+              <p className="text-[12px] mt-1 leading-snug" style={{ color: "var(--color-muted)" }}>
                 We will reach out to get you set up.
               </p>
             </div>
@@ -463,7 +537,7 @@ function EnableRequestModal({
               className="p-1.5 rounded-full transition-colors hover:bg-[var(--color-cream-2)] ml-4 shrink-0"
               style={{ color: "var(--color-muted)" }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
@@ -474,7 +548,7 @@ function EnableRequestModal({
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Any notes or questions? (optional)"
             rows={3}
-            className="w-full rounded-xl px-4 py-3 text-[14px] resize-none outline-none transition-all"
+            className="w-full rounded-xl px-3 py-2 text-[13px] resize-none outline-none transition-all"
             style={{
               border: "1.5px solid var(--color-cream-2)",
               background: "var(--color-cream)",
@@ -486,7 +560,7 @@ function EnableRequestModal({
 
           <button
             onClick={send}
-            className="mt-3 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+            className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
             style={{ background: "var(--wash-amber)", boxShadow: "0 6px 18px rgba(232,146,10,0.32)" }}
           >
             Send request <span aria-hidden>→</span>
@@ -512,25 +586,25 @@ function AddonCard({
 }) {
   const cfg = CATALOG[addon.type];
   const isActive = addon.active;
+  const isEmailCard = addon.type === "email";
 
   return (
     <div
-      className="bg-white rounded-2xl"
+      className="bg-white rounded-xl"
       style={{
-        padding: "20px 24px",
+        padding: "14px 18px",
         boxShadow: isActive
-          ? "0 4px 20px rgba(232,146,10,0.12), 0 1px 4px rgba(30,26,20,0.04)"
-          : "var(--shadow-md)",
+          ? "0 2px 12px rgba(232,146,10,0.1), 0 1px 2px rgba(30,26,20,0.04)"
+          : "var(--shadow-sm)",
         border: isActive ? "1.5px solid var(--color-amber)" : "1.5px solid transparent",
       }}
     >
-      {/* Top row: icon + info + toggle */}
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3">
         <div
-          className="rounded-xl flex items-center justify-center shrink-0"
+          className="rounded-lg flex items-center justify-center shrink-0"
           style={{
-            width: 44,
-            height: 44,
+            width: 36,
+            height: 36,
             background: `${cfg.color}15`,
             color: cfg.color,
           }}
@@ -539,14 +613,14 @@ function AddonCard({
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[15px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
+                <p className="text-[14px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
                   {cfg.name}
                 </p>
                 <span
-                  className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                  className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full"
                   style={{
                     background: cfg.recurring ? "#E8F0FE" : "#F0E8FE",
                     color: cfg.recurring ? "#1A73E8" : "#8B5CF6",
@@ -555,13 +629,13 @@ function AddonCard({
                   {cfg.recurring ? "monthly" : "one-time"}
                 </span>
               </div>
-              {cfg.tags && (
-                <div className="flex gap-2 mt-2 flex-wrap">
+              {cfg.tags && !isEmailCard && (
+                <div className="flex gap-1.5 mt-1.5 flex-wrap">
                   {cfg.tags.map((t) => (
                     <button
                       key={t}
                       onClick={() => onTagClick(t)}
-                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full transition-all hover:scale-105"
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all hover:scale-105"
                       style={{
                         background: selectedTag === t ? cfg.color : "var(--color-cream-2)",
                         color: selectedTag === t ? "white" : "var(--color-muted)",
@@ -575,7 +649,7 @@ function AddonCard({
                   ))}
                 </div>
               )}
-              <p className="text-[13px] mt-2 leading-relaxed" style={{ color: "var(--color-muted)" }}>
+              <p className="text-[12px] mt-1.5 leading-relaxed" style={{ color: "var(--color-muted)" }}>
                 {cfg.blurb}
               </p>
             </div>
@@ -584,27 +658,32 @@ function AddonCard({
         </div>
       </div>
 
-      {/* Chart row */}
-      <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
-        <div className="flex items-center justify-between mb-2.5">
+      {/* Chart row - more space above now */}
+      <div className="mt-5 pt-3 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
+        <div className="flex items-center justify-between mb-2">
           <span
-            className="text-[11px] font-semibold uppercase tracking-wide"
+            className="text-[10px] font-semibold uppercase tracking-wide"
             style={{ color: "var(--color-muted)" }}
           >
             {cfg.statLabel}
           </span>
-          {isActive && selectedTag && (
-            <span className="text-[11px] font-medium" style={{ color: "var(--color-muted)" }}>
+          {isActive && selectedTag && !isEmailCard && (
+            <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
               {selectedTag} channel
             </span>
           )}
-          {isActive && !selectedTag && (
-            <span className="text-[11px] font-medium" style={{ color: "var(--color-muted)" }}>
+          {isActive && !selectedTag && !isEmailCard && (
+            <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
               All channels
             </span>
           )}
+          {isEmailCard && isActive && (
+            <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
+              Monthly quota
+            </span>
+          )}
         </div>
-        <BarChart active={isActive} selectedTag={selectedTag} />
+        <BarChart active={isActive} selectedTag={selectedTag} emailMode={isEmailCard} />
       </div>
     </div>
   );
@@ -620,17 +699,17 @@ function SectionLinks({
   onOnetimeClick: () => void;
 }) {
   return (
-    <div className="flex gap-6 mb-6 pb-2 border-b" style={{ borderBottomColor: "var(--color-cream-2)" }}>
+    <div className="flex gap-6 mb-5 pb-2 border-b" style={{ borderBottomColor: "var(--color-cream-2)" }}>
       <button
         onClick={onRecurringClick}
-        className="text-[14px] font-semibold transition-colors hover:opacity-70"
+        className="text-[13px] font-semibold transition-colors hover:opacity-70"
         style={{ color: "var(--color-dark)" }}
       >
         Recurring
       </button>
       <button
         onClick={onOnetimeClick}
-        className="text-[14px] font-semibold transition-colors hover:opacity-70"
+        className="text-[13px] font-semibold transition-colors hover:opacity-70"
         style={{ color: "var(--color-dark)" }}
       >
         One-time
@@ -697,7 +776,7 @@ export default function ExtrasPage() {
     return (
       <div className="flex h-full items-center justify-center" style={{ background: "var(--color-cream)" }}>
         <div
-          className="w-6 h-6 rounded-full border-2 animate-spin"
+          className="w-5 h-5 rounded-full border-2 animate-spin"
           style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }}
         />
       </div>
@@ -715,14 +794,14 @@ export default function ExtrasPage() {
   return (
     <>
       <div className="flex-1 overflow-y-auto" style={{ background: "var(--color-cream)" }}>
-        <div style={{ maxWidth: 660, margin: "0 auto", width: "100%", padding: "28px 16px 80px" }}>
-          {/* Header - just "Extras" */}
+        <div style={{ maxWidth: 600, margin: "0 auto", width: "100%", padding: "24px 16px 64px" }}>
+          {/* Header */}
           <h1
             style={{
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: 700,
               color: "var(--color-dark)",
-              marginBottom: 20,
+              marginBottom: 18,
             }}
           >
             Extras
@@ -732,8 +811,8 @@ export default function ExtrasPage() {
           <SectionLinks onRecurringClick={scrollToRecurring} onOnetimeClick={scrollToOnetime} />
 
           {/* Recurring Section */}
-          <div ref={recurringRef} style={{ marginBottom: 32 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div ref={recurringRef} style={{ marginBottom: 28 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {MONTHLY.map((t) => (
                 <AddonCard
                   key={t}
@@ -747,8 +826,8 @@ export default function ExtrasPage() {
           </div>
 
           {/* One-time Section */}
-          <div ref={onetimeRef} style={{ marginBottom: 40 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div ref={onetimeRef} style={{ marginBottom: 32 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {ONETIME.map((t) => (
                 <AddonCard
                   key={t}
@@ -763,48 +842,39 @@ export default function ExtrasPage() {
 
           {/* Custom CTA */}
           <div
-            className="bg-white rounded-2xl cursor-pointer transition-all hover:shadow-md"
+            className="bg-white rounded-xl cursor-pointer transition-all hover:shadow-sm"
             style={{
-              padding: "18px 22px",
+              padding: "14px 18px",
               boxShadow: "var(--shadow-sm)",
               display: "flex",
               alignItems: "center",
-              gap: 16,
+              gap: 12,
             }}
             onClick={() => setShowCustomModal(true)}
           >
             <div
-              className="rounded-xl flex items-center justify-center shrink-0"
-              style={{ width: 40, height: 40, background: "var(--color-cream-2)", color: "var(--color-muted)" }}
+              className="rounded-lg flex items-center justify-center shrink-0"
+              style={{ width: 34, height: 34, background: "var(--color-cream-2)", color: "var(--color-muted)" }}
             >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="16" />
                 <line x1="8" y1="12" x2="16" y2="12" />
               </svg>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)" }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)" }}>
                 Need something custom?
               </p>
-              <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>
+              <p style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 1 }}>
                 We build integrations for specific needs.
               </p>
             </div>
             <button
               className="shrink-0 font-semibold rounded-full transition-colors hover:opacity-80"
               style={{
-                fontSize: 13,
-                padding: "7px 16px",
+                fontSize: 12,
+                padding: "5px 14px",
                 background: "var(--amber-soft)",
                 color: "var(--color-amber)",
               }}
