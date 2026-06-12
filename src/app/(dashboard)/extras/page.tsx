@@ -27,7 +27,7 @@ type ChannelUsage = {
 const CHANNEL_USAGE: Record<string, ChannelUsage> = {
   WhatsApp: { used: 1247, total: 2500 },
   SMS: { used: 342, total: 1000 },
-  Email: { used: 187, total: 500 },  // 500 free emails/month included
+  Email: { used: 2890, total: 5000 },
 };
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
@@ -207,8 +207,8 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
 function BarChart({ active, selectedTag }: { active: boolean; selectedTag: string | null }) {
   const BAR_HEIGHT = 4;
 
+  // INACTIVE: Full 100% green bar — only shows "100%" on the right
   if (!active) {
-    // INACTIVE: Full 100% green bar
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div
@@ -242,19 +242,12 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
   }
 
   // ACTIVE: Show usage based on selected tag
-  let usedPct = 0;
-  let usedFormatted = "";
-
   if (selectedTag && CHANNEL_USAGE[selectedTag]) {
     const usage = CHANNEL_USAGE[selectedTag];
-    usedPct = Math.round((usage.used / usage.total) * 100);
-    usedFormatted = `${usage.used.toLocaleString()}/${usage.total.toLocaleString()}`;
-  }
+    const usedPct = Math.round((usage.used / usage.total) * 100);
+    const remainingPct = 100 - usedPct;
+    const usedFormatted = `${usage.used.toLocaleString()}/${usage.total.toLocaleString()}`;
 
-  const remainingPct = 100 - usedPct;
-
-  // No tag selected — show full green
-  if (!selectedTag) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div
@@ -262,7 +255,7 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
             width: "100%",
             height: BAR_HEIGHT,
             borderRadius: 4,
-            backgroundColor: "#E5EFE8",
+            backgroundColor: "#F0F2F5",
             position: "relative",
             overflow: "hidden",
           }}
@@ -271,22 +264,27 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
             style={{
               position: "absolute",
               left: 0,
-              width: "100%",
+              width: `${usedPct}%`,
               height: "100%",
-              background: "linear-gradient(90deg, #7EDB9E 0%, #3B9B54 100%)",
+              background: "linear-gradient(90deg, #F5B042 0%, #E8890A 100%)",
               borderRadius: 4,
+              transition: "width 0.4s ease-out",
             }}
           />
         </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline" }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: "#1E2A3A" }}>
-            100%
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}>
+            {remainingPct}% remaining
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: "#B0B8C4" }}>
+            {usedFormatted} used
           </span>
         </div>
       </div>
     );
   }
 
+  // No tag selected but active — show full green (all channels available)
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div
@@ -294,7 +292,7 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
           width: "100%",
           height: BAR_HEIGHT,
           borderRadius: 4,
-          backgroundColor: "#F0F2F5",
+          backgroundColor: "#E5EFE8",
           position: "relative",
           overflow: "hidden",
         }}
@@ -303,20 +301,16 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
           style={{
             position: "absolute",
             left: 0,
-            width: `${usedPct}%`,
+            width: "100%",
             height: "100%",
-            background: "linear-gradient(90deg, #F5B042 0%, #E8890A 100%)",
+            background: "linear-gradient(90deg, #7EDB9E 0%, #3B9B54 100%)",
             borderRadius: 4,
-            transition: "width 0.4s ease-out",
           }}
         />
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}>
-          {remainingPct}% remaining
-        </span>
-        <span style={{ fontSize: 12, fontWeight: 500, color: "#B0B8C4" }}>
-          {usedFormatted} used
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline" }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: "#1E2A3A" }}>
+          100%
         </span>
       </div>
     </div>
@@ -417,7 +411,7 @@ function CustomRequestModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── Request Modal (for addon enable) ────────────────────────────────────────
+// ─── Enable Request Modal ────────────────────────────────────────────────────
 
 function EnableRequestModal({
   addonName,
@@ -505,13 +499,13 @@ function EnableRequestModal({
 
 // ─── Addon Card ───────────────────────────────────────────────────────────────
 
-function AddonCard({ 
-  addon, 
+function AddonCard({
+  addon,
   onRequest,
   selectedTag,
   onTagClick,
-}: { 
-  addon: Addon; 
+}: {
+  addon: Addon;
   onRequest: (t: AddonType) => void;
   selectedTag: string | null;
   onTagClick: (tag: string) => void;
@@ -523,17 +517,15 @@ function AddonCard({
     <div
       className="bg-white rounded-2xl"
       style={{
-        padding: "24px 28px",
+        padding: "20px 24px",
         boxShadow: isActive
           ? "0 4px 20px rgba(232,146,10,0.12), 0 1px 4px rgba(30,26,20,0.04)"
           : "var(--shadow-md)",
-        border: isActive
-          ? "1.5px solid var(--color-amber)"
-          : "1.5px solid transparent",
+        border: isActive ? "1.5px solid var(--color-amber)" : "1.5px solid transparent",
       }}
     >
       {/* Top row: icon + info + toggle */}
-      <div className="flex items-start gap-5">
+      <div className="flex items-start gap-4">
         <div
           className="rounded-xl flex items-center justify-center shrink-0"
           style={{
@@ -550,7 +542,7 @@ function AddonCard({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[16px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
+                <p className="text-[15px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
                   {cfg.name}
                 </p>
                 <span
@@ -564,7 +556,7 @@ function AddonCard({
                 </span>
               </div>
               {cfg.tags && (
-                <div className="flex gap-2 mt-3 flex-wrap">
+                <div className="flex gap-2 mt-2 flex-wrap">
                   {cfg.tags.map((t) => (
                     <button
                       key={t}
@@ -573,15 +565,17 @@ function AddonCard({
                       style={{
                         background: selectedTag === t ? cfg.color : "var(--color-cream-2)",
                         color: selectedTag === t ? "white" : "var(--color-muted)",
-                        cursor: "pointer",
+                        opacity: isActive ? 1 : 0.5,
+                        cursor: isActive ? "pointer" : "not-allowed",
                       }}
+                      disabled={!isActive}
                     >
                       {t}
                     </button>
                   ))}
                 </div>
               )}
-              <p className="text-[13px] mt-3 leading-relaxed" style={{ color: "var(--color-muted)" }}>
+              <p className="text-[13px] mt-2 leading-relaxed" style={{ color: "var(--color-muted)" }}>
                 {cfg.blurb}
               </p>
             </div>
@@ -591,7 +585,7 @@ function AddonCard({
       </div>
 
       {/* Chart row */}
-      <div className="mt-5 pt-4 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
+      <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
         <div className="flex items-center justify-between mb-2.5">
           <span
             className="text-[11px] font-semibold uppercase tracking-wide"
@@ -618,7 +612,13 @@ function AddonCard({
 
 // ─── Section Links ────────────────────────────────────────────────────────────
 
-function SectionLinks({ onRecurringClick, onOnetimeClick }: { onRecurringClick: () => void; onOnetimeClick: () => void }) {
+function SectionLinks({
+  onRecurringClick,
+  onOnetimeClick,
+}: {
+  onRecurringClick: () => void;
+  onOnetimeClick: () => void;
+}) {
   return (
     <div className="flex gap-6 mb-6 pb-2 border-b" style={{ borderBottomColor: "var(--color-cream-2)" }}>
       <button
@@ -649,16 +649,18 @@ export default function ExtrasPage() {
   const [requesting, setRequesting] = useState<AddonType | null>(null);
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  
+
   const recurringRef = useRef<HTMLDivElement>(null);
   const onetimeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
-      if (!business) { setLoading(false); return; }
+      if (!business) {
+        setLoading(false);
+        return;
+      }
 
-      const { data } = await supabase
-        .from("addons").select("*").eq("business_id", business.id);
+      const { data } = await supabase.from("addons").select("*").eq("business_id", business.id);
 
       if (!data || data.length === 0) {
         const ins = ALL_TYPES.map((type) => ({ business_id: business.id, type, active: false }));
@@ -667,7 +669,9 @@ export default function ExtrasPage() {
       } else {
         const have = new Set(data.map((a: Addon) => a.type));
         const miss = ALL_TYPES.filter((t) => !have.has(t)).map((type) => ({
-          business_id: business.id, type, active: false,
+          business_id: business.id,
+          type,
+          active: false,
         }));
         if (miss.length) {
           const { data: nd } = await supabase.from("addons").insert(miss).select();
@@ -712,7 +716,6 @@ export default function ExtrasPage() {
     <>
       <div className="flex-1 overflow-y-auto" style={{ background: "var(--color-cream)" }}>
         <div style={{ maxWidth: 660, margin: "0 auto", width: "100%", padding: "28px 16px 80px" }}>
-
           {/* Header - just "Extras" */}
           <h1
             style={{
@@ -732,9 +735,9 @@ export default function ExtrasPage() {
           <div ref={recurringRef} style={{ marginBottom: 32 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {MONTHLY.map((t) => (
-                <AddonCard 
-                  key={t} 
-                  addon={get(t)} 
+                <AddonCard
+                  key={t}
+                  addon={get(t)}
                   onRequest={setRequesting}
                   selectedTag={selectedTag}
                   onTagClick={handleTagClick}
@@ -747,9 +750,9 @@ export default function ExtrasPage() {
           <div ref={onetimeRef} style={{ marginBottom: 40 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {ONETIME.map((t) => (
-                <AddonCard 
-                  key={t} 
-                  addon={get(t)} 
+                <AddonCard
+                  key={t}
+                  addon={get(t)}
                   onRequest={setRequesting}
                   selectedTag={selectedTag}
                   onTagClick={handleTagClick}
@@ -774,8 +777,19 @@ export default function ExtrasPage() {
               className="rounded-xl flex items-center justify-center shrink-0"
               style={{ width: 40, height: 40, background: "var(--color-cream-2)", color: "var(--color-muted)" }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
               </svg>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -802,7 +816,6 @@ export default function ExtrasPage() {
               Talk to us
             </button>
           </div>
-
         </div>
       </div>
 
@@ -814,9 +827,7 @@ export default function ExtrasPage() {
         />
       )}
 
-      {showCustomModal && (
-        <CustomRequestModal onClose={() => setShowCustomModal(false)} />
-      )}
+      {showCustomModal && <CustomRequestModal onClose={() => setShowCustomModal(false)} />}
     </>
   );
 }
