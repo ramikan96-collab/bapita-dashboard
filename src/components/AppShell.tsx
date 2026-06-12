@@ -177,13 +177,15 @@ const navItems = [
   { path: "/calendar", icon: IconCalendar, label: "Calendar" },
   { path: "/clients", icon: IconClients, label: "Clients" },
   { path: "/insights", icon: IconInsights, label: "Insights" },
+  { path: "/extras", icon: IconExtras, label: "Extras" },
+] as const;
+
+const drawerItemsTop = [
+  { path: "/settings", icon: IconSettings, label: "Settings" },
   { path: "/financials", icon: IconFinancials, label: "Financials" },
 ] as const;
 
-const drawerItems = [
-  { path: "/settings", icon: IconSettings, label: "Settings" },
-  { path: "/addons", icon: IconExtras, label: "Extras" },
-  { path: "/usage", icon: IconUsage, label: "Usage" },
+const drawerItemsBottom = [
   { path: "/profile", icon: IconProfile, label: "Profile" },
 ] as const;
 
@@ -667,7 +669,29 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto py-2">
-          {drawerItems.map((item) => {
+          {drawerItemsTop.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            return (
+              <button
+                key={item.path}
+                onClick={() => go(item.path)}
+                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
+                style={{
+                  height: 48,
+                  background: active ? "rgba(232,146,10,0.05)" : "transparent",
+                  borderInlineStart: active ? "3px solid var(--color-amber)" : "3px solid transparent",
+                }}
+              >
+                <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
+                  <Icon />
+                </span>
+                {item.label}
+              </button>
+            );
+          })}
+          <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
+          {drawerItemsBottom.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
             return (
