@@ -139,7 +139,7 @@ export default function InsightsPage() {
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ background: "var(--color-cream)" }}>
-      <div className="mx-auto w-full max-w-2xl px-4 md:px-6 pt-6 pb-12">
+      <div className="mx-auto w-full px-4 md:px-6 pt-6 pb-12" style={{ maxWidth: 672 }}>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -358,35 +358,102 @@ export default function InsightsPage() {
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
+// Skeleton layout — shows the real page structure in gray so the user
+// understands what will appear once bookings exist.
+
+const SKEL = "rounded-xl" as const;
+const skelBg: React.CSSProperties = { background: "rgba(30,26,20,0.07)" };
+const skelBgLight: React.CSSProperties = { background: "rgba(30,26,20,0.05)" };
+
+function Bone({ w, h, className = "" }: { w?: string; h?: string; className?: string }) {
+  return (
+    <div
+      className={`${SKEL} ${className}`}
+      style={{ width: w ?? "100%", height: h ?? 14, ...skelBg }}
+    />
+  );
+}
 
 function EmptyState() {
   return (
-    <div
-      className="rounded-2xl px-6 py-14 flex flex-col items-center text-center"
-      style={{ background: "#fff", boxShadow: "var(--shadow-md)" }}
-    >
+    <div className="space-y-5">
+
+      {/* Banner */}
       <div
-        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
-        style={{ background: "var(--amber-soft)" }}
+        className="rounded-2xl px-5 py-4 flex items-center gap-3"
+        style={{ background: "#fff", boxShadow: "var(--shadow-sm)" }}
       >
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
+        <div
+          className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: "var(--amber-soft)" }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
+        </div>
+        <p className="text-[14px] font-medium" style={{ color: "var(--color-muted)" }}>
+          Your numbers appear here once bookings start coming in.
+        </p>
       </div>
-      <p
-        className="text-[18px] font-extrabold mb-2"
-        style={{ color: "var(--color-dark)", letterSpacing: "-0.02em" }}
+
+      {/* Hero skeleton */}
+      <div
+        className="rounded-2xl p-6"
+        style={{ background: "rgba(232,146,10,0.10)", boxShadow: "var(--shadow-sm)" }}
       >
-        No numbers yet
-      </p>
-      <p
-        className="text-[14px] leading-relaxed max-w-[260px]"
-        style={{ color: "var(--color-muted)" }}
-      >
-        Once bookings start coming in, your earnings, busiest weeks, and top services show up here.
-      </p>
+        <Bone w="110px" h="11px" className="mb-4" />
+        <Bone w="160px" h="44px" className="mb-4 rounded-2xl" />
+        <Bone w="130px" h="28px" className="rounded-full" />
+      </div>
+
+      {/* 2×2 stat skeleton */}
+      <div className="grid grid-cols-2 gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="rounded-2xl p-4 md:p-5" style={{ background: "#fff", boxShadow: "var(--shadow-md)" }}>
+            <div className="w-9 h-9 rounded-xl mb-3" style={skelBg} />
+            <Bone w="60px" h="32px" className="mb-2 rounded-xl" />
+            <Bone w="80px" h="11px" />
+          </div>
+        ))}
+      </div>
+
+      {/* Chart skeleton */}
+      <div className="rounded-2xl p-5 md:p-6" style={{ background: "#fff", boxShadow: "var(--shadow-md)" }}>
+        <Bone w="120px" h="14px" className="mb-6" />
+        <div className="flex items-end gap-2 h-40">
+          {[55, 80, 40, 100].map((pct, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-2 justify-end">
+              <div
+                className="w-full rounded-xl"
+                style={{ height: `${pct}%`, ...skelBgLight }}
+              />
+              <div className="w-6 h-2.5 rounded" style={skelBg} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Top services skeleton */}
+      <div className="rounded-2xl p-5 md:p-6" style={{ background: "#fff", boxShadow: "var(--shadow-md)" }}>
+        <Bone w="110px" h="14px" className="mb-5" />
+        <div className="space-y-5">
+          {[100, 75, 50].map((pct, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full flex-shrink-0" style={skelBg} />
+              <div className="flex-1">
+                <div className="flex justify-between mb-2">
+                  <Bone w="100px" h="13px" />
+                  <Bone w="40px" h="13px" />
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={skelBgLight}>
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, ...skelBg }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
     </div>
   );
 }
