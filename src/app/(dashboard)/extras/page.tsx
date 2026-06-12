@@ -184,25 +184,130 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
   );
 }
 
-// ─── Mini Bar Chart ───────────────────────────────────────────────────────────
+// ─── Usage Column ─────────────────────────────────────────────────────────────
 
-const BARS = [0.40, 0.68, 0.30, 0.85, 0.55];
+// Simulated 30-day usage: percentage of capacity consumed each day
+const DAILY_USAGE = [
+  0.12, 0.28, 0.19, 0.41, 0.55, 0.38, 0.22,
+  0.60, 0.74, 0.48, 0.33, 0.80, 0.65, 0.50,
+  0.42, 0.71, 0.88, 0.63, 0.45, 0.30,
+  0.55, 0.68, 0.79, 0.52, 0.40, 0.85, 0.92,
+  0.70, 0.58, 0.45,
+];
 
 function BarChart({ active }: { active: boolean }) {
+  const COLUMN_HEIGHT = 72;
+  const totalCapacity = 100;
+  // Simulate cumulative used % — peaks at ~73% used of total limit
+  const usedPct = active ? 73 : 0;
+  const remainingPct = totalCapacity - usedPct;
+
+  if (!active) {
+    return (
+      <div
+        style={{
+          height: COLUMN_HEIGHT,
+          borderRadius: 10,
+          background: "var(--color-cream-2)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <span style={{ fontSize: 11, color: "var(--color-muted)", fontWeight: 600 }}>
+          Enable to track usage
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-end gap-1" style={{ height: 32 }}>
-      {BARS.map((h, i) => (
+    <div style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
+      {/* Vertical stacked capacity column */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+        {/* Column track */}
         <div
-          key={i}
-          className="flex-1 rounded-sm transition-colors duration-300"
           style={{
-            height: `${Math.round(h * 28)}px`,
-            background: active
-              ? `rgba(232,146,10,${0.18 + h * 0.52})`
-              : "var(--color-cream-2)",
+            height: COLUMN_HEIGHT,
+            borderRadius: 10,
+            background: "var(--color-cream-2)",
+            overflow: "hidden",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column-reverse",
           }}
-        />
-      ))}
+        >
+          {/* Used fill — grows from bottom */}
+          <div
+            style={{
+              width: "100%",
+              height: `${usedPct}%`,
+              background: "linear-gradient(180deg, rgba(232,146,10,0.85) 0%, rgba(232,146,10,0.55) 100%)",
+              borderRadius: "0 0 10px 10px",
+              transition: "height 0.6s cubic-bezier(0.34,1.56,0.64,1)",
+              position: "relative",
+            }}
+          >
+            {/* Shimmer line at top of fill */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: "10%",
+                right: "10%",
+                height: 1.5,
+                borderRadius: 1,
+                background: "rgba(255,255,255,0.45)",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Micro sparkline of daily activity */}
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 1.5, height: 18 }}>
+          {DAILY_USAGE.map((v, i) => (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                height: `${Math.round(v * 100)}%`,
+                minHeight: 2,
+                borderRadius: 2,
+                background: `rgba(232,146,10,${0.15 + v * 0.55})`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Stats column */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          paddingBottom: 24, // aligns with column bottom, above sparkline
+          minWidth: 64,
+        }}
+      >
+        {/* Remaining */}
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1 }}>
+            {remainingPct}%
+          </div>
+          <div style={{ fontSize: 10, fontWeight: 600, color: "var(--color-muted)", marginTop: 2, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            remaining
+          </div>
+        </div>
+
+        {/* Divider tick */}
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6 }}>
+          <div style={{ fontSize: 10, color: "var(--color-muted)", fontWeight: 500 }}>
+            {usedPct}% used
+          </div>
+          <div style={{ width: 8, height: 1.5, borderRadius: 1, background: "var(--color-amber)" }} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -363,12 +468,11 @@ function AddonCard({ addon, onRequest }: { addon: Addon; onRequest: (t: AddonTyp
           >
             {cfg.statLabel}
           </span>
-          <span
-            className="text-[11px] font-medium"
-            style={{ color: addon.active ? "var(--color-amber)" : "var(--color-muted)" }}
-          >
-            {addon.active ? "No data yet" : "Enable to track"}
-          </span>
+          {addon.active && (
+            <span className="text-[11px] font-medium" style={{ color: "var(--color-muted)" }}>
+              Last 30 days
+            </span>
+          )}
         </div>
         <BarChart active={addon.active} />
       </div>
