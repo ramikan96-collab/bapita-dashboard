@@ -111,17 +111,6 @@ function IconSettings({ size = 20 }: IconProps) {
   );
 }
 
-function IconAddons({ size = 20 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-      <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-      <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-      <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-    </svg>
-  );
-}
-
 function IconUsage({ size = 20 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -149,19 +138,54 @@ function IconLogout({ size = 20 }: IconProps) {
   );
 }
 
+function IconExtras({ size = 20 }: IconProps) {
+  // sparkles — "the store of upgrades"
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"></path>
+      <path d="M19 14l.7 1.8 1.8.7-1.8.7L19 19l-.7-1.8-1.8-.7 1.8-.7L19 14z"></path>
+    </svg>
+  );
+}
+
+// Brand mark — inlined from bapita/v2/.../img/favicon.svg
+function BapitaMark({ size = 26 }: { size?: number }) {
+  return (
+    <svg width={size} height={(size * 90) / 110} viewBox="0 0 110 90" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M8 16 Q8 86 55 86 Q102 86 102 16 Z" fill="#E8920A" />
+      <rect x="8" y="6" width="94" height="14" rx="7" fill="#B86800" />
+      <path d="M18 34 Q55 52 92 34" stroke="white" strokeWidth="4.5" strokeLinecap="round" fill="none" />
+      <path d="M24 56 Q55 72 86 56" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".55" />
+    </svg>
+  );
+}
+
+function Wordmark() {
+  return (
+    <span className="flex items-center gap-2">
+      <BapitaMark />
+      <span className="font-extrabold text-[18px] text-dark" style={{ letterSpacing: "-0.03em" }}>
+        bapita
+      </span>
+    </span>
+  );
+}
+
 // ─── Nav config ────────────────────────────────────────────────────────────
 
 const navItems = [
   { path: "/calendar", icon: IconCalendar, label: "Calendar" },
   { path: "/clients", icon: IconClients, label: "Clients" },
   { path: "/insights", icon: IconInsights, label: "Insights" },
+  { path: "/extras", icon: IconExtras, label: "Extras" },
+] as const;
+
+const drawerItemsTop = [
+  { path: "/settings", icon: IconSettings, label: "Settings" },
   { path: "/financials", icon: IconFinancials, label: "Financials" },
 ] as const;
 
-const drawerItems = [
-  { path: "/settings", icon: IconSettings, label: "Settings" },
-  { path: "/addons", icon: IconAddons, label: "Add-ons" },
-  { path: "/usage", icon: IconUsage, label: "Usage" },
+const drawerItemsBottom = [
   { path: "/profile", icon: IconProfile, label: "Profile" },
 ] as const;
 
@@ -200,7 +224,7 @@ function CalendarViewMenu({
       >
         {/* View toggle */}
         <div className="px-2 pb-2">
-          <div className="flex rounded-xl p-0.5" style={{ background: "var(--color-cream-2)" }}>
+          <div className="flex rounded-full p-0.5" style={{ background: "var(--color-cream-2)" }}>
             {calViews.map((v) => {
               const active = chrome.view === v.value;
               return (
@@ -210,7 +234,7 @@ function CalendarViewMenu({
                     chrome.setView(v.value);
                     onClose();
                   }}
-                  className="flex-1 py-1.5 rounded-[10px] text-[13px] font-bold transition-colors"
+                  className="flex-1 py-1.5 rounded-full text-[13px] font-bold transition-colors"
                   style={{
                     background: active ? "var(--color-amber)" : "transparent",
                     color: active ? "#fff" : "var(--color-muted)",
@@ -289,6 +313,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const [mobileCalMenuOpen, setMobileCalMenuOpen] = useState(false);
   const supabase = createClient();
 
   const onCalendar = pathname === "/calendar";
@@ -321,13 +346,20 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       <div className="flex flex-col h-dvh">
       {/* ─── Desktop Top Nav with underline indicator ─────────────────── */}
       <div
-        className="hidden md:flex h-12 shrink-0 items-center border-b z-30 px-6"
-        style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)" }}
+        className="hidden md:flex h-14 shrink-0 items-center border-b z-30 px-6"
+        style={{
+          borderColor: "var(--line)",
+          background: "var(--nav-bg)",
+          backdropFilter: "var(--nav-blur)",
+          WebkitBackdropFilter: "var(--nav-blur)",
+        }}
       >
         {/* Logo */}
-        <span className="font-black text-[16px] text-dark tracking-tight w-32">bapita</span>
-        
-        {/* Centered tabs with smooth underline */}
+        <div className="w-40">
+          <Wordmark />
+        </div>
+
+        {/* Centered pill tabs */}
         <nav className="flex-1 flex justify-center gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -336,43 +368,85 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <button
                 key={item.path}
                 onClick={() => router.push(item.path)}
-                className="relative flex items-center gap-2 px-4 py-1.5 transition-all duration-200"
-                style={{ color: active ? "var(--color-dark)" : "var(--color-muted)" }}
-                onMouseEnter={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.color = "var(--color-dark)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.color = "var(--color-muted)";
-                  }
-                }}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-colors ${
+                  active
+                    ? "text-dark"
+                    : "text-muted hover:text-dark hover:bg-[var(--color-cream-2)]"
+                }`}
+                style={active ? { background: "var(--amber-soft)" } : undefined}
               >
                 <Icon size={16} />
-                <span className="text-[13px] font-medium">{item.label}</span>
-                {/* Underline indicator */}
-                <span
-                  className="absolute bottom-0 start-4 end-4 h-0.5 rounded-full transition-all duration-200"
-                  style={{
-                    background: "var(--color-amber)",
-                    opacity: active ? 1 : 0,
-                    transform: active ? "scaleX(1)" : "scaleX(0)",
-                  }}
-                />
+                <span className="text-[13px] font-semibold">{item.label}</span>
               </button>
             );
           })}
         </nav>
 
         {/* Hamburger menu - far right */}
+        <div className="w-40 flex justify-end">
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors"
+            aria-label="Open menu"
+          >
+            <IconMenu size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* ─── Mobile Top Bar ───────────────────────────────────────────── */}
+      <div
+        className="md:hidden h-16 shrink-0 flex items-center px-4 border-b z-30 relative"
+        style={{
+          borderColor: "var(--line)",
+          background: "var(--nav-bg)",
+          backdropFilter: "var(--nav-blur)",
+          WebkitBackdropFilter: "var(--nav-blur)",
+        }}
+      >
         <button
           onClick={() => setDrawerOpen(true)}
-          className="w-32 flex justify-end pe-1 rounded-xl text-dark hover:bg-cream transition-colors"
+          className="p-2 -ms-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
           aria-label="Open menu"
         >
-          <IconMenu size={20} />
+          <IconMenu size={24} />
         </button>
+
+        {onCalendar && chrome ? (
+          <>
+            <button
+              onClick={chrome.openDatePicker}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2"
+              aria-label="Pick date"
+            >
+              <span className="font-bold text-[16px] text-dark">{chrome.monthYear}</span>
+              <span className="text-muted">
+                <IconChevronDown size={14} />
+              </span>
+            </button>
+            <button
+              onClick={() => setMobileCalMenuOpen((v) => !v)}
+              className="p-2 -me-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+              aria-label="Calendar options"
+            >
+              <IconMore size={24} />
+            </button>
+            {mobileCalMenuOpen && (
+              <CalendarViewMenu
+                chrome={chrome}
+                onClose={() => setMobileCalMenuOpen(false)}
+                onSettings={() => router.push("/settings")}
+              />
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex-1 flex justify-center">
+              <Wordmark />
+            </div>
+            <div className="w-10 -me-2" />
+          </>
+        )}
       </div>
 
       {/* ─── Mobile Bottom Nav ────────────────────────────────────────── */}
@@ -394,7 +468,16 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               className="flex flex-col items-center justify-center flex-1 gap-1 transition-colors"
               style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}
             >
-              <Icon />
+              <span
+                className="flex items-center justify-center rounded-full transition-colors"
+                style={{
+                  width: 44,
+                  height: 28,
+                  background: active ? "var(--amber-soft)" : "transparent",
+                }}
+              >
+                <Icon />
+              </span>
               <span className="text-[10px] font-medium">{item.label}</span>
             </button>
           );
@@ -432,8 +515,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <div className="px-3 pb-4">
             <button
               onClick={() => router.push("/new-booking")}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white font-semibold text-[14px] transition-all hover:brightness-105 active:scale-[0.98]"
-              style={{ background: "var(--color-amber)" }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-white font-bold text-[14px] transition-all hover:-translate-y-0.5 active:scale-[0.98] shadow-[0_2px_6px_rgba(30,26,20,0.10)] hover:shadow-[0_12px_30px_rgba(232,146,10,0.32)]"
+              style={{ background: "var(--wash-amber)" }}
             >
               <IconPlus size={18} />
               New Booking
@@ -444,7 +527,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <div className="px-3 pb-4">
             <button
               onClick={chrome.openDatePicker}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border text-[14px] font-medium transition-colors hover:bg-cream"
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-full border text-[14px] font-medium transition-colors hover:bg-cream"
               style={{ borderColor: "var(--color-cream-2)", color: "var(--color-dark)" }}
             >
               <IconCalendar size={16} />
@@ -460,14 +543,14 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <div className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--color-muted)" }}>
               View
             </div>
-            <div className="flex rounded-xl p-0.5" style={{ background: "var(--color-cream-2)" }}>
+            <div className="flex rounded-full p-0.5" style={{ background: "var(--color-cream-2)" }}>
               {calViews.map((v) => {
                 const active = chrome.view === v.value;
                 return (
                   <button
                     key={v.value}
                     onClick={() => chrome.setView(v.value)}
-                    className="flex-1 py-2 rounded-[10px] text-[13px] font-bold transition-colors"
+                    className="flex-1 py-2 rounded-full text-[13px] font-bold transition-colors"
                     style={{
                       background: active ? "var(--color-amber)" : "transparent",
                       color: active ? "#fff" : "var(--color-muted)",
@@ -586,7 +669,29 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto py-2">
-          {drawerItems.map((item) => {
+          {drawerItemsTop.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            return (
+              <button
+                key={item.path}
+                onClick={() => go(item.path)}
+                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
+                style={{
+                  height: 48,
+                  background: active ? "rgba(232,146,10,0.05)" : "transparent",
+                  borderInlineStart: active ? "3px solid var(--color-amber)" : "3px solid transparent",
+                }}
+              >
+                <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
+                  <Icon />
+                </span>
+                {item.label}
+              </button>
+            );
+          })}
+          <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
+          {drawerItemsBottom.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
             return (
