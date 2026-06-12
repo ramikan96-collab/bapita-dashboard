@@ -184,16 +184,14 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
   );
 }
 
-// ─── Usage Column — Premium Claude-style thin vertical bar ─────────────────────
-// This creates a thin (5px wide) elegant vertical bar showing usage capacity.
-// Inactive: Shows 100% full with subtle green gradient.
-// Active: Shows used percentage (amber gradient) from bottom.
-
 // ─── Usage Bar — Premium Claude-style thin horizontal bar ─────────────────────
+// This creates a thin (4px tall) elegant horizontal bar showing usage capacity.
+// Inactive: Shows 100% full with subtle green gradient.
+// Active: Shows used percentage (amber gradient) from left.
 
 function BarChart({ active }: { active: boolean }) {
   const BAR_HEIGHT = 4;          // ultra thin — premium Claude aesthetic
-  const usedPct = active ? 73 : 0;
+  const usedPct = active ? 73 : 0;      // simulate usage when active
   const remainingPct = 100 - usedPct;
 
   if (!active) {
@@ -274,52 +272,6 @@ function BarChart({ active }: { active: boolean }) {
           {remainingPct}% remaining
         </span>
         <span style={{ fontSize: 11, fontWeight: 500, color: "#B0B8C4" }}>
-          {usedPct}% used
-        </span>
-      </div>
-    </div>
-  );
-}
-
-  // ACTIVE: Thin bar shows used vs remaining proportion
-  const fillHeight = usedPct; // percentage of bar filled from bottom
-
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      {/* Thin vertical bar container */}
-      <div
-        style={{
-          width: BAR_WIDTH,
-          height: BAR_HEIGHT,
-          borderRadius: 4,
-          backgroundColor: "#F0F2F5",        // light gray track
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Used portion — amber gradient from bottom */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            width: "100%",
-            height: `${fillHeight}%`,
-            background: "linear-gradient(180deg, #F5B042 0%, #E8890A 100%)",
-            borderRadius: 4,
-            transition: "height 0.4s ease-out",
-          }}
-        />
-      </div>
-
-      {/* Stats — remaining + used (premium hierarchy) */}
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color: "#1E2A3A", lineHeight: 1.2 }}>
-          {remainingPct}%
-        </span>
-        <span style={{ fontSize: 10, fontWeight: 500, color: "#8E9AAB", letterSpacing: "0.03em" }}>
-          remaining
-        </span>
-        <span style={{ fontSize: 9, fontWeight: 400, color: "#B0B8C4", marginTop: 2 }}>
           {usedPct}% used
         </span>
       </div>
@@ -474,9 +426,9 @@ function AddonCard({ addon, onRequest }: { addon: Addon; onRequest: (t: AddonTyp
         </div>
       </div>
 
-      {/* Chart row - now using premium thin vertical bar */}
+      {/* Chart row - now using premium thin horizontal bar */}
       <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2.5">
           <span
             className="text-[11px] font-semibold uppercase tracking-wide"
             style={{ color: "var(--color-muted)" }}
