@@ -184,204 +184,100 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
   );
 }
 
-// ─── Usage Column ─────────────────────────────────────────────────────────────
-
-// Simulated 30-day usage: percentage of capacity consumed each day
-const DAILY_USAGE = [
-  0.12, 0.28, 0.19, 0.41, 0.55, 0.38, 0.22,
-  0.60, 0.74, 0.48, 0.33, 0.80, 0.65, 0.50,
-  0.42, 0.71, 0.88, 0.63, 0.45, 0.30,
-  0.55, 0.68, 0.79, 0.52, 0.40, 0.85, 0.92,
-  0.70, 0.58, 0.45,
-];
+// ─── Usage Column — Premium Claude-style thin vertical bar ─────────────────────
+// This creates a thin (5px wide) elegant vertical bar showing usage capacity.
+// Inactive: Shows 100% full with subtle green gradient.
+// Active: Shows used percentage (amber gradient) from bottom.
 
 function BarChart({ active }: { active: boolean }) {
-  const COLUMN_HEIGHT = 72;
-  const totalCapacity = 100;
-  // Simulate cumulative used % — peaks at ~73% used of total limit
-  const usedPct = active ? 73 : 0;
-  const remainingPct = totalCapacity - usedPct;
+  const BAR_HEIGHT = 56;        // elegant vertical bar height
+  const BAR_WIDTH = 4;          // ultra thin — premium Claude aesthetic
+  const usedPct = active ? 73 : 0;      // simulate usage when active
+  const remainingPct = 100 - usedPct;
 
   if (!active) {
-    // INACTIVE STATE: Clean vertical column showing 100% available with subtle green tint
+    // INACTIVE: Clean, full 100% green bar — shows all capacity available
     return (
-      <div style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
-        {/* Vertical stacked capacity column - always shows 100% available when inactive */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
-          {/* Column track - full height represents 100% capacity */}
-          <div
-            style={{
-              height: COLUMN_HEIGHT,
-              borderRadius: 10,
-              background: "#E8F3EC",   // subtle greenish background (inactive track)
-              overflow: "hidden",
-              position: "relative",
-              display: "flex",
-              flexDirection: "column-reverse",
-            }}
-          >
-            {/* Fill is 100% of the column, showing full green gradient availability */}
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                background: "linear-gradient(180deg, rgba(74, 174, 96, 0.85) 0%, rgba(74, 174, 96, 0.55) 100%)",
-                borderRadius: "0 0 10px 10px",
-                transition: "height 0.6s cubic-bezier(0.34,1.56,0.64,1)",
-                position: "relative",
-              }}
-            >
-              {/* Soft shimmer line at top of fill */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: "10%",
-                  right: "10%",
-                  height: 1.5,
-                  borderRadius: 1,
-                  background: "rgba(255,255,255,0.35)",
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Mini sparkline area - neutral/grey when inactive */}
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 1.5, height: 18, opacity: 0.5 }}>
-            {DAILY_USAGE.map((v, i) => (
-              <div
-                key={i}
-                style={{
-                  flex: 1,
-                  height: `${Math.round(v * 100)}%`,
-                  minHeight: 2,
-                  borderRadius: 2,
-                  background: "#C0D4C5",  // muted green-grey for inactive preview
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Stats column - shows full capacity */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        {/* Thin vertical bar container */}
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            paddingBottom: 24,
-            minWidth: 64,
+            width: BAR_WIDTH,
+            height: BAR_HEIGHT,
+            borderRadius: 4,
+            backgroundColor: "#E5EFE8",      // soft muted green track
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          {/* Remaining shows 100% */}
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1 }}>
-              100%
-            </div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: "var(--color-muted)", marginTop: 2, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-              available
-            </div>
-          </div>
+          {/* Fill — 100% of capacity, subtle green gradient */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              width: "100%",
+              height: "100%",
+              background: "linear-gradient(180deg, #7EDB9E 0%, #3B9B54 100%)",
+              borderRadius: 4,
+              transition: "height 0.4s ease-out",
+            }}
+          />
+        </div>
 
-          {/* Divider tick with 0% used */}
-          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6 }}>
-            <div style={{ fontSize: 10, color: "var(--color-muted)", fontWeight: 500 }}>
-              0% used
-            </div>
-            <div style={{ width: 8, height: 1.5, borderRadius: 1, background: "#4AAE60" }} />
-          </div>
+        {/* Stats text — minimal typography */}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: "#1E2A3A", lineHeight: 1.2 }}>
+            100%
+          </span>
+          <span style={{ fontSize: 10, fontWeight: 500, color: "#8E9AAB", letterSpacing: "0.03em" }}>
+            available
+          </span>
         </div>
       </div>
     );
   }
 
-  // ACTIVE STATE: Shows actual usage (73% used, 27% remaining)
+  // ACTIVE: Thin bar shows used vs remaining proportion
+  const fillHeight = usedPct; // percentage of bar filled from bottom
+
   return (
-    <div style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
-      {/* Vertical stacked capacity column */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
-        {/* Column track */}
-        <div
-          style={{
-            height: COLUMN_HEIGHT,
-            borderRadius: 10,
-            background: "var(--color-cream-2)",
-            overflow: "hidden",
-            position: "relative",
-            display: "flex",
-            flexDirection: "column-reverse",
-          }}
-        >
-          {/* Used fill — grows from bottom */}
-          <div
-            style={{
-              width: "100%",
-              height: `${usedPct}%`,
-              background: "linear-gradient(180deg, rgba(232,146,10,0.85) 0%, rgba(232,146,10,0.55) 100%)",
-              borderRadius: "0 0 10px 10px",
-              transition: "height 0.6s cubic-bezier(0.34,1.56,0.64,1)",
-              position: "relative",
-            }}
-          >
-            {/* Shimmer line at top of fill */}
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: "10%",
-                right: "10%",
-                height: 1.5,
-                borderRadius: 1,
-                background: "rgba(255,255,255,0.45)",
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Micro sparkline of daily activity */}
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 1.5, height: 18 }}>
-          {DAILY_USAGE.map((v, i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                height: `${Math.round(v * 100)}%`,
-                minHeight: 2,
-                borderRadius: 2,
-                background: `rgba(232,146,10,${0.15 + v * 0.55})`,
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Stats column */}
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      {/* Thin vertical bar container */}
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          paddingBottom: 24,
-          minWidth: 64,
+          width: BAR_WIDTH,
+          height: BAR_HEIGHT,
+          borderRadius: 4,
+          backgroundColor: "#F0F2F5",        // light gray track
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        {/* Remaining */}
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1 }}>
-            {remainingPct}%
-          </div>
-          <div style={{ fontSize: 10, fontWeight: 600, color: "var(--color-muted)", marginTop: 2, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-            remaining
-          </div>
-        </div>
+        {/* Used portion — amber gradient from bottom */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            width: "100%",
+            height: `${fillHeight}%`,
+            background: "linear-gradient(180deg, #F5B042 0%, #E8890A 100%)",
+            borderRadius: 4,
+            transition: "height 0.4s ease-out",
+          }}
+        />
+      </div>
 
-        {/* Divider tick */}
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6 }}>
-          <div style={{ fontSize: 10, color: "var(--color-muted)", fontWeight: 500 }}>
-            {usedPct}% used
-          </div>
-          <div style={{ width: 8, height: 1.5, borderRadius: 1, background: "var(--color-amber)" }} />
-        </div>
+      {/* Stats — remaining + used (premium hierarchy) */}
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: "#1E2A3A", lineHeight: 1.2 }}>
+          {remainingPct}%
+        </span>
+        <span style={{ fontSize: 10, fontWeight: 500, color: "#8E9AAB", letterSpacing: "0.03em" }}>
+          remaining
+        </span>
+        <span style={{ fontSize: 9, fontWeight: 400, color: "#B0B8C4", marginTop: 2 }}>
+          {usedPct}% used
+        </span>
       </div>
     </div>
   );
@@ -534,9 +430,9 @@ function AddonCard({ addon, onRequest }: { addon: Addon; onRequest: (t: AddonTyp
         </div>
       </div>
 
-      {/* Chart row */}
+      {/* Chart row - now using premium thin vertical bar */}
       <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
-        <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center justify-between mb-3">
           <span
             className="text-[11px] font-semibold uppercase tracking-wide"
             style={{ color: "var(--color-muted)" }}
