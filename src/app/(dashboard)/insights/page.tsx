@@ -6,11 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { InsightsSkeleton } from "@/components/LoadingSkeleton";
 import { STATUS_COLOR } from "@/types";
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 // Rami's WhatsApp line — the ads nudge opens a pre filled chat.
 const WA_NUMBER = "972501234567";
-const WA_MSG = "היי, אני מעוניין להפעיל מודעות ממומנות כדי להביא יותר הזמנות";
+const WA_MSG = "Hi, I want to turn on paid ads to bring in more bookings.";
 
 // Supabase types the joined relation as an array; it is to one here.
 interface BookingRow {
@@ -46,6 +45,11 @@ interface Stats {
 function isEarned(status: string): boolean {
   return status === "completed";
 }
+
+const cardStyle: React.CSSProperties = {
+  background: "var(--color-surface)",
+  boxShadow: "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)",
+};
 
 export default function InsightsPage() {
   const { business, loading: bizLoading } = useBusiness();
@@ -102,7 +106,7 @@ export default function InsightsPage() {
       const weeksSoFar = Math.ceil(getDate(now) / 7);
       const buckets = Array.from({ length: weeksSoFar }, () => 0);
       cur.forEach((b) => {
-        if (!isEarned(b.status)) return;
+        if (!isEarned(b.status) || !b.appointment_date) return;
         const idx = Math.min(Math.ceil(getDate(new Date(b.appointment_date + "T12:00:00")) / 7), weeksSoFar) - 1;
         buckets[idx] += b.service?.price || 0;
       });
@@ -133,203 +137,255 @@ export default function InsightsPage() {
 
   if (bizLoading || (business && loading)) return <InsightsSkeleton />;
 
-  if (!stats) {
-    return (
-      <div className="flex justify-center py-16" style={{ background: "var(--color-cream)" }}>
-        <p className="text-[15px]" style={{ color: "var(--color-muted)" }}>No data available</p>
-      </div>
-    );
-  }
+  const empty = !stats || stats.bookings === 0;
 
   // Delta vs last month. No prior earnings means we cannot show a percentage.
-  const hasDelta = stats.previousRevenue > 0;
+  const hasDelta = !!stats && stats.previousRevenue > 0;
   const deltaPct = hasDelta
-    ? ((stats.revenue - stats.previousRevenue) / stats.previousRevenue) * 100
+    ? ((stats!.revenue - stats!.previousRevenue) / stats!.previousRevenue) * 100
     : 0;
   const deltaUp = deltaPct >= 0;
 
-  const cardStyle = {
-    background: "var(--color-surface)",
-    boxShadow: "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)",
-  };
-
-  const maxServiceRevenue = Math.max(1, ...stats.topServices.map((s) => s.revenue));
+  const hasRevenue = !!stats && stats.weekly.some((w) => w.revenue > 0);
+  const maxServiceRevenue = Math.max(1, ...(stats?.topServices.map((s) => s.revenue) ?? []));
 
   return (
-    <div className="flex flex-col min-h-full" style={{ background: "var(--color-cream)" }}>
-      {/* Header with date range chip */}
-      <div className="shrink-0 flex items-center justify-between px-4 pt-5 pb-4">
-        <h1 className="text-[28px] font-extrabold leading-tight" style={{ color: "var(--color-dark)" }}>
-          Insights
-        </h1>
-        <span
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium"
-          style={{ ...cardStyle, color: "var(--color-dark)" }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--color-amber)" }} />
-          This month
-        </span>
-      </div>
+    <div className="flex-1 overflow-y-auto" style={{ background: "var(--color-cream)" }}>
+      <div className="mx-auto w-full max-w-2xl px-4 md:px-6 pt-6 pb-10">
 
-      <div className="flex-1 px-4 pb-8 space-y-3">
-
-        {/* Revenue hero */}
-        <div className="rounded-2xl p-5" style={cardStyle}>
-          <p className="text-[13px] font-medium mb-1.5" style={{ color: "var(--color-muted)" }}>
-            Earnings this month
-          </p>
-          <p className="text-[44px] font-black leading-none" style={{ color: "var(--color-amber)" }}>
-            ₪{stats.revenue.toLocaleString()}
-          </p>
-          {hasDelta && (
-            <p
-              className="inline-flex items-center gap-1 text-[14px] font-semibold mt-2.5"
-              style={{ color: deltaUp ? "#16A34A" : "#DC2626" }}
-            >
-              <span>{deltaUp ? "↑" : "↓"}</span>
-              {Math.abs(deltaPct).toFixed(0)}%
-              <span className="font-medium" style={{ color: "var(--color-muted)" }}>vs last month</span>
-            </p>
-          )}
+        {/* Header with date range chip */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-[28px] md:text-[32px] font-extrabold leading-tight" style={{ color: "var(--color-dark)" }}>
+            Insights
+          </h1>
+          <span
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium"
+            style={{ ...cardStyle, color: "var(--color-dark)" }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--color-amber)" }} />
+            This month
+          </span>
         </div>
 
-        {/* 2 by 2 stat grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Bookings" value={stats.bookings} cardStyle={cardStyle} />
-          <StatCard label="Completed" value={stats.completed} color={STATUS_COLOR.completed} cardStyle={cardStyle} />
-          <StatCard label="No shows" value={stats.noShow} color={stats.noShow > 0 ? STATUS_COLOR.no_show : undefined} cardStyle={cardStyle} />
-          <StatCard label="Average ticket" value={`₪${stats.avgTicket.toLocaleString()}`} cardStyle={cardStyle} />
-        </div>
+        {empty ? (
+          <EmptyState />
+        ) : (
+          <div className="space-y-4">
 
-        {/* Revenue by week */}
-        {stats.weekly.length > 0 && (
-          <div className="rounded-2xl p-4" style={cardStyle}>
-            <p className="text-[15px] font-bold mb-4" style={{ color: "var(--color-dark)" }}>
-              Revenue by week
-            </p>
-            <ResponsiveContainer width="100%" height={150}>
-              <BarChart data={stats.weekly} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 12, fill: "var(--color-muted)", fontFamily: "Heebo" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: 10,
-                    border: "none",
-                    background: "var(--color-dark)",
-                    color: "#fff",
-                    fontSize: 13,
-                    fontFamily: "Heebo",
-                    padding: "8px 12px",
-                  }}
-                  itemStyle={{ color: "#fff" }}
-                  labelStyle={{ color: "rgba(255,255,255,0.65)", marginBottom: 2 }}
-                  formatter={(value) => [`₪${Number(value).toLocaleString()}`, "Revenue"]}
-                  cursor={{ fill: "rgba(30,26,20,0.04)" }}
-                />
-                <Bar dataKey="revenue" fill="var(--color-amber)" radius={[6, 6, 0, 0]} maxBarSize={48} />
-              </BarChart>
-            </ResponsiveContainer>
+            {/* Revenue hero */}
+            <div className="rounded-2xl p-5 md:p-6" style={cardStyle}>
+              <p className="text-[13px] font-medium mb-2" style={{ color: "var(--color-muted)" }}>
+                Earnings this month
+              </p>
+              <p className="text-[40px] md:text-[44px] font-black leading-none" style={{ color: "var(--color-amber)" }}>
+                ₪{stats!.revenue.toLocaleString()}
+              </p>
+              {hasDelta && (
+                <p
+                  className="inline-flex items-center gap-1 text-[14px] font-semibold mt-3"
+                  style={{ color: deltaUp ? "#16A34A" : "#DC2626" }}
+                >
+                  <span>{deltaUp ? "↑" : "↓"}</span>
+                  {Math.abs(deltaPct).toFixed(0)}%
+                  <span className="font-medium" style={{ color: "var(--color-muted)" }}>vs last month</span>
+                </p>
+              )}
+            </div>
+
+            {/* 2 by 2 stat grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <StatCard label="Bookings" value={stats!.bookings} />
+              <StatCard label="Completed" value={stats!.completed} color={STATUS_COLOR.completed} />
+              <StatCard
+                label="No shows"
+                value={stats!.noShow}
+                color={stats!.noShow > 0 ? STATUS_COLOR.no_show : undefined}
+              />
+              <StatCard label="Average ticket" value={`₪${stats!.avgTicket.toLocaleString()}`} />
+            </div>
+
+            {/* Revenue trend — hand rolled SVG bars */}
+            <div className="rounded-2xl p-5 md:p-6" style={cardStyle}>
+              <p className="text-[15px] font-bold mb-5" style={{ color: "var(--color-dark)" }}>
+                Revenue trend
+              </p>
+              {hasRevenue ? (
+                <BarChart data={stats!.weekly} />
+              ) : (
+                <p className="text-[14px] text-center py-6" style={{ color: "var(--color-muted)" }}>
+                  No earnings yet this month.
+                </p>
+              )}
+            </div>
+
+            {/* Top services */}
+            <div className="rounded-2xl p-5 md:p-6" style={cardStyle}>
+              <p className="text-[15px] font-bold mb-4" style={{ color: "var(--color-dark)" }}>
+                Top services
+              </p>
+              {stats!.topServices.length > 0 ? (
+                <div className="space-y-4">
+                  {stats!.topServices.map((service, idx) => (
+                    <div key={service.name} className="flex items-center gap-3">
+                      <span
+                        className="text-[12px] font-bold w-4 text-center flex-shrink-0"
+                        style={{ color: "var(--color-muted)" }}
+                      >
+                        {idx + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                          <p className="text-[15px] font-medium truncate" style={{ color: "var(--color-dark)" }}>
+                            {service.name}
+                          </p>
+                          <span className="text-[14px] font-semibold flex-shrink-0" style={{ color: "var(--color-dark)" }}>
+                            ₪{service.revenue.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--color-cream-2)" }}>
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${Math.max(6, (service.revenue / maxServiceRevenue) * 100)}%`,
+                              background: "var(--color-amber)",
+                            }}
+                          />
+                        </div>
+                        <p className="text-[12px] mt-1" style={{ color: "var(--color-muted)" }}>
+                          {service.count} {service.count === 1 ? "booking" : "bookings"}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[14px] text-center py-6" style={{ color: "var(--color-muted)" }}>
+                  No completed bookings yet.
+                </p>
+              )}
+            </div>
+
+            {/* Ads nudge — the only upsell allowed on this page */}
+            <div className="rounded-2xl p-4 flex items-center gap-4" style={cardStyle}>
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(232,146,10,0.12)" }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 11l18-5v12L3 14v-3z" />
+                  <path d="M11.6 16.8a3 3 0 11-5.8-1.6" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[15px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
+                  Want more bookings?
+                </p>
+                <p className="text-[13px] leading-snug" style={{ color: "var(--color-muted)" }}>
+                  Turn on paid ads.
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MSG)}`, "_blank")
+                }
+                className="flex-shrink-0 text-[14px] font-semibold text-white px-4 py-2.5 rounded-xl bg-amber hover:bg-[#D4830A] active:bg-[#B86800] transition-colors"
+              >
+                Turn on
+              </button>
+            </div>
+
           </div>
         )}
-
-        {/* Top services */}
-        <div className="rounded-2xl p-4" style={cardStyle}>
-          <p className="text-[15px] font-bold mb-3" style={{ color: "var(--color-dark)" }}>
-            Top services
-          </p>
-          {stats.topServices.length > 0 ? (
-            <div className="space-y-3.5">
-              {stats.topServices.map((service, idx) => (
-                <div key={service.name} className="flex items-center gap-3">
-                  <span
-                    className="text-[12px] font-bold w-4 text-center flex-shrink-0"
-                    style={{ color: "var(--color-muted)" }}
-                  >
-                    {idx + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                      <p className="text-[15px] font-medium truncate" style={{ color: "var(--color-dark)" }}>
-                        {service.name}
-                      </p>
-                      <span className="text-[14px] font-semibold flex-shrink-0" style={{ color: "var(--color-dark)" }}>
-                        ₪{service.revenue.toLocaleString()}
-                      </span>
-                    </div>
-                    {/* Mini revenue bar */}
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--color-cream-2)" }}>
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${Math.max(6, (service.revenue / maxServiceRevenue) * 100)}%`,
-                          background: "var(--color-amber)",
-                        }}
-                      />
-                    </div>
-                    <p className="text-[12px] mt-1" style={{ color: "var(--color-muted)" }}>
-                      {service.count} {service.count === 1 ? "booking" : "bookings"}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[15px] text-center py-4" style={{ color: "var(--color-muted)" }}>
-              No completed bookings yet
-            </p>
-          )}
-        </div>
-
-        {/* Ads nudge — the only upsell allowed on this page */}
-        <div className="rounded-2xl p-4 flex items-center gap-4" style={cardStyle}>
-          <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(232,146,10,0.12)" }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 11l18-5v12L3 14v-3z" />
-              <path d="M11.6 16.8a3 3 0 11-5.8-1.6" />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[15px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
-              Want more bookings?
-            </p>
-            <p className="text-[13px] leading-snug" style={{ color: "var(--color-muted)" }}>
-              Turn on paid ads.
-            </p>
-          </div>
-          <button
-            onClick={() =>
-              window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MSG)}`, "_blank")
-            }
-            className="flex-shrink-0 text-[14px] font-semibold text-white px-4 py-2.5 rounded-xl bg-amber hover:bg-[#D4830A] active:bg-[#B86800] transition-colors"
-          >
-            Turn on
-          </button>
-        </div>
-
       </div>
     </div>
   );
 }
 
+// ─── Empty state ─────────────────────────────────────────────────────────────
+// Shown before any booking exists. No fake numbers — the page stays honest.
+
+function EmptyState() {
+  return (
+    <div className="rounded-2xl px-6 py-12 flex flex-col items-center text-center" style={cardStyle}>
+      <div
+        className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+        style={{ background: "rgba(232,146,10,0.12)" }}
+      >
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+      </div>
+      <p className="text-[17px] font-bold mb-1.5" style={{ color: "var(--color-dark)" }}>
+        No numbers yet
+      </p>
+      <p className="text-[14px] leading-relaxed max-w-[260px]" style={{ color: "var(--color-muted)" }}>
+        Once bookings start coming in, your earnings, busiest weeks, and top services show up here.
+      </p>
+    </div>
+  );
+}
+
+// ─── Bar chart ───────────────────────────────────────────────────────────────
+// No chart lib. Flexbox columns so bars stay crisp and fill the card at any
+// width. Tap a bar to read its value; the tallest bar is amber, the rest faded.
+
+function BarChart({ data }: { data: WeekPoint[] }) {
+  const [active, setActive] = useState<number | null>(null);
+  const max = Math.max(1, ...data.map((d) => d.revenue));
+  const peak = data.reduce((hi, d, i) => (d.revenue > data[hi].revenue ? i : hi), 0);
+
+  return (
+    <div className="flex items-end gap-3 h-44">
+      {data.map((d, i) => {
+        const isActive = active === i;
+        const highlight = isActive || i === peak;
+        const heightPct = Math.max(3, (d.revenue / max) * 100);
+
+        return (
+          <button
+            key={d.label}
+            onClick={() => setActive(isActive ? null : i)}
+            className="flex-1 flex flex-col items-center gap-2 h-full"
+            aria-label={`${d.label}: ₪${d.revenue.toLocaleString()}`}
+          >
+            <span
+              className="h-4 text-[12px] font-bold leading-none transition-opacity"
+              style={{ color: "var(--color-dark)", opacity: isActive ? 1 : 0 }}
+            >
+              ₪{d.revenue.toLocaleString()}
+            </span>
+            <div className="flex-1 w-full flex items-end justify-center">
+              <div
+                className="w-full max-w-[56px] rounded-t-lg transition-all duration-200"
+                style={{
+                  height: `${heightPct}%`,
+                  background: highlight ? "var(--color-amber)" : "rgba(232,146,10,0.26)",
+                }}
+              />
+            </div>
+            <span className="text-[12px] leading-none" style={{ color: "var(--color-muted)" }}>
+              {d.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function StatCard({
-  label, value, color, cardStyle,
+  label, value, color,
 }: {
   label: string;
   value: number | string;
   color?: string;
-  cardStyle: React.CSSProperties;
 }) {
   return (
-    <div className="rounded-2xl p-4" style={cardStyle}>
+    <div className="rounded-2xl p-4 md:p-5" style={cardStyle}>
       <p className="text-[12px] font-medium mb-2" style={{ color: "var(--color-muted)" }}>{label}</p>
-      <p className="text-[32px] font-black leading-none" style={{ color: color || "var(--color-dark)" }}>
+      <p className="text-[30px] md:text-[32px] font-black leading-none" style={{ color: color || "var(--color-dark)" }}>
         {value}
       </p>
     </div>

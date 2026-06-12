@@ -10,6 +10,7 @@ import AddCustomerSheet from "@/components/AddCustomerSheet";
 import type { Customer } from "@/types";
 
 const CARD_SHADOW = "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)";
+const CARD_SHADOW_HOVER = "0 2px 4px rgba(30,26,20,0.08), 0 6px 20px rgba(30,26,20,0.09)";
 
 type SortBy = "recent" | "name" | "visits";
 
@@ -18,6 +19,25 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "name", label: "A to Z" },
   { value: "visits", label: "Most booked" },
 ];
+
+// Warm avatar palette. Each entry is a soft tint background + a darker
+// initial color so a list of cards reads varied but stays on brand.
+const AVATAR_TINTS: { bg: string; fg: string }[] = [
+  { bg: "rgba(232,146,10,0.14)", fg: "#B86800" }, // amber
+  { bg: "rgba(212,98,42,0.13)", fg: "#B14418" }, // terra
+  { bg: "rgba(34,197,94,0.13)", fg: "#15803D" }, // green
+  { bg: "rgba(107,96,82,0.14)", fg: "#5A5044" }, // sand/muted
+  { bg: "rgba(148,163,184,0.18)", fg: "#475569" }, // slate
+];
+
+// Deterministic tint per client so a given person always keeps the same color.
+function avatarTint(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  }
+  return AVATAR_TINTS[Math.abs(hash) % AVATAR_TINTS.length];
+}
 
 // Avatar shows the first initial only, per the design spec.
 function firstInitial(name: string): string {
@@ -30,6 +50,59 @@ function formatPhone(phone: string): string {
     return `${phone.slice(0, 3)}.${phone.slice(3, 6)}.${phone.slice(6)}`;
   }
   return phone;
+}
+
+function IconSearch() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function IconPlus() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
+function IconUsers() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function IconChevron() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+// List-region skeleton. Keeps the live header/search mounted (so the input
+// holds focus while typing) and only the rows below shimmer.
+function ListSkeleton() {
+  return (
+    <div className="space-y-3 animate-pulse">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div
+          key={i}
+          className="h-[72px] rounded-2xl bg-white"
+          style={{ boxShadow: CARD_SHADOW }}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default function ClientsPage() {
@@ -91,142 +164,164 @@ export default function ClientsPage() {
 
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
-      {/* Page header */}
-      <div className="shrink-0 px-4 pt-4 pb-3 flex items-start justify-between">
-        <div>
-          <h1 className="text-[28px] font-extrabold leading-tight text-dark">Clients</h1>
-          <p className="text-[13px] font-medium" style={{ color: "var(--color-muted)" }}>
-            {totalCount} client{totalCount !== 1 ? "s" : ""}
-          </p>
-        </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="h-11 ps-3 pe-4 rounded-xl bg-amber text-white flex items-center gap-1.5 font-semibold text-[15px] active:scale-95 transition-transform shrink-0"
-          aria-label="Add client"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Add
-        </button>
-      </div>
-
-      {/* Search + sort */}
-      <div className="shrink-0 px-4 pb-3 space-y-3">
-        <div className="relative">
-          <span
-            className="absolute inset-inline-start-3 top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ color: "var(--color-muted)", insetInlineStart: 12 }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </span>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or phone"
-            className="w-full h-12 rounded-[10px] border bg-white text-[15px] text-dark transition-colors focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30"
-            style={{ borderColor: "var(--color-cream-2)", paddingInlineStart: 38, paddingInlineEnd: 16 }}
-          />
-        </div>
-
-        <div className="flex gap-2">
-          {SORT_OPTIONS.map((option) => {
-            const active = sortBy === option.value;
-            return (
-              <button
-                key={option.value}
-                onClick={() => setSortBy(option.value)}
-                className="px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-colors"
-                style={{
-                  background: active ? "var(--color-amber)" : "var(--color-surface)",
-                  color: active ? "#fff" : "var(--color-muted)",
-                  border: active ? "1px solid var(--color-amber)" : "1px solid var(--color-cream-2)",
-                }}
+      {/* ─── Fixed top region: header + controls ─────────────────────── */}
+      <div
+        className="shrink-0 border-b"
+        style={{ borderColor: "var(--color-cream-2)" }}
+      >
+        <div className="mx-auto w-full px-4 md:px-6 pt-5 pb-4" style={{ maxWidth: 768 }}>
+          {/* Header */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <h1 className="text-[26px] md:text-[30px] font-extrabold leading-none text-dark">
+                Clients
+              </h1>
+              <span
+                className="inline-flex items-center justify-center h-6 min-w-6 px-2 rounded-full text-[12px] font-semibold"
+                style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}
               >
-                {option.label}
-              </button>
-            );
-          })}
+                {totalCount}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowAdd(true)}
+              className="h-10 px-4 rounded-xl bg-amber text-white flex items-center gap-1.5 font-semibold text-[14px] whitespace-nowrap shadow-[0_2px_8px_rgba(232,146,10,0.30)] hover:bg-[#D4830A] active:scale-95 transition-all shrink-0"
+            >
+              <IconPlus />
+              Add client
+            </button>
+          </div>
+
+          {/* Controls: search + segmented sort */}
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="relative flex-1">
+              <span
+                className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: "var(--color-muted)", insetInlineStart: 14 }}
+              >
+                <IconSearch />
+              </span>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or phone"
+                className="w-full h-11 rounded-xl border bg-white text-[15px] text-dark transition-colors focus:outline-none focus:border-amber focus:ring-2 focus:ring-amber/20"
+                style={{ borderColor: "var(--color-cream-2)", paddingInlineStart: 42, paddingInlineEnd: 16 }}
+              />
+            </div>
+
+            <div
+              className="flex p-0.5 rounded-xl shrink-0"
+              style={{ background: "var(--color-cream-2)" }}
+            >
+              {SORT_OPTIONS.map((option) => {
+                const active = sortBy === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => setSortBy(option.value)}
+                    className="px-3 py-1.5 rounded-[10px] text-[13px] font-semibold whitespace-nowrap transition-all"
+                    style={{
+                      background: active ? "var(--color-surface)" : "transparent",
+                      color: active ? "var(--color-dark)" : "var(--color-muted)",
+                      boxShadow: active ? "0 1px 2px rgba(30,26,20,0.10)" : "none",
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* List */}
-      <div className="flex-1 overflow-y-auto px-4 pb-6">
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <div
-              className="w-6 h-6 rounded-full border-2 animate-spin"
-              style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }}
-            />
-          </div>
-        ) : clients.length === 0 ? (
-          debouncedSearch ? (
-            <div className="text-center py-12 px-6">
-              <p className="text-[17px] font-bold text-dark">No matches for &quot;{debouncedSearch}&quot;</p>
-              <p className="text-[15px] mt-1" style={{ color: "var(--color-muted)" }}>
-                Try a different name or phone number.
-              </p>
+      {/* ─── Scrolling list ──────────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full px-4 md:px-6 py-5 min-h-full" style={{ maxWidth: 768 }}>
+          {loading ? (
+            <ListSkeleton />
+          ) : clients.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-20 px-8 min-h-[55vh]">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mb-5"
+                style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)" }}
+              >
+                <IconUsers />
+              </div>
+              {debouncedSearch ? (
+                <>
+                  <h2 className="text-[18px] font-bold text-dark mb-1">
+                    No matches for &quot;{debouncedSearch}&quot;
+                  </h2>
+                  <p className="text-[15px] max-w-[300px]" style={{ color: "var(--color-muted)" }}>
+                    Try a different name or phone number.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-[19px] font-bold text-dark mb-1.5">
+                    Your client book starts here
+                  </h2>
+                  <p className="text-[15px] mb-6 max-w-[320px] leading-relaxed" style={{ color: "var(--color-muted)" }}>
+                    Add a client with their phone and visit history, and book them in the same step.
+                  </p>
+                  <button
+                    onClick={() => setShowAdd(true)}
+                    className="h-11 px-5 rounded-xl bg-amber text-white font-semibold text-[15px] whitespace-nowrap shadow-[0_2px_8px_rgba(232,146,10,0.30)] hover:bg-[#D4830A] active:scale-95 transition-all"
+                  >
+                    Add your first client
+                  </button>
+                </>
+              )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-              <div className="text-5xl mb-4">✂️</div>
-              <div className="text-[18px] font-bold text-dark mb-1">Your client book starts here</div>
-              <div className="text-[15px] mb-6 max-w-[260px]" style={{ color: "var(--color-muted)" }}>
-                Add a client here with their phone and visit history, and book them in the same step.
-              </div>
-              <button
-                onClick={() => setShowAdd(true)}
-                className="bg-amber text-white font-semibold text-[15px] px-5 py-3.5 rounded-xl hover:bg-[#D4830A] active:bg-[#B86800] transition-colors"
-              >
-                Add your first client
-              </button>
+            <div className="space-y-3">
+              {clients.map((client) => {
+                const tint = avatarTint(client.id);
+                return (
+                  <button
+                    key={client.id}
+                    onClick={() => router.push(`/clients/${client.id}`)}
+                    className="group w-full flex items-center gap-4 bg-white rounded-2xl px-4 py-3.5 text-start transition-all hover:-translate-y-0.5"
+                    style={{ boxShadow: CARD_SHADOW }}
+                    onMouseEnter={(e) => (e.currentTarget.style.boxShadow = CARD_SHADOW_HOVER)}
+                    onMouseLeave={(e) => (e.currentTarget.style.boxShadow = CARD_SHADOW)}
+                  >
+                    <div
+                      className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-[17px] shrink-0"
+                      style={{ background: tint.bg, color: tint.fg }}
+                    >
+                      {firstInitial(client.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[15px] font-bold text-dark truncate">{client.name}</div>
+                      <div className="text-[13px] truncate" style={{ color: "var(--color-muted)" }}>
+                        {formatPhone(client.phone)}
+                      </div>
+                    </div>
+                    <div className="text-end shrink-0">
+                      <div className="text-[13px] font-semibold text-dark">
+                        {client.total_visits > 0
+                          ? `${client.total_visits} visit${client.total_visits !== 1 ? "s" : ""}`
+                          : "New"}
+                      </div>
+                      <div className="text-[11px]" style={{ color: "var(--color-muted)" }}>
+                        {client.last_visit_at
+                          ? format(parseISO(client.last_visit_at), "MMM d")
+                          : "No visits yet"}
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-muted group-hover:text-dark transition-colors">
+                      <IconChevron />
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          )
-        ) : (
-          <div className="space-y-2.5">
-            {clients.map((client) => (
-              <button
-                key={client.id}
-                onClick={() => router.push(`/clients/${client.id}`)}
-                className="w-full flex items-center gap-3 bg-white rounded-2xl p-4 text-start active:scale-[0.98] transition-transform"
-                style={{ boxShadow: CARD_SHADOW }}
-              >
-                <div
-                  className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-[17px] shrink-0"
-                  style={{ background: "var(--color-amber)", color: "#fff" }}
-                >
-                  {firstInitial(client.name)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[16px] font-bold text-dark truncate">{client.name}</div>
-                  <div className="text-[13px] truncate" style={{ color: "var(--color-muted)" }}>
-                    {formatPhone(client.phone)}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="text-end">
-                    <div className="text-[13px] font-medium text-dark">
-                      {client.last_visit_at ? format(parseISO(client.last_visit_at), "MMM d") : "New"}
-                    </div>
-                    <div className="text-[11px]" style={{ color: "var(--color-muted)" }}>
-                      {client.last_visit_at ? "Last visit" : "No visits yet"}
-                    </div>
-                  </div>
-                  <span style={{ color: "var(--color-muted)" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {showAdd && business && (
