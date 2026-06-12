@@ -57,7 +57,7 @@ function IconTarget({ size = 20 }: IP) {
 function IconPin({ size = 20 }: IP) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
@@ -203,24 +203,99 @@ function BarChart({ active }: { active: boolean }) {
   const remainingPct = totalCapacity - usedPct;
 
   if (!active) {
+    // INACTIVE STATE: Clean vertical column showing 100% available with subtle green tint
     return (
-      <div
-        style={{
-          height: COLUMN_HEIGHT,
-          borderRadius: 10,
-          background: "var(--color-cream-2)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <span style={{ fontSize: 11, color: "var(--color-muted)", fontWeight: 600 }}>
-          Enable to track usage
-        </span>
+      <div style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
+        {/* Vertical stacked capacity column - always shows 100% available when inactive */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+          {/* Column track - full height represents 100% capacity */}
+          <div
+            style={{
+              height: COLUMN_HEIGHT,
+              borderRadius: 10,
+              background: "#E8F3EC",   // subtle greenish background (inactive track)
+              overflow: "hidden",
+              position: "relative",
+              display: "flex",
+              flexDirection: "column-reverse",
+            }}
+          >
+            {/* Fill is 100% of the column, showing full green gradient availability */}
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                background: "linear-gradient(180deg, rgba(74, 174, 96, 0.85) 0%, rgba(74, 174, 96, 0.55) 100%)",
+                borderRadius: "0 0 10px 10px",
+                transition: "height 0.6s cubic-bezier(0.34,1.56,0.64,1)",
+                position: "relative",
+              }}
+            >
+              {/* Soft shimmer line at top of fill */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: "10%",
+                  right: "10%",
+                  height: 1.5,
+                  borderRadius: 1,
+                  background: "rgba(255,255,255,0.35)",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Mini sparkline area - neutral/grey when inactive */}
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 1.5, height: 18, opacity: 0.5 }}>
+            {DAILY_USAGE.map((v, i) => (
+              <div
+                key={i}
+                style={{
+                  flex: 1,
+                  height: `${Math.round(v * 100)}%`,
+                  minHeight: 2,
+                  borderRadius: 2,
+                  background: "#C0D4C5",  // muted green-grey for inactive preview
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Stats column - shows full capacity */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            paddingBottom: 24,
+            minWidth: 64,
+          }}
+        >
+          {/* Remaining shows 100% */}
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1 }}>
+              100%
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: "var(--color-muted)", marginTop: 2, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              available
+            </div>
+          </div>
+
+          {/* Divider tick with 0% used */}
+          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6 }}>
+            <div style={{ fontSize: 10, color: "var(--color-muted)", fontWeight: 500 }}>
+              0% used
+            </div>
+            <div style={{ width: 8, height: 1.5, borderRadius: 1, background: "#4AAE60" }} />
+          </div>
+        </div>
       </div>
     );
   }
 
+  // ACTIVE STATE: Shows actual usage (73% used, 27% remaining)
   return (
     <div style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
       {/* Vertical stacked capacity column */}
@@ -286,7 +361,7 @@ function BarChart({ active }: { active: boolean }) {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          paddingBottom: 24, // aligns with column bottom, above sparkline
+          paddingBottom: 24,
           minWidth: 64,
         }}
       >
