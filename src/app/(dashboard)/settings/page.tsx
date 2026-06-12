@@ -1,85 +1,235 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/components/Toast";
 import type { Service, BusinessHours, DayKey } from "@/types";
 
-type Tab = "business" | "services" | "hours";
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-// Israeli calendar order: Sun first
-const DAYS: { key: DayKey; label: string; labelShort: string }[] = [
-  { key: "sunday",    label: "ראשון",   labelShort: "א'" },
-  { key: "monday",    label: "שני",     labelShort: "ב'" },
-  { key: "tuesday",   label: "שלישי",   labelShort: "ג'" },
-  { key: "wednesday", label: "רביעי",   labelShort: "ד'" },
-  { key: "thursday",  label: "חמישי",   labelShort: "ה'" },
-  { key: "friday",    label: "שישי",    labelShort: "ו'" },
-  { key: "saturday",  label: "שבת",     labelShort: "ש'" },
+type Section =
+  | "business"
+  | "services"
+  | "hours"
+  | "booking"
+  | "notifications";
+
+interface BookingSettings {
+  buffer_minutes: number;
+  advance_days: number;
+  cancellation_policy: "none" | "24h" | "48h" | "custom";
+  cancellation_note: string;
+}
+
+interface NotificationSettings {
+  email_new_booking: boolean;
+  email_cancellation: boolean;
+  email_reminder: boolean;
+  whatsapp_new_booking: boolean;
+  whatsapp_reminder: boolean;
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const DAYS: { key: DayKey; label: string }[] = [
+  { key: "sunday",    label: "Sunday" },
+  { key: "monday",    label: "Monday" },
+  { key: "tuesday",   label: "Tuesday" },
+  { key: "wednesday", label: "Wednesday" },
+  { key: "thursday",  label: "Thursday" },
+  { key: "friday",    label: "Friday" },
+  { key: "saturday",  label: "Saturday" },
 ];
 
 const DEFAULT_HOURS: BusinessHours = {
+  sunday:    { open: true,  start: "09:00", end: "17:00" },
   monday:    { open: true,  start: "09:00", end: "19:00" },
   tuesday:   { open: true,  start: "09:00", end: "19:00" },
   wednesday: { open: true,  start: "09:00", end: "19:00" },
   thursday:  { open: true,  start: "09:00", end: "19:00" },
   friday:    { open: true,  start: "09:00", end: "16:00" },
   saturday:  { open: false, start: "09:00", end: "14:00" },
-  sunday:    { open: true,  start: "09:00", end: "17:00" },
 };
 
-function InputField({
-  label,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  readOnly,
-}: {
-  label: string;
-  type?: string;
-  value: string;
-  onChange?: (v: string) => void;
-  placeholder?: string;
-  readOnly?: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[13px] font-medium text-dark">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange?.(e.target.value)}
-        placeholder={placeholder}
-        readOnly={readOnly}
-        className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)]
-          bg-white text-[15px] text-dark placeholder:text-muted
-          focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30
-          transition-colors disabled:opacity-50"
-        style={readOnly ? { opacity: 0.6, cursor: "not-allowed" } : {}}
-      />
-    </div>
-  );
-}
+const DEFAULT_BOOKING: BookingSettings = {
+  buffer_minutes: 0,
+  advance_days: 30,
+  cancellation_policy: "24h",
+  cancellation_note: "",
+};
+
+const DEFAULT_NOTIFICATIONS: NotificationSettings = {
+  email_new_booking: true,
+  email_cancellation: true,
+  email_reminder: true,
+  whatsapp_new_booking: false,
+  whatsapp_reminder: false,
+};
+
+const SECTIONS: { id: Section; label: string; icon: React.ReactNode; description: string }[] = [
+  {
+    id: "business",
+    label: "Business info",
+    description: "Name, phone, address, booking link",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    ),
+  },
+  {
+    id: "services",
+    label: "Services",
+    description: "What you offer and at what price",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+      </svg>
+    ),
+  },
+  {
+    id: "hours",
+    label: "Working hours",
+    description: "Days and times you're available",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    ),
+  },
+  {
+    id: "booking",
+    label: "Booking rules",
+    description: "Buffer time, advance window, cancellations",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    ),
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    description: "When and how you get alerted",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+    ),
+  },
+];
+
+// ─── Shared UI primitives ─────────────────────────────────────────────────────
 
 function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   return (
     <button
       type="button"
       onClick={onChange}
-      className="w-11 h-6 rounded-full transition-colors shrink-0 relative"
-      style={{ background: on ? "var(--color-amber)" : "var(--color-cream-2)" }}
-      aria-checked={on}
       role="switch"
+      aria-checked={on}
+      className="relative w-11 h-6 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber/50"
+      style={{ background: on ? "var(--color-amber)" : "var(--color-cream-2)" }}
     >
-      <div
-        className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
+      <span
+        className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all duration-200"
         style={{ insetInlineStart: on ? "22px" : "2px" }}
       />
     </button>
   );
 }
+
+function InputField({
+  label,
+  hint,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  readOnly,
+  prefix,
+  suffix,
+  action,
+}: {
+  label: string;
+  hint?: string;
+  type?: string;
+  value: string;
+  onChange?: (v: string) => void;
+  placeholder?: string;
+  readOnly?: boolean;
+  prefix?: React.ReactNode;
+  suffix?: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <label className="text-[13px] font-medium text-dark">{label}</label>
+        {action}
+      </div>
+      <div className="flex items-center h-12 rounded-[10px] border border-[var(--color-cream-2)] bg-white overflow-hidden focus-within:border-amber focus-within:ring-1 focus-within:ring-amber/30 transition-colors"
+        style={readOnly ? { opacity: 0.6 } : {}}>
+        {prefix && (
+          <span className="px-3 text-[13px] font-medium text-muted bg-[var(--color-cream)] border-e border-[var(--color-cream-2)] h-full flex items-center shrink-0">
+            {prefix}
+          </span>
+        )}
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange?.(e.target.value)}
+          placeholder={placeholder}
+          readOnly={readOnly}
+          className="flex-1 h-full px-4 text-[15px] text-dark placeholder:text-muted bg-transparent outline-none"
+          style={readOnly ? { cursor: "not-allowed" } : {}}
+        />
+        {suffix && (
+          <span className="px-3 shrink-0">{suffix}</span>
+        )}
+      </div>
+      {hint && <p className="text-[12px] text-muted">{hint}</p>}
+    </div>
+  );
+}
+
+function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] overflow-hidden">
+      {title && (
+        <div className="px-5 pt-5 pb-3 border-b border-[var(--color-cream-2)]">
+          <h3 className="text-[13px] font-semibold text-muted uppercase tracking-wide">{title}</h3>
+        </div>
+      )}
+      <div className="p-5 space-y-4">{children}</div>
+    </div>
+  );
+}
+
+function SaveButton({ onClick, saving, dirty }: { onClick: () => void; saving: boolean; dirty: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={saving || !dirty}
+      className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white transition-all"
+      style={{
+        background: dirty ? "var(--color-amber)" : "var(--color-cream-2)",
+        color: dirty ? "white" : "var(--color-muted)",
+        cursor: dirty ? "pointer" : "not-allowed",
+      }}
+    >
+      {saving ? "Saving…" : dirty ? "Save changes" : "Saved"}
+    </button>
+  );
+}
+
+// ─── Setup form (no business yet) ────────────────────────────────────────────
 
 function SetupForm({
   supabase,
@@ -95,201 +245,841 @@ function SetupForm({
   const [saving, setSaving] = useState(false);
 
   async function createBusiness() {
-    if (!name.trim()) {
-      showToast("Business name is required", "error");
-      return;
-    }
+    if (!name.trim()) { showToast("Business name is required", "error"); return; }
     setSaving(true);
-
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      showToast("Not logged in", "error");
-      setSaving(false);
-      return;
-    }
-
-    // Generate slug from name
-    const baseSlug = name.trim().toLowerCase().replace(/[^a-z0-9א-ת]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-    const randomSuffix = Math.random().toString(36).substring(2, 7);
-    const slug = `${baseSlug}-${randomSuffix}`;
-
+    if (!user) { showToast("Not logged in", "error"); setSaving(false); return; }
+    const baseSlug = name.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`;
     const { error } = await supabase.from("businesses").insert({
-      owner_id: user.id,
-      name: name.trim(),
-      phone: phone.trim() || null,
-      address: address.trim() || null,
-      slug,
+      owner_id: user.id, name: name.trim(),
+      phone: phone.trim() || null, address: address.trim() || null, slug,
     });
-
-    if (error) {
-      showToast(error.message, "error");
-      setSaving(false);
-      return;
-    }
-
+    if (error) { showToast(error.message, "error"); setSaving(false); return; }
     await onCreated();
   }
 
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
-      <div className="shrink-0 px-4 pt-6 pb-4 border-b border-[var(--color-cream-2)] bg-white">
-        <h1 className="text-[28px] font-extrabold leading-tight text-dark">הגדרת העסק</h1>
-        <p className="text-[15px] mt-1 text-muted">מלא את הפרטים כדי להתחיל</p>
+      <div className="shrink-0 px-5 pt-6 pb-4 border-b border-[var(--color-cream-2)] bg-white">
+        <h1 className="text-[26px] font-extrabold text-dark">Set up your business</h1>
+        <p className="text-[15px] mt-1 text-muted">Fill in the basics to get started</p>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] space-y-4">
-          <InputField label="שם העסק *" value={name} onChange={setName} placeholder='לדוגמה: סטודיו שיער דנה' />
-          <InputField label="טלפון" type="tel" value={phone} onChange={setPhone} placeholder="050-000-0000" />
-          <InputField label="כתובת" value={address} onChange={setAddress} placeholder="רחוב, עיר" />
-        </div>
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <SectionCard>
+          <InputField label="Business name *" value={name} onChange={setName} placeholder="e.g. Studio Avi" />
+          <InputField label="Phone" type="tel" value={phone} onChange={setPhone} placeholder="050-000-0000" />
+          <InputField label="Address" value={address} onChange={setAddress} placeholder="Street, city" />
+        </SectionCard>
         <button
           onClick={createBusiness}
           disabled={saving || !name.trim()}
-          className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white
-            bg-amber hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
+          className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white bg-amber hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
         >
-          {saving ? "יוצר..." : "צור עסק"}
+          {saving ? "Creating…" : "Create business"}
         </button>
       </div>
     </div>
   );
 }
 
+// ─── Business Info section ────────────────────────────────────────────────────
+
+function BusinessSection({
+  business,
+  supabase,
+  refresh,
+}: {
+  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
+  supabase: ReturnType<typeof createClient>;
+  refresh: () => Promise<void>;
+}) {
+  const { showToast } = useToast();
+  const [name, setName] = useState(business.name || "");
+  const [phone, setPhone] = useState(business.phone || "");
+  const [address, setAddress] = useState(business.address || "");
+  const [slug, setSlug] = useState(business.slug || "");
+  const [saving, setSaving] = useState(false);
+
+  const original = { name: business.name || "", phone: business.phone || "", address: business.address || "", slug: business.slug || "" };
+  const dirty = name !== original.name || phone !== original.phone || address !== original.address || slug !== original.slug;
+
+  const bookingUrl = `bapita.com/${slug || "your-slug"}`;
+
+  function copyLink() {
+    navigator.clipboard.writeText(`https://${bookingUrl}`);
+    showToast("Booking link copied", "success");
+  }
+
+  async function save() {
+    setSaving(true);
+    let finalSlug = slug;
+    if (!finalSlug.trim()) {
+      const base = name.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+      finalSlug = `${base}-${Math.random().toString(36).substring(2, 7)}`;
+      setSlug(finalSlug);
+    }
+    const { error } = await supabase.from("businesses").update({
+      name, phone: phone || null, address: address || null, slug: finalSlug,
+    }).eq("id", business.id);
+    setSaving(false);
+    if (error) { showToast("Failed to save", "error"); return; }
+    await refresh();
+    showToast("Business info saved", "success");
+  }
+
+  return (
+    <div className="space-y-4">
+      <SectionCard title="Details">
+        <InputField label="Business name" value={name} onChange={setName} placeholder="e.g. Studio Avi" />
+        <InputField label="Phone" type="tel" value={phone} onChange={setPhone} placeholder="050-000-0000" />
+        <InputField label="Address" value={address} onChange={setAddress} placeholder="Street, city" />
+      </SectionCard>
+
+      <SectionCard title="Booking page">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-dark">Your booking link</label>
+          <div className="flex items-center h-12 rounded-[10px] border border-[var(--color-cream-2)] bg-white overflow-hidden focus-within:border-amber focus-within:ring-1 focus-within:ring-amber/30 transition-colors">
+            <span className="px-3 text-[13px] font-medium text-muted bg-[var(--color-cream)] border-e border-[var(--color-cream-2)] h-full flex items-center shrink-0 select-none">
+              bapita.com/
+            </span>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+              placeholder="your-slug"
+              className="flex-1 h-full px-3 text-[15px] text-dark placeholder:text-muted bg-transparent outline-none"
+            />
+          </div>
+          <p className="text-[12px] text-muted">Only lowercase letters, numbers, and hyphens</p>
+        </div>
+
+        {/* Booking link actions */}
+        <div className="flex gap-2 mt-1">
+          <button
+            onClick={copyLink}
+            className="flex-1 h-10 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 border border-[var(--color-cream-2)] text-dark hover:border-amber hover:text-amber transition-colors bg-white"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy link
+          </button>
+          <a
+            href={`https://${bookingUrl}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 h-10 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 border border-[var(--color-cream-2)] text-dark hover:border-amber hover:text-amber transition-colors bg-white"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            Preview
+          </a>
+        </div>
+      </SectionCard>
+
+      <SaveButton onClick={save} saving={saving} dirty={dirty} />
+    </div>
+  );
+}
+
+// ─── Services section ─────────────────────────────────────────────────────────
+
+function ServicesSection({
+  business,
+  supabase,
+}: {
+  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
+  supabase: ReturnType<typeof createClient>;
+}) {
+  const { showToast } = useToast();
+  const [services, setServices] = useState<Service[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [newName, setNewName] = useState("");
+  const [newDuration, setNewDuration] = useState(30);
+  const [newPrice, setNewPrice] = useState(100);
+  const [saving, setSaving] = useState(false);
+
+  // Drag-to-reorder state
+  const dragIndex = useRef<number | null>(null);
+  const dragOverIndex = useRef<number | null>(null);
+
+  const loadServices = useCallback(async () => {
+    const { data } = await supabase.from("services").select("*").eq("business_id", business.id).order("display_order");
+    setServices(data || []);
+  }, [business.id, supabase]);
+
+  useEffect(() => { loadServices(); }, [loadServices]);
+
+  function resetForm() {
+    setNewName(""); setNewDuration(30); setNewPrice(100);
+    setShowForm(false); setEditingId(null);
+  }
+
+  function startEdit(s: Service) {
+    setEditingId(s.id);
+    setNewName(s.name);
+    setNewDuration(s.duration);
+    setNewPrice(s.price);
+    setShowForm(false);
+  }
+
+  async function saveService() {
+    if (!newName.trim()) return;
+    setSaving(true);
+    if (editingId) {
+      await supabase.from("services").update({ name: newName.trim(), duration: newDuration, price: newPrice }).eq("id", editingId);
+    } else {
+      await supabase.from("services").insert({ business_id: business.id, name: newName.trim(), duration: newDuration, price: newPrice, active: true, display_order: services.length });
+    }
+    await loadServices();
+    resetForm();
+    setSaving(false);
+    showToast(editingId ? "Service updated" : "Service added", "success");
+  }
+
+  async function toggleActive(id: string, current: boolean) {
+    await supabase.from("services").update({ active: !current }).eq("id", id);
+    setServices((prev) => prev.map((s) => s.id === id ? { ...s, active: !current } : s));
+  }
+
+  async function deleteService(id: string) {
+    await supabase.from("services").delete().eq("id", id);
+    setServices((prev) => prev.filter((s) => s.id !== id));
+    showToast("Service removed", "success");
+  }
+
+  // Drag handlers
+  function onDragStart(index: number) { dragIndex.current = index; }
+  function onDragEnter(index: number) { dragOverIndex.current = index; }
+  async function onDragEnd() {
+    if (dragIndex.current === null || dragOverIndex.current === null || dragIndex.current === dragOverIndex.current) {
+      dragIndex.current = null; dragOverIndex.current = null; return;
+    }
+    const reordered = [...services];
+    const [moved] = reordered.splice(dragIndex.current, 1);
+    reordered.splice(dragOverIndex.current, 0, moved);
+    setServices(reordered);
+    dragIndex.current = null; dragOverIndex.current = null;
+    // Persist display_order
+    await Promise.all(reordered.map((s, i) => supabase.from("services").update({ display_order: i }).eq("id", s.id)));
+  }
+
+  const formContent = (
+    <div className="bg-white rounded-2xl p-5 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] space-y-4 border border-amber/30">
+      <h3 className="text-[15px] font-bold text-dark">{editingId ? "Edit service" : "New service"}</h3>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[13px] font-medium text-dark">Service name</label>
+        <input
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="e.g. Haircut"
+          autoFocus
+          className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)] bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+        />
+      </div>
+      <div className="flex gap-3">
+        <div className="flex-1 flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-dark">Duration (min)</label>
+          <input
+            type="number"
+            value={newDuration}
+            onChange={(e) => setNewDuration(parseInt(e.target.value) || 30)}
+            min={5} step={5}
+            className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)] bg-white text-[15px] text-dark focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+          />
+        </div>
+        <div className="flex-1 flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-dark">Price (₪)</label>
+          <input
+            type="number"
+            value={newPrice}
+            onChange={(e) => setNewPrice(parseInt(e.target.value) || 0)}
+            min={0}
+            className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)] bg-white text-[15px] text-dark focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+          />
+        </div>
+      </div>
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={saveService}
+          disabled={saving || !newName.trim()}
+          className="flex-1 py-3 rounded-xl text-[15px] font-semibold text-white bg-amber hover:bg-[#D4830A] transition-colors disabled:opacity-50"
+        >
+          {saving ? "Saving…" : editingId ? "Save changes" : "Add service"}
+        </button>
+        <button
+          onClick={resetForm}
+          className="flex-1 py-3 rounded-xl text-[15px] font-medium text-dark border border-[var(--color-cream-2)] hover:bg-[var(--color-cream)] transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      {/* Empty state */}
+      {services.length === 0 && !showForm && !editingId && (
+        <div className="bg-white rounded-2xl p-8 text-center shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
+          <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ background: "rgba(232,146,10,0.1)" }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+          </div>
+          <p className="text-[15px] font-semibold text-dark mb-1">No services yet</p>
+          <p className="text-[13px] text-muted">Add the services you offer to your clients</p>
+        </div>
+      )}
+
+      {/* Service list with drag-to-reorder */}
+      {services.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] overflow-hidden">
+          {services.map((service, index) => (
+            <div key={service.id}>
+              {/* Editing this row inline */}
+              {editingId === service.id ? (
+                <div className="p-4">{formContent}</div>
+              ) : (
+                <div
+                  draggable
+                  onDragStart={() => onDragStart(index)}
+                  onDragEnter={() => onDragEnter(index)}
+                  onDragEnd={onDragEnd}
+                  onDragOver={(e) => e.preventDefault()}
+                  className="flex items-center gap-3 px-4 py-3.5 group transition-colors hover:bg-[var(--color-cream)]"
+                  style={{ borderBottom: index < services.length - 1 ? "1px solid var(--color-cream-2)" : "none" }}
+                >
+                  {/* Drag handle */}
+                  <div className="text-muted opacity-0 group-hover:opacity-100 transition-opacity cursor-grab shrink-0" aria-hidden>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                      <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[15px] font-semibold text-dark truncate">{service.name}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[12px] text-muted px-2 py-0.5 rounded-full" style={{ background: "var(--color-cream-2)" }}>{service.duration} min</span>
+                      <span className="text-[12px] text-muted px-2 py-0.5 rounded-full" style={{ background: "var(--color-cream-2)" }}>₪{service.price}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* Active toggle */}
+                    <button
+                      onClick={() => toggleActive(service.id, service.active)}
+                      className="px-2.5 py-1 rounded-full text-[12px] font-medium transition-colors"
+                      style={service.active
+                        ? { background: "rgba(34,197,94,0.12)", color: "#16A34A" }
+                        : { background: "var(--color-cream-2)", color: "var(--color-muted)" }}
+                    >
+                      {service.active ? "Active" : "Off"}
+                    </button>
+                    {/* Edit */}
+                    <button
+                      onClick={() => startEdit(service)}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-muted hover:text-dark hover:bg-[var(--color-cream-2)] transition-colors"
+                      aria-label="Edit service"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
+                    {/* Delete */}
+                    <button
+                      onClick={() => deleteService(service.id)}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors hover:bg-red-50"
+                      style={{ color: "#EF4444" }}
+                      aria-label="Remove service"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {services.length > 1 && (
+            <div className="px-4 py-2 border-t border-[var(--color-cream-2)]">
+              <p className="text-[12px] text-muted">Drag to reorder how services appear on your booking page</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add service form or button */}
+      {!editingId && (
+        showForm ? formContent : (
+          <button
+            onClick={() => setShowForm(true)}
+            className="w-full py-3.5 rounded-xl text-[15px] font-semibold flex items-center justify-center gap-2 bg-white border border-[var(--color-cream-2)] text-dark hover:border-amber hover:text-amber transition-colors shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add service
+          </button>
+        )
+      )}
+    </div>
+  );
+}
+
+// ─── Working Hours section ────────────────────────────────────────────────────
+
+function HoursSection({
+  business,
+  supabase,
+  refresh,
+}: {
+  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
+  supabase: ReturnType<typeof createClient>;
+  refresh: () => Promise<void>;
+}) {
+  const { showToast } = useToast();
+  const [hours, setHours] = useState<BusinessHours>(
+    business.business_hours ?? DEFAULT_HOURS
+  );
+  const [saving, setSaving] = useState(false);
+
+  const original = JSON.stringify(business.business_hours ?? DEFAULT_HOURS);
+  const dirty = JSON.stringify(hours) !== original;
+
+  function setDay(key: DayKey, patch: Partial<BusinessHours[DayKey]>) {
+    setHours((h) => ({ ...h, [key]: { ...h[key], ...patch } }));
+  }
+
+  function copyFirstOpenToAll() {
+    const first = DAYS.find((d) => hours[d.key].open);
+    if (!first) return;
+    const { start, end } = hours[first.key];
+    setHours((h) => {
+      const next = { ...h };
+      DAYS.forEach(({ key }) => { if (next[key].open) next[key] = { ...next[key], start, end }; });
+      return next;
+    });
+    showToast("Hours applied to all open days", "success");
+  }
+
+  async function save() {
+    setSaving(true);
+    const { error } = await supabase.from("businesses").update({ business_hours: hours }).eq("id", business.id);
+    setSaving(false);
+    if (error) { showToast("Failed to save", "error"); return; }
+    await refresh();
+    showToast("Working hours saved", "success");
+  }
+
+  const openDays = DAYS.filter((d) => hours[d.key].open);
+
+  return (
+    <div className="space-y-4">
+      {/* Days on/off */}
+      <SectionCard title="Working days">
+        <div className="flex flex-wrap gap-2">
+          {DAYS.map(({ key, label }) => {
+            const on = hours[key].open;
+            return (
+              <button
+                key={key}
+                onClick={() => setDay(key, { open: !on })}
+                className="px-4 py-2 rounded-xl text-[14px] font-semibold transition-all"
+                style={on
+                  ? { background: "var(--color-amber)", color: "white" }
+                  : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
+                }
+              >
+                {label.slice(0, 3)}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-[12px] text-muted">Tap a day to toggle it on or off</p>
+      </SectionCard>
+
+      {/* Hours per open day */}
+      {openDays.length > 0 && (
+        <SectionCard title="Hours">
+          <div className="space-y-0">
+            {openDays.map(({ key, label }, idx) => (
+              <div
+                key={key}
+                className="flex items-center gap-3 py-3"
+                style={{ borderBottom: idx < openDays.length - 1 ? "1px solid var(--color-cream-2)" : "none" }}
+              >
+                <span className="w-24 text-[14px] font-semibold text-dark shrink-0">{label}</span>
+                <div className="flex items-center gap-2 flex-1">
+                  <input
+                    type="time"
+                    value={hours[key].start}
+                    onChange={(e) => setDay(key, { start: e.target.value })}
+                    className="h-9 px-2 rounded-[8px] border border-[var(--color-cream-2)] text-[14px] text-dark focus:outline-none focus:border-amber transition-colors bg-white"
+                  />
+                  <span className="text-[13px] text-muted">–</span>
+                  <input
+                    type="time"
+                    value={hours[key].end}
+                    onChange={(e) => setDay(key, { end: e.target.value })}
+                    className="h-9 px-2 rounded-[8px] border border-[var(--color-cream-2)] text-[14px] text-dark focus:outline-none focus:border-amber transition-colors bg-white"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Copy hours shortcut */}
+          {openDays.length > 1 && (
+            <button
+              onClick={copyFirstOpenToAll}
+              className="w-full py-2.5 rounded-xl text-[13px] font-medium text-muted border border-[var(--color-cream-2)] hover:border-amber hover:text-amber transition-colors bg-transparent flex items-center justify-center gap-2"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              Apply first day's hours to all open days
+            </button>
+          )}
+        </SectionCard>
+      )}
+
+      {openDays.length === 0 && (
+        <div className="bg-white rounded-2xl p-6 text-center shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
+          <p className="text-[14px] text-muted">No working days selected — enable at least one day above</p>
+        </div>
+      )}
+
+      <SaveButton onClick={save} saving={saving} dirty={dirty} />
+    </div>
+  );
+}
+
+// ─── Booking Rules section ────────────────────────────────────────────────────
+
+function BookingSection({
+  business,
+  supabase,
+  refresh,
+}: {
+  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
+  supabase: ReturnType<typeof createClient>;
+  refresh: () => Promise<void>;
+}) {
+  const { showToast } = useToast();
+  const initial: BookingSettings = {
+    buffer_minutes: (business as any).buffer_minutes ?? DEFAULT_BOOKING.buffer_minutes,
+    advance_days: (business as any).advance_days ?? DEFAULT_BOOKING.advance_days,
+    cancellation_policy: (business as any).cancellation_policy ?? DEFAULT_BOOKING.cancellation_policy,
+    cancellation_note: (business as any).cancellation_note ?? DEFAULT_BOOKING.cancellation_note,
+  };
+  const [settings, setSettings] = useState<BookingSettings>(initial);
+  const [saving, setSaving] = useState(false);
+  const dirty = JSON.stringify(settings) !== JSON.stringify(initial);
+
+  function set<K extends keyof BookingSettings>(key: K, val: BookingSettings[K]) {
+    setSettings((s) => ({ ...s, [key]: val }));
+  }
+
+  async function save() {
+    setSaving(true);
+    const { error } = await supabase.from("businesses").update({
+      buffer_minutes: settings.buffer_minutes,
+      advance_days: settings.advance_days,
+      cancellation_policy: settings.cancellation_policy,
+      cancellation_note: settings.cancellation_note || null,
+    }).eq("id", business.id);
+    setSaving(false);
+    if (error) { showToast("Failed to save", "error"); return; }
+    await refresh();
+    showToast("Booking rules saved", "success");
+  }
+
+  const bufferOptions = [0, 5, 10, 15, 30];
+  const advanceOptions = [7, 14, 30, 60, 90];
+  const cancelOptions: { value: BookingSettings["cancellation_policy"]; label: string }[] = [
+    { value: "none",   label: "No policy" },
+    { value: "24h",    label: "24 hours notice" },
+    { value: "48h",    label: "48 hours notice" },
+    { value: "custom", label: "Custom" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <SectionCard title="Timing">
+        {/* Buffer */}
+        <div className="flex flex-col gap-2">
+          <label className="text-[13px] font-medium text-dark">Break between bookings</label>
+          <p className="text-[12px] text-muted -mt-1">Extra time added after each appointment — for cleanup or a breather</p>
+          <div className="flex gap-2 flex-wrap">
+            {bufferOptions.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => set("buffer_minutes", opt)}
+                className="px-4 py-2 rounded-xl text-[14px] font-semibold transition-all"
+                style={settings.buffer_minutes === opt
+                  ? { background: "var(--color-amber)", color: "white" }
+                  : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
+                }
+              >
+                {opt === 0 ? "None" : `${opt} min`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Advance booking */}
+        <div className="flex flex-col gap-2 pt-2">
+          <label className="text-[13px] font-medium text-dark">How far ahead clients can book</label>
+          <p className="text-[12px] text-muted -mt-1">Clients won't see availability beyond this window</p>
+          <div className="flex gap-2 flex-wrap">
+            {advanceOptions.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => set("advance_days", opt)}
+                className="px-4 py-2 rounded-xl text-[14px] font-semibold transition-all"
+                style={settings.advance_days === opt
+                  ? { background: "var(--color-amber)", color: "white" }
+                  : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
+                }
+              >
+                {opt} days
+              </button>
+            ))}
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Cancellation policy">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
+            {cancelOptions.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => set("cancellation_policy", value)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl border text-start transition-all"
+                style={settings.cancellation_policy === value
+                  ? { borderColor: "var(--color-amber)", background: "rgba(232,146,10,0.06)" }
+                  : { borderColor: "var(--color-cream-2)", background: "white" }
+                }
+              >
+                <span
+                  className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
+                  style={settings.cancellation_policy === value
+                    ? { borderColor: "var(--color-amber)", background: "var(--color-amber)" }
+                    : { borderColor: "var(--color-cream-2)" }
+                  }
+                >
+                  {settings.cancellation_policy === value && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                  )}
+                </span>
+                <span className="text-[14px] font-medium text-dark">{label}</span>
+              </button>
+            ))}
+          </div>
+
+          {settings.cancellation_policy === "custom" && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-dark">Your policy</label>
+              <textarea
+                value={settings.cancellation_note}
+                onChange={(e) => set("cancellation_note", e.target.value)}
+                placeholder="e.g. Cancellations must be made at least 12 hours in advance. No-shows may be charged."
+                rows={3}
+                className="px-4 py-3 rounded-[10px] border border-[var(--color-cream-2)] bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors resize-none"
+              />
+              <p className="text-[12px] text-muted">This will appear on your booking page</p>
+            </div>
+          )}
+
+          {settings.cancellation_policy !== "none" && settings.cancellation_policy !== "custom" && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-dark">Optional note (shown to clients)</label>
+              <textarea
+                value={settings.cancellation_note}
+                onChange={(e) => set("cancellation_note", e.target.value)}
+                placeholder="e.g. No-shows may be charged 50% of the service price."
+                rows={2}
+                className="px-4 py-3 rounded-[10px] border border-[var(--color-cream-2)] bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors resize-none"
+              />
+            </div>
+          )}
+        </div>
+      </SectionCard>
+
+      <SaveButton onClick={save} saving={saving} dirty={dirty} />
+    </div>
+  );
+}
+
+// ─── Notifications section ────────────────────────────────────────────────────
+
+function NotificationsSection({
+  business,
+  supabase,
+  refresh,
+}: {
+  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
+  supabase: ReturnType<typeof createClient>;
+  refresh: () => Promise<void>;
+}) {
+  const { showToast } = useToast();
+  const initial: NotificationSettings = {
+    email_new_booking: (business as any).notif_email_new_booking ?? true,
+    email_cancellation: (business as any).notif_email_cancellation ?? true,
+    email_reminder: (business as any).notif_email_reminder ?? true,
+    whatsapp_new_booking: (business as any).notif_wa_new_booking ?? false,
+    whatsapp_reminder: (business as any).notif_wa_reminder ?? false,
+  };
+  const [settings, setSettings] = useState<NotificationSettings>(initial);
+  const [saving, setSaving] = useState(false);
+  const dirty = JSON.stringify(settings) !== JSON.stringify(initial);
+
+  function toggle<K extends keyof NotificationSettings>(key: K) {
+    setSettings((s) => ({ ...s, [key]: !s[key] }));
+  }
+
+  async function save() {
+    setSaving(true);
+    const { error } = await supabase.from("businesses").update({
+      notif_email_new_booking: settings.email_new_booking,
+      notif_email_cancellation: settings.email_cancellation,
+      notif_email_reminder: settings.email_reminder,
+      notif_wa_new_booking: settings.whatsapp_new_booking,
+      notif_wa_reminder: settings.whatsapp_reminder,
+    }).eq("id", business.id);
+    setSaving(false);
+    if (error) { showToast("Failed to save", "error"); return; }
+    await refresh();
+    showToast("Notification settings saved", "success");
+  }
+
+  function NotifRow({ label, hint, value, onToggle, disabled }: { label: string; hint?: string; value: boolean; onToggle: () => void; disabled?: boolean }) {
+    return (
+      <div
+        className="flex items-center gap-4 py-3.5"
+        style={{ opacity: disabled ? 0.5 : 1 }}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="text-[14px] font-medium text-dark">{label}</div>
+          {hint && <div className="text-[12px] text-muted mt-0.5">{hint}</div>}
+        </div>
+        <Toggle on={value} onChange={disabled ? () => {} : onToggle} />
+      </div>
+    );
+  }
+
+  // Check if WhatsApp add-on is active (you can hook this into your addons table)
+  const waActive = (business as any).whatsapp_active ?? false;
+
+  return (
+    <div className="space-y-4">
+      {/* Email — free */}
+      <SectionCard title="Email · Free">
+        <div className="space-y-0 divide-y divide-[var(--color-cream-2)]">
+          <NotifRow
+            label="New booking"
+            hint="Get an email when a client books an appointment"
+            value={settings.email_new_booking}
+            onToggle={() => toggle("email_new_booking")}
+          />
+          <NotifRow
+            label="Cancellation"
+            hint="Get an email when a client cancels"
+            value={settings.email_cancellation}
+            onToggle={() => toggle("email_cancellation")}
+          />
+          <NotifRow
+            label="Daily reminder"
+            hint="Morning summary of today's appointments"
+            value={settings.email_reminder}
+            onToggle={() => toggle("email_reminder")}
+          />
+        </div>
+      </SectionCard>
+
+      {/* WhatsApp — paid */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] overflow-hidden">
+        <div className="px-5 pt-5 pb-3 border-b border-[var(--color-cream-2)] flex items-center justify-between">
+          <h3 className="text-[13px] font-semibold text-muted uppercase tracking-wide">WhatsApp</h3>
+          {waActive ? (
+            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.12)", color: "#16A34A" }}>Active</span>
+          ) : (
+            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: "rgba(232,146,10,0.12)", color: "#B36A00" }}>Paid add-on</span>
+          )}
+        </div>
+
+        {!waActive ? (
+          <div className="p-5">
+            <p className="text-[14px] text-dark font-medium mb-1">Get notified on WhatsApp</p>
+            <p className="text-[13px] text-muted mb-4">
+              Receive instant WhatsApp alerts for new bookings and reminders — right where you already spend your day.
+              This is part of the WhatsApp add-on.
+            </p>
+            <a
+              href="https://wa.me/972"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-semibold text-white transition-colors"
+              style={{ background: "#25D366" }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.117 1.532 5.845L.057 23.6a.5.5 0 0 0 .611.611l5.755-1.475A11.946 11.946 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.807 9.807 0 0 1-5.032-1.39l-.36-.214-3.735.957.974-3.642-.235-.374A9.818 9.818 0 1 1 12 21.818z"/>
+              </svg>
+              Learn about the WhatsApp add-on
+            </a>
+          </div>
+        ) : (
+          <div className="p-5 space-y-0 divide-y divide-[var(--color-cream-2)]">
+            <NotifRow
+              label="New booking"
+              hint="WhatsApp alert when a client books"
+              value={settings.whatsapp_new_booking}
+              onToggle={() => toggle("whatsapp_new_booking")}
+            />
+            <NotifRow
+              label="Daily reminder"
+              hint="Morning summary via WhatsApp"
+              value={settings.whatsapp_reminder}
+              onToggle={() => toggle("whatsapp_reminder")}
+            />
+          </div>
+        )}
+      </div>
+
+      <SaveButton onClick={save} saving={saving} dirty={dirty} />
+    </div>
+  );
+}
+
+// ─── Main Settings Page ───────────────────────────────────────────────────────
+
 export default function SettingsPage() {
   const { business, loading: bizLoading, refresh } = useBusiness();
-  const { showToast } = useToast();
   const supabase = createClient();
-  const [activeTab, setActiveTab] = useState<Tab>("business");
-  const [saving, setSaving] = useState(false);
-  const [hours, setHours] = useState<BusinessHours>(DEFAULT_HOURS);
-  const [savingHours, setSavingHours] = useState(false);
+  const [activeSection, setActiveSection] = useState<Section>("business");
+  const [mobileView, setMobileView] = useState<"menu" | "section">("menu");
 
-  const [businessName, setBusinessName] = useState("");
-  const [businessPhone, setBusinessPhone] = useState("");
-  const [businessAddress, setBusinessAddress] = useState("");
-  const [businessSlug, setBusinessSlug] = useState("");
-
-  const [services, setServices] = useState<Service[]>([]);
-  const [showServiceForm, setShowServiceForm] = useState(false);
-  const [newServiceName, setNewServiceName] = useState("");
-  const [newServiceDuration, setNewServiceDuration] = useState(30);
-  const [newServicePrice, setNewServicePrice] = useState(100);
-  const [savingService, setSavingService] = useState(false);
-
-  useEffect(() => {
-    if (business) {
-      setBusinessName(business.name || "");
-      setBusinessPhone(business.phone || "");
-      setBusinessAddress(business.address || "");
-      setBusinessSlug(business.slug || "");
-      if (business.business_hours) setHours(business.business_hours);
-    }
-  }, [business]);
-
-  useEffect(() => {
-    if (!business) return;
-    supabase
-      .from("services")
-      .select("*")
-      .eq("business_id", business.id)
-      .order("display_order")
-      .then(({ data }) => setServices(data || []));
-  }, [business, supabase]);
-
-  async function saveBusinessInfo() {
-    if (!business) return;
-    setSaving(true);
-    
-    // Auto-generate slug if empty
-    let finalSlug = businessSlug;
-    if (!finalSlug?.trim()) {
-      const baseSlug = businessName.trim().toLowerCase().replace(/[^a-z0-9א-ת]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-      const randomSuffix = Math.random().toString(36).substring(2, 7);
-      finalSlug = `${baseSlug}-${randomSuffix}`;
-      setBusinessSlug(finalSlug);
-    }
-    
-    const { error } = await supabase
-      .from("businesses")
-      .update({
-        name: businessName,
-        phone: businessPhone || null,
-        address: businessAddress || null,
-        slug: finalSlug,
-      })
-      .eq("id", business.id);
-    setSaving(false);
-    if (error) {
-      showToast("שגיאה בשמירה", "error");
-    } else {
-      await refresh();
-      showToast("הפרטים נשמרו בהצלחה", "success");
-    }
-  }
-
-  async function saveHours() {
-    if (!business) return;
-    setSavingHours(true);
-    const { error } = await supabase
-      .from("businesses")
-      .update({ business_hours: hours })
-      .eq("id", business.id);
-    setSavingHours(false);
-    if (error) {
-      showToast("שגיאה בשמירה", "error");
-    } else {
-      await refresh();
-      showToast("שעות הפעילות נשמרו", "success");
-    }
-  }
-
-  async function addService() {
-    if (!business || !newServiceName.trim()) return;
-    setSavingService(true);
-    const { error } = await supabase.from("services").insert({
-      business_id: business.id,
-      name: newServiceName.trim(),
-      duration: newServiceDuration,
-      price: newServicePrice,
-      active: true,
-      display_order: services.length,
-    });
-    if (error) {
-      showToast("שגיאה בהוספת שירות", "error");
-    } else {
-      setNewServiceName("");
-      setNewServiceDuration(30);
-      setNewServicePrice(100);
-      setShowServiceForm(false);
-      const { data } = await supabase
-        .from("services")
-        .select("*")
-        .eq("business_id", business.id)
-        .order("display_order");
-      setServices(data || []);
-    }
-    setSavingService(false);
-  }
-
-  async function deleteService(serviceId: string) {
-    await supabase.from("services").delete().eq("id", serviceId);
-    setServices((prev) => prev.filter((s) => s.id !== serviceId));
-  }
-
-  async function toggleServiceActive(serviceId: string, currentActive: boolean) {
-    await supabase.from("services").update({ active: !currentActive }).eq("id", serviceId);
-    setServices((prev) =>
-      prev.map((s) => (s.id === serviceId ? { ...s, active: !currentActive } : s))
-    );
+  function openSection(id: Section) {
+    setActiveSection(id);
+    setMobileView("section");
   }
 
   if (bizLoading) {
     return (
       <div className="flex h-full items-center justify-center" style={{ background: "var(--color-cream)" }}>
-        <div
-          className="w-6 h-6 rounded-full border-2 animate-spin"
-          style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }}
-        />
+        <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
       </div>
     );
   }
@@ -298,275 +1088,131 @@ export default function SettingsPage() {
     return <SetupForm supabase={supabase} onCreated={refresh} />;
   }
 
-  const tabs = [
-    { id: "business" as Tab, label: "פרטי העסק" },
-    { id: "services" as Tab, label: "שירותים" },
-    { id: "hours" as Tab, label: "שעות פעילות" },
-  ];
+  function renderSection() {
+    switch (activeSection) {
+      case "business":
+        return <BusinessSection business={business!} supabase={supabase} refresh={refresh} />;
+      case "services":
+        return <ServicesSection business={business!} supabase={supabase} />;
+      case "hours":
+        return <HoursSection business={business!} supabase={supabase} refresh={refresh} />;
+      case "booking":
+        return <BookingSection business={business!} supabase={supabase} refresh={refresh} />;
+      case "notifications":
+        return <NotificationsSection business={business!} supabase={supabase} refresh={refresh} />;
+    }
+  }
+
+  const currentSection = SECTIONS.find((s) => s.id === activeSection)!;
 
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
-      {/* Header */}
-      <div className="shrink-0 px-4 pt-5 pb-0 bg-white border-b border-[var(--color-cream-2)]">
-        <h1 className="text-[28px] font-extrabold leading-tight text-dark mb-4">הגדרות</h1>
-        {/* Tabs */}
-        <div className="flex gap-0 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="px-4 pb-3 pt-1 text-[14px] font-semibold whitespace-nowrap transition-colors relative"
-              style={{
-                color: activeTab === tab.id ? "var(--color-dark)" : "var(--color-muted)",
-              }}
-            >
-              {tab.label}
-              {activeTab === tab.id && (
-                <span
-                  className="absolute bottom-0 start-2 end-2 h-0.5 rounded-full"
-                  style={{ background: "var(--color-amber)" }}
-                />
-              )}
-            </button>
-          ))}
-        </div>
+
+      {/* ── Desktop layout ───────────────────────────────────────────────── */}
+      <div className="hidden md:flex h-full">
+
+        {/* Sidebar */}
+        <aside className="w-60 shrink-0 border-e border-[var(--color-cream-2)] bg-white flex flex-col">
+          <div className="px-5 pt-6 pb-4 border-b border-[var(--color-cream-2)]">
+            <h1 className="text-[22px] font-extrabold text-dark">Settings</h1>
+          </div>
+          <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+            {SECTIONS.map((s) => {
+              const active = activeSection === s.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setActiveSection(s.id)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-start transition-all group"
+                  style={active
+                    ? { background: "rgba(232,146,10,0.1)", color: "var(--color-dark)" }
+                    : { color: "var(--color-muted)" }
+                  }
+                >
+                  <span
+                    className="shrink-0 transition-colors"
+                    style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}
+                  >
+                    {s.icon}
+                  </span>
+                  <span className="text-[14px] font-semibold">{s.label}</span>
+                  {active && (
+                    <span className="ms-auto w-1 h-4 rounded-full" style={{ background: "var(--color-amber)" }} />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-xl">
+            <div className="mb-5">
+              <h2 className="text-[20px] font-extrabold text-dark">{currentSection.label}</h2>
+              <p className="text-[14px] text-muted mt-0.5">{currentSection.description}</p>
+            </div>
+            {renderSection()}
+          </div>
+        </main>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* ─── Business Info ─── */}
-        {activeTab === "business" && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] space-y-4">
-              <InputField label="שם העסק" value={businessName} onChange={setBusinessName} placeholder='לדוגמה: סטודיו שיער דנה' />
-              <InputField label="טלפון" type="tel" value={businessPhone} onChange={setBusinessPhone} placeholder="050-000-0000" />
-              <InputField label="כתובת" value={businessAddress} onChange={setBusinessAddress} placeholder="רחוב, עיר" />
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[13px] font-medium text-dark">כתובת דף ההזמנה</label>
-                <div className="flex items-center h-12 rounded-[10px] border border-[var(--color-cream-2)] bg-white overflow-hidden
-                  focus-within:border-amber focus-within:ring-1 focus-within:ring-amber/30 transition-colors">
-                  <span className="px-3 text-[13px] font-medium text-muted bg-[var(--color-cream)] border-e border-[var(--color-cream-2)] h-full flex items-center shrink-0">
-                    bapita.com/
-                  </span>
-                  <input
-                    type="text"
-                    value={businessSlug}
-                    onChange={(e) => setBusinessSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                    placeholder="slug-שלך"
-                    className="flex-1 h-full px-3 text-[15px] text-dark placeholder:text-muted bg-transparent outline-none"
-                  />
-                </div>
-                <p className="text-[12px] text-muted">רק אותיות לטיניות קטנות, מספרים ומקפים</p>
+      {/* ── Mobile layout ────────────────────────────────────────────────── */}
+      <div className="flex flex-col h-full md:hidden">
+
+        {/* Mobile: menu list */}
+        {mobileView === "menu" && (
+          <>
+            <div className="shrink-0 px-4 pt-5 pb-4 bg-white border-b border-[var(--color-cream-2)]">
+              <h1 className="text-[26px] font-extrabold text-dark">Settings</h1>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] overflow-hidden">
+                {SECTIONS.map((s, idx) => (
+                  <button
+                    key={s.id}
+                    onClick={() => openSection(s.id)}
+                    className="w-full flex items-center gap-4 px-4 py-4 text-start hover:bg-[var(--color-cream)] transition-colors"
+                    style={{ borderBottom: idx < SECTIONS.length - 1 ? "1px solid var(--color-cream-2)" : "none" }}
+                  >
+                    <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(232,146,10,0.1)", color: "var(--color-amber)" }}>
+                      {s.icon}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[15px] font-semibold text-dark">{s.label}</div>
+                      <div className="text-[12px] text-muted mt-0.5">{s.description}</div>
+                    </div>
+                    <svg className="text-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </button>
+                ))}
               </div>
             </div>
-            <button
-              onClick={saveBusinessInfo}
-              disabled={saving}
-              className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white
-                bg-amber hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
-            >
-              {saving ? "שומר..." : "שמור שינויים"}
-            </button>
-          </div>
+          </>
         )}
 
-        {/* ─── Services ─── */}
-        {activeTab === "services" && (
-          <div className="space-y-3">
-            {services.length === 0 && !showServiceForm && (
-              <div className="bg-white rounded-2xl p-8 text-center shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
-                <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center"
-                  style={{ background: "rgba(232,146,10,0.1)" }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-                  </svg>
-                </div>
-                <p className="text-[15px] font-semibold text-dark mb-1">אין שירותים עדיין</p>
-                <p className="text-[13px] text-muted">הוסף את השירותים שאתה מציע</p>
-              </div>
-            )}
-
-            {services.map((service) => (
-              <div
-                key={service.id}
-                className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[15px] font-semibold text-dark truncate">{service.name}</div>
-                    <div className="text-[13px] text-muted mt-0.5">
-                      {service.duration} דקות · ₪{service.price}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={() => toggleServiceActive(service.id, service.active)}
-                      className="px-3 py-1 rounded-full text-[12px] font-medium transition-colors"
-                      style={
-                        service.active
-                          ? { background: "rgba(34,197,94,0.12)", color: "#16A34A" }
-                          : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
-                      }
-                    >
-                      {service.active ? "פעיל" : "לא פעיל"}
-                    </button>
-                    <button
-                      onClick={() => deleteService(service.id)}
-                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors hover:bg-[#EF4444]/8"
-                      style={{ color: "#EF4444" }}
-                      aria-label="מחק שירות"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {showServiceForm ? (
-              <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] space-y-3">
-                <h3 className="text-[16px] font-bold text-dark">שירות חדש</h3>
-                <InputField
-                  label="שם השירות"
-                  value={newServiceName}
-                  onChange={setNewServiceName}
-                  placeholder='לדוגמה: תספורת גברים'
-                />
-                <div className="flex gap-3">
-                  <div className="flex-1 flex flex-col gap-1.5">
-                    <label className="text-[13px] font-medium text-dark">משך (דקות)</label>
-                    <input
-                      type="number"
-                      value={newServiceDuration}
-                      onChange={(e) => setNewServiceDuration(parseInt(e.target.value) || 30)}
-                      min={5}
-                      step={5}
-                      className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)]
-                        bg-white text-[15px] text-dark focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
-                    />
-                  </div>
-                  <div className="flex-1 flex flex-col gap-1.5">
-                    <label className="text-[13px] font-medium text-dark">מחיר (₪)</label>
-                    <input
-                      type="number"
-                      value={newServicePrice}
-                      onChange={(e) => setNewServicePrice(parseInt(e.target.value) || 0)}
-                      min={0}
-                      className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)]
-                        bg-white text-[15px] text-dark focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={addService}
-                    disabled={savingService || !newServiceName.trim()}
-                    className="flex-1 py-3 rounded-xl text-[15px] font-semibold text-white
-                      bg-amber hover:bg-[#D4830A] transition-colors disabled:opacity-50"
-                  >
-                    {savingService ? "מוסיף..." : "הוסף שירות"}
-                  </button>
-                  <button
-                    onClick={() => { setShowServiceForm(false); setNewServiceName(""); }}
-                    className="flex-1 py-3 rounded-xl text-[15px] font-medium text-dark
-                      bg-transparent border border-[var(--color-cream-2)] hover:bg-cream transition-colors"
-                  >
-                    ביטול
-                  </button>
-                </div>
-              </div>
-            ) : (
+        {/* Mobile: section detail */}
+        {mobileView === "section" && (
+          <>
+            <div className="shrink-0 px-4 pt-4 pb-3 bg-white border-b border-[var(--color-cream-2)] flex items-center gap-3">
               <button
-                onClick={() => setShowServiceForm(true)}
-                className="w-full py-3.5 rounded-xl text-[15px] font-semibold flex items-center justify-center gap-2
-                  bg-white border border-[var(--color-cream-2)] text-dark
-                  hover:border-amber hover:text-amber transition-colors
-                  shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]"
+                onClick={() => setMobileView("menu")}
+                className="w-9 h-9 rounded-xl flex items-center justify-center -ms-1 hover:bg-[var(--color-cream)] transition-colors"
+                aria-label="Back to settings"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"/>
                 </svg>
-                הוסף שירות
               </button>
-            )}
-          </div>
-        )}
-
-        {/* ─── Business Hours ─── */}
-        {activeTab === "hours" && (
-          <div className="space-y-3">
-            <div className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
-              {DAYS.map(({ key, label }, idx) => (
-                <div
-                  key={key}
-                  className="flex items-center gap-3 px-4 py-3"
-                  style={{
-                    borderBottom: idx < DAYS.length - 1 ? "1px solid var(--color-cream-2)" : "none",
-                    background: hours[key].open ? "white" : "var(--color-cream)",
-                  }}
-                >
-                  <Toggle
-                    on={hours[key].open}
-                    onChange={() =>
-                      setHours((h) => ({
-                        ...h,
-                        [key]: { ...h[key], open: !h[key].open },
-                      }))
-                    }
-                  />
-                  <span
-                    className="w-14 text-[15px] font-semibold shrink-0"
-                    style={{ color: hours[key].open ? "var(--color-dark)" : "var(--color-muted)" }}
-                  >
-                    {label}
-                  </span>
-                  {hours[key].open ? (
-                    <div className="flex items-center gap-2 flex-1 justify-end">
-                      <input
-                        type="time"
-                        value={hours[key].start}
-                        onChange={(e) =>
-                          setHours((h) => ({
-                            ...h,
-                            [key]: { ...h[key], start: e.target.value },
-                          }))
-                        }
-                        className="h-9 px-2 rounded-[8px] border border-[var(--color-cream-2)]
-                          text-[14px] text-dark focus:outline-none focus:border-amber transition-colors"
-                      />
-                      <span className="text-[13px] text-muted">–</span>
-                      <input
-                        type="time"
-                        value={hours[key].end}
-                        onChange={(e) =>
-                          setHours((h) => ({
-                            ...h,
-                            [key]: { ...h[key], end: e.target.value },
-                          }))
-                        }
-                        className="h-9 px-2 rounded-[8px] border border-[var(--color-cream-2)]
-                          text-[14px] text-dark focus:outline-none focus:border-amber transition-colors"
-                      />
-                    </div>
-                  ) : (
-                    <span className="flex-1 text-end text-[13px] text-muted">סגור</span>
-                  )}
-                </div>
-              ))}
+              <div>
+                <h2 className="text-[17px] font-extrabold text-dark leading-tight">{currentSection.label}</h2>
+              </div>
             </div>
-            <button
-              onClick={saveHours}
-              disabled={savingHours}
-              className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white
-                bg-amber hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
-            >
-              {savingHours ? "שומר..." : "שמור שעות"}
-            </button>
-          </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {renderSection()}
+            </div>
+          </>
         )}
       </div>
     </div>
