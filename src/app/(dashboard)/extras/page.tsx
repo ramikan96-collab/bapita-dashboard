@@ -27,7 +27,7 @@ type ChannelUsage = {
 const CHANNEL_USAGE: Record<string, ChannelUsage> = {
   WhatsApp: { used: 1247, total: 2500 },
   SMS: { used: 342, total: 1000 },
-  Email: { used: 2890, total: 5000 },
+  Email: { used: 187, total: 500 },  // 500 free emails/month included
 };
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ interface Entry {
   waMsg: string;
   tags?: string[];
   statLabel: string;
-  recurring: boolean; // true = monthly, false = one-time
+  recurring: boolean;
 }
 
 const CATALOG: Record<AddonType, Entry> = {
@@ -207,11 +207,6 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
 function BarChart({ active, selectedTag }: { active: boolean; selectedTag: string | null }) {
   const BAR_HEIGHT = 4;
 
-  // Determine usage data based on selected tag
-  let usedPct = 0;
-  let totalFormatted = "";
-  let usedFormatted = "";
-
   if (!active) {
     // INACTIVE: Full 100% green bar
     return (
@@ -234,14 +229,10 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
               height: "100%",
               background: "linear-gradient(90deg, #7EDB9E 0%, #3B9B54 100%)",
               borderRadius: 4,
-              transition: "width 0.4s ease-out",
             }}
           />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}>
-            100% available
-          </span>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline" }}>
           <span style={{ fontSize: 13, fontWeight: 500, color: "#1E2A3A" }}>
             100%
           </span>
@@ -250,22 +241,19 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
     );
   }
 
-  // ACTIVE: Show usage based on selected tag or default (73%)
+  // ACTIVE: Show usage based on selected tag
+  let usedPct = 0;
+  let usedFormatted = "";
+
   if (selectedTag && CHANNEL_USAGE[selectedTag]) {
     const usage = CHANNEL_USAGE[selectedTag];
     usedPct = Math.round((usage.used / usage.total) * 100);
     usedFormatted = `${usage.used.toLocaleString()}/${usage.total.toLocaleString()}`;
-    totalFormatted = `${usage.total.toLocaleString()}`;
-  } else {
-    // Default usage (no tag selected) — all at 100%
-    usedPct = 0;
-    usedFormatted = "0";
-    totalFormatted = "∞";
   }
 
   const remainingPct = 100 - usedPct;
 
-  // If no tag selected, show full green (all available)
+  // No tag selected — show full green
   if (!selectedTag) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -290,10 +278,7 @@ function BarChart({ active, selectedTag }: { active: boolean; selectedTag: strin
             }}
           />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#1E2A3A" }}>
-            100% available
-          </span>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline" }}>
           <span style={{ fontSize: 13, fontWeight: 500, color: "#1E2A3A" }}>
             100%
           </span>
@@ -538,7 +523,7 @@ function AddonCard({
     <div
       className="bg-white rounded-2xl"
       style={{
-        padding: "20px 24px",
+        padding: "24px 28px",
         boxShadow: isActive
           ? "0 4px 20px rgba(232,146,10,0.12), 0 1px 4px rgba(30,26,20,0.04)"
           : "var(--shadow-md)",
@@ -548,7 +533,7 @@ function AddonCard({
       }}
     >
       {/* Top row: icon + info + toggle */}
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-5">
         <div
           className="rounded-xl flex items-center justify-center shrink-0"
           style={{
@@ -565,10 +550,9 @@ function AddonCard({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[15px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
+                <p className="text-[16px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
                   {cfg.name}
                 </p>
-                {/* Subtle recurring/one-time badge */}
                 <span
                   className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
                   style={{
@@ -580,7 +564,7 @@ function AddonCard({
                 </span>
               </div>
               {cfg.tags && (
-                <div className="flex gap-2 mt-2 flex-wrap">
+                <div className="flex gap-2 mt-3 flex-wrap">
                   {cfg.tags.map((t) => (
                     <button
                       key={t}
@@ -589,17 +573,15 @@ function AddonCard({
                       style={{
                         background: selectedTag === t ? cfg.color : "var(--color-cream-2)",
                         color: selectedTag === t ? "white" : "var(--color-muted)",
-                        opacity: isActive ? 1 : 0.5,
-                        cursor: isActive ? "pointer" : "not-allowed",
+                        cursor: "pointer",
                       }}
-                      disabled={!isActive}
                     >
                       {t}
                     </button>
                   ))}
                 </div>
               )}
-              <p className="text-[13px] mt-2 leading-relaxed" style={{ color: "var(--color-muted)" }}>
+              <p className="text-[13px] mt-3 leading-relaxed" style={{ color: "var(--color-muted)" }}>
                 {cfg.blurb}
               </p>
             </div>
@@ -608,8 +590,8 @@ function AddonCard({
         </div>
       </div>
 
-      {/* Chart row - with selected tag */}
-      <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
+      {/* Chart row */}
+      <div className="mt-5 pt-4 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
         <div className="flex items-center justify-between mb-2.5">
           <span
             className="text-[11px] font-semibold uppercase tracking-wide"
