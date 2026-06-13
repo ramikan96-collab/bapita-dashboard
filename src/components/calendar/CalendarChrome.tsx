@@ -4,7 +4,6 @@ import { createContext, useContext, useState, ReactNode } from "react";
 import type { BookingStatus } from "@/types";
 
 export type CalView = "day" | "week" | "month" | "agenda";
-export type StatusFilter = BookingStatus | "all";
 
 // State the calendar page publishes so the AppShell top bar can drive it.
 export interface CalendarChrome {
@@ -15,8 +14,8 @@ export interface CalendarChrome {
   isToday: boolean;
   onToday: () => void;
   openDatePicker: () => void;
-  statusFilter: StatusFilter;
-  setStatusFilter: (s: StatusFilter) => void;
+  statusFilter: BookingStatus[];
+  setStatusFilter: (s: BookingStatus[]) => void;
   calendarFilter: string[];
   setCalendarFilter: (ids: string[]) => void;
   searchQuery: string;
