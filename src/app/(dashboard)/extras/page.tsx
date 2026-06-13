@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 
 type AddonType = "whatsapp" | "stripe" | "google" | "ads" | "google_business";
 
-// NOTE: Email is a special UI-only card - it's NOT stored in the addons table
-// It's always active by default with 500 free emails/month
+// Email is a UI-only card — always active, not stored in addons table
 
 interface Addon {
   id: string;
@@ -21,22 +20,16 @@ const MONTHLY: AddonType[] = ["whatsapp", "stripe", "google", "ads"];
 const ONETIME: AddonType[] = ["google_business"];
 const ALL_TYPES: AddonType[] = [...MONTHLY, ...ONETIME];
 
-// Usage data per channel (for WhatsApp, SMS tags)
-type ChannelUsage = {
-  used: number;
-  total: number;
-  label: string;
-};
+type ChannelUsage = { used: number; total: number; label: string };
 
 const CHANNEL_USAGE: Record<string, ChannelUsage> = {
   WhatsApp: { used: 1247, total: 2500, label: "WhatsApp messages" },
-  SMS: { used: 342, total: 1000, label: "SMS messages" },
+  SMS:      { used: 342,  total: 1000, label: "SMS messages"      },
 };
 
-// Email usage data (500 free, monthly) - UI only, not in DB
 const EMAIL_USAGE = { used: 0, total: 500, label: "emails sent" };
 
-// ─── Icons ───────────────────────────────────────────────────────────────────
+// ─── Icons ────────────────────────────────────────────────────────────────────
 
 type IP = { size?: number };
 
@@ -85,6 +78,14 @@ function IconMail({ size = 20 }: IP) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="4" width="20" height="16" rx="2" />
       <path d="m22 7-10 7L2 7" />
+    </svg>
+  );
+}
+
+function IconCheck({ size = 10 }: IP) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
     </svg>
   );
 }
@@ -151,122 +152,91 @@ const CATALOG: Record<AddonType, Entry> = {
   },
 };
 
-// Email card data (separate, not in addons table)
 const EMAIL_CARD = {
   name: "Email Notifications",
-  blurb: "Send booking confirmations, reminders, and updates via email. 500 free emails/month included.",
+  blurb: "Booking confirmations, reminders, and updates via email. 500 free emails/month included.",
   color: "#EA4335",
   icon: <IconMail />,
   statLabel: "Emails sent",
   recurring: true,
 };
 
-// ─── Toggle ───────────────────────────────────────────────────────────────────
+// ─── Toggle — chip-style for clarity ─────────────────────────────────────────
 
 function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void }) {
-  const [tip, setTip] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
-  return (
-    <div
-      className="relative shrink-0"
-      onMouseEnter={() => setTip(true)}
-      onMouseLeave={() => setTip(false)}
-    >
-      {tip && !active && (
-        <div
-          className="absolute pointer-events-none whitespace-nowrap text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg z-20"
-          style={{
-            bottom: "calc(100% + 8px)",
-            right: 0,
-            background: "var(--color-dark)",
-            boxShadow: "var(--shadow-md)",
-          }}
-        >
-          I want this
-          <span
-            className="absolute right-3.5"
-            style={{
-              top: "100%",
-              width: 0,
-              height: 0,
-              borderLeft: "4px solid transparent",
-              borderRight: "4px solid transparent",
-              borderTop: "4px solid var(--color-dark)",
-            }}
-          />
-        </div>
-      )}
-      <button
-        onClick={active ? undefined : onEnable}
-        aria-pressed={active}
-        aria-label={active ? "Active" : "Enable"}
-        className="relative transition-colors duration-200"
+  if (active) {
+    return (
+      <div
         style={{
-          width: 40,
-          height: 24,
-          borderRadius: 12,
-          background: active ? "var(--color-amber)" : "var(--color-cream-2)",
-          cursor: active ? "default" : "pointer",
-          display: "flex",
+          display: "inline-flex",
           alignItems: "center",
+          gap: 5,
+          padding: "5px 11px",
+          borderRadius: 99,
+          background: "rgba(34,197,94,0.10)",
+          border: "1.5px solid rgba(34,197,94,0.22)",
           flexShrink: 0,
         }}
       >
-        <span
-          className="absolute transition-all duration-200 bg-white"
-          style={{
-            width: 18,
-            height: 18,
-            borderRadius: "50%",
-            left: active ? 19 : 3,
-            boxShadow: "0 1px 4px rgba(30,26,20,0.25)",
-          }}
-        />
-      </button>
-    </div>
+        <span style={{ color: "#16A34A", display: "flex" }}><IconCheck size={10} /></span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#16A34A", whiteSpace: "nowrap" }}>Active</span>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={onEnable}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      aria-label="Enable"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        height: 32,
+        padding: "0 13px",
+        borderRadius: 99,
+        border: "1.5px solid var(--color-amber)",
+        background: hovered ? "var(--color-amber)" : "var(--amber-soft)",
+        color: hovered ? "#fff" : "var(--color-amber)",
+        fontSize: 12,
+        fontWeight: 700,
+        cursor: "pointer",
+        flexShrink: 0,
+        whiteSpace: "nowrap",
+        transition: "background 0.15s, color 0.15s",
+      }}
+    >
+      Enable
+      <span style={{ fontSize: 13, fontWeight: 400 }}>→</span>
+    </button>
   );
 }
 
-// ─── Usage Bar — Premium Claude-style thin horizontal bar ─────────────────────
+// ─── Usage bar ────────────────────────────────────────────────────────────────
 
-function BarChart({ 
-  active, 
-  selectedTag, 
+function UsageBar({
+  active,
+  selectedTag,
   emailMode = false,
-}: { 
-  active: boolean; 
+}: {
+  active: boolean;
   selectedTag: string | null;
   emailMode?: boolean;
 }) {
-  const BAR_HEIGHT = 4;
+  const TRACK_H = 4;
 
-  // INACTIVE: Full 100% green bar
   if (!active) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div
-          style={{
-            width: "100%",
-            height: BAR_HEIGHT,
-            borderRadius: 4,
-            backgroundColor: "#E5EFE8",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              width: "100%",
-              height: "100%",
-              background: "linear-gradient(90deg, #7EDB9E 0%, #3B9B54 100%)",
-              borderRadius: 4,
-            }}
-          />
+        <div style={{ width: "100%", height: TRACK_H, borderRadius: 4, background: "rgba(34,197,94,0.12)", overflow: "hidden", position: "relative" }}>
+          <div style={{ position: "absolute", left: 0, width: "100%", height: "100%", background: "linear-gradient(90deg, #7EDB9E 0%, #3B9B54 100%)", borderRadius: 4 }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline" }}>
-          <span style={{ fontSize: 12, fontWeight: 500, color: "#1E2A3A" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <span style={{ fontSize: 12, fontWeight: 500, color: "var(--color-dark)" }}>
             {emailMode ? `${EMAIL_USAGE.total} emails left` : "100%"}
           </span>
         </div>
@@ -274,227 +244,85 @@ function BarChart({
     );
   }
 
-  // Email mode active
   if (emailMode) {
     const usedPct = Math.round((EMAIL_USAGE.used / EMAIL_USAGE.total) * 100);
     const remainingPct = 100 - usedPct;
     const remainingEmails = EMAIL_USAGE.total - EMAIL_USAGE.used;
-
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div
-          style={{
-            width: "100%",
-            height: BAR_HEIGHT,
-            borderRadius: 4,
-            backgroundColor: "#F0F2F5",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              width: `${usedPct}%`,
-              height: "100%",
-              background: "linear-gradient(90deg, #F5B042 0%, #E8890A 100%)",
-              borderRadius: 4,
-              transition: "width 0.4s ease-out",
-            }}
-          />
+        <div style={{ width: "100%", height: TRACK_H, borderRadius: 4, background: "var(--color-cream-2)", overflow: "hidden", position: "relative" }}>
+          <div style={{ position: "absolute", left: 0, width: `${usedPct}%`, height: "100%", background: "var(--color-amber)", borderRadius: 4, transition: "width 0.4s ease-out" }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#1E2A3A" }}>
-            {remainingPct}% remaining
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 500, color: "#B0B8C4" }}>
-            {remainingEmails} emails left
-          </span>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-dark)" }}>{remainingPct}% remaining</span>
+          <span style={{ fontSize: 11, fontWeight: 500, color: "var(--color-muted)" }}>{remainingEmails} emails left</span>
         </div>
       </div>
     );
   }
 
-  // ACTIVE: Show usage based on selected tag (WhatsApp or SMS)
   if (selectedTag && CHANNEL_USAGE[selectedTag]) {
     const usage = CHANNEL_USAGE[selectedTag];
     const usedPct = Math.round((usage.used / usage.total) * 100);
     const remainingPct = 100 - usedPct;
     const remainingAmount = usage.total - usage.used;
-
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div
-          style={{
-            width: "100%",
-            height: BAR_HEIGHT,
-            borderRadius: 4,
-            backgroundColor: "#F0F2F5",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              width: `${usedPct}%`,
-              height: "100%",
-              background: "linear-gradient(90deg, #F5B042 0%, #E8890A 100%)",
-              borderRadius: 4,
-              transition: "width 0.4s ease-out",
-            }}
-          />
+        <div style={{ width: "100%", height: TRACK_H, borderRadius: 4, background: "var(--color-cream-2)", overflow: "hidden", position: "relative" }}>
+          <div style={{ position: "absolute", left: 0, width: `${usedPct}%`, height: "100%", background: "var(--color-amber)", borderRadius: 4, transition: "width 0.4s ease-out" }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#1E2A3A" }}>
-            {remainingPct}% remaining
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 500, color: "#B0B8C4" }}>
-            {remainingAmount} {usage.label} left
-          </span>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-dark)" }}>{remainingPct}% remaining</span>
+          <span style={{ fontSize: 11, fontWeight: 500, color: "var(--color-muted)" }}>{remainingAmount} {usage.label} left</span>
         </div>
       </div>
     );
   }
 
-  // No tag selected but active — show full green (all channels available)
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ width: "100%", height: TRACK_H, borderRadius: 4, background: "rgba(34,197,94,0.12)", overflow: "hidden", position: "relative" }}>
+        <div style={{ position: "absolute", left: 0, width: "100%", height: "100%", background: "linear-gradient(90deg, #7EDB9E 0%, #3B9B54 100%)", borderRadius: 4 }} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--color-dark)" }}>100% available</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Modals ───────────────────────────────────────────────────────────────────
+
+function ModalShell({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <>
+      <style>{`.extras-modal-inner { border-radius: 20px 20px 0 0; } @media(min-width:640px){ .extras-modal-inner { border-radius: 20px !important; } }`}</style>
       <div
-        style={{
-          width: "100%",
-          height: BAR_HEIGHT,
-          borderRadius: 4,
-          backgroundColor: "#E5EFE8",
-          position: "relative",
-          overflow: "hidden",
-        }}
+        style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(30,26,20,0.48)", backdropFilter: "saturate(140%) blur(4px)" }}
+        onClick={onClose}
       >
         <div
-          style={{
-            position: "absolute",
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: "linear-gradient(90deg, #7EDB9E 0%, #3B9B54 100%)",
-            borderRadius: 4,
-          }}
-        />
-      </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline" }}>
-        <span style={{ fontSize: 12, fontWeight: 500, color: "#1E2A3A" }}>
-          100% available
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ─── Custom Request Modal ────────────────────────────────────────────────────
-
-function CustomRequestModal({ onClose }: { onClose: () => void }) {
-  const [notes, setNotes] = useState("");
-  const [contact, setContact] = useState("");
-
-  function send() {
-    const msg = `Custom integration request.${notes ? ` Notes: ${notes}` : ""}${contact ? ` Contact: ${contact}` : ""}`;
-    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
-    onClose();
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{
-        background: "rgba(30,26,20,0.45)",
-        backdropFilter: "saturate(140%) blur(4px)",
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white w-full sm:w-auto sm:min-w-[360px] sm:max-w-sm p-6"
-        style={{
-          borderRadius: "20px 20px 0 0",
-          boxShadow: "0 -8px 48px rgba(30,26,20,0.16), 0 0 0 1px rgba(30,26,20,0.04)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <style>{`@media(min-width:640px){.extras-modal{border-radius:20px!important}}`}</style>
-        <div className="extras-modal">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-[18px] font-extrabold" style={{ color: "var(--color-dark)" }}>
-                Need something custom?
-              </p>
-              <p className="text-[12px] mt-1 leading-snug" style={{ color: "var(--color-muted)" }}>
-                Tell us what you need, we'll build it.
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-full transition-colors hover:bg-[var(--color-cream-2)] ml-4 shrink-0"
-              style={{ color: "var(--color-muted)" }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Describe the integration you need..."
-            rows={3}
-            className="w-full rounded-xl px-3 py-2 text-[13px] resize-none outline-none transition-all mb-3"
-            style={{
-              border: "1.5px solid var(--color-cream-2)",
-              background: "var(--color-cream)",
-              color: "var(--color-dark)",
-              fontSize: 13,
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-          />
-
-          <input
-            type="text"
-            value={contact}
-            onChange={(e) => setContact(e.target.value)}
-            placeholder="Your email or phone (optional)"
-            className="w-full rounded-xl px-3 py-2 text-[13px] outline-none transition-all mb-4"
-            style={{
-              border: "1.5px solid var(--color-cream-2)",
-              background: "var(--color-cream)",
-              color: "var(--color-dark)",
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-          />
-
-          <button
-            onClick={send}
-            className="mt-1 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-            style={{ background: "var(--wash-amber)", boxShadow: "0 6px 18px rgba(232,146,10,0.32)" }}
-          >
-            Send request <span aria-hidden>→</span>
-          </button>
+          className="extras-modal-inner"
+          style={{ width: "100%", maxWidth: 400, background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "0 -8px 48px rgba(30,26,20,0.14), 0 0 0 1px rgba(30,26,20,0.03)", padding: "24px 24px 28px" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {children}
         </div>
       </div>
-    </div>
+    </>
   );
 }
-
-// ─── Enable Request Modal ────────────────────────────────────────────────────
 
 function EnableRequestModal({
   addonName,
+  addonColor,
+  addonIcon,
   waMsg,
   onClose,
 }: {
   addonName: string;
+  addonColor: string;
+  addonIcon: React.ReactNode;
   waMsg: string;
   onClose: () => void;
 }) {
@@ -507,167 +335,165 @@ function EnableRequestModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{
-        background: "rgba(30,26,20,0.45)",
-        backdropFilter: "saturate(140%) blur(4px)",
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white w-full sm:w-auto sm:min-w-[360px] sm:max-w-sm p-6"
-        style={{
-          borderRadius: "20px 20px 0 0",
-          boxShadow: "0 -8px 48px rgba(30,26,20,0.16), 0 0 0 1px rgba(30,26,20,0.04)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <style>{`@media(min-width:640px){.extras-modal{border-radius:20px!important}}`}</style>
-        <div className="extras-modal">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-[18px] font-extrabold" style={{ color: "var(--color-dark)" }}>
-                Enable {addonName}
-              </p>
-              <p className="text-[12px] mt-1 leading-snug" style={{ color: "var(--color-muted)" }}>
-                We will reach out to get you set up.
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-full transition-colors hover:bg-[var(--color-cream-2)] ml-4 shrink-0"
-              style={{ color: "var(--color-muted)" }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+    <ModalShell onClose={onClose}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: `${addonColor}18`, color: addonColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {addonIcon}
           </div>
-
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Any notes or questions? (optional)"
-            rows={3}
-            className="w-full rounded-xl px-3 py-2 text-[13px] resize-none outline-none transition-all"
-            style={{
-              border: "1.5px solid var(--color-cream-2)",
-              background: "var(--color-cream)",
-              color: "var(--color-dark)",
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-          />
-
-          <button
-            onClick={send}
-            className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-            style={{ background: "var(--wash-amber)", boxShadow: "0 6px 18px rgba(232,146,10,0.32)" }}
-          >
-            Send request <span aria-hidden>→</span>
-          </button>
+          <div>
+            <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1.2 }}>Enable {addonName}</p>
+            <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Our team will reach out to set you up.</p>
+          </div>
         </div>
+        <button
+          onClick={onClose}
+          style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "var(--color-cream-2)", color: "var(--color-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, marginLeft: 8 }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
-    </div>
+
+      {/* Divider */}
+      <div style={{ height: 1, background: "var(--color-cream-2)", marginBottom: 16 }} />
+
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Any notes or questions? (optional)"
+        rows={3}
+        style={{ width: "100%", borderRadius: 12, padding: "10px 13px", fontSize: 13, resize: "none", outline: "none", border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)", fontFamily: "inherit", transition: "border-color 0.15s", marginBottom: 14, display: "block", boxSizing: "border-box" }}
+        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+      />
+
+      <button
+        onClick={send}
+        style={{ width: "100%", height: 46, borderRadius: 14, border: "none", background: "var(--wash-amber)", boxShadow: "0 6px 18px rgba(232,146,10,0.30)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "transform 0.15s, box-shadow 0.15s" }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(232,146,10,0.38)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,146,10,0.30)"; }}
+      >
+        <IconWA size={16} />
+        Send via WhatsApp
+      </button>
+    </ModalShell>
   );
 }
 
-// ─── Email Card (separate component, always active) ──────────────────────────
+function CustomRequestModal({ onClose }: { onClose: () => void }) {
+  const [notes, setNotes] = useState("");
+  const [contact, setContact] = useState("");
 
-function EmailCard({ selectedTag, onTagClick }: { selectedTag: string | null; onTagClick: (tag: string) => void }) {
-  const isActive = true; // Always active, no toggle needed
+  function send() {
+    const msg = `Custom integration request.${notes ? ` Notes: ${notes}` : ""}${contact ? ` Contact: ${contact}` : ""}`;
+    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
+    onClose();
+  }
 
   return (
+    <ModalShell onClose={onClose}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+        <div>
+          <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1.2 }}>Need something custom?</p>
+          <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 3 }}>Tell us what you need — we'll build it.</p>
+        </div>
+        <button
+          onClick={onClose}
+          style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "var(--color-cream-2)", color: "var(--color-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, marginLeft: 8 }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <div style={{ height: 1, background: "var(--color-cream-2)", marginBottom: 16 }} />
+
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Describe the integration you need..."
+        rows={3}
+        style={{ width: "100%", borderRadius: 12, padding: "10px 13px", fontSize: 13, resize: "none", outline: "none", border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)", fontFamily: "inherit", transition: "border-color 0.15s", marginBottom: 10, display: "block", boxSizing: "border-box" }}
+        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+      />
+
+      <input
+        type="text"
+        value={contact}
+        onChange={(e) => setContact(e.target.value)}
+        placeholder="Your email or phone (optional)"
+        style={{ width: "100%", height: 40, borderRadius: 12, padding: "0 13px", fontSize: 13, outline: "none", border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)", fontFamily: "inherit", transition: "border-color 0.15s", marginBottom: 14, display: "block", boxSizing: "border-box" }}
+        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+      />
+
+      <button
+        onClick={send}
+        style={{ width: "100%", height: 46, borderRadius: 14, border: "none", background: "var(--wash-amber)", boxShadow: "0 6px 18px rgba(232,146,10,0.30)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "transform 0.15s, box-shadow 0.15s" }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(232,146,10,0.38)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,146,10,0.30)"; }}
+      >
+        <IconWA size={16} />
+        Send via WhatsApp
+      </button>
+    </ModalShell>
+  );
+}
+
+// ─── Email card ───────────────────────────────────────────────────────────────
+
+function EmailCard({ selectedTag, onTagClick }: { selectedTag: string | null; onTagClick: (tag: string) => void }) {
+  return (
     <div
-      className="bg-white rounded-xl"
+      className="rounded-2xl"
       style={{
-        padding: "16px 20px",
-        boxShadow: "0 2px 12px rgba(232,146,10,0.1), 0 1px 2px rgba(30,26,20,0.04)",
+        padding: "18px 20px",
+        background: "var(--color-surface)",
+        boxShadow: "0 2px 12px rgba(232,146,10,0.10), 0 1px 2px rgba(30,26,20,0.04)",
         border: "1.5px solid var(--color-amber)",
       }}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className="rounded-lg flex items-center justify-center shrink-0"
-          style={{
-            width: 36,
-            height: 36,
-            background: `${EMAIL_CARD.color}15`,
-            color: EMAIL_CARD.color,
-          }}
-        >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 12, background: `${EMAIL_CARD.color}18`, color: EMAIL_CARD.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           {EMAIL_CARD.icon}
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[14px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
-                  {EMAIL_CARD.name}
-                </p>
-                <span
-                  className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full"
-                  style={{
-                    background: "#E8F0FE",
-                    color: "#1A73E8",
-                  }}
-                >
-                  monthly
-                </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", lineHeight: 1.3 }}>{EMAIL_CARD.name}</p>
+                <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 99, background: "#E8F0FE", color: "#1A73E8", textTransform: "uppercase", letterSpacing: "0.04em" }}>monthly</span>
               </div>
-              <p className="text-[12px] mt-1.5 leading-relaxed" style={{ color: "var(--color-muted)" }}>
-                {EMAIL_CARD.blurb}
-              </p>
+              <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4, lineHeight: 1.5 }}>{EMAIL_CARD.blurb}</p>
             </div>
-            {/* Email has no toggle - always on, just a visual indicator */}
-            <div
-              style={{
-                width: 40,
-                height: 24,
-                borderRadius: 12,
-                background: "var(--color-amber)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <span
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: "50%",
-                  background: "white",
-                  display: "block",
-                  marginLeft: 19,
-                }}
-              />
+            {/* Always-active indicator */}
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 99, background: "rgba(34,197,94,0.10)", border: "1.5px solid rgba(34,197,94,0.22)", flexShrink: 0 }}>
+              <span style={{ color: "#16A34A", display: "flex" }}><IconCheck size={10} /></span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#16A34A", whiteSpace: "nowrap" }}>Active</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Chart row */}
-      <div className="mt-6 pt-3 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
-        <div className="flex items-center justify-between mb-2">
-          <span
-            className="text-[10px] font-semibold uppercase tracking-wide"
-            style={{ color: "var(--color-muted)" }}
-          >
-            {EMAIL_CARD.statLabel}
-          </span>
-          <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
-            Monthly quota
-          </span>
+      <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--color-cream-2)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--color-muted)" }}>{EMAIL_CARD.statLabel}</span>
+          <span style={{ fontSize: 10, fontWeight: 500, color: "var(--color-muted)" }}>Monthly quota</span>
         </div>
-        <BarChart active={true} selectedTag={null} emailMode={true} />
+        <UsageBar active={true} selectedTag={null} emailMode={true} />
       </div>
     </div>
   );
 }
 
-// ─── Addon Card ───────────────────────────────────────────────────────────────
+// ─── Addon card ───────────────────────────────────────────────────────────────
 
 function AddonCard({
   addon,
@@ -685,123 +511,87 @@ function AddonCard({
 
   return (
     <div
-      className="bg-white rounded-xl"
+      className="rounded-2xl"
       style={{
-        padding: "16px 20px",
+        padding: "18px 20px",
+        background: "var(--color-surface)",
         boxShadow: isActive
-          ? "0 2px 12px rgba(232,146,10,0.1), 0 1px 2px rgba(30,26,20,0.04)"
+          ? "0 2px 12px rgba(232,146,10,0.10), 0 1px 2px rgba(30,26,20,0.04)"
           : "var(--shadow-sm)",
-        border: isActive ? "1.5px solid var(--color-amber)" : "1.5px solid transparent",
+        border: isActive ? "1.5px solid var(--color-amber)" : "1.5px solid var(--color-cream-2)",
+        transition: "border-color 0.2s, box-shadow 0.2s",
       }}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className="rounded-lg flex items-center justify-center shrink-0"
-          style={{
-            width: 36,
-            height: 36,
-            background: `${cfg.color}15`,
-            color: cfg.color,
-          }}
-        >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 12, background: `${cfg.color}18`, color: cfg.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           {cfg.icon}
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[14px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
-                  {cfg.name}
-                </p>
-                <span
-                  className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full"
-                  style={{
-                    background: cfg.recurring ? "#E8F0FE" : "#F0E8FE",
-                    color: cfg.recurring ? "#1A73E8" : "#8B5CF6",
-                  }}
-                >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", lineHeight: 1.3 }}>{cfg.name}</p>
+                <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 99, textTransform: "uppercase", letterSpacing: "0.04em", background: cfg.recurring ? "#E8F0FE" : "#F0E8FE", color: cfg.recurring ? "#1A73E8" : "#8B5CF6" }}>
                   {cfg.recurring ? "monthly" : "one-time"}
                 </span>
               </div>
               {cfg.tags && (
-                <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
                   {cfg.tags.map((t) => (
                     <button
                       key={t}
                       onClick={() => onTagClick(t)}
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all hover:scale-105"
+                      disabled={!isActive}
                       style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "2px 9px",
+                        borderRadius: 99,
+                        border: "none",
+                        cursor: isActive ? "pointer" : "not-allowed",
+                        transition: "all 0.15s",
                         background: selectedTag === t ? cfg.color : "var(--color-cream-2)",
                         color: selectedTag === t ? "white" : "var(--color-muted)",
                         opacity: isActive ? 1 : 0.5,
-                        cursor: isActive ? "pointer" : "not-allowed",
                       }}
-                      disabled={!isActive}
                     >
                       {t}
                     </button>
                   ))}
                 </div>
               )}
-              <p className="text-[12px] mt-1.5 leading-relaxed" style={{ color: "var(--color-muted)" }}>
-                {cfg.blurb}
-              </p>
+              <p style={{ fontSize: 12, color: "var(--color-muted)", lineHeight: 1.5 }}>{cfg.blurb}</p>
             </div>
             <Toggle active={isActive} onEnable={() => onRequest(addon.type)} />
           </div>
         </div>
       </div>
 
-      {/* Chart row - more space above */}
-      <div className="mt-6 pt-3 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
-        <div className="flex items-center justify-between mb-2">
-          <span
-            className="text-[10px] font-semibold uppercase tracking-wide"
-            style={{ color: "var(--color-muted)" }}
-          >
-            {cfg.statLabel}
-          </span>
-          {isActive && selectedTag && (
-            <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
-              {selectedTag} channel
-            </span>
-          )}
-          {isActive && !selectedTag && (
-            <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
-              All channels
+      <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--color-cream-2)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--color-muted)" }}>{cfg.statLabel}</span>
+          {isActive && (
+            <span style={{ fontSize: 10, fontWeight: 500, color: "var(--color-muted)" }}>
+              {selectedTag ? `${selectedTag} channel` : "All channels"}
             </span>
           )}
         </div>
-        <BarChart active={isActive} selectedTag={selectedTag} emailMode={false} />
+        <UsageBar active={isActive} selectedTag={selectedTag} emailMode={false} />
       </div>
     </div>
   );
 }
 
-// ─── Section Links ────────────────────────────────────────────────────────────
+// ─── Section links ────────────────────────────────────────────────────────────
 
-function SectionLinks({
-  onRecurringClick,
-  onOnetimeClick,
-}: {
-  onRecurringClick: () => void;
-  onOnetimeClick: () => void;
-}) {
+function SectionLinks({ onRecurringClick, onOnetimeClick }: { onRecurringClick: () => void; onOnetimeClick: () => void }) {
   return (
-    <div className="flex gap-6 mb-5 pb-2 border-b" style={{ borderBottomColor: "var(--color-cream-2)" }}>
-      <button
-        onClick={onRecurringClick}
-        className="text-[13px] font-semibold transition-colors hover:opacity-70"
-        style={{ color: "var(--color-dark)" }}
-      >
+    <div style={{ display: "flex", gap: 24, marginBottom: 20, paddingBottom: 8, borderBottom: "1px solid var(--color-cream-2)" }}>
+      <button onClick={onRecurringClick} style={{ fontSize: 13, fontWeight: 600, color: "var(--color-dark)", background: "none", border: "none", cursor: "pointer", padding: 0, transition: "opacity 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.6")} onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}>
         Recurring
       </button>
-      <button
-        onClick={onOnetimeClick}
-        className="text-[13px] font-semibold transition-colors hover:opacity-70"
-        style={{ color: "var(--color-dark)" }}
-      >
+      <button onClick={onOnetimeClick} style={{ fontSize: 13, fontWeight: 600, color: "var(--color-dark)", background: "none", border: "none", cursor: "pointer", padding: 0, transition: "opacity 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.6")} onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}>
         One-time
       </button>
     </div>
@@ -813,39 +603,28 @@ function SectionLinks({
 export default function ExtrasPage() {
   const { business, loading: bizLoading } = useBusiness();
   const supabase = createClient();
-  const [addons, setAddons] = useState<Addon[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [requesting, setRequesting] = useState<AddonType | null>(null);
+  const [addons,          setAddons]          = useState<Addon[]>([]);
+  const [loading,         setLoading]         = useState(true);
+  const [requesting,      setRequesting]      = useState<AddonType | null>(null);
   const [showCustomModal, setShowCustomModal] = useState(false);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedTag,     setSelectedTag]     = useState<string | null>(null);
 
-  const recurringRef = useRef<HTMLDivElement>(null);
-  const onetimeRef = useRef<HTMLDivElement>(null);
+  const recurringRef = React.useRef<HTMLDivElement>(null);
+  const onetimeRef   = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
-      if (!business) {
-        setLoading(false);
-        return;
-      }
+      if (!business) { setLoading(false); return; }
 
       const { data } = await supabase.from("addons").select("*").eq("business_id", business.id);
 
       if (!data || data.length === 0) {
-        const ins = ALL_TYPES.map((type) => ({ 
-          business_id: business.id, 
-          type, 
-          active: false,
-        }));
+        const ins = ALL_TYPES.map((type) => ({ business_id: business.id, type, active: false }));
         const { data: nd } = await supabase.from("addons").insert(ins).select();
         setAddons((nd || []) as Addon[]);
       } else {
         const have = new Set(data.map((a: Addon) => a.type));
-        const miss = ALL_TYPES.filter((t) => !have.has(t)).map((type) => ({
-          business_id: business.id,
-          type,
-          active: false,
-        }));
+        const miss = ALL_TYPES.filter((t) => !have.has(t)).map((type) => ({ business_id: business.id, type, active: false }));
         if (miss.length) {
           const { data: nd } = await supabase.from("addons").insert(miss).select();
           setAddons([...data, ...(nd || [])] as Addon[]);
@@ -858,141 +637,86 @@ export default function ExtrasPage() {
     load();
   }, [business, supabase]);
 
-  const scrollToRecurring = () => {
-    recurringRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const scrollToOnetime = () => {
-    onetimeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   if (bizLoading || (business && loading)) {
     return (
-      <div className="flex h-full items-center justify-center" style={{ background: "var(--color-cream)" }}>
-        <div
-          className="w-5 h-5 rounded-full border-2 animate-spin"
-          style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }}
-        />
+      <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", background: "var(--color-cream)" }}>
+        <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid var(--color-amber)", borderTopColor: "transparent", animation: "spin 0.7s linear infinite" }} />
       </div>
     );
   }
 
   function get(type: AddonType): Addon {
-    const found = addons.find((a) => a.type === type);
-    if (found) return found;
-    return { id: type, type, active: false, activated_at: null };
+    return addons.find((a) => a.type === type) ?? { id: type, type, active: false, activated_at: null };
   }
 
-  const handleTagClick = (tag: string) => {
-    setSelectedTag(selectedTag === tag ? null : tag);
-  };
+  const handleTagClick = (tag: string) => setSelectedTag(selectedTag === tag ? null : tag);
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto" style={{ background: "var(--color-cream)" }}>
+      <div style={{ flex: 1, overflowY: "auto", background: "var(--color-cream)" }}>
         <div style={{ maxWidth: 600, margin: "0 auto", width: "100%", padding: "24px 16px 64px" }}>
-          {/* Header */}
-          <h1
-            style={{
-              fontSize: 26,
-              fontWeight: 700,
-              color: "var(--color-dark)",
-              marginBottom: 18,
-            }}
-          >
+
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", marginBottom: 20 }}>
             Extras
           </h1>
 
-          {/* Section Links */}
-          <SectionLinks onRecurringClick={scrollToRecurring} onOnetimeClick={scrollToOnetime} />
+          <SectionLinks
+            onRecurringClick={() => recurringRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            onOnetimeClick={() => onetimeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          />
 
-          {/* Email Card - always at top, always active */}
-          <div style={{ marginBottom: 12 }}>
+          {/* Email card */}
+          <div style={{ marginBottom: 16 }}>
             <EmailCard selectedTag={selectedTag} onTagClick={handleTagClick} />
           </div>
 
-          {/* Recurring Section (without email, since email is separate) */}
-          <div ref={recurringRef} style={{ marginBottom: 28 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {MONTHLY.map((t) => (
-                <AddonCard
-                  key={t}
-                  addon={get(t)}
-                  onRequest={setRequesting}
-                  selectedTag={selectedTag}
-                  onTagClick={handleTagClick}
-                />
-              ))}
-            </div>
+          {/* Recurring */}
+          <div ref={recurringRef} style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}>
+            {MONTHLY.map((t) => (
+              <AddonCard key={t} addon={get(t)} onRequest={setRequesting} selectedTag={selectedTag} onTagClick={handleTagClick} />
+            ))}
           </div>
 
-          {/* One-time Section */}
-          <div ref={onetimeRef} style={{ marginBottom: 32 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {ONETIME.map((t) => (
-                <AddonCard
-                  key={t}
-                  addon={get(t)}
-                  onRequest={setRequesting}
-                  selectedTag={selectedTag}
-                  onTagClick={handleTagClick}
-                />
-              ))}
-            </div>
+          {/* One-time */}
+          <div ref={onetimeRef} style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}>
+            {ONETIME.map((t) => (
+              <AddonCard key={t} addon={get(t)} onRequest={setRequesting} selectedTag={selectedTag} onTagClick={handleTagClick} />
+            ))}
           </div>
 
           {/* Custom CTA */}
           <div
-            className="bg-white rounded-xl cursor-pointer transition-all hover:shadow-sm"
-            style={{
-              padding: "14px 18px",
-              boxShadow: "var(--shadow-sm)",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
+            className="rounded-2xl"
+            style={{ padding: "14px 18px", background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", border: "1.5px solid var(--color-cream-2)", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "border-color 0.15s" }}
             onClick={() => setShowCustomModal(true)}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = "var(--color-amber)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = "var(--color-cream-2)")}
           >
-            <div
-              className="rounded-lg flex items-center justify-center shrink-0"
-              style={{ width: 34, height: 34, background: "var(--color-cream-2)", color: "var(--color-muted)" }}
-            >
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--color-cream-2)", color: "var(--color-muted)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="16" />
-                <line x1="8" y1="12" x2="16" y2="12" />
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
               </svg>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)" }}>
-                Need something custom?
-              </p>
-              <p style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 1 }}>
-                We build integrations for specific needs.
-              </p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)" }}>Need something custom?</p>
+              <p style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 2 }}>We build integrations for specific needs.</p>
             </div>
             <button
-              className="shrink-0 font-semibold rounded-full transition-colors hover:opacity-80"
-              style={{
-                fontSize: 12,
-                padding: "5px 14px",
-                background: "var(--amber-soft)",
-                color: "var(--color-amber)",
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowCustomModal(true);
-              }}
+              style={{ fontSize: 12, fontWeight: 700, padding: "5px 14px", borderRadius: 99, background: "var(--amber-soft)", color: "var(--color-amber)", border: "none", cursor: "pointer", flexShrink: 0 }}
+              onClick={(e) => { e.stopPropagation(); setShowCustomModal(true); }}
             >
               Talk to us
             </button>
           </div>
+
         </div>
       </div>
 
       {requesting && (
         <EnableRequestModal
           addonName={CATALOG[requesting].name}
+          addonColor={CATALOG[requesting].color}
+          addonIcon={CATALOG[requesting].icon}
           waMsg={CATALOG[requesting].waMsg}
           onClose={() => setRequesting(null)}
         />
@@ -1002,3 +726,6 @@ export default function ExtrasPage() {
     </>
   );
 }
+
+// needed for ref
+import React from "react";
