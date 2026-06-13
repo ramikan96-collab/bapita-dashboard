@@ -326,35 +326,19 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
 
-        {/* Right controls: Print (calendar only) + Lang toggle */}
-        <div className="ms-auto shrink-0 flex items-center gap-1">
-          {onCalendar && (
-            <button
-              onClick={() => window.print()}
-              className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors"
-              aria-label="Print"
-            >
-              <IconPrint size={18} />
-            </button>
-          )}
-          <div
-            className="flex items-center rounded-full p-0.5 gap-0.5"
-            style={{ background: "var(--color-cream-2)" }}
+        {/* Spacer — pushes print to far right (ms-auto unreliable with absolute tabs) */}
+        <div className="flex-1" />
+
+        {/* Print — calendar only, far right */}
+        {onCalendar && (
+          <button
+            onClick={() => window.print()}
+            className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
+            aria-label="Print"
           >
-            <span
-              className="px-2.5 py-1 rounded-full text-[12px] font-semibold"
-              style={{ background: "var(--color-amber)", color: "#fff" }}
-            >
-              En
-            </span>
-            <span
-              className="px-2.5 py-1 rounded-full text-[12px] font-semibold"
-              style={{ color: "var(--color-muted)", cursor: "not-allowed" }}
-            >
-              He
-            </span>
-          </div>
-        </div>
+            <IconPrint size={18} />
+          </button>
+        )}
       </div>
 
       {/* ─── Mobile Top Bar ───────────────────────────────────────────── */}
