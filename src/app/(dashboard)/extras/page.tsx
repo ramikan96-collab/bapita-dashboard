@@ -1,1004 +1,336 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
+import { ClientsSkeleton } from "@/components/LoadingSkeleton";
+import AddCustomerSheet from "@/components/AddCustomerSheet";
+import type { Customer } from "@/types";
 
-type AddonType = "whatsapp" | "stripe" | "google" | "ads" | "google_business";
+const CARD_SHADOW = "0 2px 8px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.02)";
+const CARD_SHADOW_HOVER = "0 12px 24px -8px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.04)";
 
-// NOTE: Email is a special UI-only card - it's NOT stored in the addons table
-// It's always active by default with 500 free emails/month
+type SortBy = "recent" | "name" | "visits";
 
-interface Addon {
-  id: string;
-  type: AddonType;
-  active: boolean;
-  activated_at: string | null;
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: "recent", label: "Recent" },
+  { value: "name", label: "A to Z" },
+  { value: "visits", label: "Most booked" },
+];
+
+// Warm avatar palette. Each entry is a soft tint background + a darker
+// initial color so a list of cards reads varied but stays on brand.
+const AVATAR_TINTS: { bg: string; fg: string }[] = [
+  { bg: "rgba(232,146,10,0.12)", fg: "#C25E00" }, // amber
+  { bg: "rgba(212,98,42,0.12)", fg: "#B14418" }, // terra
+  { bg: "rgba(34,197,94,0.12)", fg: "#15803D" }, // green
+  { bg: "rgba(107,96,82,0.12)", fg: "#5A5044" }, // sand/muted
+  { bg: "rgba(148,163,184,0.14)", fg: "#475569" }, // slate
+];
+
+// Deterministic tint per client so a given person always keeps the same color.
+function avatarTint(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  }
+  return AVATAR_TINTS[Math.abs(hash) % AVATAR_TINTS.length];
 }
 
-const WA_NUMBER = "972501234567";
-const MONTHLY: AddonType[] = ["whatsapp", "stripe", "google", "ads"];
-const ONETIME: AddonType[] = ["google_business"];
-const ALL_TYPES: AddonType[] = [...MONTHLY, ...ONETIME];
+// Avatar shows the first initial only, per the design spec.
+function firstInitial(name: string): string {
+  return name.trim().charAt(0).toUpperCase() || "?";
+}
 
-// Usage data per channel (for WhatsApp, SMS tags)
-type ChannelUsage = {
-  used: number;
-  total: number;
-  label: string;
-};
+function formatPhone(phone: string): string {
+  if (!phone) return "No phone";
+  if (phone.length === 10 && phone.startsWith("05")) {
+    return `${phone.slice(0, 3)}.${phone.slice(3, 6)}.${phone.slice(6)}`;
+  }
+  return phone;
+}
 
-const CHANNEL_USAGE: Record<string, ChannelUsage> = {
-  WhatsApp: { used: 1247, total: 2500, label: "WhatsApp messages" },
-  SMS: { used: 342, total: 1000, label: "SMS messages" },
-};
-
-// Email usage data (500 free, monthly) - UI only, not in DB
-const EMAIL_USAGE = { used: 0, total: 500, label: "emails sent" };
-
-// ─── Icons ───────────────────────────────────────────────────────────────────
-
-type IP = { size?: number };
-
-function IconWA({ size = 20 }: IP) {
+function IconSearch() {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   );
 }
 
-function IconCard({ size = 20 }: IP) {
+function IconPlus() {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   );
 }
 
-function IconStar({ size = 20 }: IP) {
+function IconUsers() {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
 
-function IconTarget({ size = 20 }: IP) {
+function IconChevron() {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180">
+      <polyline points="9 18 15 12 9 6" />
     </svg>
   );
 }
 
-function IconPin({ size = 20 }: IP) {
+// List-region skeleton. Keeps the live header/search mounted (so the input
+// holds focus while typing) and only the rows below shimmer.
+function ListSkeleton() {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function IconMail({ size = 20 }: IP) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="2" />
-      <path d="m22 7-10 7L2 7" />
-    </svg>
-  );
-}
-
-// ─── Catalog ─────────────────────────────────────────────────────────────────
-
-interface Entry {
-  name: string;
-  blurb: string;
-  color: string;
-  icon: React.ReactNode;
-  waMsg: string;
-  tags?: string[];
-  statLabel: string;
-  recurring: boolean;
-}
-
-const CATALOG: Record<AddonType, Entry> = {
-  whatsapp: {
-    name: "Reminders & Confirmations",
-    blurb: "Automatic booking confirmations and reminders over WhatsApp or SMS.",
-    color: "#25D366",
-    icon: <IconWA />,
-    waMsg: "Hi, I want to enable Reminders & Confirmations",
-    tags: ["WhatsApp", "SMS"],
-    statLabel: "Messages sent",
-    recurring: true,
-  },
-  stripe: {
-    name: "Online Payments",
-    blurb: "Collect deposits or full payment at the time of booking.",
-    color: "#635BFF",
-    icon: <IconCard />,
-    waMsg: "Hi, I want to set up Online Payments",
-    statLabel: "Payments collected",
-    recurring: true,
-  },
-  google: {
-    name: "Google Reviews",
-    blurb: "Automatic review requests sent to happy clients at the right moment.",
-    color: "#FBBC05",
-    icon: <IconStar />,
-    waMsg: "Hi, I want to enable Google Reviews automation",
-    statLabel: "Reviews collected",
-    recurring: true,
-  },
-  ads: {
-    name: "Paid Ads",
-    blurb: "Meta campaigns that bring new clients straight into your booking flow.",
-    color: "#0866FF",
-    icon: <IconTarget />,
-    waMsg: "Hi, I want to run Paid Ads",
-    statLabel: "Ad impressions",
-    recurring: true,
-  },
-  google_business: {
-    name: "Google Business Setup",
-    blurb: "Full profile setup so you appear when someone nearby searches for what you do.",
-    color: "#0F9D58",
-    icon: <IconPin />,
-    waMsg: "Hi, I want to set up my Google Business profile",
-    statLabel: "Profile views",
-    recurring: false,
-  },
-};
-
-// Email card data (separate, not in addons table)
-const EMAIL_CARD = {
-  name: "Email Notifications",
-  blurb: "Send booking confirmations, reminders, and updates via email. 500 free emails/month included.",
-  color: "#EA4335",
-  icon: <IconMail />,
-  statLabel: "Emails sent",
-  recurring: true,
-};
-
-// ─── Toggle ───────────────────────────────────────────────────────────────────
-
-function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void }) {
-  const [tip, setTip] = useState(false);
-
-  return (
-    <div
-      className="relative shrink-0"
-      onMouseEnter={() => setTip(true)}
-      onMouseLeave={() => setTip(false)}
-    >
-      {tip && !active && (
+    <div className="space-y-3 animate-pulse">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
         <div
-          className="absolute pointer-events-none whitespace-nowrap text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg z-20"
-          style={{
-            bottom: "calc(100% + 8px)",
-            right: 0,
-            background: "var(--color-dark)",
-            boxShadow: "var(--shadow-md)",
-          }}
-        >
-          I want this
-          <span
-            className="absolute right-3.5"
-            style={{
-              top: "100%",
-              width: 0,
-              height: 0,
-              borderLeft: "4px solid transparent",
-              borderRight: "4px solid transparent",
-              borderTop: "4px solid var(--color-dark)",
-            }}
-          />
-        </div>
-      )}
-      <button
-        onClick={active ? undefined : onEnable}
-        aria-pressed={active}
-        aria-label={active ? "Active" : "Enable"}
-        className="relative transition-colors duration-200"
-        style={{
-          width: 40,
-          height: 24,
-          borderRadius: 12,
-          background: active ? "var(--color-amber)" : "var(--color-cream-2)",
-          cursor: active ? "default" : "pointer",
-          display: "flex",
-          alignItems: "center",
-          flexShrink: 0,
-        }}
-      >
-        <span
-          className="absolute transition-all duration-200 bg-white"
-          style={{
-            width: 18,
-            height: 18,
-            borderRadius: "50%",
-            left: active ? 19 : 3,
-            boxShadow: "0 1px 4px rgba(30,26,20,0.25)",
-          }}
+          key={i}
+          className="h-[88px] rounded-2xl bg-white"
+          style={{ boxShadow: CARD_SHADOW }}
         />
-      </button>
+      ))}
     </div>
   );
 }
 
-// ─── Usage Bar — Premium Claude-style thin horizontal bar ─────────────────────
-
-function BarChart({ 
-  active, 
-  selectedTag, 
-  emailMode = false,
-}: { 
-  active: boolean; 
-  selectedTag: string | null;
-  emailMode?: boolean;
-}) {
-  const BAR_HEIGHT = 4;
-
-  // INACTIVE: Full 100% green bar
-  if (!active) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div
-          style={{
-            width: "100%",
-            height: BAR_HEIGHT,
-            borderRadius: 4,
-            backgroundColor: "#E5EFE8",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              width: "100%",
-              height: "100%",
-              background: "linear-gradient(90deg, #7EDB9E 0%, #3B9B54 100%)",
-              borderRadius: 4,
-            }}
-          />
-        </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline" }}>
-          <span style={{ fontSize: 12, fontWeight: 500, color: "#1E2A3A" }}>
-            {emailMode ? `${EMAIL_USAGE.total} emails left` : "100%"}
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  // Email mode active
-  if (emailMode) {
-    const usedPct = Math.round((EMAIL_USAGE.used / EMAIL_USAGE.total) * 100);
-    const remainingPct = 100 - usedPct;
-    const remainingEmails = EMAIL_USAGE.total - EMAIL_USAGE.used;
-
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div
-          style={{
-            width: "100%",
-            height: BAR_HEIGHT,
-            borderRadius: 4,
-            backgroundColor: "#F0F2F5",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              width: `${usedPct}%`,
-              height: "100%",
-              background: "linear-gradient(90deg, #F5B042 0%, #E8890A 100%)",
-              borderRadius: 4,
-              transition: "width 0.4s ease-out",
-            }}
-          />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#1E2A3A" }}>
-            {remainingPct}% remaining
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 500, color: "#B0B8C4" }}>
-            {remainingEmails} emails left
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  // ACTIVE: Show usage based on selected tag (WhatsApp or SMS)
-  if (selectedTag && CHANNEL_USAGE[selectedTag]) {
-    const usage = CHANNEL_USAGE[selectedTag];
-    const usedPct = Math.round((usage.used / usage.total) * 100);
-    const remainingPct = 100 - usedPct;
-    const remainingAmount = usage.total - usage.used;
-
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div
-          style={{
-            width: "100%",
-            height: BAR_HEIGHT,
-            borderRadius: 4,
-            backgroundColor: "#F0F2F5",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              width: `${usedPct}%`,
-              height: "100%",
-              background: "linear-gradient(90deg, #F5B042 0%, #E8890A 100%)",
-              borderRadius: 4,
-              transition: "width 0.4s ease-out",
-            }}
-          />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#1E2A3A" }}>
-            {remainingPct}% remaining
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 500, color: "#B0B8C4" }}>
-            {remainingAmount} {usage.label} left
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  // No tag selected but active — show full green (all channels available)
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div
-        style={{
-          width: "100%",
-          height: BAR_HEIGHT,
-          borderRadius: 4,
-          backgroundColor: "#E5EFE8",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: "linear-gradient(90deg, #7EDB9E 0%, #3B9B54 100%)",
-            borderRadius: 4,
-          }}
-        />
-      </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline" }}>
-        <span style={{ fontSize: 12, fontWeight: 500, color: "#1E2A3A" }}>
-          100% available
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ─── Custom Request Modal ────────────────────────────────────────────────────
-
-function CustomRequestModal({ onClose }: { onClose: () => void }) {
-  const [notes, setNotes] = useState("");
-  const [contact, setContact] = useState("");
-
-  function send() {
-    const msg = `Custom integration request.${notes ? ` Notes: ${notes}` : ""}${contact ? ` Contact: ${contact}` : ""}`;
-    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
-    onClose();
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{
-        background: "rgba(30,26,20,0.45)",
-        backdropFilter: "saturate(140%) blur(4px)",
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white w-full sm:w-auto sm:min-w-[360px] sm:max-w-sm p-6"
-        style={{
-          borderRadius: "20px 20px 0 0",
-          boxShadow: "0 -8px 48px rgba(30,26,20,0.16), 0 0 0 1px rgba(30,26,20,0.04)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <style>{`@media(min-width:640px){.extras-modal{border-radius:20px!important}}`}</style>
-        <div className="extras-modal">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-[18px] font-extrabold" style={{ color: "var(--color-dark)" }}>
-                Need something custom?
-              </p>
-              <p className="text-[12px] mt-1 leading-snug" style={{ color: "var(--color-muted)" }}>
-                Tell us what you need, we'll build it.
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-full transition-colors hover:bg-[var(--color-cream-2)] ml-4 shrink-0"
-              style={{ color: "var(--color-muted)" }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Describe the integration you need..."
-            rows={3}
-            className="w-full rounded-xl px-3 py-2 text-[13px] resize-none outline-none transition-all mb-3"
-            style={{
-              border: "1.5px solid var(--color-cream-2)",
-              background: "var(--color-cream)",
-              color: "var(--color-dark)",
-              fontSize: 13,
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-          />
-
-          <input
-            type="text"
-            value={contact}
-            onChange={(e) => setContact(e.target.value)}
-            placeholder="Your email or phone (optional)"
-            className="w-full rounded-xl px-3 py-2 text-[13px] outline-none transition-all mb-4"
-            style={{
-              border: "1.5px solid var(--color-cream-2)",
-              background: "var(--color-cream)",
-              color: "var(--color-dark)",
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-          />
-
-          <button
-            onClick={send}
-            className="mt-1 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-            style={{ background: "var(--wash-amber)", boxShadow: "0 6px 18px rgba(232,146,10,0.32)" }}
-          >
-            Send request <span aria-hidden>→</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Enable Request Modal ────────────────────────────────────────────────────
-
-function EnableRequestModal({
-  addonName,
-  waMsg,
-  onClose,
-}: {
-  addonName: string;
-  waMsg: string;
-  onClose: () => void;
-}) {
-  const [notes, setNotes] = useState("");
-
-  function send() {
-    const msg = notes.trim() ? `${waMsg}. Notes: ${notes.trim()}` : waMsg;
-    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
-    onClose();
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{
-        background: "rgba(30,26,20,0.45)",
-        backdropFilter: "saturate(140%) blur(4px)",
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white w-full sm:w-auto sm:min-w-[360px] sm:max-w-sm p-6"
-        style={{
-          borderRadius: "20px 20px 0 0",
-          boxShadow: "0 -8px 48px rgba(30,26,20,0.16), 0 0 0 1px rgba(30,26,20,0.04)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <style>{`@media(min-width:640px){.extras-modal{border-radius:20px!important}}`}</style>
-        <div className="extras-modal">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-[18px] font-extrabold" style={{ color: "var(--color-dark)" }}>
-                Enable {addonName}
-              </p>
-              <p className="text-[12px] mt-1 leading-snug" style={{ color: "var(--color-muted)" }}>
-                We will reach out to get you set up.
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-full transition-colors hover:bg-[var(--color-cream-2)] ml-4 shrink-0"
-              style={{ color: "var(--color-muted)" }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Any notes or questions? (optional)"
-            rows={3}
-            className="w-full rounded-xl px-3 py-2 text-[13px] resize-none outline-none transition-all"
-            style={{
-              border: "1.5px solid var(--color-cream-2)",
-              background: "var(--color-cream)",
-              color: "var(--color-dark)",
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-          />
-
-          <button
-            onClick={send}
-            className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-bold text-white transition-all hover:-translate-y-0.5 active:scale-[0.98]"
-            style={{ background: "var(--wash-amber)", boxShadow: "0 6px 18px rgba(232,146,10,0.32)" }}
-          >
-            Send request <span aria-hidden>→</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Email Card (separate component, always active) ──────────────────────────
-
-function EmailCard({ selectedTag, onTagClick }: { selectedTag: string | null; onTagClick: (tag: string) => void }) {
-  const isActive = true; // Always active, no toggle needed
-
-  return (
-    <div
-      className="bg-white rounded-xl"
-      style={{
-        padding: "16px 20px",
-        boxShadow: "0 2px 12px rgba(232,146,10,0.1), 0 1px 2px rgba(30,26,20,0.04)",
-        border: "1.5px solid var(--color-amber)",
-      }}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className="rounded-lg flex items-center justify-center shrink-0"
-          style={{
-            width: 36,
-            height: 36,
-            background: `${EMAIL_CARD.color}15`,
-            color: EMAIL_CARD.color,
-          }}
-        >
-          {EMAIL_CARD.icon}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[14px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
-                  {EMAIL_CARD.name}
-                </p>
-                <span
-                  className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full"
-                  style={{
-                    background: "#E8F0FE",
-                    color: "#1A73E8",
-                  }}
-                >
-                  monthly
-                </span>
-              </div>
-              <p className="text-[12px] mt-1.5 leading-relaxed" style={{ color: "var(--color-muted)" }}>
-                {EMAIL_CARD.blurb}
-              </p>
-            </div>
-            {/* Email has no toggle - always on, just a visual indicator */}
-            <div
-              style={{
-                width: 40,
-                height: 24,
-                borderRadius: 12,
-                background: "var(--color-amber)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <span
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: "50%",
-                  background: "white",
-                  display: "block",
-                  marginLeft: 19,
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Chart row */}
-      <div className="mt-6 pt-3 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
-        <div className="flex items-center justify-between mb-2">
-          <span
-            className="text-[10px] font-semibold uppercase tracking-wide"
-            style={{ color: "var(--color-muted)" }}
-          >
-            {EMAIL_CARD.statLabel}
-          </span>
-          <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
-            Monthly quota
-          </span>
-        </div>
-        <BarChart active={true} selectedTag={null} emailMode={true} />
-      </div>
-    </div>
-  );
-}
-
-// ─── Addon Card ───────────────────────────────────────────────────────────────
-
-function AddonCard({
-  addon,
-  onRequest,
-  selectedTag,
-  onTagClick,
-}: {
-  addon: Addon;
-  onRequest: (t: AddonType) => void;
-  selectedTag: string | null;
-  onTagClick: (tag: string) => void;
-}) {
-  const cfg = CATALOG[addon.type];
-  const isActive = addon.active;
-
-  return (
-    <div
-      className="bg-white rounded-xl"
-      style={{
-        padding: "16px 20px",
-        boxShadow: isActive
-          ? "0 2px 12px rgba(232,146,10,0.1), 0 1px 2px rgba(30,26,20,0.04)"
-          : "var(--shadow-sm)",
-        border: isActive ? "1.5px solid var(--color-amber)" : "1.5px solid transparent",
-      }}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className="rounded-lg flex items-center justify-center shrink-0"
-          style={{
-            width: 36,
-            height: 36,
-            background: `${cfg.color}15`,
-            color: cfg.color,
-          }}
-        >
-          {cfg.icon}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[14px] font-bold leading-snug" style={{ color: "var(--color-dark)" }}>
-                  {cfg.name}
-                </p>
-                <span
-                  className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full"
-                  style={{
-                    background: cfg.recurring ? "#E8F0FE" : "#F0E8FE",
-                    color: cfg.recurring ? "#1A73E8" : "#8B5CF6",
-                  }}
-                >
-                  {cfg.recurring ? "monthly" : "one-time"}
-                </span>
-              </div>
-              {cfg.tags && (
-                <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                  {cfg.tags.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => onTagClick(t)}
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all hover:scale-105"
-                      style={{
-                        background: selectedTag === t ? cfg.color : "var(--color-cream-2)",
-                        color: selectedTag === t ? "white" : "var(--color-muted)",
-                        opacity: isActive ? 1 : 0.5,
-                        cursor: isActive ? "pointer" : "not-allowed",
-                      }}
-                      disabled={!isActive}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <p className="text-[12px] mt-1.5 leading-relaxed" style={{ color: "var(--color-muted)" }}>
-                {cfg.blurb}
-              </p>
-            </div>
-            <Toggle active={isActive} onEnable={() => onRequest(addon.type)} />
-          </div>
-        </div>
-      </div>
-
-      {/* Chart row - more space above */}
-      <div className="mt-6 pt-3 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
-        <div className="flex items-center justify-between mb-2">
-          <span
-            className="text-[10px] font-semibold uppercase tracking-wide"
-            style={{ color: "var(--color-muted)" }}
-          >
-            {cfg.statLabel}
-          </span>
-          {isActive && selectedTag && (
-            <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
-              {selectedTag} channel
-            </span>
-          )}
-          {isActive && !selectedTag && (
-            <span className="text-[10px] font-medium" style={{ color: "var(--color-muted)" }}>
-              All channels
-            </span>
-          )}
-        </div>
-        <BarChart active={isActive} selectedTag={selectedTag} emailMode={false} />
-      </div>
-    </div>
-  );
-}
-
-// ─── Section Links ────────────────────────────────────────────────────────────
-
-function SectionLinks({
-  onRecurringClick,
-  onOnetimeClick,
-}: {
-  onRecurringClick: () => void;
-  onOnetimeClick: () => void;
-}) {
-  return (
-    <div className="flex gap-6 mb-5 pb-2 border-b" style={{ borderBottomColor: "var(--color-cream-2)" }}>
-      <button
-        onClick={onRecurringClick}
-        className="text-[13px] font-semibold transition-colors hover:opacity-70"
-        style={{ color: "var(--color-dark)" }}
-      >
-        Recurring
-      </button>
-      <button
-        onClick={onOnetimeClick}
-        className="text-[13px] font-semibold transition-colors hover:opacity-70"
-        style={{ color: "var(--color-dark)" }}
-      >
-        One-time
-      </button>
-    </div>
-  );
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-export default function ExtrasPage() {
+export default function ClientsPage() {
+  const router = useRouter();
   const { business, loading: bizLoading } = useBusiness();
   const supabase = createClient();
-  const [addons, setAddons] = useState<Addon[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [requesting, setRequesting] = useState<AddonType | null>(null);
-  const [showCustomModal, setShowCustomModal] = useState(false);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  const recurringRef = useRef<HTMLDivElement>(null);
-  const onetimeRef = useRef<HTMLDivElement>(null);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [clients, setClients] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<SortBy>("recent");
+  const [totalCount, setTotalCount] = useState(0);
+  const [showAdd, setShowAdd] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Debounce search so we don't fire a query on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
 
   useEffect(() => {
-    async function load() {
+    async function fetchClients() {
       if (!business) {
         setLoading(false);
         return;
       }
 
-      const { data } = await supabase.from("addons").select("*").eq("business_id", business.id);
+      setLoading(true);
 
-      if (!data || data.length === 0) {
-        const ins = ALL_TYPES.map((type) => ({ 
-          business_id: business.id, 
-          type, 
-          active: false,
-        }));
-        const { data: nd } = await supabase.from("addons").insert(ins).select();
-        setAddons((nd || []) as Addon[]);
-      } else {
-        const have = new Set(data.map((a: Addon) => a.type));
-        const miss = ALL_TYPES.filter((t) => !have.has(t)).map((type) => ({
-          business_id: business.id,
-          type,
-          active: false,
-        }));
-        if (miss.length) {
-          const { data: nd } = await supabase.from("addons").insert(miss).select();
-          setAddons([...data, ...(nd || [])] as Addon[]);
-        } else {
-          setAddons(data as Addon[]);
-        }
+      let query = supabase
+        .from("customers")
+        .select("*", { count: "exact" })
+        .eq("business_id", business.id);
+
+      if (debouncedSearch) {
+        query = query.or(`name.ilike.%${debouncedSearch}%,phone.ilike.%${debouncedSearch}%`);
       }
+
+      if (sortBy === "name") {
+        query = query.order("name");
+      } else if (sortBy === "visits") {
+        query = query.order("total_visits", { ascending: false });
+      } else {
+        query = query.order("last_visit_at", { ascending: false, nullsFirst: false });
+      }
+
+      const { data, count } = await query.limit(100);
+      setClients(data || []);
+      setTotalCount(count || 0);
       setLoading(false);
     }
-    load();
-  }, [business, supabase]);
 
-  const scrollToRecurring = () => {
-    recurringRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+    fetchClients();
+  }, [business, debouncedSearch, sortBy, supabase, refreshKey]);
 
-  const scrollToOnetime = () => {
-    onetimeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  if (bizLoading || (business && loading)) {
-    return (
-      <div className="flex h-full items-center justify-center" style={{ background: "var(--color-cream)" }}>
-        <div
-          className="w-5 h-5 rounded-full border-2 animate-spin"
-          style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }}
-        />
-      </div>
-    );
-  }
-
-  function get(type: AddonType): Addon {
-    const found = addons.find((a) => a.type === type);
-    if (found) return found;
-    return { id: type, type, active: false, activated_at: null };
-  }
-
-  const handleTagClick = (tag: string) => {
-    setSelectedTag(selectedTag === tag ? null : tag);
-  };
+  if (bizLoading) return <ClientsSkeleton />;
 
   return (
-    <>
-      <div className="flex-1 overflow-y-auto" style={{ background: "var(--color-cream)" }}>
-        <div style={{ maxWidth: 600, margin: "0 auto", width: "100%", padding: "24px 16px 64px" }}>
-          {/* Header */}
-          <h1
-            style={{
-              fontSize: 26,
-              fontWeight: 700,
-              color: "var(--color-dark)",
-              marginBottom: 18,
-            }}
-          >
-            Extras
-          </h1>
-
-          {/* Section Links */}
-          <SectionLinks onRecurringClick={scrollToRecurring} onOnetimeClick={scrollToOnetime} />
-
-          {/* Email Card - always at top, always active */}
-          <div style={{ marginBottom: 12 }}>
-            <EmailCard selectedTag={selectedTag} onTagClick={handleTagClick} />
-          </div>
-
-          {/* Recurring Section (without email, since email is separate) */}
-          <div ref={recurringRef} style={{ marginBottom: 28 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {MONTHLY.map((t) => (
-                <AddonCard
-                  key={t}
-                  addon={get(t)}
-                  onRequest={setRequesting}
-                  selectedTag={selectedTag}
-                  onTagClick={handleTagClick}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* One-time Section */}
-          <div ref={onetimeRef} style={{ marginBottom: 32 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {ONETIME.map((t) => (
-                <AddonCard
-                  key={t}
-                  addon={get(t)}
-                  onRequest={setRequesting}
-                  selectedTag={selectedTag}
-                  onTagClick={handleTagClick}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Custom CTA */}
-          <div
-            className="bg-white rounded-xl cursor-pointer transition-all hover:shadow-sm"
-            style={{
-              padding: "14px 18px",
-              boxShadow: "var(--shadow-sm)",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-            onClick={() => setShowCustomModal(true)}
-          >
-            <div
-              className="rounded-lg flex items-center justify-center shrink-0"
-              style={{ width: 34, height: 34, background: "var(--color-cream-2)", color: "var(--color-muted)" }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="16" />
-                <line x1="8" y1="12" x2="16" y2="12" />
-              </svg>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)" }}>
-                Need something custom?
-              </p>
-              <p style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 1 }}>
-                We build integrations for specific needs.
-              </p>
+    <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
+      {/* ─── Fixed top region: header + controls ─────────────────────── */}
+      <div
+        className="shrink-0 border-b"
+        style={{ borderColor: "var(--color-cream-2)" }}
+      >
+        <div className="mx-auto w-full px-6 py-8 md:px-8 lg:px-10" style={{ maxWidth: 960 }}>
+          {/* Header with increased spacing */}
+          <div className="flex items-center justify-between gap-6 mb-8">
+            <div className="flex items-center gap-3 min-w-0">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-dark">
+                Clients
+              </h1>
+              <span
+                className="inline-flex items-center justify-center h-7 min-w-7 px-2.5 rounded-full text-sm font-medium"
+                style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}
+              >
+                {totalCount}
+              </span>
             </div>
             <button
-              className="shrink-0 font-semibold rounded-full transition-colors hover:opacity-80"
-              style={{
-                fontSize: 12,
-                padding: "5px 14px",
-                background: "var(--amber-soft)",
-                color: "var(--color-amber)",
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowCustomModal(true);
-              }}
+              onClick={() => setShowAdd(true)}
+              className="h-11 px-5 rounded-xl bg-amber text-white flex items-center gap-2 font-semibold text-sm shadow-md hover:shadow-lg active:scale-95 transition-all shrink-0"
             >
-              Talk to us
+              <IconPlus />
+              Add client
             </button>
+          </div>
+
+          {/* Controls: search + segmented sort with better spacing */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="relative flex-1">
+              <span
+                className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: "var(--color-muted)", insetInlineStart: 16 }}
+              >
+                <IconSearch />
+              </span>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or phone"
+                className="w-full h-12 rounded-xl border bg-white text-base text-dark transition-all focus:outline-none focus:border-amber focus:ring-2 focus:ring-amber/20"
+                style={{ borderColor: "var(--color-cream-2)", paddingInlineStart: 44, paddingInlineEnd: 18 }}
+              />
+            </div>
+
+            <div
+              className="flex p-1 rounded-xl shrink-0"
+              style={{ background: "var(--color-cream-2)" }}
+            >
+              {SORT_OPTIONS.map((option) => {
+                const active = sortBy === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => setSortBy(option.value)}
+                    className="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all"
+                    style={{
+                      background: active ? "var(--color-surface)" : "transparent",
+                      color: active ? "var(--color-dark)" : "var(--color-muted)",
+                      boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
-      {requesting && (
-        <EnableRequestModal
-          addonName={CATALOG[requesting].name}
-          waMsg={CATALOG[requesting].waMsg}
-          onClose={() => setRequesting(null)}
+      {/* ─── Scrolling list with increased card height and spacing ─── */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full px-6 py-6 md:px-8 lg:px-10" style={{ maxWidth: 960 }}>
+          {loading ? (
+            <ListSkeleton />
+          ) : clients.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-24 px-8 min-h-[55vh]">
+              <div
+                className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
+                style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)" }}
+              >
+                <IconUsers />
+              </div>
+              {debouncedSearch ? (
+                <>
+                  <h2 className="text-xl font-bold text-dark mb-2">
+                    No matches for "{debouncedSearch}"
+                  </h2>
+                  <p className="text-base max-w-[340px]" style={{ color: "var(--color-muted)" }}>
+                    Try a different name or phone number.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold text-dark mb-3">
+                    Your client book starts here
+                  </h2>
+                  <p className="text-base mb-8 max-w-[360px] leading-relaxed" style={{ color: "var(--color-muted)" }}>
+                    Add a client with their phone and visit history, and book them in the same step.
+                  </p>
+                  <button
+                    onClick={() => setShowAdd(true)}
+                    className="h-12 px-6 rounded-xl bg-amber text-white font-semibold text-base shadow-md hover:shadow-lg active:scale-95 transition-all"
+                  >
+                    Add your first client
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {clients.map((client) => {
+                const tint = avatarTint(client.id);
+                return (
+                  <button
+                    key={client.id}
+                    onClick={() => router.push(`/clients/${client.id}`)}
+                    className="group w-full flex items-center gap-5 bg-white rounded-2xl px-5 py-4 text-start transition-all hover:-translate-y-0.5"
+                    style={{ boxShadow: CARD_SHADOW }}
+                    onMouseEnter={(e) => (e.currentTarget.style.boxShadow = CARD_SHADOW_HOVER)}
+                    onMouseLeave={(e) => (e.currentTarget.style.boxShadow = CARD_SHADOW)}
+                  >
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl shrink-0"
+                      style={{ background: tint.bg, color: tint.fg }}
+                    >
+                      {firstInitial(client.name)}
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="text-base font-semibold text-dark truncate mb-1">{client.name}</div>
+                      <div className="text-sm truncate" style={{ color: "var(--color-muted)" }}>
+                        {formatPhone(client.phone)}
+                      </div>
+                    </div>
+                    <div className="text-end shrink-0">
+                      <div className="text-sm font-semibold text-dark mb-0.5">
+                        {client.total_visits > 0
+                          ? `${client.total_visits} visit${client.total_visits !== 1 ? "s" : ""}`
+                          : "New"}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--color-muted)" }}>
+                        {client.last_visit_at
+                          ? format(parseISO(client.last_visit_at), "MMM d")
+                          : "No visits yet"}
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-muted group-hover:text-dark transition-colors ml-1">
+                      <IconChevron />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showAdd && business && (
+        <AddCustomerSheet
+          business={business}
+          onClose={() => setShowAdd(false)}
+          onCreated={() => setRefreshKey((k) => k + 1)}
         />
       )}
-
-      {showCustomModal && <CustomRequestModal onClose={() => setShowCustomModal(false)} />}
-    </>
+    </div>
   );
 }
