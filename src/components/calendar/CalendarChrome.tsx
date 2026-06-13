@@ -3,12 +3,13 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import type { BookingStatus } from "@/types";
 
-export type CalView = "day" | "week" | "month";
+export type CalView = "day" | "week" | "month" | "agenda";
 export type StatusFilter = BookingStatus | "all";
 
 // State the calendar page publishes so the AppShell top bar can drive it.
 export interface CalendarChrome {
-  monthYear: string;
+  monthYear: string;    // desktop sidebar date button: "June 2026"
+  headerLabel: string;  // mobile top bar center: "Mon Jun 10 · 3 appointments"
   view: CalView;
   setView: (v: CalView) => void;
   isToday: boolean;
@@ -16,6 +17,10 @@ export interface CalendarChrome {
   openDatePicker: () => void;
   statusFilter: StatusFilter;
   setStatusFilter: (s: StatusFilter) => void;
+  calendarFilter: string[];
+  setCalendarFilter: (ids: string[]) => void;
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
 }
 
 interface Ctx {

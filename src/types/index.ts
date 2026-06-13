@@ -1,6 +1,12 @@
 export type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled" | "no_show";
 export type PaymentStatus = "none" | "cash" | "transfer" | "stripe";
 
+export interface Label {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface BookingService {
   name: string;
   duration: number;
@@ -23,6 +29,8 @@ export interface Booking {
   checkout_at: string | null;
   created_at: string;
   service: BookingService | null;
+  label_id?: string | null;
+  label?: Label | null;
 }
 
 export interface DayHours {

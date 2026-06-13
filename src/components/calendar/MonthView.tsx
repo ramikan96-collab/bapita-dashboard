@@ -8,11 +8,13 @@ import {
 import type { Booking } from "@/types";
 import { STATUS_COLOR } from "@/types";
 import { firstName, useSwipe } from "./grid";
+import AgendaList from "./AgendaList";
 
 interface Props {
   date: Date;
   bookings: Booking[];
   onSelectDay: (d: Date) => void;
+  onSelectBooking: (b: Booking) => void;
   onPrev: () => void;
   onNext: () => void;
 }
@@ -20,7 +22,7 @@ interface Props {
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MAX_CHIPS = 3;
 
-export default function MonthView({ date, bookings, onSelectDay, onPrev, onNext }: Props) {
+export default function MonthView({ date, bookings, onSelectDay, onSelectBooking, onPrev, onNext }: Props) {
   const today = new Date();
   const swipe = useSwipe(onNext, onPrev);
 
@@ -45,7 +47,7 @@ export default function MonthView({ date, bookings, onSelectDay, onPrev, onNext 
 
   return (
     <div
-      className="flex flex-col h-full overflow-hidden"
+      className="flex flex-col h-full overflow-y-auto"
       style={{ background: "var(--color-cream)" }}
       onTouchStart={swipe.onTouchStart}
       onTouchEnd={swipe.onTouchEnd}
@@ -63,8 +65,8 @@ export default function MonthView({ date, bookings, onSelectDay, onPrev, onNext 
         ))}
       </div>
 
-      {/* Month grid — weeks fill remaining height */}
-      <div className="flex-1 grid" style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}>
+      {/* Month grid — fixed 80px per week row */}
+      <div className="shrink-0 grid" style={{ gridTemplateRows: `repeat(${weeks.length}, 80px)` }}>
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7">
             {week.map((day) => {
@@ -139,6 +141,15 @@ export default function MonthView({ date, bookings, onSelectDay, onPrev, onNext 
             })}
           </div>
         ))}
+      </div>
+
+      {/* Agenda section below grid */}
+      <div className="shrink-0 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
+        <AgendaList
+          bookings={bookings}
+          onSelectBooking={onSelectBooking}
+          emptyMessage="No appointments this month"
+        />
       </div>
     </div>
   );

@@ -1,24 +1,25 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   format, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
   isSameDay, parseISO, addDays, addMonths,
 } from "date-fns";
+
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
-import { useCalendarChrome, type StatusFilter } from "@/components/calendar/CalendarChrome";
+import { useCalendarChrome, type StatusFilter, type CalView } from "@/components/calendar/CalendarChrome";
 import DayView from "@/components/calendar/DayView";
 import WeekView from "@/components/calendar/WeekView";
 import MonthView from "@/components/calendar/MonthView";
+import AgendaView from "@/components/calendar/AgendaView";
+import AgendaList from "@/components/calendar/AgendaList";
 import BookingDrawer from "@/components/calendar/BookingDrawer";
 import BlockTimeSheet, { type BlockDraft } from "@/components/calendar/BlockTimeSheet";
 import { openHourFor, minsToTime } from "@/components/calendar/grid";
 import { CalendarSkeleton } from "@/components/LoadingSkeleton";
 import type { Booking, BlockedTime } from "@/types";
-
-type CalView = "day" | "week" | "month";
 
 function applyPatch(bookings: Booking[], id: string, patch: Partial<Booking>): Booking[] {
   return bookings.map((b) => (b.id === id ? { ...b, ...patch } : b));
@@ -30,6 +31,7 @@ function rangeFor(view: CalView, date: Date): [Date, Date] {
   if (view === "week") {
     return [startOfWeek(date, { weekStartsOn: 1 }), endOfWeek(date, { weekStartsOn: 1 })];
   }
+  if (view === "agenda") return [date, addDays(date, 90)];
   return [startOfMonth(date), endOfMonth(date)];
 }
 
@@ -44,6 +46,9 @@ export default function CalendarPage() {
   const [selected, setSelected]   = useState<Booking | null>(null);
   const [blockDraft, setBlockDraft] = useState<BlockDraft | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [calendarFilter, setCalendarFilter] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Booking[] | null>(null);
   const dateInputRef              = useRef<HTMLInputElement>(null);
   const supabase                  = createClient();
   const { setChrome }             = useCalendarChrome();
@@ -55,7 +60,7 @@ export default function CalendarPage() {
 
     const { data } = await supabase
       .from("bookings")
-      .select("*, service:services(name, duration:duration_minutes, price:price_nis)")
+      .select("*, service:services(name, duration:duration_minutes, price:price_nis), label:labels(id,name,color)")
       .eq("business_id", business.id)
       .gte("appointment_date", format(s, "yyyy-MM-dd"))
       .lte("appointment_date", format(e, "yyyy-MM-dd"))
@@ -101,11 +106,26 @@ export default function CalendarPage() {
     return () => { supabase.removeChannel(channel); };
   }, [business, supabase, fetchBookings]);
 
-  // Publish state to the AppShell top bar (☰ + Month ▾ + ⋮).
+  // Publish state to the AppShell top bar.
   const isTodaySelected = isSameDay(date, new Date());
+
+  const headerLabel = useMemo(() => {
+    const n = bookings.length;
+    const apptStr = `${n} appointment${n !== 1 ? "s" : ""}`;
+    if (view === "day") return `${format(date, "EEE, MMM d")} · ${apptStr}`;
+    if (view === "week") {
+      const ws = startOfWeek(date, { weekStartsOn: 1 });
+      const we = endOfWeek(date, { weekStartsOn: 1 });
+      return `${format(ws, "MMM d")}–${format(we, "MMM d")} · ${apptStr}`;
+    }
+    if (view === "agenda") return `Upcoming · ${apptStr}`;
+    return `${format(date, "MMMM yyyy")} · ${apptStr}`;
+  }, [view, date, bookings]);
+
   useEffect(() => {
     setChrome({
       monthYear: format(date, "MMMM yyyy"),
+      headerLabel,
       view,
       setView,
       isToday: isTodaySelected,
@@ -114,11 +134,35 @@ export default function CalendarPage() {
         dateInputRef.current?.showPicker?.() ?? dateInputRef.current?.click(),
       statusFilter,
       setStatusFilter,
+      calendarFilter,
+      setCalendarFilter,
+      searchQuery,
+      setSearchQuery,
     });
-  }, [date, view, statusFilter, isTodaySelected, setChrome]);
+  }, [date, view, statusFilter, isTodaySelected, headerLabel, setChrome]);
 
   // Clear the top bar when leaving the calendar.
   useEffect(() => () => setChrome(null), [setChrome]);
+
+  // Debounced search
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q || !business) {
+      setSearchResults(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("bookings")
+        .select("*, service:services(name, duration:duration_minutes, price:price_nis), label:labels(id,name,color)")
+        .eq("business_id", business.id)
+        .ilike("customer_name", `%${q}%`)
+        .order("appointment_date", { ascending: false })
+        .limit(50);
+      setSearchResults((data as Booking[]) ?? []);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, business, supabase]);
 
   if (bizLoading) return <CalendarSkeleton />;
 
@@ -234,7 +278,7 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Hidden date input driven by the AppShell "Month ▾" picker */}
+      {/* Hidden date input for desktop sidebar date picker */}
       <input
         ref={dateInputRef}
         type="date"
@@ -243,42 +287,37 @@ export default function CalendarPage() {
         className="absolute opacity-0 pointer-events-none w-0 h-0"
       />
 
-      {/* Today summary strip — day view on today only */}
-      {view === "day" && isSameDay(date, new Date()) && (() => {
-        const todayRevenue = bookings.filter(b => b.status === "completed").reduce((s, b) => s + (b.service?.price || 0), 0);
-        const nextBooking = bookings
-          .filter(b => b.status === "confirmed" || b.status === "pending")
-          .sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))[0];
-        return (
-          <div className="shrink-0 px-4 py-3 flex gap-3 overflow-x-auto border-b" style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)" }}>
-            <div className="shrink-0 px-4 py-2 rounded-xl text-center min-w-[80px]" style={{ background: "var(--color-cream-2)" }}>
-              <div className="text-xl font-black" style={{ color: "var(--color-dark)" }}>{bookings.length}</div>
-              <div className="text-xs" style={{ color: "var(--color-muted)" }}>Today</div>
-            </div>
-            <div className="shrink-0 px-4 py-2 rounded-xl text-center min-w-[80px]" style={{ background: "var(--color-cream-2)" }}>
-              <div className="text-xl font-black" style={{ color: "var(--color-amber)" }}>₪{todayRevenue}</div>
-              <div className="text-xs" style={{ color: "var(--color-muted)" }}>Earned</div>
-            </div>
-            {nextBooking && (
-              <div className="shrink-0 px-4 py-2 rounded-xl flex items-center gap-2 min-w-[140px]" style={{ background: "var(--color-amber)", color: "#fff" }}>
-                <div>
-                  <div className="text-xs font-medium opacity-80">Up next</div>
-                  <div className="text-sm font-bold">{nextBooking.customer_name}</div>
-                  <div className="text-xs opacity-80">{nextBooking.appointment_time.slice(0, 5)}</div>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
       <div className="flex-1 overflow-hidden relative">
-        {loading && (
+        {loading && !searchQuery && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/60 z-20">
             <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
           </div>
         )}
-        {view === "day" && (
+
+        {/* Search results overlay */}
+        {searchQuery ? (
+          <div className="h-full overflow-y-auto" style={{ background: "var(--color-cream)" }}>
+            {searchResults === null ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 gap-2 px-6 text-center">
+                <p className="text-[15px] font-bold" style={{ color: "var(--color-dark)" }}>No results</p>
+                <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
+                  No bookings matching &ldquo;{searchQuery.trim()}&rdquo;
+                </p>
+              </div>
+            ) : (
+              <AgendaList
+                bookings={searchResults}
+                onSelectBooking={setSelected}
+              />
+            )}
+          </div>
+        ) : null}
+
+        {!searchQuery && view === "day" && (
           <DayView
             date={date}
             bookings={visibleBookings}
@@ -292,7 +331,7 @@ export default function CalendarPage() {
             onNext={() => setDate((d) => addDays(d, 1))}
           />
         )}
-        {view === "week" && (
+        {!searchQuery && view === "week" && (
           <WeekView
             date={date}
             bookings={visibleBookings}
@@ -307,13 +346,21 @@ export default function CalendarPage() {
             onNext={() => setDate((d) => addDays(d, 7))}
           />
         )}
-        {view === "month" && (
+        {!searchQuery && view === "month" && (
           <MonthView
             date={date}
             bookings={visibleBookings}
             onSelectDay={handleSelectDay}
+            onSelectBooking={setSelected}
             onPrev={() => setDate((d) => addMonths(d, -1))}
             onNext={() => setDate((d) => addMonths(d, 1))}
+          />
+        )}
+        {!searchQuery && view === "agenda" && (
+          <AgendaView
+            bookings={visibleBookings}
+            onSelectBooking={setSelected}
+            onNewBooking={() => router.push("/new-booking")}
           />
         )}
       </div>

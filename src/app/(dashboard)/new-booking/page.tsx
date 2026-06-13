@@ -61,6 +61,7 @@ function NewBookingInner() {
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   const [notes, setNotes] = useState("");
+  const [markAsPaid, setMarkAsPaid] = useState(false);
 
   // ─── Preselect client from ?clientId= → jump to Service step ───────────
   useEffect(() => {
@@ -207,7 +208,7 @@ function NewBookingInner() {
       appointment_time: selectedTime,
       appointment_datetime: appointmentDateTime.toISOString(),
       status: "confirmed",
-      payment_status: "none",
+      payment_status: markAsPaid ? "cash" : "none",
       notes: notes.trim() || null,
     });
 
@@ -582,6 +583,41 @@ function NewBookingInner() {
                 className="px-4 py-3 rounded-[10px] border bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors resize-none"
                 style={{ borderColor: "var(--color-cream-2)" }}
               />
+            </div>
+
+            {/* Mark as paid toggle */}
+            <div
+              className="flex items-center justify-between bg-white rounded-2xl p-4"
+              style={{ boxShadow: CARD_SHADOW }}
+            >
+              <div>
+                <p className="text-[15px] font-bold text-dark">Mark as paid</p>
+                <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
+                  Record cash payment now
+                </p>
+              </div>
+              <button
+                onClick={() => setMarkAsPaid((v) => !v)}
+                className="relative shrink-0 rounded-full transition-colors"
+                style={{
+                  width: 44,
+                  height: 26,
+                  background: markAsPaid ? "var(--color-amber)" : "var(--color-cream-2)",
+                }}
+                aria-label="Mark as paid"
+              >
+                <span
+                  className="absolute top-1 rounded-full bg-white"
+                  style={{
+                    width: 18,
+                    height: 18,
+                    left: 4,
+                    boxShadow: "0 1px 3px rgba(30,26,20,0.2)",
+                    transition: "transform 0.15s",
+                    transform: markAsPaid ? "translateX(18px)" : "translateX(0)",
+                  }}
+                />
+              </button>
             </div>
           </div>
         )}

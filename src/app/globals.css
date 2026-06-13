@@ -51,3 +51,26 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+@media print {
+  nav,
+  aside,
+  [data-noprint] {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  main {
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Booking chips and agenda cards render cleanly */
+  * {
+    box-shadow: none !important;
+  }
+}

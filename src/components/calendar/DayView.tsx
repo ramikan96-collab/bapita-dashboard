@@ -8,6 +8,7 @@ import {
   PX_PER_HOUR, PX_PER_MIN, TOTAL_H, HOURS, GRID_LINE, GRID_LINE_HALF,
   timeToMins, formatRange, packLanes, useGridGestures, useSwipe,
 } from "./grid";
+import AgendaList from "./AgendaList";
 
 interface Props {
   date: Date;
@@ -55,12 +56,16 @@ export default function DayView({
 
   return (
     <div
-      ref={scrollRef}
-      className="h-full overflow-y-auto overscroll-contain"
+      className="h-full flex flex-col"
       style={{ background: "var(--color-cream)" }}
       onTouchStart={swipe.onTouchStart}
       onTouchEnd={swipe.onTouchEnd}
     >
+      {/* Time grid — independently scrollable */}
+      <div
+        ref={scrollRef}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+      >
       <div className="flex" style={{ height: TOTAL_H }}>
         {/* Time labels */}
         <div className="shrink-0 relative" style={{ width: 44 }}>
@@ -124,9 +129,12 @@ export default function DayView({
             const duration = b.service?.duration ?? 30;
             const top = item.start * PX_PER_MIN;
             const height = Math.max(duration * PX_PER_MIN, 28);
-            const color = STATUS_COLOR[b.status];
+            const statusColor = STATUS_COLOR[b.status];
+            const borderColor = b.label?.color ?? statusColor;
             const widthPct = 100 / lanes;
             const tall = height >= 44;
+            const isPast = (!isToday && date < new Date()) ||
+              (isToday && item.start + duration <= nowMins);
             return (
               <button
                 key={b.id}
@@ -137,10 +145,11 @@ export default function DayView({
                   top, height,
                   insetInlineStart: `calc(${lane * widthPct}% + 4px)`,
                   width: `calc(${widthPct}% - 6px)`,
-                  borderColor: color,
-                  background: `${color}14`,
+                  borderColor: borderColor,
+                  background: `${statusColor}14`,
                   padding: "4px 8px",
                   zIndex: 6,
+                  opacity: isPast ? 0.4 : 1,
                 }}
               >
                 <div className="text-[12px] font-semibold leading-tight truncate" style={{ color: "var(--color-dark)" }}>
@@ -164,12 +173,30 @@ export default function DayView({
         </div>
       </div>
 
-      {/* Empty hint (non-blocking, floats over grid) */}
+      {/* Empty hint */}
       {bookings.length === 0 && blocked.length === 0 && (
         <div className="pointer-events-none sticky bottom-6 flex justify-center">
           <span className="text-[12px] px-3 py-1.5 rounded-full" style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}>
             Tap a slot to book · {format(date, "EEE d MMM")}
           </span>
+        </div>
+      )}
+      </div>{/* end time grid scroll */}
+
+      {/* Agenda list for this day */}
+      {bookings.length > 0 && (
+        <div
+          className="shrink-0 border-t"
+          style={{
+            borderColor: "var(--color-cream-2)",
+            maxHeight: "40%",
+            overflowY: "auto",
+          }}
+        >
+          <AgendaList
+            bookings={bookings}
+            onSelectBooking={onSelectBooking}
+          />
         </div>
       )}
     </div>

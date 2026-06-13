@@ -213,9 +213,12 @@ function WeekDayColumn({
         const duration = b.service?.duration ?? 30;
         const top = item.start * PX_PER_MIN;
         const height = Math.max(duration * PX_PER_MIN, 24);
-        const color = STATUS_COLOR[b.status];
+        const statusColor = STATUS_COLOR[b.status];
+        const borderColor = b.label?.color ?? statusColor;
         const widthPct = 100 / lanes;
         const tall = height >= 48;
+        const isPast = (!isToday && day < new Date()) ||
+          (isToday && item.start + duration <= nowMins);
         return (
           <button
             key={b.id}
@@ -226,10 +229,11 @@ function WeekDayColumn({
               top, height,
               insetInlineStart: `calc(${lane * widthPct}% + 2px)`,
               width: `calc(${widthPct}% - 4px)`,
-              borderColor: color,
-              background: `${color}14`,
+              borderColor: borderColor,
+              background: `${statusColor}14`,
               padding: "2px 4px",
               zIndex: 6,
+              opacity: isPast ? 0.4 : 1,
             }}
           >
             <div className="text-[11px] font-semibold leading-tight truncate" style={{ color: "var(--color-dark)" }}>
@@ -239,6 +243,12 @@ function WeekDayColumn({
               <div className="text-[10px] leading-tight truncate" style={{ color: "var(--color-muted)" }}>
                 {b.service.name}
               </div>
+            )}
+            {b.label && (
+              <span
+                className="inline-block w-2 h-2 rounded-full shrink-0"
+                style={{ background: b.label.color }}
+              />
             )}
           </button>
         );

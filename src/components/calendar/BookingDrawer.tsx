@@ -7,6 +7,8 @@ import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/types";
 import RescheduleSheet from "./RescheduleSheet";
 import EditBookingSheet from "./EditBookingSheet";
+import LabelPickerSheet from "./LabelPickerSheet";
+import type { Label } from "@/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -304,6 +306,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
   const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [notes, setNotes] = useState(current.notes ?? "");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -557,7 +560,33 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
   // ── Accordion section bodies ───────────────────────────────────────────────
 
   function renderLabel() {
-    return <p className="text-sm" style={{ color: "var(--color-muted)" }}>No label</p>;
+    const label = current.label;
+    return (
+      <button
+        onClick={() => setShowLabelPicker(true)}
+        className="flex items-center gap-2 w-full text-start"
+      >
+        {label ? (
+          <>
+            <span
+              className="w-4 h-4 rounded-full shrink-0"
+              style={{
+                background: label.color,
+                border: label.color === "#FFFFFF" ? "1px solid var(--color-cream-2)" : "none",
+              }}
+            />
+            <span className="flex-1 text-sm font-semibold" style={{ color: "var(--color-dark)" }}>
+              {label.name}
+            </span>
+            <span className="text-xs" style={{ color: "var(--color-muted)" }}>Change</span>
+          </>
+        ) : (
+          <span className="text-sm font-semibold" style={{ color: "var(--color-amber)" }}>
+            + Add label
+          </span>
+        )}
+      </button>
+    );
   }
 
   function renderContact() {
@@ -917,6 +946,20 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
             setShowEdit(false);
           }}
           onClose={() => setShowEdit(false)}
+        />
+      )}
+
+      {showLabelPicker && (
+        <LabelPickerSheet
+          bookingId={current.id}
+          businessId={current.business_id}
+          currentLabelId={current.label_id}
+          onSelect={(label: Label | null) => {
+            const patch = { label_id: label?.id ?? null, label: label ?? null };
+            setCurrent((prev) => ({ ...prev, ...patch }));
+            onUpdated(patch);
+          }}
+          onClose={() => setShowLabelPicker(false)}
         />
       )}
     </>
