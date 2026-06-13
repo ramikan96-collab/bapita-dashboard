@@ -356,8 +356,7 @@ function OverviewTab({ stats, empty, hasDelta, deltaPct, deltaUp, hasRevenue, ma
         </p>
         {hasDelta && (
           <span
-            className="inline-flex items-center gap-1.5 rounded-full text-[13px] font-semibold"
-            style={{ marginTop: 16, padding: "6px 14px", background: "rgba(255,255,255,0.22)", color: "#fff", backdropFilter: "blur(4px)", display: "inline-flex" }}
+            style={{ marginTop: 16, padding: "6px 14px", background: "rgba(255,255,255,0.22)", color: "#fff", backdropFilter: "blur(4px)", display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 99, fontSize: 13, fontWeight: 600 }}
           >
             {deltaUp ? "↑" : "↓"}{Math.abs(deltaPct).toFixed(0)}%
             <span style={{ opacity: 0.75 }}>vs previous period</span>
@@ -375,35 +374,47 @@ function OverviewTab({ stats, empty, hasDelta, deltaPct, deltaUp, hasRevenue, ma
 
       {/* Charts row — stacks on mobile */}
       <div className="ins-grid-2">
-        <div className="rounded-2xl p-5" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)" }}>
-          <p className="font-bold mb-5" style={{ fontSize: 15, color: "var(--color-dark)", letterSpacing: "-0.01em" }}>Revenue trend</p>
-          {hasRevenue ? <BarChart data={stats.chart} /> : <GhostChart />}
+
+        {/* Revenue trend — line chart */}
+        <div className="rounded-2xl" style={{ padding: "20px 20px 14px", background: "var(--color-surface)", boxShadow: "var(--shadow-md)", overflow: "hidden" }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", marginBottom: 16, letterSpacing: "-0.01em" }}>Revenue trend</p>
+          {hasRevenue ? <LineChart data={stats.chart} /> : <GhostLineChart />}
         </div>
-        <div className="rounded-2xl p-5" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)" }}>
-          <p className="font-bold mb-5" style={{ fontSize: 15, color: "var(--color-dark)", letterSpacing: "-0.01em" }}>Top services</p>
+
+        {/* Top services */}
+        <div className="rounded-2xl" style={{ padding: "20px 20px", background: "var(--color-surface)", boxShadow: "var(--shadow-md)", overflow: "hidden" }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", marginBottom: 16, letterSpacing: "-0.01em" }}>Top services</p>
           {stats.topServices.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {stats.topServices.map((svc, idx) => (
-                <div key={svc.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div key={svc.name} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                   <span
-                    style={{ width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 11, fontWeight: 700, ...(idx === 0 ? { background: "var(--color-amber)", color: "#fff" } : { background: "var(--amber-soft)", color: "var(--color-amber)" }) }}
+                    style={{ width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 10, fontWeight: 700, marginTop: 1, ...(idx === 0 ? { background: "var(--color-amber)", color: "#fff" } : { background: "var(--amber-soft)", color: "var(--color-amber)" }) }}
                   >
                     {idx + 1}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <p style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{svc.name}</p>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)", marginLeft: 8, flexShrink: 0 }}>₪{svc.revenue.toLocaleString()}</span>
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 6, marginBottom: 6 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+                        {svc.name}
+                      </p>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)", flexShrink: 0 }}>
+                        ₪{svc.revenue.toLocaleString()}
+                      </span>
                     </div>
-                    <div style={{ height: 6, borderRadius: 99, background: "var(--color-cream-2)", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${Math.max(6, (svc.revenue / maxServiceRevenue) * 100)}%`, background: idx === 0 ? "var(--wash-amber)" : "var(--color-amber)", opacity: idx === 0 ? 1 : 0.5 + idx * 0.08, borderRadius: 99, transition: "width 0.5s" }} />
+                    <div style={{ height: 5, borderRadius: 99, background: "var(--color-cream-2)", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${Math.max(8, (svc.revenue / maxServiceRevenue) * 100)}%`, background: "var(--wash-amber)", opacity: idx === 0 ? 1 : 0.55 + idx * 0.05, borderRadius: 99, transition: "width 0.5s" }} />
                     </div>
-                    <p style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>{svc.count} {svc.count === 1 ? "booking" : "bookings"}</p>
+                    <p style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>
+                      {svc.count} {svc.count === 1 ? "booking" : "bookings"}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
-          ) : <EmptySection icon={<IconTag />} text="No completed services yet." />}
+          ) : (
+            <EmptySection icon={<IconTag />} text="No completed services yet." />
+          )}
         </div>
       </div>
 
@@ -454,19 +465,34 @@ function OverviewEmpty() {
       </div>
 
       {/* Ghost chart panels */}
-      <div className="ins-grid-2" style={{ opacity: 0.45 }}>
-        <div className="rounded-2xl p-5" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}>
-          <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 16 }}>Revenue trend</p>
-          <GhostChart />
+      <div className="ins-grid-2">
+
+        {/* Ghost revenue trend */}
+        <div className="rounded-2xl" style={{ padding: "20px 20px 14px", background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", marginBottom: 16 }}>Revenue trend</p>
+          <GhostLineChart />
         </div>
-        <div className="rounded-2xl p-5" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}>
-          <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 16 }}>Top services</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {[90, 60, 35].map((w, i) => (
-              <div key={i}>
-                <div style={{ height: 11, width: `${w}px`, background: "rgba(30,26,20,0.08)", borderRadius: 6, marginBottom: 6 }} />
-                <div style={{ height: 6, borderRadius: 99, background: "rgba(30,26,20,0.06)" }}>
-                  <div style={{ height: "100%", width: `${w}%`, borderRadius: 99, background: "rgba(232,146,10,0.22)" }} />
+
+        {/* Ghost top services */}
+        <div className="rounded-2xl" style={{ padding: "20px 20px", background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", marginBottom: 16 }}>Top services</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {[
+              { nameW: 100, revW: 44, barPct: 100 },
+              { nameW: 80,  revW: 36, barPct: 70  },
+              { nameW: 90,  revW: 28, barPct: 44  },
+            ].map(({ nameW, revW, barPct }, idx) => (
+              <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: 10, opacity: 0.45 }}>
+                <div style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, marginTop: 1, background: idx === 0 ? "var(--color-cream-2)" : "var(--amber-soft)" }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <div style={{ height: 11, width: nameW, background: "rgba(30,26,20,0.10)", borderRadius: 5 }} />
+                    <div style={{ height: 11, width: revW, background: "rgba(30,26,20,0.07)", borderRadius: 5, flexShrink: 0 }} />
+                  </div>
+                  <div style={{ height: 5, borderRadius: 99, background: "rgba(30,26,20,0.06)" }}>
+                    <div style={{ height: "100%", width: `${barPct}%`, borderRadius: 99, background: "rgba(232,146,10,0.25)" }} />
+                  </div>
+                  <div style={{ height: 9, width: 55, background: "rgba(30,26,20,0.06)", borderRadius: 4, marginTop: 6 }} />
                 </div>
               </div>
             ))}
@@ -528,7 +554,7 @@ function AppointmentsTab({ bookings, label }: { bookings: BookingRow[]; label: s
           </p>
         </div>
       ) : (
-        <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)" }}>
+        <div className="rounded-2xl" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)", overflow: "hidden" }}>
           {bookings.map((b, i) => (
             <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 20px", borderTop: i > 0 ? "1px solid var(--color-cream-2)" : "none", flexWrap: "wrap" }}>
               <div style={{ minWidth: 64, flexShrink: 0 }}>
@@ -542,9 +568,7 @@ function AppointmentsTab({ bookings, label }: { bookings: BookingRow[]; label: s
               {b.service?.price != null && (
                 <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", flexShrink: 0 }}>₪{b.service.price.toLocaleString()}</p>
               )}
-              <span
-                style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, fontWeight: 600, flexShrink: 0, background: STATUS_BG[b.status], color: STATUS_COLOR[b.status] }}
-              >
+              <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, fontWeight: 600, flexShrink: 0, background: STATUS_BG[b.status], color: STATUS_COLOR[b.status] }}>
                 {STATUS_LABEL[b.status]}
               </span>
             </div>
@@ -615,7 +639,7 @@ function RevenueTab({ bookings, label }: { bookings: BookingRow[]; label: string
 
       {/* Service breakdown */}
       {services.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)" }}>
+        <div className="rounded-2xl" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)", overflow: "hidden" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--color-cream-2)", flexWrap: "wrap", gap: 8 }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Breakdown by service</p>
             <button
@@ -648,68 +672,222 @@ function RevenueTab({ bookings, label }: { bookings: BookingRow[]; label: string
   );
 }
 
-// ─── Ghost chart (empty state for Revenue trend) ───────────────────────────────
+// ─── Line chart ───────────────────────────────────────────────────────────────
 
-function GhostChart() {
-  const heights = [30, 55, 38, 70, 42, 65, 48, 35, 75, 50];
+function LineChart({ data }: { data: ChartPoint[] }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  const VW = 400;
+  const VH = 140;
+  const PAD = { top: 20, bottom: 26, left: 4, right: 4 };
+  const innerW = VW - PAD.left - PAD.right;
+  const innerH = VH - PAD.top - PAD.bottom;
+
+  const max = Math.max(1, ...data.map((d) => d.revenue));
+
+  const pts = data.map((d, i) => ({
+    x: PAD.left + (data.length > 1 ? i / (data.length - 1) : 0.5) * innerW,
+    y: PAD.top + (1 - d.revenue / max) * innerH,
+    ...d,
+  }));
+
+  // Smooth cubic bezier
+  const linePath = pts.reduce((acc, p, i) => {
+    if (i === 0) return `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+    const prev = pts[i - 1];
+    const cp1x = prev.x + (p.x - prev.x) * 0.45;
+    const cp2x = p.x - (p.x - prev.x) * 0.45;
+    return `${acc} C ${cp1x.toFixed(1)} ${prev.y.toFixed(1)} ${cp2x.toFixed(1)} ${p.y.toFixed(1)} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+  }, "");
+
+  const fillPath = pts.length > 1
+    ? `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${(VH - PAD.bottom).toFixed(1)} L ${pts[0].x.toFixed(1)} ${(VH - PAD.bottom).toFixed(1)} Z`
+    : "";
+
+  // Show at most 6 x-axis labels
+  const labelStep = Math.max(1, Math.ceil(pts.length / 6));
+
   return (
-    <div style={{ position: "relative", height: 160 }}>
-      {/* Gridlines */}
-      {[25, 50, 75].map((pct) => (
-        <div
-          key={pct}
-          style={{ position: "absolute", left: 0, right: 0, bottom: `${pct}%`, borderTop: "1px dashed var(--color-cream-2)", zIndex: 0 }}
-        />
-      ))}
-      {/* Phantom bars */}
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: "100%", position: "relative", zIndex: 1 }}>
-        {heights.map((h, i) => (
-          <div
+    <div style={{ position: "relative", userSelect: "none" }} onMouseLeave={() => setHovered(null)}>
+      <svg
+        viewBox={`0 0 ${VW} ${VH}`}
+        style={{ width: "100%", height: "auto", display: "block", overflow: "visible" }}
+      >
+        <defs>
+          <linearGradient id="lc-amber-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(232,146,10,0.18)" />
+            <stop offset="100%" stopColor="rgba(232,146,10,0.00)" />
+          </linearGradient>
+        </defs>
+
+        {/* Gridlines */}
+        {[0.33, 0.66].map((pct, i) => (
+          <line
             key={i}
-            style={{ flex: 1, height: `${h}%`, borderRadius: "6px 6px 0 0", background: "var(--color-cream-2)" }}
+            x1={PAD.left} y1={PAD.top + pct * innerH}
+            x2={VW - PAD.right} y2={PAD.top + pct * innerH}
+            stroke="var(--color-cream-2)" strokeWidth="1"
           />
         ))}
-      </div>
-      {/* Centered label */}
-      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--color-muted)", background: "rgba(255,255,255,0.90)", padding: "5px 14px", borderRadius: 8 }}>
-          No earnings yet
-        </span>
-      </div>
+
+        {/* Fill under curve */}
+        {fillPath && <path d={fillPath} fill="url(#lc-amber-fill)" />}
+
+        {/* Line */}
+        {pts.length > 1 && (
+          <path d={linePath} fill="none" stroke="var(--color-amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        )}
+
+        {/* Hover vertical rule */}
+        {hovered !== null && (
+          <line
+            x1={pts[hovered].x} y1={PAD.top}
+            x2={pts[hovered].x} y2={VH - PAD.bottom}
+            stroke="var(--color-cream-2)" strokeWidth="1.5"
+          />
+        )}
+
+        {/* Dots */}
+        {pts.map((p, i) => (
+          <g key={i}>
+            <circle
+              cx={p.x} cy={p.y}
+              r={hovered === i ? 5 : 3}
+              fill={hovered === i ? "var(--color-amber)" : "var(--color-surface)"}
+              stroke="var(--color-amber)" strokeWidth="1.8"
+              style={{ transition: "r 0.12s, fill 0.12s" }}
+            />
+            {/* Wide invisible hit rect per column */}
+            <rect
+              x={p.x - innerW / (data.length * 2)}
+              y={PAD.top}
+              width={innerW / data.length}
+              height={innerH}
+              fill="transparent"
+              onMouseEnter={() => setHovered(i)}
+              style={{ cursor: "crosshair" }}
+            />
+          </g>
+        ))}
+
+        {/* X-axis labels */}
+        {pts.map((p, i) => {
+          if (i % labelStep !== 0 && i !== pts.length - 1) return null;
+          return (
+            <text
+              key={i}
+              x={p.x} y={VH - 4}
+              textAnchor="middle"
+              style={{ fontSize: 9, fill: "var(--color-muted)", fontFamily: "inherit" }}
+            >
+              {p.label}
+            </text>
+          );
+        })}
+
+        {/* Tooltip */}
+        {hovered !== null && (() => {
+          const p = pts[hovered];
+          const boxW = 72;
+          const boxH = 22;
+          const bx = Math.min(VW - PAD.right - boxW, Math.max(PAD.left, p.x - boxW / 2));
+          const by = Math.max(0, p.y - boxH - 8);
+          return (
+            <g>
+              <rect x={bx} y={by} width={boxW} height={boxH} rx={5} fill="var(--color-dark)" />
+              <text
+                x={bx + boxW / 2} y={by + 14}
+                textAnchor="middle"
+                style={{ fontSize: 11, fill: "white", fontWeight: 700, fontFamily: "inherit" }}
+              >
+                ₪{p.revenue.toLocaleString()}
+              </text>
+            </g>
+          );
+        })()}
+      </svg>
     </div>
   );
 }
 
-// ─── Bar chart ────────────────────────────────────────────────────────────────
+// ─── Ghost line chart (empty state — looks like real data) ────────────────────
 
-function BarChart({ data }: { data: ChartPoint[] }) {
-  const [active, setActive] = useState<number | null>(null);
-  const max  = Math.max(1, ...data.map((d) => d.revenue));
-  const peak = data.reduce((hi, d, i) => (d.revenue > data[hi].revenue ? i : hi), 0);
+function GhostLineChart() {
+  const VW = 400;
+  const VH = 140;
+  const PAD = { top: 20, bottom: 26, left: 4, right: 4 };
+  const innerW = VW - PAD.left - PAD.right;
+  const innerH = VH - PAD.top - PAD.bottom;
+
+  const rawHeights = [0.12, 0.28, 0.20, 0.52, 0.38, 0.62, 0.48, 0.75, 0.60, 0.82];
+  const pts = rawHeights.map((h, i) => ({
+    x: PAD.left + (i / (rawHeights.length - 1)) * innerW,
+    y: PAD.top + (1 - h) * innerH,
+  }));
+
+  const linePath = pts.reduce((acc, p, i) => {
+    if (i === 0) return `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+    const prev = pts[i - 1];
+    const cp1x = prev.x + (p.x - prev.x) * 0.45;
+    const cp2x = p.x - (p.x - prev.x) * 0.45;
+    return `${acc} C ${cp1x.toFixed(1)} ${prev.y.toFixed(1)} ${cp2x.toFixed(1)} ${p.y.toFixed(1)} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+  }, "");
+
+  const fillPath = `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${(VH - PAD.bottom).toFixed(1)} L ${pts[0].x.toFixed(1)} ${(VH - PAD.bottom).toFixed(1)} Z`;
+
+  const xLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
 
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 160 }}>
-      {data.map((d, i) => {
-        const isActive = active === i;
-        const isPeak   = i === peak;
-        const h = Math.max(4, (d.revenue / max) * 100);
-        return (
-          <button
-            key={d.label}
-            onClick={() => setActive(isActive ? null : i)}
-            style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, height: "100%", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
-            aria-label={`${d.label}: ₪${d.revenue.toLocaleString()}`}
+    <div style={{ position: "relative" }}>
+      <svg viewBox={`0 0 ${VW} ${VH}`} style={{ width: "100%", height: "auto", display: "block" }}>
+        <defs>
+          <linearGradient id="lc-ghost-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(30,26,20,0.05)" />
+            <stop offset="100%" stopColor="rgba(30,26,20,0.00)" />
+          </linearGradient>
+        </defs>
+
+        {/* Gridlines */}
+        {[0.33, 0.66].map((pct, i) => (
+          <line
+            key={i}
+            x1={PAD.left} y1={PAD.top + pct * innerH}
+            x2={VW - PAD.right} y2={PAD.top + pct * innerH}
+            stroke="var(--color-cream-2)" strokeWidth="1"
+          />
+        ))}
+
+        {/* Ghost fill */}
+        <path d={fillPath} fill="url(#lc-ghost-fill)" />
+
+        {/* Ghost line */}
+        <path d={linePath} fill="none" stroke="var(--color-cream-2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Ghost dots every other point */}
+        {pts.filter((_, i) => i % 2 === 0).map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r="3" fill="var(--color-surface)" stroke="var(--color-cream-2)" strokeWidth="1.5" />
+        ))}
+
+        {/* Ghost x-labels */}
+        {xLabels.map((m, i) => (
+          <text
+            key={m}
+            x={PAD.left + (i / (xLabels.length - 1)) * innerW}
+            y={VH - 4}
+            textAnchor="middle"
+            style={{ fontSize: 9, fill: "var(--color-cream-2)", fontFamily: "inherit" }}
           >
-            <span style={{ padding: "2px 7px", borderRadius: 99, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", background: isActive ? "var(--color-amber)" : "transparent", color: isActive ? "#fff" : "transparent", transition: "all 0.15s" }}>
-              ₪{d.revenue.toLocaleString()}
-            </span>
-            <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-              <div style={{ width: "100%", maxWidth: 52, borderRadius: "10px 10px 0 0", height: `${h}%`, background: (isActive || isPeak) ? "var(--wash-amber)" : "rgba(232,146,10,0.20)", boxShadow: (isActive || isPeak) ? "var(--shadow-amber)" : "none", transition: "all 0.2s" }} />
-            </div>
-            <span style={{ fontSize: 11, fontWeight: 500, color: "var(--color-muted)" }}>{d.label}</span>
-          </button>
-        );
-      })}
+            {m}
+          </text>
+        ))}
+      </svg>
+
+      {/* "No earnings yet" centered pill */}
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--color-muted)", background: "rgba(255,255,255,0.92)", padding: "4px 14px", borderRadius: 8, backdropFilter: "blur(2px)" }}>
+          No earnings yet
+        </span>
+      </div>
     </div>
   );
 }
