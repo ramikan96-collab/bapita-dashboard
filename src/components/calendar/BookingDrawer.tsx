@@ -713,7 +713,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
 
       {/* Drawer — mobile bottom sheet, desktop right panel */}
       <div
-        className="fixed bottom-0 inset-x-0 z-50 rounded-t-[20px] max-h-[85vh] flex flex-col md:inset-y-0 md:inset-x-auto md:end-0 md:w-96 md:rounded-none md:max-h-none"
+        className="fixed bottom-0 inset-x-0 z-50 rounded-t-[20px] max-h-[85vh] flex flex-col md:inset-y-0 md:left-auto md:end-0 md:w-96 md:rounded-none md:max-h-none"
         style={{
           background: "#fff",
           boxShadow: "0 -4px 24px rgba(30,26,20,0.12)",
