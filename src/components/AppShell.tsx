@@ -233,8 +233,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
-  const [viewSectionOpen, setViewSectionOpen] = useState(true);
-  const [calendarsSectionOpen, setCalendarsSectionOpen] = useState(true);
+  const [viewSectionOpen, setViewSectionOpen] = useState(false);
+  const [calendarsSectionOpen, setCalendarsSectionOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [viewSheetOpen, setViewSheetOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -542,30 +542,39 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       {/* ─── Left Sidebar (Calendar only) ────────────────────────────── */}
       {onCalendar && chrome && (
         <aside
-          className="hidden md:flex flex-col w-56 shrink-0 border-e overflow-y-auto"
+          className="hidden md:flex flex-col w-56 shrink-0 overflow-y-auto"
           style={{
             background: "var(--color-cream)",
-            borderColor: "var(--color-cream-2)",
-            paddingTop: 12,
+            borderInlineEnd: "1px solid var(--color-cream-2)",
+            paddingTop: 14,
           }}
         >
-          {/* +Create button */}
-          <div className="px-3 pb-4">
+          {/* New Booking */}
+          <div style={{ padding: "0 12px 12px" }}>
             <button
               onClick={() => router.push("/new-booking")}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-white font-bold text-[14px] transition-all hover:-translate-y-0.5 active:scale-[0.98] shadow-[0_2px_6px_rgba(30,26,20,0.10)] hover:shadow-[0_12px_30px_rgba(232,146,10,0.32)]"
-              style={{ background: "var(--wash-amber)" }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+                gap: 6, height: 38, borderRadius: 999, background: "var(--wash-amber)",
+                color: "#fff", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(232,146,10,0.26)", transition: "transform 0.15s, box-shadow 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,146,10,0.34)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(232,146,10,0.26)"; }}
             >
-              <IconPlus size={18} />
+              <IconPlus size={16} />
               New Booking
             </button>
           </div>
 
           {/* Search */}
-          <div className="px-3 pb-3">
+          <div style={{ padding: "0 12px 8px" }}>
             <div
-              className="flex items-center gap-2 h-9 px-3 rounded-xl border"
-              style={{ borderColor: "var(--color-cream-2)", background: "var(--color-surface)" }}
+              style={{
+                display: "flex", alignItems: "center", gap: 8, height: 34,
+                padding: "0 10px", borderRadius: 9, color: "var(--color-muted)",
+                border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)",
+              }}
             >
               <IconSearch size={14} />
               <input
@@ -576,16 +585,12 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   setSearchInput(e.target.value);
                   chrome.setSearchQuery(e.target.value);
                 }}
-                className="flex-1 text-[13px] outline-none bg-transparent"
-                style={{ color: "var(--color-dark)" }}
+                style={{ flex: 1, fontSize: 13, outline: "none", background: "transparent", color: "var(--color-dark)", border: "none" }}
               />
               {searchInput && (
                 <button
-                  onClick={() => {
-                    setSearchInput("");
-                    chrome.setSearchQuery("");
-                  }}
-                  style={{ color: "var(--color-muted)", fontSize: 12, lineHeight: 1 }}
+                  onClick={() => { setSearchInput(""); chrome.setSearchQuery(""); }}
+                  style={{ color: "var(--color-muted)", fontSize: 11, lineHeight: 1, background: "none", border: "none", cursor: "pointer", padding: 0 }}
                 >
                   ✕
                 </button>
@@ -593,151 +598,173 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* Mini calendar / date picker */}
-          <div className="px-3 pb-4">
+          {/* Date picker */}
+          <div style={{ padding: "0 12px 12px" }}>
             <button
               onClick={chrome.openDatePicker}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-full border text-[14px] font-medium transition-colors hover:bg-cream"
-              style={{ borderColor: "var(--color-cream-2)", color: "var(--color-dark)" }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+                gap: 6, height: 34, borderRadius: 9, border: "1.5px solid var(--color-cream-2)",
+                background: "transparent", color: "var(--color-dark)", fontSize: 13, fontWeight: 500,
+                cursor: "pointer", transition: "border-color 0.15s, background 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             >
-              <IconCalendar size={16} />
+              <IconCalendar size={15} />
               {chrome.monthYear}
-              <IconChevronDown size={14} />
+              <IconChevronDown size={12} />
             </button>
           </div>
 
-          <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
+          {/* ── View ──────────────────────────────────────────────────── */}
+          <div style={{ height: 1, margin: "0 12px" , background: "var(--color-cream-2)" }} />
+          <button
+            onClick={() => setViewSectionOpen((v) => !v)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "10px 12px", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+              letterSpacing: "0.06em", color: "var(--color-muted)", background: "transparent",
+              border: "none", cursor: "pointer",
+            }}
+          >
+            View
+            <span style={{ transform: viewSectionOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", display: "flex" }}>
+              <IconChevronDown size={12} />
+            </span>
+          </button>
+          {viewSectionOpen && (
+            <div style={{ padding: "0 8px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
+              {calViews.map((v) => {
+                const active = chrome.view === v.value;
+                return (
+                  <button
+                    key={v.value}
+                    onClick={() => chrome.setView(v.value)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "left",
+                      color: active ? "var(--color-amber)" : "var(--color-dark)",
+                      background: "transparent", border: "none", cursor: "pointer", transition: "background 0.12s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    {v.label}
+                    {active && <IconCheck size={12} />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-          {/* View toggles — collapsible */}
-          <div className="px-3 py-3">
-            <button
-              onClick={() => setViewSectionOpen((v) => !v)}
-              className="w-full flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide mb-2 transition-colors"
-              style={{ color: "var(--color-muted)" }}
-            >
-              View
-              <span style={{ transform: viewSectionOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
-                <IconChevronDown size={12} />
-              </span>
-            </button>
-            {viewSectionOpen && (
-              <div className="space-y-0.5">
-                {calViews.map((v) => {
-                  const active = chrome.view === v.value;
-                  return (
-                    <button
-                      key={v.value}
-                      onClick={() => chrome.setView(v.value)}
-                      className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[13px] text-start transition-colors hover:bg-cream-2"
-                      style={{ color: active ? "var(--color-amber)" : "var(--color-dark)" }}
-                    >
-                      {v.label}
-                      {active && (
-                        <span style={{ color: "var(--color-amber)" }}>
-                          <IconCheck size={12} />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
-
-          {/* Status filter - collapsible */}
-          <div className="px-3 py-3">
-            <button
-              onClick={() => setViewMenuOpen(!viewMenuOpen)}
-              className="w-full flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide mb-2 transition-colors"
-              style={{ color: "var(--color-muted)" }}
-            >
-              Filter
-              <span style={{ transform: viewMenuOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
-                <IconChevronDown size={12} />
-              </span>
-            </button>
-            {viewMenuOpen && (
-              <div className="space-y-0.5 mt-1">
-                {filterOptions.map((opt) => {
-                  const active = chrome.statusFilter === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => chrome.setStatusFilter(opt.value)}
-                      className="w-full flex items-center gap-3 px-2 py-1.5 rounded-lg text-[13px] text-start transition-colors hover:bg-cream-2"
+          {/* ── Filter ────────────────────────────────────────────────── */}
+          <div style={{ height: 1, margin: "0 12px", background: "var(--color-cream-2)" }} />
+          <button
+            onClick={() => setViewMenuOpen(!viewMenuOpen)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "10px 12px", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+              letterSpacing: "0.06em", color: "var(--color-muted)", background: "transparent",
+              border: "none", cursor: "pointer",
+            }}
+          >
+            Filter
+            <span style={{ transform: viewMenuOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", display: "flex" }}>
+              <IconChevronDown size={12} />
+            </span>
+          </button>
+          {viewMenuOpen && (
+            <div style={{ padding: "0 8px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
+              {filterOptions.map((opt) => {
+                const active = chrome.statusFilter === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => chrome.setStatusFilter(opt.value)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", gap: 10,
+                      padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "left",
+                      color: active ? "var(--color-amber)" : "var(--color-dark)",
+                      background: "transparent", border: "none", cursor: "pointer", transition: "background 0.12s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <span
                       style={{
-                        color: active ? "var(--color-amber)" : "var(--color-dark)",
+                        width: 15, height: 15, borderRadius: 4, flexShrink: 0, display: "flex",
+                        alignItems: "center", justifyContent: "center",
+                        border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+                        background: active ? "var(--color-amber)" : "transparent",
+                        transition: "all 0.12s",
                       }}
                     >
-                      <span
-                        className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors"
-                        style={{
-                          borderColor: active ? "var(--color-amber)" : "var(--color-cream-2)",
-                          background: active ? "var(--color-amber)" : "transparent",
-                        }}
-                      >
-                        {active && (
-                          <span style={{ color: "#fff" }}>
-                            <IconCheck size={10} />
-                          </span>
-                        )}
-                      </span>
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
-
-          {/* Calendars */}
-          <div className="px-3 py-3">
-            <div className="flex items-center justify-between mb-2">
-              <button
-                onClick={() => setCalendarsSectionOpen((v) => !v)}
-                className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide transition-colors"
-                style={{ color: "var(--color-muted)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
-              >
-                Calendars
-                <span style={{ transform: calendarsSectionOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
-                  <IconChevronDown size={12} />
-                </span>
-              </button>
-              <button
-                onClick={() => showToast("Multiple calendars coming soon", "info")}
-                className="flex items-center justify-center rounded-full transition-colors hover:bg-[var(--color-cream-2)]"
-                style={{ width: 22, height: 22, color: "var(--color-muted)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
-                aria-label="Add calendar"
-              >
-                <IconPlus size={12} />
-              </button>
+                      {active && <IconCheck size={9} />}
+                    </span>
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
-            {calendarsSectionOpen && (
+          )}
+
+          {/* ── Calendars ─────────────────────────────────────────────── */}
+          <div style={{ height: 1, margin: "0 12px", background: "var(--color-cream-2)" }} />
+          <button
+            onClick={() => setCalendarsSectionOpen((v) => !v)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "10px 12px", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+              letterSpacing: "0.06em", color: "var(--color-muted)", background: "transparent",
+              border: "none", cursor: "pointer",
+            }}
+          >
+            Calendars
+            <span style={{ transform: calendarsSectionOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", display: "flex" }}>
+              <IconChevronDown size={12} />
+            </span>
+          </button>
+          {calendarsSectionOpen && (
+            <div style={{ padding: "0 8px 8px" }}>
               <CalendarSelectorPanel
                 ownerName={businessName}
                 calendarFilter={chrome.calendarFilter}
                 setCalendarFilter={chrome.setCalendarFilter}
               />
-            )}
-          </div>
+              <button
+                onClick={() => showToast("Multiple calendars coming soon", "info")}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 8,
+                  padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "left",
+                  color: "var(--color-muted)", background: "transparent", border: "none",
+                  cursor: "pointer", marginTop: 4, transition: "background 0.12s, color 0.12s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-dark)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-muted)"; }}
+              >
+                <IconPlus size={13} />
+                Add calendar
+              </button>
+            </div>
+          )}
 
           {/* Jump to today */}
           {!chrome.isToday && (
             <>
-              <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
-              <div className="px-3 py-2">
-                <button
-                  onClick={chrome.onToday}
-                  className="w-full px-3 py-2 rounded-xl text-[13px] font-medium text-start transition-colors hover:bg-cream-2"
-                  style={{ color: "var(--color-amber)" }}
-                >
-                  Jump to today
-                </button>
-              </div>
+              <div style={{ height: 1, margin: "0 12px", background: "var(--color-cream-2)" }} />
+              <button
+                onClick={chrome.onToday}
+                style={{
+                  width: "100%", textAlign: "left", padding: "10px 12px", fontSize: 13,
+                  fontWeight: 600, color: "var(--color-amber)", background: "transparent",
+                  border: "none", cursor: "pointer", transition: "background 0.12s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                Jump to today
+              </button>
             </>
           )}
         </aside>
