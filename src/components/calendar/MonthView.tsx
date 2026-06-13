@@ -52,6 +52,34 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
       onTouchStart={swipe.onTouchStart}
       onTouchEnd={swipe.onTouchEnd}
     >
+      {/* Month nav header */}
+      <div
+        className="shrink-0 flex items-center"
+        style={{ height: 48, borderBottom: "1px solid var(--color-cream-2)", background: "var(--color-cream)" }}
+      >
+        <button
+          onClick={onPrev}
+          style={{ width: 48, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", cursor: "pointer", color: "var(--color-muted)", flexShrink: 0 }}
+          aria-label="Previous month"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <div style={{ flex: 1, textAlign: "center", fontSize: 15, fontWeight: 700, color: "var(--color-dark)" }}>
+          {format(date, "MMMM yyyy")}
+        </div>
+        <button
+          onClick={onNext}
+          style={{ width: 48, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", cursor: "pointer", color: "var(--color-muted)", flexShrink: 0 }}
+          aria-label="Next month"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+
       {/* Weekday header row */}
       <div className="grid grid-cols-7 shrink-0" style={{ borderBottom: "1px solid var(--color-cream-2)" }}>
         {DAYS.map((d) => (
