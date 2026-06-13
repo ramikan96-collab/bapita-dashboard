@@ -1077,8 +1077,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
-        <div style={{ maxWidth: 560 }}>
+      <div className="flex-1 overflow-y-auto px-5 py-6">
+        <div className="max-w-xl mx-auto">
           {renderSection()}
         </div>
       </div>
