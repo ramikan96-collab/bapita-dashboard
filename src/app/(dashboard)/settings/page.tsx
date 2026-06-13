@@ -322,6 +322,24 @@ function BusinessSection({
         </div>
       </SectionCard>
 
+      {/* Language */}
+      <SectionCard title="Language">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[14px] font-medium text-dark">Dashboard language</div>
+            <div className="text-[12px] text-muted mt-0.5">Hebrew coming soon</div>
+          </div>
+          <div className="flex items-center rounded-full p-0.5 gap-0.5" style={{ background: "var(--color-cream-2)" }}>
+            <span className="px-3 py-1.5 rounded-full text-[13px] font-semibold" style={{ background: "var(--color-amber)", color: "#fff" }}>
+              En
+            </span>
+            <span className="px-3 py-1.5 rounded-full text-[13px] font-semibold" style={{ color: "var(--color-muted)", cursor: "not-allowed", opacity: 0.5 }}>
+              He
+            </span>
+          </div>
+        </div>
+      </SectionCard>
+
       <SaveButton onClick={save} saving={saving} dirty={dirty} />
     </div>
   );
