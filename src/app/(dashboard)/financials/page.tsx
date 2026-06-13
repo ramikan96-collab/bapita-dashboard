@@ -168,19 +168,20 @@ function ProcessorCard({
         }
         style={{
           height: 34,
-          padding: "0 16px",
+          padding: "0 14px",
           borderRadius: 9,
           background: "var(--color-amber)",
           color: "white",
           fontSize: 13,
-          fontWeight: 600,
+          fontWeight: 700,
           border: "none",
           cursor: "pointer",
           flexShrink: 0,
-          transition: "background 0.15s",
+          boxShadow: "0 4px 14px rgba(232,146,10,0.28)",
+          transition: "all 0.15s ease",
         }}
-        onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-amber-hover)")}
-        onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-amber)")}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 18px rgba(232,146,10,0.36)"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 14px rgba(232,146,10,0.28)"; }}
       >
         Connect
       </button>
@@ -206,7 +207,7 @@ function LockedInvoicesPreview() {
         style={{
           background: "var(--color-surface)",
           boxShadow: "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)",
-          opacity: 0.35,
+          opacity: 0.6,
           userSelect: "none",
           pointerEvents: "none",
         }}
@@ -273,8 +274,8 @@ function LockedInvoicesPreview() {
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(250,245,236,0.82)",
-          backdropFilter: "blur(3px)",
+          background: "rgba(250,245,236,0.62)",
+          backdropFilter: "blur(2px)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
