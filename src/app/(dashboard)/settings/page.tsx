@@ -1034,33 +1034,51 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
       {/* Header + chip tabs */}
-      <div className="shrink-0 bg-white border-b px-5 pt-5 pb-0" style={{ borderColor: "var(--line)" }}>
-        <h1 className="text-[22px] font-extrabold text-dark mb-4">Settings</h1>
-        <div className="flex gap-2 pb-0">
+      <div
+        className="shrink-0 bg-white border-b"
+        style={{ borderColor: "var(--line)", padding: "20px 20px 0" }}
+      >
+        <h1
+          style={{
+            fontSize: 22,
+            fontWeight: 800,
+            color: "var(--color-dark)",
+            letterSpacing: "-0.02em",
+            marginBottom: 16,
+          }}
+        >
+          Settings
+        </h1>
+        <div style={{ display: "flex", gap: 8, paddingBottom: 16 }}>
           {SECTIONS.map((s) => {
             const active = activeSection === s.id;
             return (
               <button
                 key={s.id}
                 onClick={() => setActiveSection(s.id)}
-                className="px-4 py-2 rounded-full text-[13px] font-semibold transition-all shrink-0"
-                style={
-                  active
-                    ? { background: "var(--color-amber)", color: "#fff" }
-                    : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
-                }
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: 9999,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  cursor: "pointer",
+                  border: "none",
+                  transition: "all 0.15s",
+                  background: active ? "var(--color-amber)" : "var(--color-cream-2)",
+                  color: active ? "#fff" : "var(--color-muted)",
+                }}
               >
                 {s.label}
               </button>
             );
           })}
         </div>
-        <div className="h-4" />
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-5">
-        <div className="max-w-xl">
+      <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+        <div style={{ maxWidth: 560 }}>
           {renderSection()}
         </div>
       </div>

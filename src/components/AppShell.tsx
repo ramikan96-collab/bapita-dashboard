@@ -276,9 +276,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     <>
       {/* Root column: nav in normal flow on top, body fills the rest */}
       <div className="flex flex-col h-dvh">
-      {/* ─── Desktop Top Nav with underline indicator ─────────────────── */}
+      {/* ─── Desktop Top Nav ─────────────────────────────────────────── */}
       <div
-        className="hidden md:flex h-14 shrink-0 items-center border-b z-30 px-6"
+        className="hidden md:flex h-14 shrink-0 items-center border-b z-30 px-4"
         style={{
           borderColor: "var(--line)",
           background: "var(--nav-bg)",
@@ -286,13 +286,22 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           WebkitBackdropFilter: "var(--nav-blur)",
         }}
       >
+        {/* Hamburger — left of logo */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
+          aria-label="Open menu"
+        >
+          <IconMenu size={20} />
+        </button>
+
         {/* Logo */}
-        <div className="w-40">
+        <div className="ms-3 me-6 shrink-0">
           <Wordmark />
         </div>
 
-        {/* Centered pill tabs */}
-        <nav className="flex-1 flex justify-center gap-1">
+        {/* Airbnb-style underline tabs */}
+        <nav className="flex items-stretch h-full flex-1 gap-0.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -300,39 +309,36 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <button
                 key={item.path}
                 onClick={() => router.push(item.path)}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-colors ${
-                  active
-                    ? "text-dark"
-                    : "text-muted hover:text-dark hover:bg-[var(--color-cream-2)]"
-                }`}
-                style={active ? { background: "var(--amber-soft)" } : undefined}
+                className="relative flex items-center gap-1.5 px-3 transition-colors hover:text-dark"
+                style={{
+                  color: active ? "var(--color-dark)" : "var(--color-muted)",
+                  fontWeight: active ? 600 : 400,
+                  fontSize: 14,
+                }}
               >
                 <Icon size={16} />
-                <span className="text-[13px] font-semibold">{item.label}</span>
+                {item.label}
+                {active && (
+                  <span
+                    className="absolute inset-x-0 bottom-0 h-[2px] rounded-t-full"
+                    style={{ background: "var(--color-amber)" }}
+                  />
+                )}
               </button>
             );
           })}
         </nav>
 
-        {/* Right controls: print (calendar-only) + hamburger */}
-        <div className="w-40 flex justify-end items-center gap-1">
-          {onCalendar && (
-            <button
-              onClick={() => window.print()}
-              className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors"
-              aria-label="Print"
-            >
-              <IconPrint size={18} />
-            </button>
-          )}
+        {/* Print — calendar only, far right */}
+        {onCalendar && (
           <button
-            onClick={() => setDrawerOpen(true)}
-            className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors"
-            aria-label="Open menu"
+            onClick={() => window.print()}
+            className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
+            aria-label="Print"
           >
-            <IconMenu size={20} />
+            <IconPrint size={18} />
           </button>
-        </div>
+        )}
       </div>
 
       {/* ─── Mobile Top Bar ───────────────────────────────────────────── */}
@@ -744,10 +750,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       />
       <div
         data-noprint
-        className={`fixed top-0 bottom-0 end-0 z-50 bg-white flex flex-col transition-transform duration-200 ease-out ${
-          drawerOpen ? "translate-x-0" : "translate-x-full"
+        className={`fixed top-0 bottom-0 start-0 z-50 bg-white flex flex-col transition-transform duration-200 ease-out ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ width: "min(320px, 85vw)", boxShadow: "-4px 0 24px rgba(30,26,20,0.12)" }}
+        style={{ width: "min(320px, 85vw)", boxShadow: "4px 0 24px rgba(30,26,20,0.12)" }}
         role="dialog"
         aria-label="Navigation menu"
       >
