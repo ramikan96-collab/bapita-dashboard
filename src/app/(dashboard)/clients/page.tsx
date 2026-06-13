@@ -9,9 +9,6 @@ import { ClientsSkeleton } from "@/components/LoadingSkeleton";
 import AddCustomerSheet from "@/components/AddCustomerSheet";
 import type { Customer } from "@/types";
 
-const CARD_SHADOW = "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)";
-const CARD_SHADOW_HOVER = "0 2px 4px rgba(30,26,20,0.08), 0 6px 20px rgba(30,26,20,0.09)";
-
 type SortBy = "recent" | "name" | "visits";
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
@@ -20,36 +17,25 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "visits", label: "Most booked" },
 ];
 
-// Warm avatar palette. Each entry is a soft tint background + a darker
-// initial color so a list of cards reads varied but stays on brand.
-const AVATAR_TINTS: { bg: string; fg: string }[] = [
-  { bg: "rgba(232,146,10,0.14)", fg: "#B86800" }, // amber
-  { bg: "rgba(212,98,42,0.13)", fg: "#B14418" }, // terra
-  { bg: "rgba(34,197,94,0.13)", fg: "#15803D" }, // green
-  { bg: "rgba(107,96,82,0.14)", fg: "#5A5044" }, // sand/muted
-  { bg: "rgba(148,163,184,0.18)", fg: "#475569" }, // slate
-];
-
-// Deterministic tint per client so a given person always keeps the same color.
-function avatarTint(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  }
-  return AVATAR_TINTS[Math.abs(hash) % AVATAR_TINTS.length];
-}
-
-// Avatar shows the first initial only, per the design spec.
-function firstInitial(name: string): string {
-  return name.trim().charAt(0).toUpperCase() || "?";
-}
-
 function formatPhone(phone: string): string {
-  if (!phone) return "No phone";
-  if (phone.length === 10 && phone.startsWith("05")) {
-    return `${phone.slice(0, 3)}.${phone.slice(3, 6)}.${phone.slice(6)}`;
+  if (!phone) return "—";
+  // Format as (XXX) XXX-XXXX for US numbers
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
   }
   return phone;
+}
+
+function parseName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(' ');
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: '' };
+  }
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' ')
+  };
 }
 
 function IconSearch() {
@@ -81,14 +67,6 @@ function IconUsers() {
   );
 }
 
-function IconChevron() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180">
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
-}
-
 function IconChevronDown() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -97,17 +75,28 @@ function IconChevronDown() {
   );
 }
 
-// List-region skeleton. Keeps the live header/search mounted (so the input
-// holds focus while typing) and only the rows below shimmer.
-function ListSkeleton() {
+function IconArrowUpDown() {
   return (
-    <div className="space-y-4 animate-pulse">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <polyline points="19 12 12 19 5 12" />
+    </svg>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <div className="animate-pulse">
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div
-          key={i}
-          className="h-[72px] rounded-2xl bg-white"
-          style={{ boxShadow: CARD_SHADOW }}
-        />
+        <div key={i} className="border-b border-cream-2">
+          <div className="h-16 flex items-center gap-4">
+            <div className="flex-1"><div className="h-4 bg-gray-200 rounded w-24"></div></div>
+            <div className="flex-1"><div className="h-4 bg-gray-200 rounded w-20"></div></div>
+            <div className="flex-1"><div className="h-4 bg-gray-200 rounded w-28"></div></div>
+            <div className="flex-[2]"><div className="h-4 bg-gray-200 rounded w-40"></div></div>
+            <div className="flex-1"><div className="h-4 bg-gray-200 rounded w-16"></div></div>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -128,7 +117,6 @@ export default function ClientsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
 
-  // Debounce search so we don't fire a query on every keystroke.
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => clearTimeout(t);
@@ -169,7 +157,6 @@ export default function ClientsPage() {
     fetchClients();
   }, [business, debouncedSearch, sortBy, supabase, refreshKey]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (showSortDropdown) {
@@ -190,70 +177,53 @@ export default function ClientsPage() {
   if (bizLoading) return <ClientsSkeleton />;
 
   return (
-    <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
-      {/* ─── Fixed top region: header + controls ─────────────────────── */}
-      <div
-        className="shrink-0 border-b"
-        style={{ borderColor: "var(--color-cream-2)" }}
-      >
-        {/* Centered container with max-width and auto margins */}
-        <div className="mx-auto w-full max-w-3xl px-4 md:px-6 pt-5 pb-4">
-          {/* Header */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <h1 className="text-[26px] md:text-[30px] font-extrabold leading-none text-dark">
+    <div className="flex flex-col h-full bg-cream">
+      {/* Header Section - Centered */}
+      <div className="shrink-0 border-b border-cream-2 bg-white">
+        <div className="mx-auto w-full max-w-6xl px-6 py-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl lg:text-3xl font-semibold text-dark">
                 Clients
               </h1>
-              <span
-                className="inline-flex items-center justify-center h-6 min-w-6 px-2 rounded-full text-[12px] font-semibold"
-                style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}
-              >
+              <span className="inline-flex items-center justify-center h-6 px-2.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                 {totalCount}
               </span>
             </div>
             <button
               onClick={() => setShowAdd(true)}
-              className="h-10 px-4 rounded-xl bg-amber text-white flex items-center gap-1.5 font-semibold text-[14px] whitespace-nowrap shadow-[0_2px_8px_rgba(232,146,10,0.30)] hover:bg-[#D4830A] active:scale-95 transition-all shrink-0"
+              className="h-10 px-4 rounded-lg bg-amber text-white flex items-center gap-2 font-medium text-sm hover:bg-amber-600 transition-all"
             >
               <IconPlus />
               Add client
             </button>
           </div>
 
-          {/* Controls: search + sort dropdown */}
-          <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="relative flex-1">
-              <span
-                className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: "var(--color-muted)", insetInlineStart: 14 }}
-              >
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <IconSearch />
               </span>
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name or phone"
-                className="w-full h-11 rounded-xl border bg-white text-[15px] text-dark transition-colors focus:outline-none focus:border-amber focus:ring-2 focus:ring-amber/20"
-                style={{ borderColor: "var(--color-cream-2)", paddingInlineStart: 42, paddingInlineEnd: 16 }}
+                placeholder="Search clients..."
+                className="w-full h-10 pl-9 pr-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber"
               />
             </div>
 
-            {/* Sort Dropdown */}
             <div className="sort-dropdown relative">
               <button
                 onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="h-11 px-4 rounded-xl border bg-white flex items-center gap-2 font-medium text-[14px] transition-all hover:bg-gray-50"
-                style={{ borderColor: "var(--color-cream-2)", color: "var(--color-dark)" }}
+                className="h-10 px-3 rounded-lg border border-gray-200 bg-white flex items-center gap-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 <span>Sort: {getCurrentSortLabel()}</span>
-                <span className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}>
-                  <IconChevronDown />
-                </span>
+                <IconChevronDown />
               </button>
 
               {showSortDropdown && (
-                <div className="absolute right-0 mt-2 w-40 rounded-xl bg-white shadow-lg border overflow-hidden z-10" style={{ borderColor: "var(--color-cream-2)" }}>
+                <div className="absolute right-0 mt-1 w-36 rounded-lg bg-white shadow-lg border border-gray-200 overflow-hidden z-10">
                   {SORT_OPTIONS.map((option) => (
                     <button
                       key={option.value}
@@ -261,10 +231,9 @@ export default function ClientsPage() {
                         setSortBy(option.value);
                         setShowSortDropdown(false);
                       }}
-                      className={`w-full px-4 py-2.5 text-left text-[14px] transition-colors hover:bg-cream ${
-                        sortBy === option.value ? 'font-semibold text-amber' : 'text-dark'
+                      className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                        sortBy === option.value ? 'text-amber font-medium' : 'text-gray-700'
                       }`}
-                      style={{ background: sortBy === option.value ? "rgba(232,146,10,0.05)" : "transparent" }}
                     >
                       {option.label}
                     </button>
@@ -276,90 +245,110 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* ─── Scrolling list ──────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Centered container with max-width and auto margins */}
-        <div className="mx-auto w-full max-w-3xl px-4 md:px-6 py-5 min-h-full">
+      {/* Table Section - Centered */}
+      <div className="flex-1 overflow-auto">
+        <div className="mx-auto w-full max-w-6xl px-6 py-4 lg:px-8">
           {loading ? (
-            <ListSkeleton />
+            <TableSkeleton />
           ) : clients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center py-20 px-8 min-h-[55vh]">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mb-5"
-                style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)" }}
-              >
+            <div className="flex flex-col items-center justify-center text-center py-20">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-amber/10 text-amber">
                 <IconUsers />
               </div>
               {debouncedSearch ? (
                 <>
-                  <h2 className="text-[18px] font-bold text-dark mb-1">
-                    No matches for &quot;{debouncedSearch}&quot;
-                  </h2>
-                  <p className="text-[15px] max-w-[300px]" style={{ color: "var(--color-muted)" }}>
-                    Try a different name or phone number.
-                  </p>
+                  <h3 className="text-lg font-medium text-dark mb-1">
+                    No results for "{debouncedSearch}"
+                  </h3>
+                  <p className="text-sm text-gray-500">Try a different search term</p>
                 </>
               ) : (
                 <>
-                  <h2 className="text-[19px] font-bold text-dark mb-1.5">
-                    Your client book starts here
-                  </h2>
-                  <p className="text-[15px] mb-6 max-w-[320px] leading-relaxed" style={{ color: "var(--color-muted)" }}>
-                    Add a client with their phone and visit history, and book them in the same step.
+                  <h3 className="text-lg font-medium text-dark mb-2">
+                    No clients yet
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Add your first client to get started
                   </p>
                   <button
                     onClick={() => setShowAdd(true)}
-                    className="h-11 px-5 rounded-xl bg-amber text-white font-semibold text-[15px] whitespace-nowrap shadow-[0_2px_8px_rgba(232,146,10,0.30)] hover:bg-[#D4830A] active:scale-95 transition-all"
+                    className="h-10 px-4 rounded-lg bg-amber text-white font-medium text-sm hover:bg-amber-600"
                   >
-                    Add your first client
+                    Add client
                   </button>
                 </>
               )}
             </div>
           ) : (
-            /* Increased spacing between cards - space-y-4 instead of space-y-3 */
-            <div className="space-y-4">
-              {clients.map((client) => {
-                const tint = avatarTint(client.id);
-                return (
-                  <button
-                    key={client.id}
-                    onClick={() => router.push(`/clients/${client.id}`)}
-                    className="group w-full flex items-center gap-4 bg-white rounded-2xl px-4 py-3.5 text-start transition-all hover:-translate-y-0.5"
-                    style={{ boxShadow: CARD_SHADOW }}
-                    onMouseEnter={(e) => (e.currentTarget.style.boxShadow = CARD_SHADOW_HOVER)}
-                    onMouseLeave={(e) => (e.currentTarget.style.boxShadow = CARD_SHADOW)}
-                  >
-                    <div
-                      className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-[17px] shrink-0"
-                      style={{ background: tint.bg, color: tint.fg }}
-                    >
-                      {firstInitial(client.name)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[15px] font-bold text-dark truncate">{client.name}</div>
-                      <div className="text-[13px] truncate" style={{ color: "var(--color-muted)" }}>
-                        {formatPhone(client.phone)}
-                      </div>
-                    </div>
-                    <div className="text-end shrink-0">
-                      <div className="text-[13px] font-semibold text-dark">
-                        {client.total_visits > 0
-                          ? `${client.total_visits} visit${client.total_visits !== 1 ? "s" : ""}`
-                          : "New"}
-                      </div>
-                      <div className="text-[11px]" style={{ color: "var(--color-muted)" }}>
-                        {client.last_visit_at
-                          ? format(parseISO(client.last_visit_at), "MMM d")
-                          : "No visits yet"}
-                      </div>
-                    </div>
-                    <span className="shrink-0 text-muted group-hover:text-dark transition-colors">
-                      <IconChevron />
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50/50">
+                      <th className="text-left py-4 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Last Name
+                      </th>
+                      <th className="text-left py-4 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        First Name
+                      </th>
+                      <th className="text-left py-4 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Phone #
+                      </th>
+                      <th className="text-left py-4 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="text-left py-4 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Account
+                      </th>
+                      <th className="w-8 py-4 px-4"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clients.map((client) => {
+                      const { firstName, lastName } = parseName(client.name);
+                      return (
+                        <tr
+                          key={client.id}
+                          onClick={() => router.push(`/clients/${client.id}`)}
+                          className="border-b border-gray-50 hover:bg-gray-50/50 cursor-pointer transition-colors group"
+                        >
+                          <td className="py-3 px-4 text-sm text-gray-900 font-medium">
+                            {lastName || '—'}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-900">
+                            {firstName}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-600">
+                            {formatPhone(client.phone)}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-600">
+                            {client.email || '—'}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900">
+                                {client.total_visits > 0
+                                  ? `${client.total_visits} visit${client.total_visits !== 1 ? 's' : ''}`
+                                  : 'New'}
+                              </span>
+                              {client.last_visit_at && (
+                                <span className="text-xs text-gray-400">
+                                  · {format(parseISO(client.last_visit_at), 'MMM d, yyyy')}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-gray-400 group-hover:text-gray-600 transition-colors">
+                              →
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
