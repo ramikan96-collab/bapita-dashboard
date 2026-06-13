@@ -336,11 +336,24 @@ function NewBookingInner() {
       {/* Header */}
       <div style={{ flexShrink: 0, background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)" }}>
         <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", padding: "18px 24px 16px" }}>
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--color-dark)", margin: 0 }}>New booking</h1>
-            <span style={{ fontSize: 12, fontWeight: 500, color: "var(--color-muted)" }}>
-              {stepIndex + 1} / 4 · {STEP_LABEL[step]}
-            </span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--color-dark)", margin: 0 }}>New booking</h1>
+              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--color-muted)" }}>
+                Step {stepIndex + 1} of 4 · {STEP_LABEL[step]}
+              </span>
+            </div>
+            <button
+              onClick={() => router.push("/calendar")}
+              aria-label="Close"
+              style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "var(--color-cream-2)", color: "var(--color-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "background 0.15s, color 0.15s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream)"; e.currentTarget.style.color = "var(--color-dark)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-muted)"; }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
           {/* Progress */}
           <div style={{ display: "flex", gap: 6 }}>
