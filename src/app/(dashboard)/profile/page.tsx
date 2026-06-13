@@ -46,14 +46,14 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
       {/* Header */}
-      <div className="shrink-0 px-4 pt-5 pb-4 border-b border-[var(--color-cream-2)] bg-white">
+      <div className="shrink-0 px-4 pt-5 pb-4 border-b border-[var(--color-cream-2)]" style={{ background: "var(--color-surface)" }}>
         <h1 className="text-[28px] font-extrabold leading-tight text-dark">פרופיל</h1>
         <p className="text-[15px] mt-1 text-muted">ניהול חשבון</p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Email card */}
-        <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
+        <div className="rounded-2xl p-4" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}>
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
@@ -78,7 +78,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Password change */}
-        <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] space-y-4">
+        <div className="rounded-2xl p-4 space-y-4" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}>
           <h2 className="text-[18px] font-bold text-dark">שינוי סיסמה</h2>
 
           <div className="flex flex-col gap-1.5">
@@ -90,8 +90,9 @@ export default function ProfilePage() {
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="לפחות 6 תווים"
                 className="h-12 w-full px-4 pe-11 rounded-[10px] border border-[var(--color-cream-2)]
-                  bg-white text-[15px] text-dark placeholder:text-muted
+                  text-[15px] text-dark placeholder:text-muted
                   focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+                style={{ background: "var(--color-surface)" }}
               />
               <button
                 type="button"
@@ -122,13 +123,12 @@ export default function ProfilePage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="חזור על הסיסמה החדשה"
                 className="h-12 w-full px-4 pe-11 rounded-[10px] border border-[var(--color-cream-2)]
-                  bg-white text-[15px] text-dark placeholder:text-muted
+                  text-[15px] text-dark placeholder:text-muted
                   focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
-                style={
-                  confirmPassword && newPassword !== confirmPassword
-                    ? { borderColor: "#EF4444" }
-                    : {}
-                }
+                style={{
+                  background: "var(--color-surface)",
+                  ...(confirmPassword && newPassword !== confirmPassword ? { borderColor: "#EF4444" } : {}),
+                }}
               />
               <button
                 type="button"
@@ -164,7 +164,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Sign out */}
-        <div className="bg-white rounded-2xl p-4 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
+        <div className="rounded-2xl p-4" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}>
           <button
             onClick={async () => {
               await supabase.auth.signOut();
