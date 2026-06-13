@@ -9,8 +9,8 @@ import { ClientsSkeleton } from "@/components/LoadingSkeleton";
 import AddCustomerSheet from "@/components/AddCustomerSheet";
 import type { Customer } from "@/types";
 
-const CARD_SHADOW = "0 2px 8px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.02)";
-const CARD_SHADOW_HOVER = "0 12px 24px -8px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.04)";
+const CARD_SHADOW = "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)";
+const CARD_SHADOW_HOVER = "0 2px 4px rgba(30,26,20,0.08), 0 6px 20px rgba(30,26,20,0.09)";
 
 type SortBy = "recent" | "name" | "visits";
 
@@ -23,11 +23,11 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
 // Warm avatar palette. Each entry is a soft tint background + a darker
 // initial color so a list of cards reads varied but stays on brand.
 const AVATAR_TINTS: { bg: string; fg: string }[] = [
-  { bg: "rgba(232,146,10,0.12)", fg: "#C25E00" }, // amber
-  { bg: "rgba(212,98,42,0.12)", fg: "#B14418" }, // terra
-  { bg: "rgba(34,197,94,0.12)", fg: "#15803D" }, // green
-  { bg: "rgba(107,96,82,0.12)", fg: "#5A5044" }, // sand/muted
-  { bg: "rgba(148,163,184,0.14)", fg: "#475569" }, // slate
+  { bg: "rgba(232,146,10,0.14)", fg: "#B86800" }, // amber
+  { bg: "rgba(212,98,42,0.13)", fg: "#B14418" }, // terra
+  { bg: "rgba(34,197,94,0.13)", fg: "#15803D" }, // green
+  { bg: "rgba(107,96,82,0.14)", fg: "#5A5044" }, // sand/muted
+  { bg: "rgba(148,163,184,0.18)", fg: "#475569" }, // slate
 ];
 
 // Deterministic tint per client so a given person always keeps the same color.
@@ -89,15 +89,23 @@ function IconChevron() {
   );
 }
 
+function IconChevronDown() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
 // List-region skeleton. Keeps the live header/search mounted (so the input
 // holds focus while typing) and only the rows below shimmer.
 function ListSkeleton() {
   return (
-    <div className="space-y-3 animate-pulse">
+    <div className="space-y-4 animate-pulse">
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <div
           key={i}
-          className="h-[88px] rounded-2xl bg-white"
+          className="h-[72px] rounded-2xl bg-white"
           style={{ boxShadow: CARD_SHADOW }}
         />
       ))}
@@ -118,6 +126,7 @@ export default function ClientsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [showAdd, setShowAdd] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
 
   // Debounce search so we don't fire a query on every keystroke.
   useEffect(() => {
@@ -160,6 +169,24 @@ export default function ClientsPage() {
     fetchClients();
   }, [business, debouncedSearch, sortBy, supabase, refreshKey]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (showSortDropdown) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.sort-dropdown')) {
+          setShowSortDropdown(false);
+        }
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSortDropdown]);
+
+  const getCurrentSortLabel = () => {
+    return SORT_OPTIONS.find(opt => opt.value === sortBy)?.label || "Recent";
+  };
+
   if (bizLoading) return <ClientsSkeleton />;
 
   return (
@@ -169,15 +196,16 @@ export default function ClientsPage() {
         className="shrink-0 border-b"
         style={{ borderColor: "var(--color-cream-2)" }}
       >
-        <div className="mx-auto w-full px-6 py-8 md:px-8 lg:px-10" style={{ maxWidth: 960 }}>
-          {/* Header with increased spacing */}
-          <div className="flex items-center justify-between gap-6 mb-8">
-            <div className="flex items-center gap-3 min-w-0">
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-dark">
+        {/* Centered container with max-width and auto margins */}
+        <div className="mx-auto w-full max-w-3xl px-4 md:px-6 pt-5 pb-4">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <h1 className="text-[26px] md:text-[30px] font-extrabold leading-none text-dark">
                 Clients
               </h1>
               <span
-                className="inline-flex items-center justify-center h-7 min-w-7 px-2.5 rounded-full text-sm font-medium"
+                className="inline-flex items-center justify-center h-6 min-w-6 px-2 rounded-full text-[12px] font-semibold"
                 style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}
               >
                 {totalCount}
@@ -185,19 +213,19 @@ export default function ClientsPage() {
             </div>
             <button
               onClick={() => setShowAdd(true)}
-              className="h-11 px-5 rounded-xl bg-amber text-white flex items-center gap-2 font-semibold text-sm shadow-md hover:shadow-lg active:scale-95 transition-all shrink-0"
+              className="h-10 px-4 rounded-xl bg-amber text-white flex items-center gap-1.5 font-semibold text-[14px] whitespace-nowrap shadow-[0_2px_8px_rgba(232,146,10,0.30)] hover:bg-[#D4830A] active:scale-95 transition-all shrink-0"
             >
               <IconPlus />
               Add client
             </button>
           </div>
 
-          {/* Controls: search + segmented sort with better spacing */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {/* Controls: search + sort dropdown */}
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="relative flex-1">
               <span
                 className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: "var(--color-muted)", insetInlineStart: 16 }}
+                style={{ color: "var(--color-muted)", insetInlineStart: 14 }}
               >
                 <IconSearch />
               </span>
@@ -206,70 +234,82 @@ export default function ClientsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name or phone"
-                className="w-full h-12 rounded-xl border bg-white text-base text-dark transition-all focus:outline-none focus:border-amber focus:ring-2 focus:ring-amber/20"
-                style={{ borderColor: "var(--color-cream-2)", paddingInlineStart: 44, paddingInlineEnd: 18 }}
+                className="w-full h-11 rounded-xl border bg-white text-[15px] text-dark transition-colors focus:outline-none focus:border-amber focus:ring-2 focus:ring-amber/20"
+                style={{ borderColor: "var(--color-cream-2)", paddingInlineStart: 42, paddingInlineEnd: 16 }}
               />
             </div>
 
-            <div
-              className="flex p-1 rounded-xl shrink-0"
-              style={{ background: "var(--color-cream-2)" }}
-            >
-              {SORT_OPTIONS.map((option) => {
-                const active = sortBy === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    onClick={() => setSortBy(option.value)}
-                    className="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all"
-                    style={{
-                      background: active ? "var(--color-surface)" : "transparent",
-                      color: active ? "var(--color-dark)" : "var(--color-muted)",
-                      boxShadow: active ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                    }}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
+            {/* Sort Dropdown */}
+            <div className="sort-dropdown relative">
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="h-11 px-4 rounded-xl border bg-white flex items-center gap-2 font-medium text-[14px] transition-all hover:bg-gray-50"
+                style={{ borderColor: "var(--color-cream-2)", color: "var(--color-dark)" }}
+              >
+                <span>Sort: {getCurrentSortLabel()}</span>
+                <span className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}>
+                  <IconChevronDown />
+                </span>
+              </button>
+
+              {showSortDropdown && (
+                <div className="absolute right-0 mt-2 w-40 rounded-xl bg-white shadow-lg border overflow-hidden z-10" style={{ borderColor: "var(--color-cream-2)" }}>
+                  {SORT_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSortBy(option.value);
+                        setShowSortDropdown(false);
+                      }}
+                      className={`w-full px-4 py-2.5 text-left text-[14px] transition-colors hover:bg-cream ${
+                        sortBy === option.value ? 'font-semibold text-amber' : 'text-dark'
+                      }`}
+                      style={{ background: sortBy === option.value ? "rgba(232,146,10,0.05)" : "transparent" }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ─── Scrolling list with increased card height and spacing ─── */}
+      {/* ─── Scrolling list ──────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full px-6 py-6 md:px-8 lg:px-10" style={{ maxWidth: 960 }}>
+        {/* Centered container with max-width and auto margins */}
+        <div className="mx-auto w-full max-w-3xl px-4 md:px-6 py-5 min-h-full">
           {loading ? (
             <ListSkeleton />
           ) : clients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center py-24 px-8 min-h-[55vh]">
+            <div className="flex flex-col items-center justify-center text-center py-20 px-8 min-h-[55vh]">
               <div
-                className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
+                className="w-16 h-16 rounded-full flex items-center justify-center mb-5"
                 style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)" }}
               >
                 <IconUsers />
               </div>
               {debouncedSearch ? (
                 <>
-                  <h2 className="text-xl font-bold text-dark mb-2">
-                    No matches for "{debouncedSearch}"
+                  <h2 className="text-[18px] font-bold text-dark mb-1">
+                    No matches for &quot;{debouncedSearch}&quot;
                   </h2>
-                  <p className="text-base max-w-[340px]" style={{ color: "var(--color-muted)" }}>
+                  <p className="text-[15px] max-w-[300px]" style={{ color: "var(--color-muted)" }}>
                     Try a different name or phone number.
                   </p>
                 </>
               ) : (
                 <>
-                  <h2 className="text-2xl font-bold text-dark mb-3">
+                  <h2 className="text-[19px] font-bold text-dark mb-1.5">
                     Your client book starts here
                   </h2>
-                  <p className="text-base mb-8 max-w-[360px] leading-relaxed" style={{ color: "var(--color-muted)" }}>
+                  <p className="text-[15px] mb-6 max-w-[320px] leading-relaxed" style={{ color: "var(--color-muted)" }}>
                     Add a client with their phone and visit history, and book them in the same step.
                   </p>
                   <button
                     onClick={() => setShowAdd(true)}
-                    className="h-12 px-6 rounded-xl bg-amber text-white font-semibold text-base shadow-md hover:shadow-lg active:scale-95 transition-all"
+                    className="h-11 px-5 rounded-xl bg-amber text-white font-semibold text-[15px] whitespace-nowrap shadow-[0_2px_8px_rgba(232,146,10,0.30)] hover:bg-[#D4830A] active:scale-95 transition-all"
                   >
                     Add your first client
                   </button>
@@ -277,6 +317,7 @@ export default function ClientsPage() {
               )}
             </div>
           ) : (
+            /* Increased spacing between cards - space-y-4 instead of space-y-3 */
             <div className="space-y-4">
               {clients.map((client) => {
                 const tint = avatarTint(client.id);
@@ -284,36 +325,36 @@ export default function ClientsPage() {
                   <button
                     key={client.id}
                     onClick={() => router.push(`/clients/${client.id}`)}
-                    className="group w-full flex items-center gap-5 bg-white rounded-2xl px-5 py-4 text-start transition-all hover:-translate-y-0.5"
+                    className="group w-full flex items-center gap-4 bg-white rounded-2xl px-4 py-3.5 text-start transition-all hover:-translate-y-0.5"
                     style={{ boxShadow: CARD_SHADOW }}
                     onMouseEnter={(e) => (e.currentTarget.style.boxShadow = CARD_SHADOW_HOVER)}
                     onMouseLeave={(e) => (e.currentTarget.style.boxShadow = CARD_SHADOW)}
                   >
                     <div
-                      className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl shrink-0"
+                      className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-[17px] shrink-0"
                       style={{ background: tint.bg, color: tint.fg }}
                     >
                       {firstInitial(client.name)}
                     </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="text-base font-semibold text-dark truncate mb-1">{client.name}</div>
-                      <div className="text-sm truncate" style={{ color: "var(--color-muted)" }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[15px] font-bold text-dark truncate">{client.name}</div>
+                      <div className="text-[13px] truncate" style={{ color: "var(--color-muted)" }}>
                         {formatPhone(client.phone)}
                       </div>
                     </div>
                     <div className="text-end shrink-0">
-                      <div className="text-sm font-semibold text-dark mb-0.5">
+                      <div className="text-[13px] font-semibold text-dark">
                         {client.total_visits > 0
                           ? `${client.total_visits} visit${client.total_visits !== 1 ? "s" : ""}`
                           : "New"}
                       </div>
-                      <div className="text-xs" style={{ color: "var(--color-muted)" }}>
+                      <div className="text-[11px]" style={{ color: "var(--color-muted)" }}>
                         {client.last_visit_at
                           ? format(parseISO(client.last_visit_at), "MMM d")
                           : "No visits yet"}
                       </div>
                     </div>
-                    <span className="shrink-0 text-muted group-hover:text-dark transition-colors ml-1">
+                    <span className="shrink-0 text-muted group-hover:text-dark transition-colors">
                       <IconChevron />
                     </span>
                   </button>
