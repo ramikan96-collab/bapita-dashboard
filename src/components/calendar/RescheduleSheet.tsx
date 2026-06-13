@@ -59,7 +59,8 @@ export default function RescheduleSheet({ booking, onRescheduled, onClose }: Pro
       setLoadingSlots(false);
     })();
     return () => { cancelled = true; };
-  }, [date, business, booking.id, booking.service?.duration, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, business, booking.id, booking.service?.duration]);
 
   async function handleSave() {
     if (!time) return;
