@@ -271,7 +271,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       <div className="flex flex-col h-dvh">
       {/* ─── Desktop Top Nav ─────────────────────────────────────────── */}
       <div
-        className="relative hidden md:flex h-14 shrink-0 items-center border-b z-30 px-6"
+        className="relative hidden md:flex h-14 shrink-0 items-center border-b z-30 px-10"
         style={{
           borderColor: "var(--line)",
           background: "var(--nav-bg)",
