@@ -106,7 +106,6 @@ export default function ProfilePage() {
       <div style={{ flexShrink: 0, background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)" }}>
         <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", padding: "26px 24px 20px" }}>
           <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: 0, lineHeight: 1.1 }}>Profile</h1>
-          <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 4 }}>Account settings</p>
         </div>
       </div>
 
@@ -117,14 +116,9 @@ export default function ProfilePage() {
           {/* Email */}
           <div style={cardStyle}>
             <span style={labelStyle}>Email</span>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>
-                {email || "—"}
-              </p>
-              <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 99, background: "var(--color-cream-2)", color: "var(--color-muted)", flexShrink: 0 }}>
-                Read only
-              </span>
-            </div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>
+              {email || "—"}
+            </p>
           </div>
 
           {/* Change password */}
