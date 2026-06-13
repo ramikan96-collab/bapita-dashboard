@@ -451,8 +451,8 @@ function CustomRequestModal({ onClose }: { onClose: () => void }) {
 function EmailCard({ selectedTag, onTagClick }: { selectedTag: string | null; onTagClick: (tag: string) => void }) {
   return (
     <div
-      className="rounded-2xl"
       style={{
+        borderRadius: 16,
         padding: "18px 20px",
         background: "var(--color-surface)",
         boxShadow: "0 2px 12px rgba(232,146,10,0.10), 0 1px 2px rgba(30,26,20,0.04)",
@@ -511,8 +511,8 @@ function AddonCard({
 
   return (
     <div
-      className="rounded-2xl"
       style={{
+        borderRadius: 16,
         padding: "18px 20px",
         background: "var(--color-surface)",
         boxShadow: isActive
@@ -653,12 +653,15 @@ export default function ExtrasPage() {
 
   return (
     <>
-      <div style={{ flex: 1, overflowY: "auto", background: "var(--color-cream)" }}>
-        <div style={{ maxWidth: 600, margin: "0 auto", width: "100%", padding: "24px 16px 64px" }}>
+      {/* White header strip */}
+      <div style={{ flexShrink: 0, background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)" }}>
+        <div style={{ maxWidth: 600, margin: "0 auto", width: "100%", padding: "26px 24px 20px" }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: 0 }}>Extras</h1>
+        </div>
+      </div>
 
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", marginBottom: 20 }}>
-            Extras
-          </h1>
+      <div style={{ flex: 1, overflowY: "auto", background: "var(--color-cream)" }}>
+        <div style={{ maxWidth: 600, margin: "0 auto", width: "100%", padding: "24px 24px 64px" }}>
 
           <SectionLinks
             onRecurringClick={() => recurringRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -686,8 +689,7 @@ export default function ExtrasPage() {
 
           {/* Custom CTA */}
           <div
-            className="rounded-2xl"
-            style={{ padding: "14px 18px", background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", border: "1.5px solid var(--color-cream-2)", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "border-color 0.15s" }}
+            style={{ borderRadius: 16, padding: "14px 18px", background: "var(--color-surface)", boxShadow: "var(--shadow-sm)", border: "1.5px solid var(--color-cream-2)", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "border-color 0.15s" }}
             onClick={() => setShowCustomModal(true)}
             onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = "var(--color-amber)")}
             onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = "var(--color-cream-2)")}
