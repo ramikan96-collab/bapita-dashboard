@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { format, parseISO, differenceInMinutes } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/types";
