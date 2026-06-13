@@ -117,10 +117,13 @@ function InputField({
         <label className="text-[13px] font-medium text-dark">{label}</label>
         {action}
       </div>
-      <div className="flex items-center h-12 rounded-[10px] border border-[var(--color-cream-2)] bg-white overflow-hidden focus-within:border-amber focus-within:ring-1 focus-within:ring-amber/30 transition-colors"
-        style={readOnly ? { opacity: 0.6 } : {}}>
+      <div
+        style={{ display: "flex", alignItems: "center", height: 44, borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", overflow: "hidden", transition: "border-color 0.15s", ...(readOnly ? { opacity: 0.6 } : {}) }}
+        onFocusCapture={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+        onBlurCapture={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+      >
         {prefix && (
-          <span className="px-3 text-[13px] font-medium text-muted bg-[var(--color-cream)] border-e border-[var(--color-cream-2)] h-full flex items-center shrink-0">
+          <span style={{ padding: "0 12px", fontSize: 13, fontWeight: 500, color: "var(--color-muted)", background: "var(--color-cream-2)", borderInlineEnd: "1px solid var(--color-cream-2)", height: "100%", display: "flex", alignItems: "center", flexShrink: 0 }}>
             {prefix}
           </span>
         )}
@@ -130,11 +133,10 @@ function InputField({
           onChange={(e) => onChange?.(e.target.value)}
           placeholder={placeholder}
           readOnly={readOnly}
-          className="flex-1 h-full px-4 text-[15px] text-dark placeholder:text-muted bg-transparent outline-none"
-          style={readOnly ? { cursor: "not-allowed" } : {}}
+          style={{ flex: 1, height: "100%", padding: "0 13px", fontSize: 14, color: "var(--color-dark)", background: "transparent", outline: "none", fontFamily: "inherit", cursor: readOnly ? "not-allowed" : "auto" }}
         />
         {suffix && (
-          <span className="px-3 shrink-0">{suffix}</span>
+          <span style={{ padding: "0 12px", flexShrink: 0 }}>{suffix}</span>
         )}
       </div>
       {hint && <p className="text-[12px] text-muted">{hint}</p>}
@@ -144,13 +146,13 @@ function InputField({
 
 function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] overflow-hidden">
+    <div style={{ background: "var(--color-surface)", borderRadius: 16, boxShadow: "var(--shadow-sm)", border: "1px solid var(--color-cream-2)", overflow: "hidden" }}>
       {title && (
-        <div className="px-5 pt-5 pb-3 border-b border-[var(--color-cream-2)]">
-          <h3 className="text-[13px] font-semibold text-muted uppercase tracking-wide">{title}</h3>
+        <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid var(--color-cream-2)" }}>
+          <h3 style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em", margin: 0 }}>{title}</h3>
         </div>
       )}
-      <div className="p-5 space-y-4">{children}</div>
+      <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>{children}</div>
     </div>
   );
 }
@@ -160,11 +162,18 @@ function SaveButton({ onClick, saving, dirty }: { onClick: () => void; saving: b
     <button
       onClick={onClick}
       disabled={saving || !dirty}
-      className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white transition-all"
       style={{
-        background: dirty ? "var(--color-amber)" : "var(--color-cream-2)",
-        color: dirty ? "white" : "var(--color-muted)",
+        width: "100%",
+        height: 48,
+        borderRadius: 14,
+        border: "none",
+        background: dirty ? "var(--wash-amber)" : "var(--color-cream-2)",
+        color: dirty ? "#fff" : "var(--color-muted)",
+        fontSize: 15,
+        fontWeight: 700,
         cursor: dirty ? "pointer" : "not-allowed",
+        boxShadow: dirty ? "0 4px 14px rgba(232,146,10,0.26)" : "none",
+        transition: "background 0.15s, box-shadow 0.15s, color 0.15s",
       }}
     >
       {saving ? "Saving…" : dirty ? "Save changes" : "Saved"}
@@ -203,24 +212,26 @@ function SetupForm({
   }
 
   return (
-    <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
-      <div className="shrink-0 px-5 pt-6 pb-4 border-b border-[var(--color-cream-2)] bg-white">
-        <h1 className="text-[26px] font-extrabold text-dark">Set up your business</h1>
-        <p className="text-[15px] mt-1 text-muted">Fill in the basics to get started</p>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-cream)" }}>
+      <div style={{ flexShrink: 0, background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)", padding: "26px 24px 20px" }}>
+        <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: 0 }}>Set up your business</h1>
+        <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 4 }}>Fill in the basics to get started</p>
       </div>
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
-        <SectionCard>
-          <InputField label="Business name *" value={name} onChange={setName} placeholder="e.g. Studio Avi" />
-          <InputField label="Phone" type="tel" value={phone} onChange={setPhone} placeholder="050-000-0000" />
-          <InputField label="Address" value={address} onChange={setAddress} placeholder="Street, city" />
-        </SectionCard>
-        <button
-          onClick={createBusiness}
-          disabled={saving || !name.trim()}
-          className="w-full py-3.5 rounded-xl text-[15px] font-semibold text-white bg-amber hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
-        >
-          {saving ? "Creating…" : "Create business"}
-        </button>
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 40px" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
+          <SectionCard>
+            <InputField label="Business name *" value={name} onChange={setName} placeholder="e.g. Studio Avi" />
+            <InputField label="Phone" type="tel" value={phone} onChange={setPhone} placeholder="050-000-0000" />
+            <InputField label="Address" value={address} onChange={setAddress} placeholder="Street, city" />
+          </SectionCard>
+          <button
+            onClick={createBusiness}
+            disabled={saving || !name.trim()}
+            style={{ width: "100%", height: 48, borderRadius: 14, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: saving || !name.trim() ? "not-allowed" : "pointer", opacity: saving || !name.trim() ? 0.5 : 1, boxShadow: "0 4px 14px rgba(232,146,10,0.26)" }}
+          >
+            {saving ? "Creating…" : "Create business"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -272,7 +283,7 @@ function BusinessSection({
   }
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <SectionCard title="Details">
         <InputField label="Business name" value={name} onChange={setName} placeholder="e.g. Studio Avi" />
         <InputField label="Phone" type="tel" value={phone} onChange={setPhone} placeholder="050-000-0000" />
@@ -282,8 +293,12 @@ function BusinessSection({
       <SectionCard title="Booking page">
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-medium text-dark">Your booking link</label>
-          <div className="flex items-center h-12 rounded-[10px] border border-[var(--color-cream-2)] bg-white overflow-hidden focus-within:border-amber focus-within:ring-1 focus-within:ring-amber/30 transition-colors">
-            <span className="px-3 text-[13px] font-medium text-muted bg-[var(--color-cream)] border-e border-[var(--color-cream-2)] h-full flex items-center shrink-0 select-none">
+          <div
+            style={{ display: "flex", alignItems: "center", height: 44, borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", overflow: "hidden", transition: "border-color 0.15s" }}
+            onFocusCapture={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+            onBlurCapture={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+          >
+            <span style={{ padding: "0 12px", fontSize: 13, fontWeight: 500, color: "var(--color-muted)", background: "var(--color-cream-2)", borderInlineEnd: "1px solid var(--color-cream-2)", height: "100%", display: "flex", alignItems: "center", flexShrink: 0, userSelect: "none" }}>
               bapita.com/
             </span>
             <input
@@ -291,7 +306,7 @@ function BusinessSection({
               value={slug}
               onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
               placeholder="your-slug"
-              className="flex-1 h-full px-3 text-[15px] text-dark placeholder:text-muted bg-transparent outline-none"
+              style={{ flex: 1, height: "100%", padding: "0 12px", fontSize: 14, color: "var(--color-dark)", background: "transparent", outline: "none", fontFamily: "inherit" }}
             />
           </div>
           <p className="text-[12px] text-muted">Only lowercase letters, numbers, and hyphens</p>
@@ -301,9 +316,11 @@ function BusinessSection({
         <div className="flex gap-2 mt-1">
           <button
             onClick={copyLink}
-            className="flex-1 h-10 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 border border-[var(--color-cream-2)] text-dark hover:border-amber hover:text-amber transition-colors bg-white"
+            style={{ flex: 1, height: 38, borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", transition: "border-color 0.15s, color 0.15s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-dark)"; }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
             Copy link
@@ -312,7 +329,9 @@ function BusinessSection({
             href={`https://${bookingUrl}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 h-10 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 border border-[var(--color-cream-2)] text-dark hover:border-amber hover:text-amber transition-colors bg-white"
+            style={{ flex: 1, height: 38, borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, textDecoration: "none", transition: "border-color 0.15s, color 0.15s" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLElement).style.color = "var(--color-amber)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLElement).style.color = "var(--color-dark)"; }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
@@ -428,53 +447,64 @@ function ServicesSection({
     await Promise.all(reordered.map((s, i) => supabase.from("services").update({ display_order: i }).eq("id", s.id)));
   }
 
+  const svcInput: React.CSSProperties = { height: 44, width: "100%", padding: "0 13px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", transition: "border-color 0.15s", boxSizing: "border-box" };
+  const svcLabel: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" };
+
   const formContent = (
-    <div className="bg-white rounded-2xl p-5 shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] space-y-4 border border-amber/30">
-      <h3 className="text-[15px] font-bold text-dark">{editingId ? "Edit service" : "New service"}</h3>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-[13px] font-medium text-dark">Service name</label>
+    <div style={{ background: "var(--color-surface)", borderRadius: 16, padding: 20, boxShadow: "var(--shadow-sm)", border: "1.5px solid var(--color-amber)", display: "flex", flexDirection: "column", gap: 14 }}>
+      <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", margin: 0 }}>{editingId ? "Edit service" : "New service"}</p>
+      <div>
+        <label style={svcLabel}>Service name</label>
         <input
           type="text"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="e.g. Haircut"
           autoFocus
-          className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)] bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+          style={svcInput}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+          onBlur={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
         />
       </div>
-      <div className="flex gap-3">
-        <div className="flex-1 flex flex-col gap-1.5">
-          <label className="text-[13px] font-medium text-dark">Duration (min)</label>
+      <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <label style={svcLabel}>Duration (min)</label>
           <input
             type="number"
             value={newDuration}
             onChange={(e) => setNewDuration(parseInt(e.target.value) || 30)}
             min={5} step={5}
-            className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)] bg-white text-[15px] text-dark focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+            style={svcInput}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+            onBlur={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
           />
         </div>
-        <div className="flex-1 flex flex-col gap-1.5">
-          <label className="text-[13px] font-medium text-dark">Price (₪)</label>
+        <div style={{ flex: 1 }}>
+          <label style={svcLabel}>Price (₪)</label>
           <input
             type="number"
             value={newPrice}
             onChange={(e) => setNewPrice(parseInt(e.target.value) || 0)}
             min={0}
-            className="h-12 px-4 rounded-[10px] border border-[var(--color-cream-2)] bg-white text-[15px] text-dark focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
+            style={svcInput}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+            onBlur={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
           />
         </div>
       </div>
-      <div className="flex gap-2 pt-1">
+      <div style={{ display: "flex", gap: 10 }}>
         <button
           onClick={saveService}
           disabled={saving || !newName.trim()}
-          className="flex-1 py-3 rounded-xl text-[15px] font-semibold text-white bg-amber hover:bg-[#D4830A] transition-colors disabled:opacity-50"
+          style={{ flex: 1, height: 44, borderRadius: 12, border: "none", background: saving || !newName.trim() ? "var(--color-cream-2)" : "var(--wash-amber)", color: saving || !newName.trim() ? "var(--color-muted)" : "#fff", fontSize: 14, fontWeight: 700, cursor: saving || !newName.trim() ? "not-allowed" : "pointer" }}
         >
           {saving ? "Saving…" : editingId ? "Save changes" : "Add service"}
         </button>
         <button
           onClick={resetForm}
-          className="flex-1 py-3 rounded-xl text-[15px] font-medium text-dark border border-[var(--color-cream-2)] hover:bg-[var(--color-cream)] transition-colors"
+          style={{ flex: 1, height: 44, borderRadius: 12, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-dark)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-cream)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
         >
           Cancel
         </button>
@@ -483,10 +513,10 @@ function ServicesSection({
   );
 
   return (
-    <div className="space-y-3">
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {/* Empty state */}
       {services.length === 0 && !showForm && !editingId && (
-        <div className="bg-white rounded-2xl p-8 text-center shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
+        <div style={{ background: "var(--color-surface)", borderRadius: 16, padding: "40px 24px", textAlign: "center", boxShadow: "var(--shadow-sm)", border: "1px solid var(--color-cream-2)" }}>
           <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ background: "rgba(232,146,10,0.1)" }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
@@ -499,7 +529,7 @@ function ServicesSection({
 
       {/* Service list with drag-to-reorder */}
       {services.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] overflow-hidden">
+        <div style={{ background: "var(--color-surface)", borderRadius: 16, boxShadow: "var(--shadow-sm)", border: "1px solid var(--color-cream-2)", overflow: "hidden" }}>
           {services.map((service, index) => (
             <div key={service.id}>
               {/* Editing this row inline */}
@@ -584,7 +614,9 @@ function ServicesSection({
         showForm ? formContent : (
           <button
             onClick={() => setShowForm(true)}
-            className="w-full py-3.5 rounded-xl text-[15px] font-semibold flex items-center justify-center gap-2 bg-white border border-[var(--color-cream-2)] text-dark hover:border-amber hover:text-amber transition-colors shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]"
+            style={{ width: "100%", height: 46, borderRadius: 12, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "var(--color-surface)", border: "1.5px dashed var(--color-cream-2)", color: "var(--color-dark)", cursor: "pointer", transition: "border-color 0.15s, color 0.15s, background 0.15s", boxShadow: "var(--shadow-sm)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; e.currentTarget.style.background = "var(--amber-soft)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-dark)"; e.currentTarget.style.background = "var(--color-surface)"; }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -645,7 +677,7 @@ function HoursSection({
   const openDays = DAYS.filter((d) => hours[d.key].open);
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {/* Days on/off */}
       <SectionCard title="Working days">
         <div className="flex flex-wrap gap-2">
@@ -685,14 +717,20 @@ function HoursSection({
                     type="time"
                     value={hours[key].start}
                     onChange={(e) => setDay(key, { start: e.target.value })}
-                    className="h-9 px-2 rounded-[8px] border border-[var(--color-cream-2)] text-[14px] text-dark focus:outline-none focus:border-amber transition-colors bg-white"
+                    style={{ height: 38, padding: "0 10px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", fontSize: 13, color: "var(--color-dark)", outline: "none", background: "var(--color-cream)", fontFamily: "inherit", transition: "border-color 0.15s" }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                    onBlur={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+                    className=""
                   />
                   <span className="text-[13px] text-muted">–</span>
                   <input
                     type="time"
                     value={hours[key].end}
                     onChange={(e) => setDay(key, { end: e.target.value })}
-                    className="h-9 px-2 rounded-[8px] border border-[var(--color-cream-2)] text-[14px] text-dark focus:outline-none focus:border-amber transition-colors bg-white"
+                    style={{ height: 38, padding: "0 10px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", fontSize: 13, color: "var(--color-dark)", outline: "none", background: "var(--color-cream)", fontFamily: "inherit", transition: "border-color 0.15s" }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                    onBlur={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+                    className=""
                   />
                 </div>
               </div>
@@ -703,7 +741,9 @@ function HoursSection({
           {openDays.length > 1 && (
             <button
               onClick={copyFirstOpenToAll}
-              className="w-full py-2.5 rounded-xl text-[13px] font-medium text-muted border border-[var(--color-cream-2)] hover:border-amber hover:text-amber transition-colors bg-transparent flex items-center justify-center gap-2"
+              style={{ width: "100%", height: 38, borderRadius: 10, fontSize: 13, fontWeight: 500, color: "var(--color-muted)", border: "1.5px solid var(--color-cream-2)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "border-color 0.15s, color 0.15s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-muted)"; }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
@@ -715,8 +755,8 @@ function HoursSection({
       )}
 
       {openDays.length === 0 && (
-        <div className="bg-white rounded-2xl p-6 text-center shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)]">
-          <p className="text-[14px] text-muted">No working days selected — enable at least one day above</p>
+        <div style={{ background: "var(--color-surface)", borderRadius: 16, padding: "28px 20px", textAlign: "center", boxShadow: "var(--shadow-sm)", border: "1px solid var(--color-cream-2)" }}>
+          <p style={{ fontSize: 13, color: "var(--color-muted)" }}>No working days selected — enable at least one day above</p>
         </div>
       )}
 
@@ -775,7 +815,7 @@ function _BookingSection({
   ];
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <SectionCard title="Timing">
         {/* Buffer */}
         <div className="flex flex-col gap-2">
@@ -942,7 +982,7 @@ function _NotificationsSection({
   const waActive = (business as any).whatsapp_active ?? false;
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {/* Email — free */}
       <SectionCard title="Email · Free">
         <div className="space-y-0 divide-y divide-[var(--color-cream-2)]">
@@ -1052,22 +1092,11 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
       {/* Header + chip tabs */}
-      <div
-        className="shrink-0 bg-white border-b"
-        style={{ borderColor: "var(--line)", padding: "20px 20px 0" }}
-      >
-        <h1
-          style={{
-            fontSize: 22,
-            fontWeight: 800,
-            color: "var(--color-dark)",
-            letterSpacing: "-0.02em",
-            marginBottom: 16,
-          }}
-        >
+      <div style={{ flexShrink: 0, background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)", padding: "26px 24px 0" }}>
+        <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: "0 0 16px" }}>
           Settings
         </h1>
-        <div style={{ display: "flex", gap: 8, paddingBottom: 16 }}>
+        <div style={{ display: "flex", gap: 8, paddingBottom: 18 }}>
           {SECTIONS.map((s) => {
             const active = activeSection === s.id;
             return (
@@ -1095,8 +1124,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-5 py-6">
-        <div className="max-w-xl mx-auto">
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 20px 64px" }}>
           {renderSection()}
         </div>
       </div>
