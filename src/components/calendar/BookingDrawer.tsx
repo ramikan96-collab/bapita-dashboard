@@ -326,6 +326,25 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // Cleanup saveTimer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, []);
+
+  // Load client notes on mount (notes section defaults open)
+  useEffect(() => {
+    if (!current.customer_id) return;
+    lazyLoadedRef.current.add("notes");
+    supabase
+      .from("customers")
+      .select("notes")
+      .eq("id", current.customer_id)
+      .single()
+      .then(({ data }) => setClientNotes(data?.notes ?? ""));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Notes auto-save ────────────────────────────────────────────────────────
 
   function handleNotesChange(val: string) {
@@ -441,7 +460,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
 
   function renderActions() {
     const s = current.status;
-    const AMBER = "var(--color-amber)";
+    const AMBER = "#E8920A";
     const GREEN = STATUS_COLOR.completed;
     const RED = "#EF4444";
     const SLATE = STATUS_COLOR.pending;
@@ -454,6 +473,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
             color={AMBER}
             onClick={() => updateStatus("confirmed")}
             loading={actionLoading}
+            primary
           />
           <ActionBtn
             label="Complete"
