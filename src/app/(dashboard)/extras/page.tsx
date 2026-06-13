@@ -583,20 +583,7 @@ function AddonCard({
   );
 }
 
-// ─── Section links ────────────────────────────────────────────────────────────
-
-function SectionLinks({ onRecurringClick, onOnetimeClick }: { onRecurringClick: () => void; onOnetimeClick: () => void }) {
-  return (
-    <div style={{ display: "flex", gap: 24, marginBottom: 20, paddingBottom: 8, borderBottom: "1px solid var(--color-cream-2)" }}>
-      <button onClick={onRecurringClick} style={{ fontSize: 13, fontWeight: 600, color: "var(--color-dark)", background: "none", border: "none", cursor: "pointer", padding: 0, transition: "opacity 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.6")} onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}>
-        Recurring
-      </button>
-      <button onClick={onOnetimeClick} style={{ fontSize: 13, fontWeight: 600, color: "var(--color-dark)", background: "none", border: "none", cursor: "pointer", padding: 0, transition: "opacity 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.6")} onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}>
-        One-time
-      </button>
-    </div>
-  );
-}
+// SectionLinks moved into white header strip — see ExtrasPage render
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -655,18 +642,30 @@ export default function ExtrasPage() {
     <>
       {/* White header strip */}
       <div style={{ flexShrink: 0, background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)" }}>
-        <div style={{ maxWidth: 600, margin: "0 auto", width: "100%", padding: "26px 24px 20px" }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: 0 }}>Extras</h1>
+        <div style={{ maxWidth: 600, margin: "0 auto", width: "100%", padding: "26px 24px 0" }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: "0 0 14px" }}>Extras</h1>
+          {/* Scroll-anchor tabs */}
+          <div style={{ display: "flex", marginBottom: -1 }}>
+            {[
+              { label: "Recurring", onClick: () => recurringRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) },
+              { label: "One-time",  onClick: () => onetimeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) },
+            ].map(({ label, onClick }) => (
+              <button
+                key={label}
+                onClick={onClick}
+                style={{ padding: "0 2px 12px", marginInlineEnd: 22, fontSize: 14, fontWeight: 600, color: "var(--color-dark)", background: "none", border: "none", borderBottom: "2px solid transparent", cursor: "pointer", transition: "color 0.15s, border-color 0.15s" }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--color-amber)"; e.currentTarget.style.borderBottomColor = "var(--color-amber)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "var(--color-dark)"; e.currentTarget.style.borderBottomColor = "transparent"; }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", background: "var(--color-cream)" }}>
         <div style={{ maxWidth: 600, margin: "0 auto", width: "100%", padding: "24px 24px 64px" }}>
-
-          <SectionLinks
-            onRecurringClick={() => recurringRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            onOnetimeClick={() => onetimeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          />
 
           {/* Email card */}
           <div style={{ marginBottom: 16 }}>
