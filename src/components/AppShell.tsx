@@ -278,7 +278,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       <div className="flex flex-col h-dvh">
       {/* ─── Desktop Top Nav ─────────────────────────────────────────── */}
       <div
-        className="hidden md:flex h-14 shrink-0 items-center border-b z-30 px-4"
+        className="relative hidden md:flex h-14 shrink-0 items-center border-b z-30 px-6"
         style={{
           borderColor: "var(--line)",
           background: "var(--nav-bg)",
@@ -286,7 +286,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           WebkitBackdropFilter: "var(--nav-blur)",
         }}
       >
-        {/* Hamburger — left of logo */}
+        {/* Hamburger — left, more breathing room */}
         <button
           onClick={() => setDrawerOpen(true)}
           className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
@@ -295,50 +295,49 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <IconMenu size={20} />
         </button>
 
-        {/* Logo */}
-        <div className="ms-3 me-6 shrink-0">
-          <Wordmark />
-        </div>
-
-        {/* Airbnb-style underline tabs */}
-        <nav className="flex items-stretch h-full flex-1 gap-0.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            return (
-              <button
-                key={item.path}
-                onClick={() => router.push(item.path)}
-                className="relative flex items-center gap-1.5 px-3 transition-colors hover:text-dark"
-                style={{
-                  color: active ? "var(--color-dark)" : "var(--color-muted)",
-                  fontWeight: active ? 600 : 400,
-                  fontSize: 14,
-                }}
-              >
-                <Icon size={16} />
-                {item.label}
-                {active && (
-                  <span
-                    className="absolute inset-x-0 bottom-0 h-[2px] rounded-t-full"
-                    style={{ background: "var(--color-amber)" }}
-                  />
-                )}
-              </button>
-            );
-          })}
+        {/* Tabs — absolutely centered in the bar */}
+        <nav className="absolute inset-0 flex items-stretch justify-center pointer-events-none">
+          <div className="flex items-stretch gap-0.5 pointer-events-auto">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => router.push(item.path)}
+                  className="relative flex items-center gap-1.5 px-3 transition-colors hover:text-dark"
+                  style={{
+                    color: active ? "var(--color-dark)" : "var(--color-muted)",
+                    fontWeight: active ? 600 : 400,
+                    fontSize: 14,
+                  }}
+                >
+                  <Icon size={16} />
+                  {item.label}
+                  {active && (
+                    <span
+                      className="absolute inset-x-0 bottom-0 h-[2px] rounded-t-full"
+                      style={{ background: "var(--color-amber)" }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Print — calendar only, far right */}
-        {onCalendar && (
-          <button
-            onClick={() => window.print()}
-            className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
-            aria-label="Print"
-          >
-            <IconPrint size={18} />
-          </button>
-        )}
+        <div className="ms-auto shrink-0">
+          {onCalendar && (
+            <button
+              onClick={() => window.print()}
+              className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors"
+              aria-label="Print"
+            >
+              <IconPrint size={18} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ─── Mobile Top Bar ───────────────────────────────────────────── */}
@@ -757,20 +756,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         role="dialog"
         aria-label="Navigation menu"
       >
-        {/* Business header */}
-        <div className="flex items-center gap-3 p-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
-          <div
-            className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-[18px] shrink-0"
-            style={{ background: "var(--color-amber)" }}
-          >
-            {initial}
-          </div>
-          <div className="min-w-0">
-            <div className="text-[18px] font-bold text-dark truncate">{businessName}</div>
-            <div className="text-[12px] truncate" style={{ color: "var(--color-muted)" }}>
-              {businessSlug}
-            </div>
-          </div>
+        {/* Bapita wordmark at top */}
+        <div className="px-5 py-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
+          <Wordmark />
         </div>
 
         {/* Nav items */}
@@ -820,16 +808,32 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Sign out */}
-        <div className="border-t p-2" style={{ borderColor: "var(--color-cream-2)" }}>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 rounded-xl text-start text-[15px] font-medium transition-colors hover:bg-cream"
-            style={{ height: 48, color: "var(--color-cancelled)" }}
-          >
-            <IconLogout />
-            Sign out
-          </button>
+        {/* Business name + sign out — bottom */}
+        <div className="border-t" style={{ borderColor: "var(--color-cream-2)" }}>
+          {/* Business identity */}
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-[15px] shrink-0"
+              style={{ background: "var(--color-amber)" }}
+            >
+              {initial}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[14px] font-semibold text-dark truncate">{businessName}</div>
+              <div className="text-[11px] truncate" style={{ color: "var(--color-muted)" }}>{businessSlug}</div>
+            </div>
+          </div>
+          {/* Sign out */}
+          <div className="px-2 pb-2">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 rounded-xl text-start text-[15px] font-medium transition-colors hover:bg-[var(--color-cream)]"
+              style={{ height: 44, color: "var(--color-cancelled)" }}
+            >
+              <IconLogout />
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
 
