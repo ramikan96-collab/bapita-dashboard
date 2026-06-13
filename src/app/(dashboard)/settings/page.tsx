@@ -8,12 +8,7 @@ import type { Service, BusinessHours, DayKey } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Section =
-  | "business"
-  | "services"
-  | "hours"
-  | "booking"
-  | "notifications";
+type Section = "business" | "services" | "hours";
 
 interface BookingSettings {
   buffer_minutes: number;
@@ -67,62 +62,10 @@ const DEFAULT_NOTIFICATIONS: NotificationSettings = {
   whatsapp_reminder: false,
 };
 
-const SECTIONS: { id: Section; label: string; icon: React.ReactNode; description: string }[] = [
-  {
-    id: "business",
-    label: "Business info",
-    description: "Name, phone, address, booking link",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-    ),
-  },
-  {
-    id: "services",
-    label: "Services",
-    description: "What you offer and at what price",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-      </svg>
-    ),
-  },
-  {
-    id: "hours",
-    label: "Working hours",
-    description: "Days and times you're available",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <polyline points="12 6 12 12 16 14"/>
-      </svg>
-    ),
-  },
-  {
-    id: "booking",
-    label: "Booking rules",
-    description: "Buffer time, advance window, cancellations",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-        <line x1="3" y1="10" x2="21" y2="10"/>
-      </svg>
-    ),
-  },
-  {
-    id: "notifications",
-    label: "Notifications",
-    description: "When and how you get alerted",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-      </svg>
-    ),
-  },
+const SECTIONS: { id: Section; label: string }[] = [
+  { id: "business", label: "Business Info" },
+  { id: "services", label: "Services" },
+  { id: "hours",    label: "Working Hours" },
 ];
 
 // ─── Shared UI primitives ─────────────────────────────────────────────────────
@@ -764,9 +707,9 @@ function HoursSection({
   );
 }
 
-// ─── Booking Rules section ────────────────────────────────────────────────────
+// ─── [Removed: Booking Rules + Notifications — not in v1 scope] ───────────────
 
-function BookingSection({
+function _BookingSection({
   business,
   supabase,
   refresh,
@@ -922,9 +865,7 @@ function BookingSection({
   );
 }
 
-// ─── Notifications section ────────────────────────────────────────────────────
-
-function NotificationsSection({
+function _NotificationsSection({
   business,
   supabase,
   refresh,
@@ -1069,12 +1010,6 @@ export default function SettingsPage() {
   const { business, loading: bizLoading, refresh } = useBusiness();
   const supabase = createClient();
   const [activeSection, setActiveSection] = useState<Section>("business");
-  const [mobileView, setMobileView] = useState<"menu" | "section">("menu");
-
-  function openSection(id: Section) {
-    setActiveSection(id);
-    setMobileView("section");
-  }
 
   if (bizLoading) {
     return (
@@ -1090,130 +1025,44 @@ export default function SettingsPage() {
 
   function renderSection() {
     switch (activeSection) {
-      case "business":
-        return <BusinessSection business={business!} supabase={supabase} refresh={refresh} />;
-      case "services":
-        return <ServicesSection business={business!} supabase={supabase} />;
-      case "hours":
-        return <HoursSection business={business!} supabase={supabase} refresh={refresh} />;
-      case "booking":
-        return <BookingSection business={business!} supabase={supabase} refresh={refresh} />;
-      case "notifications":
-        return <NotificationsSection business={business!} supabase={supabase} refresh={refresh} />;
+      case "business": return <BusinessSection business={business!} supabase={supabase} refresh={refresh} />;
+      case "services": return <ServicesSection business={business!} supabase={supabase} />;
+      case "hours":    return <HoursSection business={business!} supabase={supabase} refresh={refresh} />;
     }
   }
 
-  const currentSection = SECTIONS.find((s) => s.id === activeSection)!;
-
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
-
-      {/* ── Desktop layout ───────────────────────────────────────────────── */}
-      <div className="hidden md:flex h-full">
-
-        {/* Sidebar */}
-        <aside className="w-60 shrink-0 border-e border-[var(--color-cream-2)] bg-white flex flex-col">
-          <div className="px-5 pt-6 pb-4 border-b border-[var(--color-cream-2)]">
-            <h1 className="text-[22px] font-extrabold text-dark">Settings</h1>
-          </div>
-          <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-            {SECTIONS.map((s) => {
-              const active = activeSection === s.id;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => setActiveSection(s.id)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-start transition-all group"
-                  style={active
-                    ? { background: "rgba(232,146,10,0.1)", color: "var(--color-dark)" }
-                    : { color: "var(--color-muted)" }
-                  }
-                >
-                  <span
-                    className="shrink-0 transition-colors"
-                    style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}
-                  >
-                    {s.icon}
-                  </span>
-                  <span className="text-[14px] font-semibold">{s.label}</span>
-                  {active && (
-                    <span className="ms-auto w-1 h-4 rounded-full" style={{ background: "var(--color-amber)" }} />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
-
-        {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-xl">
-            <div className="mb-5">
-              <h2 className="text-[20px] font-extrabold text-dark">{currentSection.label}</h2>
-              <p className="text-[14px] text-muted mt-0.5">{currentSection.description}</p>
-            </div>
-            {renderSection()}
-          </div>
-        </main>
+      {/* Header + chip tabs */}
+      <div className="shrink-0 bg-white border-b px-5 pt-5 pb-0" style={{ borderColor: "var(--line)" }}>
+        <h1 className="text-[22px] font-extrabold text-dark mb-4">Settings</h1>
+        <div className="flex gap-2 pb-0">
+          {SECTIONS.map((s) => {
+            const active = activeSection === s.id;
+            return (
+              <button
+                key={s.id}
+                onClick={() => setActiveSection(s.id)}
+                className="px-4 py-2 rounded-full text-[13px] font-semibold transition-all shrink-0"
+                style={
+                  active
+                    ? { background: "var(--color-amber)", color: "#fff" }
+                    : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
+                }
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="h-4" />
       </div>
 
-      {/* ── Mobile layout ────────────────────────────────────────────────── */}
-      <div className="flex flex-col h-full md:hidden">
-
-        {/* Mobile: menu list */}
-        {mobileView === "menu" && (
-          <>
-            <div className="shrink-0 px-4 pt-5 pb-4 bg-white border-b border-[var(--color-cream-2)]">
-              <h1 className="text-[26px] font-extrabold text-dark">Settings</h1>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] overflow-hidden">
-                {SECTIONS.map((s, idx) => (
-                  <button
-                    key={s.id}
-                    onClick={() => openSection(s.id)}
-                    className="w-full flex items-center gap-4 px-4 py-4 text-start hover:bg-[var(--color-cream)] transition-colors"
-                    style={{ borderBottom: idx < SECTIONS.length - 1 ? "1px solid var(--color-cream-2)" : "none" }}
-                  >
-                    <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(232,146,10,0.1)", color: "var(--color-amber)" }}>
-                      {s.icon}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[15px] font-semibold text-dark">{s.label}</div>
-                      <div className="text-[12px] text-muted mt-0.5">{s.description}</div>
-                    </div>
-                    <svg className="text-muted shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Mobile: section detail */}
-        {mobileView === "section" && (
-          <>
-            <div className="shrink-0 px-4 pt-4 pb-3 bg-white border-b border-[var(--color-cream-2)] flex items-center gap-3">
-              <button
-                onClick={() => setMobileView("menu")}
-                className="w-9 h-9 rounded-xl flex items-center justify-center -ms-1 hover:bg-[var(--color-cream)] transition-colors"
-                aria-label="Back to settings"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6"/>
-                </svg>
-              </button>
-              <div>
-                <h2 className="text-[17px] font-extrabold text-dark leading-tight">{currentSection.label}</h2>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {renderSection()}
-            </div>
-          </>
-        )}
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-5">
+        <div className="max-w-xl">
+          {renderSection()}
+        </div>
       </div>
     </div>
   );
