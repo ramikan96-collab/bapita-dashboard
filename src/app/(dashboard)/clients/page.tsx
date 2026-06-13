@@ -176,10 +176,10 @@ export default function ClientsPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#F8F6F3]">
-      {/* Header Section */}
+      {/* Header Section - Centered */}
       <div className="shrink-0 bg-white border-b border-gray-100">
-        <div className="mx-auto w-full max-w-5xl px-6 py-8 lg:px-8">
-          {/* Title and Add Button Row */}
+        <div className="mx-auto w-full max-w-4xl px-6 py-8">
+          {/* Title Row */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold text-gray-900">Clients</h1>
@@ -196,9 +196,9 @@ export default function ClientsPage() {
             </button>
           </div>
 
-          {/* Search and Filter Row */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
+          {/* Search Bar */}
+          <div className="mb-4">
+            <div className="relative max-w-sm">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <IconSearch />
               </span>
@@ -210,42 +210,43 @@ export default function ClientsPage() {
                 className="w-full h-9 pl-9 pr-3 rounded-md border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
               />
             </div>
+          </div>
 
-            <div className="sort-dropdown relative">
-              <button
-                onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="h-9 px-3 rounded-md border border-gray-200 bg-white flex items-center gap-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-all"
-              >
-                <span>Sort: {getCurrentSortLabel()}</span>
-                <IconChevronDown />
-              </button>
+          {/* Sort Dropdown - Below Add Client (aligned left) */}
+          <div className="sort-dropdown relative">
+            <button
+              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              className="h-9 px-3 rounded-md border border-gray-200 bg-white flex items-center gap-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-all"
+            >
+              <span>Sort: {getCurrentSortLabel()}</span>
+              <IconChevronDown />
+            </button>
 
-              {showSortDropdown && (
-                <div className="absolute right-0 mt-1 w-36 rounded-md bg-white shadow-lg border border-gray-100 overflow-hidden z-10">
-                  {SORT_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => {
-                        setSortBy(option.value);
-                        setShowSortDropdown(false);
-                      }}
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
-                        sortBy === option.value ? 'text-amber-500 font-medium bg-amber-50' : 'text-gray-700'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {showSortDropdown && (
+              <div className="absolute left-0 mt-1 w-36 rounded-md bg-white shadow-lg border border-gray-100 overflow-hidden z-10">
+                {SORT_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setSortBy(option.value);
+                      setShowSortDropdown(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
+                      sortBy === option.value ? 'text-amber-500 font-medium bg-amber-50' : 'text-gray-700'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Table Section */}
+      {/* Table Section - Centered */}
       <div className="flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-5xl px-6 py-5 lg:px-8">
+        <div className="mx-auto w-full max-w-4xl px-6 py-5">
           {loading ? (
             <TableSkeleton />
           ) : clients.length === 0 ? (
