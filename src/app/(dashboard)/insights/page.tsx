@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   format, parseISO, addDays, subDays, subMonths, subWeeks,
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  startOfMonth, endOfMonth,
   differenceInDays, eachWeekOfInterval, eachMonthOfInterval,
 } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
@@ -57,18 +57,18 @@ function getRangeDates(key: RangeKey, customStart: string, customEnd: string) {
   let start: Date, end: Date, prevStart: Date, prevEnd: Date;
 
   if (key === "week") {
-    end   = now;
-    start = subWeeks(now, 1);
+    end       = now;
+    start     = subWeeks(now, 1);
     prevEnd   = subDays(start, 1);
     prevStart = subWeeks(prevEnd, 1);
   } else if (key === "month") {
-    start = startOfMonth(now);
-    end   = endOfMonth(now);
+    start     = startOfMonth(now);
+    end       = endOfMonth(now);
     prevStart = startOfMonth(subMonths(now, 1));
     prevEnd   = endOfMonth(subMonths(now, 1));
   } else if (key === "3months") {
-    end   = now;
-    start = subMonths(now, 3);
+    end       = now;
+    start     = subMonths(now, 3);
     prevEnd   = subDays(start, 1);
     prevStart = subMonths(prevEnd, 3);
   } else {
@@ -86,7 +86,6 @@ function buildChart(bookings: BookingRow[], start: Date, end: Date): ChartPoint[
   const span = differenceInDays(end, start);
 
   if (span <= 14) {
-    // By day
     const days: ChartPoint[] = [];
     for (let i = 0; i <= span; i++) {
       const d = addDays(start, i);
@@ -98,7 +97,6 @@ function buildChart(bookings: BookingRow[], start: Date, end: Date): ChartPoint[
     }
     return days;
   } else if (span <= 93) {
-    // By week
     const weeks = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 });
     return weeks.map((wStart, i) => {
       const wEnd = addDays(wStart, 6);
@@ -108,7 +106,6 @@ function buildChart(bookings: BookingRow[], start: Date, end: Date): ChartPoint[
       return { label: `Wk ${i + 1}`, revenue };
     });
   } else {
-    // By month
     const months = eachMonthOfInterval({ start, end });
     return months.map((mStart) => {
       const mEnd = endOfMonth(mStart);
@@ -196,100 +193,145 @@ export default function InsightsPage() {
 
   if (bizLoading || (business && loading)) return <InsightsSkeleton />;
 
-  const empty    = !stats || stats.bookings === 0;
-  const hasDelta = !!stats && stats.previousRevenue > 0;
-  const deltaPct = hasDelta ? ((stats!.revenue - stats!.previousRevenue) / stats!.previousRevenue) * 100 : 0;
-  const deltaUp  = deltaPct >= 0;
-  const hasRevenue = !!stats && stats.chart.some((p) => p.revenue > 0);
+  const empty             = !stats || stats.bookings === 0;
+  const hasDelta          = !!stats && stats.previousRevenue > 0;
+  const deltaPct          = hasDelta ? ((stats!.revenue - stats!.previousRevenue) / stats!.previousRevenue) * 100 : 0;
+  const deltaUp           = deltaPct >= 0;
+  const hasRevenue        = !!stats && stats.chart.some((p) => p.revenue > 0);
   const maxServiceRevenue = Math.max(1, ...(stats?.topServices.map((s) => s.revenue) ?? []));
 
   return (
-    <div className="flex-1 overflow-y-auto" style={{ background: "var(--color-cream)" }}>
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 24px 48px" }}>
+    <>
+      <style>{`
+        .ins-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .earnings-val { font-size: clamp(34px, 10vw, 52px); letter-spacing: -0.03em; line-height: 1; word-break: break-word; }
+        @media (max-width: 600px) {
+          .ins-grid-2 { grid-template-columns: 1fr; }
+        }
+      `}</style>
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h1 className="font-extrabold leading-tight" style={{ fontSize: 28, color: "var(--color-dark)", letterSpacing: "-0.02em" }}>
-              Insights
-            </h1>
-            <p className="text-[13px] mt-0.5" style={{ color: "var(--color-muted)" }}>{label}</p>
-          </div>
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-cream)" }}>
 
-        {/* Range picker */}
-        <div className="flex flex-wrap items-center gap-2 mb-5">
-          <div className="flex gap-1 p-1 rounded-2xl" style={{ background: "#fff", boxShadow: "var(--shadow-sm)" }}>
-            {RANGE_OPTIONS.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setRangeKey(opt.key)}
-                className="px-3 py-1.5 rounded-xl text-[13px] font-semibold transition-all"
-                style={
-                  rangeKey === opt.key
-                    ? { background: "var(--wash-amber)", color: "#fff", boxShadow: "var(--shadow-amber)" }
-                    : { color: "var(--color-muted)" }
-                }
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+        {/* ── White header ──────────────────────────────────────────────────── */}
+        <div style={{ flexShrink: 0, background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)" }}>
+          <div style={{ maxWidth: 900, margin: "0 auto", width: "100%", padding: "22px 24px 0" }}>
 
-          {rangeKey === "custom" && (
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={customStart}
-                max={customEnd || fmt(new Date())}
-                onChange={(e) => setCustomStart(e.target.value)}
-                className="rounded-xl px-3 py-1.5 text-[13px] font-medium border-0 outline-none"
-                style={{ background: "#fff", boxShadow: "var(--shadow-sm)", color: "var(--color-dark)" }}
-              />
-              <span style={{ color: "var(--color-muted)", fontSize: 13 }}>to</span>
-              <input
-                type="date"
-                value={customEnd}
-                min={customStart}
-                max={fmt(new Date())}
-                onChange={(e) => setCustomEnd(e.target.value)}
-                className="rounded-xl px-3 py-1.5 text-[13px] font-medium border-0 outline-none"
-                style={{ background: "#fff", boxShadow: "var(--shadow-sm)", color: "var(--color-dark)" }}
-              />
+            {/* Title + range label */}
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+              <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: 0, lineHeight: 1.1 }}>
+                Insights
+              </h1>
+              <span style={{ fontSize: 13, color: "var(--color-muted)" }}>{label}</span>
             </div>
-          )}
+
+            {/* Range picker */}
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <div style={{ display: "flex", gap: 2, padding: 3, borderRadius: 10, background: "var(--color-cream)", border: "1px solid var(--color-cream-2)" }}>
+                {RANGE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setRangeKey(opt.key)}
+                    style={{
+                      padding: "6px 14px",
+                      height: 34,
+                      borderRadius: 8,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      border: "none",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      transition: "all 0.15s",
+                      ...(rangeKey === opt.key
+                        ? { background: "var(--color-surface)", color: "var(--color-dark)", boxShadow: "0 1px 4px rgba(30,26,20,0.10)" }
+                        : { background: "transparent", color: "var(--color-muted)" }),
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {rangeKey === "custom" && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <input
+                    type="date"
+                    value={customStart}
+                    max={customEnd || fmt(new Date())}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                    style={{ height: 34, padding: "0 10px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 13, color: "var(--color-dark)", outline: "none" }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+                  />
+                  <span style={{ fontSize: 13, color: "var(--color-muted)" }}>to</span>
+                  <input
+                    type="date"
+                    value={customEnd}
+                    min={customStart}
+                    max={fmt(new Date())}
+                    onChange={(e) => setCustomEnd(e.target.value)}
+                    style={{ height: 34, padding: "0 10px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 13, color: "var(--color-dark)", outline: "none" }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Tab bar — amber underline flush with header border */}
+            <div style={{ display: "flex", gap: 0, marginBottom: -1 }}>
+              {(["overview", "appointments", "revenue"] as Tab[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  style={{
+                    padding: "10px 18px",
+                    fontSize: 14,
+                    fontWeight: tab === t ? 700 : 500,
+                    color: tab === t ? "var(--color-dark)" : "var(--color-muted)",
+                    background: "transparent",
+                    border: "none",
+                    borderBottom: `2px solid ${tab === t ? "var(--color-amber)" : "transparent"}`,
+                    cursor: "pointer",
+                    textTransform: "capitalize",
+                    transition: "color 0.15s, border-color 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+          </div>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex gap-1 mb-6 p-1 rounded-2xl" style={{ background: "#fff", boxShadow: "var(--shadow-sm)", display: "inline-flex" }}>
-          {(["overview", "appointments", "revenue"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className="px-4 py-2 rounded-xl text-[13px] font-semibold capitalize transition-all"
-              style={
-                tab === t
-                  ? { background: "var(--color-dark)", color: "#fff" }
-                  : { color: "var(--color-muted)" }
-              }
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        {/* ── Scrollable content ────────────────────────────────────────────── */}
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 24px 64px" }}>
 
-        {tab === "overview" && (
-          <OverviewTab stats={stats} empty={empty} hasDelta={hasDelta} deltaPct={deltaPct} deltaUp={deltaUp} hasRevenue={hasRevenue} maxServiceRevenue={maxServiceRevenue} />
-        )}
-        {tab === "appointments" && (
-          <AppointmentsTab bookings={allBookings} label={label} />
-        )}
-        {tab === "revenue" && (
-          <RevenueTab bookings={allBookings} label={label} />
-        )}
+            {tab === "overview" && (
+              <OverviewTab
+                stats={stats}
+                empty={empty}
+                hasDelta={hasDelta}
+                deltaPct={deltaPct}
+                deltaUp={deltaUp}
+                hasRevenue={hasRevenue}
+                maxServiceRevenue={maxServiceRevenue}
+              />
+            )}
+            {tab === "appointments" && (
+              <AppointmentsTab bookings={allBookings} label={label} />
+            )}
+            {tab === "revenue" && (
+              <RevenueTab bookings={allBookings} label={label} />
+            )}
+
+          </div>
+        </div>
 
       </div>
-    </div>
+    </>
   );
 }
 
@@ -303,49 +345,58 @@ function OverviewTab({ stats, empty, hasDelta, deltaPct, deltaUp, hasRevenue, ma
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div className="rounded-2xl p-6" style={{ background: "var(--wash-amber)", boxShadow: "var(--shadow-amber)" }}>
-        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.70)", marginBottom: 12 }}>Earnings</p>
-        <p className="font-black leading-none" style={{ fontSize: 52, color: "#fff", letterSpacing: "-0.03em" }}>
+
+      {/* Earnings hero */}
+      <div className="rounded-2xl" style={{ padding: "24px 28px", background: "var(--wash-amber)", boxShadow: "var(--shadow-amber)" }}>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.70)", marginBottom: 12 }}>
+          Earnings
+        </p>
+        <p className="earnings-val font-black" style={{ color: "#fff" }}>
           ₪{stats.revenue.toLocaleString()}
         </p>
         {hasDelta && (
-          <span className="inline-flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full text-[13px] font-semibold"
-            style={{ background: "rgba(255,255,255,0.22)", color: "#fff", backdropFilter: "blur(4px)" }}>
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full text-[13px] font-semibold"
+            style={{ marginTop: 16, padding: "6px 14px", background: "rgba(255,255,255,0.22)", color: "#fff", backdropFilter: "blur(4px)", display: "inline-flex" }}
+          >
             {deltaUp ? "↑" : "↓"}{Math.abs(deltaPct).toFixed(0)}%
             <span style={{ opacity: 0.75 }}>vs previous period</span>
           </span>
         )}
       </div>
 
+      {/* 4 stat cards 2×2 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-        <StatCard label="Bookings"   value={stats.bookings}   icon={<IconCal />}   iconBg="rgba(107,96,82,0.10)" iconColor="var(--color-muted)" />
-        <StatCard label="Completed"  value={stats.completed}  icon={<IconCheck />} iconBg="rgba(34,197,94,0.12)" iconColor="#16A34A" valueColor="#16A34A" />
-        <StatCard label="No shows"   value={stats.noShow}     icon={<IconXCirc />} iconBg={stats.noShow > 0 ? "rgba(239,68,68,0.10)" : "rgba(107,96,82,0.08)"} iconColor={stats.noShow > 0 ? "#DC2626" : "var(--color-muted)"} valueColor={stats.noShow > 0 ? "#DC2626" : undefined} />
-        <StatCard label="Avg ticket" value={`₪${stats.avgTicket.toLocaleString()}`} icon={<IconTag />} iconBg="rgba(232,146,10,0.12)" iconColor="var(--color-amber)" />
+        <StatCard label="Bookings"   value={stats.bookings}                             icon={<IconCal />}   iconBg="rgba(107,96,82,0.10)"      iconColor="var(--color-muted)" />
+        <StatCard label="Completed"  value={stats.completed}                            icon={<IconCheck />} iconBg="rgba(34,197,94,0.12)"       iconColor="#16A34A"            valueColor="#16A34A" />
+        <StatCard label="No shows"   value={stats.noShow}                               icon={<IconXCirc />} iconBg={stats.noShow > 0 ? "rgba(239,68,68,0.10)" : "rgba(107,96,82,0.08)"} iconColor={stats.noShow > 0 ? "#DC2626" : "var(--color-muted)"} valueColor={stats.noShow > 0 ? "#DC2626" : undefined} />
+        <StatCard label="Avg ticket" value={`₪${stats.avgTicket.toLocaleString()}`}    icon={<IconTag />}   iconBg="rgba(232,146,10,0.12)"      iconColor="var(--color-amber)" />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div className="rounded-2xl p-5" style={{ background: "#fff", boxShadow: "var(--shadow-md)" }}>
+      {/* Charts row — stacks on mobile */}
+      <div className="ins-grid-2">
+        <div className="rounded-2xl p-5" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)" }}>
           <p className="font-bold mb-5" style={{ fontSize: 15, color: "var(--color-dark)", letterSpacing: "-0.01em" }}>Revenue trend</p>
-          {hasRevenue ? <BarChart data={stats.chart} /> : <EmptySection icon={<IconChart />} text="No earnings in this period." />}
+          {hasRevenue ? <BarChart data={stats.chart} /> : <GhostChart />}
         </div>
-        <div className="rounded-2xl p-5" style={{ background: "#fff", boxShadow: "var(--shadow-md)" }}>
+        <div className="rounded-2xl p-5" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)" }}>
           <p className="font-bold mb-5" style={{ fontSize: 15, color: "var(--color-dark)", letterSpacing: "-0.01em" }}>Top services</p>
           {stats.topServices.length > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               {stats.topServices.map((svc, idx) => (
                 <div key={svc.name} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span className="text-[11px] font-bold flex items-center justify-center flex-shrink-0"
-                    style={{ width: 24, height: 24, borderRadius: "50%", ...(idx === 0 ? { background: "var(--color-amber)", color: "#fff" } : { background: "var(--amber-soft)", color: "var(--color-amber)" }) }}>
+                  <span
+                    style={{ width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 11, fontWeight: 700, ...(idx === 0 ? { background: "var(--color-amber)", color: "#fff" } : { background: "var(--amber-soft)", color: "var(--color-amber)" }) }}
+                  >
                     {idx + 1}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <p className="truncate font-semibold" style={{ fontSize: 14, color: "var(--color-dark)" }}>{svc.name}</p>
-                      <span className="font-bold" style={{ fontSize: 13, color: "var(--color-dark)", marginLeft: 8, flexShrink: 0 }}>₪{svc.revenue.toLocaleString()}</span>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{svc.name}</p>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)", marginLeft: 8, flexShrink: 0 }}>₪{svc.revenue.toLocaleString()}</span>
                     </div>
-                    <div className="rounded-full overflow-hidden" style={{ height: 6, background: "var(--color-cream-2)" }}>
-                      <div className="rounded-full" style={{ height: "100%", width: `${Math.max(6, (svc.revenue / maxServiceRevenue) * 100)}%`, background: idx === 0 ? "var(--wash-amber)" : "var(--color-amber)", opacity: idx === 0 ? 1 : 0.5 + idx * 0.08, transition: "width 0.5s" }} />
+                    <div style={{ height: 6, borderRadius: 99, background: "var(--color-cream-2)", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${Math.max(6, (svc.revenue / maxServiceRevenue) * 100)}%`, background: idx === 0 ? "var(--wash-amber)" : "var(--color-amber)", opacity: idx === 0 ? 1 : 0.5 + idx * 0.08, borderRadius: 99, transition: "width 0.5s" }} />
                     </div>
                     <p style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>{svc.count} {svc.count === 1 ? "booking" : "bookings"}</p>
                   </div>
@@ -356,19 +407,21 @@ function OverviewTab({ stats, empty, hasDelta, deltaPct, deltaUp, hasRevenue, ma
         </div>
       </div>
 
-      <div className="rounded-2xl p-5" style={{ display: "flex", alignItems: "center", gap: 16, background: "var(--wash-sand)", boxShadow: "var(--shadow-sm)" }}>
-        <div className="rounded-xl flex items-center justify-center flex-shrink-0" style={{ width: 44, height: 44, background: "rgba(255,255,255,0.40)" }}>
+      {/* Ads CTA */}
+      <div className="rounded-2xl" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: 16, background: "var(--wash-sand)", boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.40)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 11l18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 11-5.8-1.6" />
           </svg>
         </div>
-        <div style={{ flex: 1 }}>
-          <p className="font-bold" style={{ fontSize: 15, color: "var(--color-dark)" }}>Want more bookings?</p>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)" }}>Want more bookings?</p>
           <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 2 }}>Turn on paid ads and reach new clients.</p>
         </div>
-        <button onClick={() => window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MSG)}`, "_blank")}
-          className="flex-shrink-0 font-bold text-white rounded-xl transition-all active:scale-95"
-          style={{ fontSize: 13, padding: "10px 16px", background: "var(--wash-amber)", boxShadow: "var(--shadow-amber)" }}>
+        <button
+          onClick={() => window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MSG)}`, "_blank")}
+          style={{ flexShrink: 0, fontSize: 13, fontWeight: 700, color: "#fff", padding: "10px 16px", borderRadius: 12, background: "var(--wash-amber)", boxShadow: "var(--shadow-amber)", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+        >
           Turn on
         </button>
       </div>
@@ -381,44 +434,47 @@ function OverviewTab({ stats, empty, hasDelta, deltaPct, deltaUp, hasRevenue, ma
 function OverviewEmpty() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div className="rounded-2xl p-6" style={{ background: "rgba(232,146,10,0.08)", border: "1.5px dashed rgba(232,146,10,0.25)" }}>
+
+      {/* Ghost earnings hero */}
+      <div className="rounded-2xl" style={{ padding: "24px 28px", background: "rgba(232,146,10,0.08)", border: "1.5px dashed rgba(232,146,10,0.25)" }}>
         <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(232,146,10,0.45)", marginBottom: 12 }}>Earnings</p>
-        <p className="font-black leading-none" style={{ fontSize: 52, color: "rgba(232,146,10,0.18)", letterSpacing: "-0.03em" }}>₪0</p>
+        <p className="earnings-val font-black" style={{ color: "rgba(232,146,10,0.18)" }}>₪0</p>
         <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 16 }}>Earnings appear here once you complete bookings.</p>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-        {[["Bookings", <IconCal key="c" />], ["Completed", <IconCheck key="ch" />], ["No shows", <IconXCirc key="x" />], ["Avg ticket", <IconTag key="t" />]].map(([label, icon]) => (
-          <div key={label as string} className="rounded-2xl" style={{ padding: "16px 20px", background: "#fff", boxShadow: "var(--shadow-sm)", opacity: 0.4 }}>
-            <div className="rounded-xl flex items-center justify-center mb-3" style={{ width: 36, height: 36, background: "rgba(107,96,82,0.08)", color: "var(--color-muted)" }}>{icon}</div>
-            <p className="font-black leading-none mb-1.5" style={{ fontSize: 30, color: "var(--color-dark)" }}>0</p>
-            <p style={{ fontSize: 12, color: "var(--color-muted)" }}>{label as string}</p>
+
+      {/* Ghost stat cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, opacity: 0.4 }}>
+        {[["Bookings", <IconCal key="c" />], ["Completed", <IconCheck key="ch" />], ["No shows", <IconXCirc key="x" />], ["Avg ticket", <IconTag key="t" />]].map(([lbl, icon]) => (
+          <div key={lbl as string} className="rounded-2xl" style={{ padding: "16px 20px", background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ width: 36, height: 36, borderRadius: 12, background: "rgba(107,96,82,0.08)", color: "var(--color-muted)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>{icon}</div>
+            <p style={{ fontSize: 30, fontWeight: 900, color: "var(--color-dark)", lineHeight: 1, marginBottom: 6 }}>0</p>
+            <p style={{ fontSize: 12, color: "var(--color-muted)" }}>{lbl as string}</p>
           </div>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        {[["Revenue trend", [40, 65, 30, 80]], ["Top services", [90, 60, 35]]].map(([title, data]) => (
-          <div key={title as string} className="rounded-2xl p-5" style={{ background: "#fff", boxShadow: "var(--shadow-sm)", opacity: 0.45 }}>
-            <p className="font-bold mb-4" style={{ fontSize: 15, color: "var(--color-dark)" }}>{title as string}</p>
-            {title === "Revenue trend" ? (
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 100 }}>
-                {(data as number[]).map((h, i) => <div key={i} style={{ flex: 1, background: "rgba(232,146,10,0.15)", borderRadius: "8px 8px 0 0", height: `${h}%` }} />)}
+
+      {/* Ghost chart panels */}
+      <div className="ins-grid-2" style={{ opacity: 0.45 }}>
+        <div className="rounded-2xl p-5" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 16 }}>Revenue trend</p>
+          <GhostChart />
+        </div>
+        <div className="rounded-2xl p-5" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-sm)" }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 16 }}>Top services</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {[90, 60, 35].map((w, i) => (
+              <div key={i}>
+                <div style={{ height: 11, width: `${w}px`, background: "rgba(30,26,20,0.08)", borderRadius: 6, marginBottom: 6 }} />
+                <div style={{ height: 6, borderRadius: 99, background: "rgba(30,26,20,0.06)" }}>
+                  <div style={{ height: "100%", width: `${w}%`, borderRadius: 99, background: "rgba(232,146,10,0.22)" }} />
+                </div>
               </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {(data as number[]).map((w, i) => (
-                  <div key={i}>
-                    <div style={{ height: 11, width: `${w}px`, background: "rgba(30,26,20,0.08)", borderRadius: 6, marginBottom: 6 }} />
-                    <div style={{ height: 6, borderRadius: 99, background: "rgba(30,26,20,0.06)" }}>
-                      <div style={{ height: "100%", width: `${w}%`, borderRadius: 99, background: "rgba(232,146,10,0.22)" }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
-        ))}
+        </div>
       </div>
-      <p className="text-center" style={{ fontSize: 13, color: "var(--color-muted)", paddingTop: 4 }}>
+
+      <p style={{ textAlign: "center", fontSize: 13, color: "var(--color-muted)", paddingTop: 4 }}>
         Complete your first booking and come back here to see your numbers.
       </p>
     </div>
@@ -447,46 +503,48 @@ function AppointmentsTab({ bookings, label }: { bookings: BookingRow[]; label: s
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
         <p style={{ fontSize: 14, color: "var(--color-muted)" }}>
           {bookings.length} appointment{bookings.length !== 1 ? "s" : ""}
         </p>
         {bookings.length > 0 && (
-          <button onClick={exportCSV}
-            className="inline-flex items-center gap-1.5 rounded-xl font-semibold transition-all active:scale-95"
-            style={{ fontSize: 13, padding: "8px 14px", background: "#fff", boxShadow: "var(--shadow-sm)", color: "var(--color-dark)" }}>
+          <button
+            onClick={exportCSV}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", fontSize: 13, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer", boxShadow: "var(--shadow-sm)" }}
+          >
             <IconDownload /> Export CSV
           </button>
         )}
       </div>
 
       {bookings.length === 0 ? (
-        <div className="rounded-2xl" style={{ background: "#fff", boxShadow: "var(--shadow-md)", padding: "56px 24px", textAlign: "center" }}>
-          <div className="rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ width: 52, height: 52, background: "var(--amber-soft)" }}>
+        <div className="rounded-2xl" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)", padding: "56px 24px", textAlign: "center" }}>
+          <div style={{ width: 52, height: 52, borderRadius: 16, background: "var(--amber-soft)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <IconCal size={22} color="var(--color-amber)" />
           </div>
-          <p className="font-extrabold" style={{ fontSize: 17, color: "var(--color-dark)", marginBottom: 8 }}>No appointments</p>
+          <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", marginBottom: 8 }}>No appointments</p>
           <p style={{ fontSize: 14, color: "var(--color-muted)", maxWidth: 280, margin: "0 auto" }}>
             No bookings found in this period.
           </p>
         </div>
       ) : (
-        <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", boxShadow: "var(--shadow-md)" }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)" }}>
           {bookings.map((b, i) => (
-            <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 20px", borderTop: i > 0 ? "1px solid var(--color-cream-2)" : "none" }}>
-              <div style={{ minWidth: 72, flexShrink: 0 }}>
-                <p className="font-bold" style={{ fontSize: 13, color: "var(--color-dark)" }}>{format(parseISO(b.appointment_date), "d MMM")}</p>
+            <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 20px", borderTop: i > 0 ? "1px solid var(--color-cream-2)" : "none", flexWrap: "wrap" }}>
+              <div style={{ minWidth: 64, flexShrink: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)" }}>{format(parseISO(b.appointment_date), "d MMM")}</p>
                 <p style={{ fontSize: 12, color: "var(--color-muted)" }}>{b.appointment_time.slice(0, 5)}</p>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="font-semibold truncate" style={{ fontSize: 14, color: "var(--color-dark)" }}>{b.customer_name}</p>
-                <p className="truncate" style={{ fontSize: 12, color: "var(--color-muted)" }}>{b.service?.name ?? "Service"}</p>
+              <div style={{ flex: 1, minWidth: 120 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.customer_name}</p>
+                <p style={{ fontSize: 12, color: "var(--color-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.service?.name ?? "Service"}</p>
               </div>
               {b.service?.price != null && (
-                <p className="font-bold flex-shrink-0" style={{ fontSize: 14, color: "var(--color-dark)" }}>₪{b.service.price.toLocaleString()}</p>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", flexShrink: 0 }}>₪{b.service.price.toLocaleString()}</p>
               )}
-              <span className="flex-shrink-0 rounded-full font-semibold"
-                style={{ fontSize: 11, padding: "3px 10px", background: STATUS_BG[b.status], color: STATUS_COLOR[b.status] }}>
+              <span
+                style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, fontWeight: 600, flexShrink: 0, background: STATUS_BG[b.status], color: STATUS_COLOR[b.status] }}
+              >
                 {STATUS_LABEL[b.status]}
               </span>
             </div>
@@ -500,8 +558,8 @@ function AppointmentsTab({ bookings, label }: { bookings: BookingRow[]; label: s
 // ─── Revenue tab ──────────────────────────────────────────────────────────────
 
 function RevenueTab({ bookings, label }: { bookings: BookingRow[]; label: string }) {
-  const earned   = bookings.filter((b) => isEarned(b.status));
-  const pending  = bookings.filter((b) => b.status === "pending" || b.status === "confirmed");
+  const earned  = bookings.filter((b) => isEarned(b.status));
+  const pending = bookings.filter((b) => b.status === "pending" || b.status === "confirmed");
   const totalEarned     = earned.reduce((s, b) => s + (b.service?.price || 0), 0);
   const totalReceivable = pending.reduce((s, b) => s + (b.service?.price || 0), 0);
 
@@ -529,59 +587,95 @@ function RevenueTab({ bookings, label }: { bookings: BookingRow[]; label: string
   }
 
   if (bookings.length === 0) return (
-    <div className="rounded-2xl" style={{ background: "#fff", boxShadow: "var(--shadow-md)", padding: "56px 24px", textAlign: "center" }}>
-      <div className="rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ width: 52, height: 52, background: "var(--amber-soft)" }}>
+    <div className="rounded-2xl" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)", padding: "56px 24px", textAlign: "center" }}>
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: "var(--amber-soft)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
         <IconTag size={22} color="var(--color-amber)" />
       </div>
-      <p className="font-extrabold" style={{ fontSize: 17, color: "var(--color-dark)", marginBottom: 8 }}>No revenue data</p>
+      <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", marginBottom: 8 }}>No revenue data</p>
       <p style={{ fontSize: 14, color: "var(--color-muted)", maxWidth: 280, margin: "0 auto" }}>Revenue details appear once you have bookings in this period.</p>
     </div>
   );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div className="rounded-2xl p-5" style={{ background: "var(--wash-amber)", boxShadow: "var(--shadow-amber)" }}>
+
+      {/* KPI cards — stacks on mobile */}
+      <div className="ins-grid-2">
+        <div className="rounded-2xl" style={{ padding: "20px 24px", background: "var(--wash-amber)", boxShadow: "var(--shadow-amber)" }}>
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.70)", marginBottom: 10 }}>Total earned</p>
-          <p className="font-black" style={{ fontSize: 36, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>₪{totalEarned.toLocaleString()}</p>
+          <p style={{ fontSize: 36, fontWeight: 900, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>₪{totalEarned.toLocaleString()}</p>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 8 }}>{earned.length} completed</p>
         </div>
-        <div className="rounded-2xl p-5" style={{ background: "#fff", boxShadow: "var(--shadow-md)" }}>
+        <div className="rounded-2xl" style={{ padding: "20px 24px", background: "var(--color-surface)", boxShadow: "var(--shadow-md)" }}>
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-muted)", marginBottom: 10 }}>Receivable</p>
-          <p className="font-black" style={{ fontSize: 36, color: "var(--color-dark)", letterSpacing: "-0.02em", lineHeight: 1 }}>₪{totalReceivable.toLocaleString()}</p>
+          <p style={{ fontSize: 36, fontWeight: 900, color: "var(--color-dark)", letterSpacing: "-0.02em", lineHeight: 1 }}>₪{totalReceivable.toLocaleString()}</p>
           <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 8 }}>{pending.length} pending</p>
         </div>
       </div>
 
+      {/* Service breakdown */}
       {services.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", boxShadow: "var(--shadow-md)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--color-cream-2)" }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--color-cream-2)", flexWrap: "wrap", gap: 8 }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Breakdown by service</p>
-            <button onClick={exportCSV}
-              className="inline-flex items-center gap-1.5 rounded-xl font-semibold transition-all active:scale-95"
-              style={{ fontSize: 12, padding: "6px 12px", background: "var(--color-cream)", color: "var(--color-dark)" }}>
+            <button
+              onClick={exportCSV}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 12px", borderRadius: 8, border: "none", background: "var(--color-cream)", fontSize: 12, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer" }}
+            >
               <IconDownload /> Export CSV
             </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 64px 80px", padding: "10px 20px", borderBottom: "1px solid var(--color-cream-2)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 56px 72px", padding: "10px 20px", borderBottom: "1px solid var(--color-cream-2)" }}>
             {["Service", "Count", "Earned"].map((h) => (
               <p key={h} style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.06em", textAlign: h !== "Service" ? "right" : "left" }}>{h}</p>
             ))}
           </div>
           {services.map((s, i) => (
-            <div key={s.name} style={{ display: "grid", gridTemplateColumns: "1fr 64px 80px", padding: "13px 20px", borderTop: i > 0 ? "1px solid var(--color-cream-2)" : "none", alignItems: "center" }}>
-              <p className="font-semibold" style={{ fontSize: 14, color: "var(--color-dark)" }}>{s.name}</p>
+            <div key={s.name} style={{ display: "grid", gridTemplateColumns: "1fr 56px 72px", padding: "13px 20px", borderTop: i > 0 ? "1px solid var(--color-cream-2)" : "none", alignItems: "center" }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</p>
               <p style={{ fontSize: 14, color: "var(--color-muted)", textAlign: "right" }}>{s.count}</p>
-              <p className="font-bold" style={{ fontSize: 14, color: s.earned > 0 ? "var(--color-dark)" : "var(--color-muted)", textAlign: "right" }}>₪{s.earned.toLocaleString()}</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: s.earned > 0 ? "var(--color-dark)" : "var(--color-muted)", textAlign: "right" }}>₪{s.earned.toLocaleString()}</p>
             </div>
           ))}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 64px 80px", padding: "13px 20px", borderTop: "2px solid var(--color-cream-2)", background: "var(--color-cream)", alignItems: "center" }}>
-            <p className="font-bold" style={{ fontSize: 14, color: "var(--color-dark)" }}>Total</p>
-            <p className="font-bold" style={{ fontSize: 14, color: "var(--color-dark)", textAlign: "right" }}>{bookings.length}</p>
-            <p className="font-bold" style={{ fontSize: 14, color: "var(--color-amber)", textAlign: "right" }}>₪{totalEarned.toLocaleString()}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 56px 72px", padding: "13px 20px", borderTop: "2px solid var(--color-cream-2)", background: "var(--color-cream)", alignItems: "center" }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)" }}>Total</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", textAlign: "right" }}>{bookings.length}</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-amber)", textAlign: "right" }}>₪{totalEarned.toLocaleString()}</p>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Ghost chart (empty state for Revenue trend) ───────────────────────────────
+
+function GhostChart() {
+  const heights = [30, 55, 38, 70, 42, 65, 48, 35, 75, 50];
+  return (
+    <div style={{ position: "relative", height: 160 }}>
+      {/* Gridlines */}
+      {[25, 50, 75].map((pct) => (
+        <div
+          key={pct}
+          style={{ position: "absolute", left: 0, right: 0, bottom: `${pct}%`, borderTop: "1px dashed var(--color-cream-2)", zIndex: 0 }}
+        />
+      ))}
+      {/* Phantom bars */}
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: "100%", position: "relative", zIndex: 1 }}>
+        {heights.map((h, i) => (
+          <div
+            key={i}
+            style={{ flex: 1, height: `${h}%`, borderRadius: "6px 6px 0 0", background: "var(--color-cream-2)" }}
+          />
+        ))}
+      </div>
+      {/* Centered label */}
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--color-muted)", background: "rgba(255,255,255,0.90)", padding: "5px 14px", borderRadius: 8 }}>
+          No earnings yet
+        </span>
+      </div>
     </div>
   );
 }
@@ -600,9 +694,12 @@ function BarChart({ data }: { data: ChartPoint[] }) {
         const isPeak   = i === peak;
         const h = Math.max(4, (d.revenue / max) * 100);
         return (
-          <button key={d.label} onClick={() => setActive(isActive ? null : i)}
-            style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, height: "100%" }}
-            aria-label={`${d.label}: ₪${d.revenue.toLocaleString()}`}>
+          <button
+            key={d.label}
+            onClick={() => setActive(isActive ? null : i)}
+            style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, height: "100%", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+            aria-label={`${d.label}: ₪${d.revenue.toLocaleString()}`}
+          >
             <span style={{ padding: "2px 7px", borderRadius: 99, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", background: isActive ? "var(--color-amber)" : "transparent", color: isActive ? "#fff" : "transparent", transition: "all 0.15s" }}>
               ₪{d.revenue.toLocaleString()}
             </span>
@@ -624,9 +721,9 @@ function StatCard({ label, value, icon, iconBg, iconColor, valueColor }: {
   iconBg: string; iconColor: string; valueColor?: string;
 }) {
   return (
-    <div className="rounded-2xl" style={{ padding: "16px 20px", background: "#fff", boxShadow: "var(--shadow-md)" }}>
-      <div className="rounded-xl flex items-center justify-center mb-3" style={{ width: 36, height: 36, background: iconBg, color: iconColor }}>{icon}</div>
-      <p className="font-black leading-none mb-1.5" style={{ fontSize: 30, color: valueColor || "var(--color-dark)", letterSpacing: "-0.02em" }}>{value}</p>
+    <div className="rounded-2xl" style={{ padding: "16px 20px", background: "var(--color-surface)", boxShadow: "var(--shadow-md)" }}>
+      <div style={{ width: 36, height: 36, borderRadius: 12, background: iconBg, color: iconColor, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>{icon}</div>
+      <p style={{ fontSize: 30, fontWeight: 900, color: valueColor || "var(--color-dark)", letterSpacing: "-0.02em", lineHeight: 1, marginBottom: 6 }}>{value}</p>
       <p style={{ fontSize: 12, color: "var(--color-muted)" }}>{label}</p>
     </div>
   );
@@ -654,9 +751,6 @@ function IconXCirc({ size = 18 }: { size?: number }) {
 }
 function IconTag({ size = 18, color = "currentColor" }: { size?: number; color?: string }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>;
-}
-function IconChart() {
-  return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
 }
 function IconDownload() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>;
