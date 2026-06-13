@@ -170,13 +170,13 @@ export default function CalendarPage() {
     return (
       <div className="h-full overflow-y-auto flex items-center justify-center px-4 py-8" style={{ background: "var(--color-cream)" }}>
         <div
-          className="w-full max-w-sm bg-white rounded-2xl p-6"
-          style={{ boxShadow: "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)" }}
+          className="w-full max-w-sm p-6"
+          style={{ background: "var(--color-surface)", borderRadius: 20, boxShadow: "var(--shadow-sm)", border: "1px solid var(--color-cream-2)" }}
         >
           {/* Icon */}
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: "rgba(232,146,10,0.12)" }}
+            className="flex items-center justify-center mb-4"
+            style={{ width: 56, height: 56, borderRadius: 16, background: "var(--amber-soft)" }}
           >
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -217,8 +217,13 @@ export default function CalendarPage() {
 
           <a
             href="/settings"
-            className="mt-6 w-full flex items-center justify-center py-3.5 rounded-xl text-[15px] font-semibold transition-colors"
-            style={{ background: "var(--color-amber)", color: "#fff" }}
+            className="mt-6 w-full flex items-center justify-center text-[15px] font-bold transition-all"
+            style={{
+              height: 48, borderRadius: 14, background: "var(--wash-amber)", color: "#fff",
+              boxShadow: "0 4px 14px rgba(232,146,10,0.28)",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(232,146,10,0.38)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(232,146,10,0.28)"; }}
           >
             Set up your business
           </a>
@@ -289,7 +294,7 @@ export default function CalendarPage() {
 
       <div className="flex-1 overflow-hidden relative">
         {loading && !searchQuery && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/60 z-20">
+          <div className="absolute inset-0 flex items-center justify-center z-20" style={{ background: "rgba(255,255,255,0.6)" }}>
             <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
           </div>
         )}
