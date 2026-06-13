@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
@@ -160,7 +160,9 @@ function Avatar({ name }: { name: string }) {
 export default function ClientsPage() {
   const router = useRouter();
   const { business, loading: bizLoading } = useBusiness();
-  const supabase = createClient();
+  // useMemo so the supabase client is stable across renders and doesn't
+  // re-trigger the fetch useEffect on every render cycle
+  const supabase = useMemo(() => createClient(), []);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -577,7 +579,10 @@ export default function ClientsPage() {
         <AddCustomerSheet
           business={business}
           onClose={() => setShowAdd(false)}
-          onCreated={() => setRefreshKey((k) => k + 1)}
+          onCreated={() => {
+            setRefreshKey((k) => k + 1);
+            setShowAdd(false);
+          }}
         />
       )}
     </div>
@@ -597,121 +602,122 @@ function ClientRow({
   lastName: string;
   onClick: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
-
   const isNew = !client.total_visits || client.total_visits === 0;
 
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        width: "100%",
-        display: "grid",
-        gridTemplateColumns: "36px 1fr 1fr 130px 24px",
-        gap: "0 16px",
-        alignItems: "center",
-        padding: "12px 16px",
-        borderRadius: 14,
-        background: "white",
-        border: "1.5px solid transparent",
-        boxShadow: hovered
-          ? "0 4px 16px rgba(30,26,20,0.09), 0 1px 2px rgba(30,26,20,0.04)"
-          : "0 1px 3px rgba(30,26,20,0.06)",
-        cursor: "pointer",
-        textAlign: "left",
-        transition: "box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease",
-        transform: hovered ? "translateY(-1px)" : "translateY(0)",
-        borderColor: hovered ? "var(--color-cream-2)" : "transparent",
-      }}
-    >
-      {/* Avatar */}
-      <Avatar name={client.name} />
+    <>
+      <style>{`
+        .client-row {
+          width: 100%;
+          display: grid;
+          grid-template-columns: 36px 1fr 1fr 130px 24px;
+          gap: 0 16px;
+          align-items: center;
+          padding: 12px 16px;
+          border-radius: 14px;
+          background: white;
+          border: 1.5px solid transparent;
+          box-shadow: 0 1px 3px rgba(30,26,20,0.06);
+          cursor: pointer;
+          text-align: left;
+          transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+        }
+        .client-row:hover {
+          box-shadow: 0 4px 16px rgba(30,26,20,0.09), 0 1px 2px rgba(30,26,20,0.04);
+          transform: translateY(-1px);
+          border-color: var(--color-cream-2);
+        }
+        .client-row:hover .row-arrow {
+          color: var(--color-amber);
+          transform: translateX(2px);
+        }
+        .row-arrow {
+          display: flex;
+          justify-content: flex-end;
+          color: var(--color-cream-2);
+          transition: color 0.15s ease, transform 0.15s ease;
+        }
+      `}</style>
+      <button className="client-row" onClick={onClick}>
+        {/* Avatar */}
+        <Avatar name={client.name} />
 
-      {/* Name */}
-      <div style={{ minWidth: 0 }}>
-        <p
-          style={{
-            fontSize: 14,
-            fontWeight: 700,
-            color: "var(--color-dark)",
-            margin: 0,
-            lineHeight: 1.3,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {firstName}
-          {lastName && (
-            <span style={{ fontWeight: 500, color: "var(--color-muted)", marginLeft: 5 }}>
-              {lastName}
-            </span>
-          )}
-        </p>
-      </div>
-
-      {/* Phone */}
-      <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
-        <span style={{ color: "var(--color-muted)", display: "flex", flexShrink: 0 }}>
-          <IconPhone />
-        </span>
-        <span
-          style={{
-            fontSize: 13,
-            color: client.phone ? "var(--color-dark)" : "var(--color-muted)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {formatPhone(client.phone)}
-        </span>
-      </div>
-
-      {/* Activity */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {isNew ? (
-          <span
+        {/* Name */}
+        <div style={{ minWidth: 0 }}>
+          <p
             style={{
-              display: "inline-flex",
-              alignSelf: "flex-start",
-              fontSize: 10,
+              fontSize: 14,
               fontWeight: 700,
-              padding: "2px 8px",
-              borderRadius: 20,
-              background: "#E8F0FE",
-              color: "#1A73E8",
-              letterSpacing: "0.02em",
+              color: "var(--color-dark)",
+              margin: 0,
+              lineHeight: 1.3,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
-            New
-          </span>
-        ) : (
-          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)" }}>
-            {client.total_visits} visit{client.total_visits !== 1 ? "s" : ""}
-          </span>
-        )}
-        {client.last_visit_at && (
-          <span style={{ fontSize: 11, color: "var(--color-muted)", fontWeight: 500 }}>
-            {format(parseISO(client.last_visit_at), "MMM d, yyyy")}
-          </span>
-        )}
-      </div>
+            {firstName}
+            {lastName && (
+              <span style={{ fontWeight: 500, color: "var(--color-muted)", marginLeft: 5 }}>
+                {lastName}
+              </span>
+            )}
+          </p>
+        </div>
 
-      {/* Arrow */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          color: hovered ? "var(--color-amber)" : "var(--color-cream-2)",
-          transition: "color 0.15s ease, transform 0.15s ease",
-          transform: hovered ? "translateX(2px)" : "translateX(0)",
-        }}
-      >
-        <IconArrowRight />
-      </div>
-    </button>
+        {/* Phone */}
+        <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+          <span style={{ color: "var(--color-muted)", display: "flex", flexShrink: 0 }}>
+            <IconPhone />
+          </span>
+          <span
+            style={{
+              fontSize: 13,
+              color: client.phone ? "var(--color-dark)" : "var(--color-muted)",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {formatPhone(client.phone)}
+          </span>
+        </div>
+
+        {/* Activity */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {isNew ? (
+            <span
+              style={{
+                display: "inline-flex",
+                alignSelf: "flex-start",
+                fontSize: 10,
+                fontWeight: 700,
+                padding: "2px 8px",
+                borderRadius: 20,
+                background: "#E8F0FE",
+                color: "#1A73E8",
+                letterSpacing: "0.02em",
+              }}
+            >
+              New
+            </span>
+          ) : (
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)" }}>
+              {client.total_visits} visit{client.total_visits !== 1 ? "s" : ""}
+            </span>
+          )}
+          {client.last_visit_at && (
+            <span style={{ fontSize: 11, color: "var(--color-muted)", fontWeight: 500 }}>
+              {format(parseISO(client.last_visit_at), "MMM d, yyyy")}
+            </span>
+          )}
+        </div>
+
+        {/* Arrow */}
+        <div className="row-arrow">
+          <IconArrowRight />
+        </div>
+      </button>
+    </>
   );
 }
