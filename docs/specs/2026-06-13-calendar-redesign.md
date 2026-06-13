@@ -350,56 +350,59 @@ Both applied via `supabase migration` before feature deploy.
 
 ## 13. Feature Checklist (implementation tracker)
 
+Legend: ✅ done · 🔄 in progress · ⬜ todo
+
 ### Navigation & Chrome
-- [ ] Add `"agenda"` to `CalView` type in CalendarChrome
-- [ ] Add `calendarFilter` state to CalendarChrome context
-- [ ] Mobile top bar: replace center label + remove ⋮ menu
-- [ ] Add permanent view strip (4 tabs) below mobile top bar
-- [ ] Desktop sidebar: add Agenda tab + mini-calendar grid
-- [ ] Print icon in top bar
+- ✅ Add `"agenda"` to `CalView` type in CalendarChrome
+- ⬜ Add `calendarFilter` state to CalendarChrome context
+- ✅ Mobile top bar: replace center label + remove ⋮ menu
+- ✅ Add permanent view strip (4 tabs) below mobile top bar
+- ✅ Desktop sidebar: add Agenda tab (4-item pill group)
+- ⬜ Desktop sidebar: replace date button with mini-calendar grid
+- ⬜ Print icon in top bar
 
 ### Stats header
-- [ ] Replace day-only stats cards with single-line stats bar (all views)
+- ✅ Replace day-only stats cards with `headerLabel` in top bar (all views)
 
 ### Views
-- [ ] Create `AgendaCard.tsx` shared component
-- [ ] Create `AgendaList.tsx` shared component
-- [ ] Day view: add AgendaList below time grid
-- [ ] Month view: add AgendaList below calendar grid
-- [ ] Create `AgendaView.tsx` standalone view
-- [ ] Wire Agenda as 4th view in calendar page routing
-- [ ] Week view: label-color left-border on chips, past-opacity
+- ✅ Create `AgendaCard.tsx` shared component
+- ✅ Create `AgendaList.tsx` shared component
+- ✅ Day view: add AgendaList below time grid (independent scroll, max 40% height)
+- ✅ Month view: add AgendaList below calendar grid (fixed 80px rows + scroll)
+- ✅ Create `AgendaView.tsx` standalone view
+- ✅ Wire Agenda as 4th view in calendar page routing
+- ⬜ Week view: label-color left-border on chips, past-opacity
 
 ### Booking detail
-- [ ] Redesign BookingDrawer header (avatar, name, status badge, time)
-- [ ] Context-sensitive action buttons
-- [ ] Label accordion section
-- [ ] Contact accordion section
-- [ ] Payment accordion section
-- [ ] Notes accordion section (appointment + client)
-- [ ] History accordion section + client link
-- [ ] Footer: Edit + Print buttons
-- [ ] Create EditBookingSheet
-- [ ] Create RescheduleSheet
+- ✅ Redesign BookingDrawer header (avatar, name, status badge, time)
+- ✅ Context-sensitive action buttons
+- ✅ Label accordion section
+- ✅ Contact accordion section
+- ✅ Payment accordion section
+- ✅ Notes accordion section (appointment + client)
+- ✅ History accordion section + client link
+- ✅ Footer: Edit + Print buttons
+- ✅ Create EditBookingSheet
+- ✅ Create RescheduleSheet
 
 ### Labels
-- [ ] DB migration: labels table
-- [ ] DB migration: bookings.label_id
-- [ ] Create LabelPickerSheet
-- [ ] Update booking chip display (label border color)
+- ⬜ DB migration: labels table
+- ⬜ DB migration: bookings.label_id
+- ⬜ Create LabelPickerSheet
+- ⬜ Update booking chip display (label border color)
 
 ### Calendar selector
-- [ ] Create CalendarSelectorPanel
-- [ ] Wire into filter bottom sheet (mobile) + sidebar (desktop)
+- ⬜ Create CalendarSelectorPanel
+- ⬜ Wire into filter bottom sheet (mobile) + sidebar (desktop)
 
 ### Search
-- [ ] Search icon + expand input
-- [ ] Debounced Supabase query
-- [ ] Results as AgendaList
+- ⬜ Search icon + expand input
+- ⬜ Debounced Supabase query
+- ⬜ Results as AgendaList
 
 ### New booking form
-- [ ] Add paid toggle at confirmation step
-- [ ] Layout polish pass
+- ⬜ Add paid toggle at confirmation step
+- ⬜ Layout polish pass
 
 ### Print
 - [ ] `@media print` styles
