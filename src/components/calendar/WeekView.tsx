@@ -68,7 +68,17 @@ export default function WeekView({
         className="sticky top-0 z-10 flex"
         style={{ height: 56, background: "var(--color-cream)", borderBottom: `1px solid var(--color-cream-2)` }}
       >
-        <div className="shrink-0" style={{ width: 44 }} />
+        {/* Prev arrow sits in the time-label column */}
+        <button
+          onClick={onPrev}
+          className="shrink-0 flex items-center justify-center"
+          style={{ width: 44, background: "transparent", border: "none", cursor: "pointer", color: "var(--color-muted)" }}
+          aria-label="Previous week"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
         {days.map((day) => {
           const isToday    = isSameDay(day, today);
           const isSelected = isSameDay(day, date);
@@ -95,6 +105,17 @@ export default function WeekView({
             </button>
           );
         })}
+        {/* Next arrow */}
+        <button
+          onClick={onNext}
+          className="shrink-0 flex items-center justify-center"
+          style={{ width: 36, background: "transparent", border: "none", cursor: "pointer", color: "var(--color-muted)" }}
+          aria-label="Next week"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
       </div>
 
       {/* Time grid */}
