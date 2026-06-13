@@ -9,8 +9,8 @@ import { ClientsSkeleton } from "@/components/LoadingSkeleton";
 import AddCustomerSheet from "@/components/AddCustomerSheet";
 import type { Customer } from "@/types";
 
-const CARD_SHADOW = "0 2px 8px rgba(30,26,20,0.06), 0 1px 3px rgba(30,26,20,0.04)";
-const CARD_SHADOW_HOVER = "0 4px 20px rgba(30,26,20,0.1), 0 2px 6px rgba(30,26,20,0.08)";
+const CARD_SHADOW = "0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.02)";
+const CARD_SHADOW_HOVER = "0 4px 12px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)";
 
 type SortBy = "recent" | "name" | "visits";
 
@@ -20,39 +20,29 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "visits", label: "Most booked" },
 ];
 
-// Warm avatar palette
-const AVATAR_TINTS: { bg: string; fg: string }[] = [
-  { bg: "rgba(232,146,10,0.14)", fg: "#B86800" },
-  { bg: "rgba(212,98,42,0.13)", fg: "#B14418" },
-  { bg: "rgba(34,197,94,0.13)", fg: "#15803D" },
-  { bg: "rgba(107,96,82,0.14)", fg: "#5A5044" },
-  { bg: "rgba(148,163,184,0.18)", fg: "#475569" },
-];
-
-function avatarTint(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  }
-  return AVATAR_TINTS[Math.abs(hash) % AVATAR_TINTS.length];
-}
-
-function firstInitial(name: string): string {
-  return name.trim().charAt(0).toUpperCase() || "?";
-}
-
 function formatPhone(phone: string): string {
-  if (!phone) return "No phone";
+  if (!phone) return "—";
   const cleaned = phone.replace(/\D/g, '');
-  if (cleaned.length === 10 && cleaned.startsWith("05")) {
-    return `${cleaned.slice(0, 3)}.${cleaned.slice(3, 6)}.${cleaned.slice(6)}`;
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
   }
   return phone;
 }
 
+function parseName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(' ');
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: '' };
+  }
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' ')
+  };
+}
+
 function IconSearch() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
@@ -61,7 +51,7 @@ function IconSearch() {
 
 function IconPlus() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
@@ -70,7 +60,7 @@ function IconPlus() {
 
 function IconUsers() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
       <circle cx="9" cy="7" r="4" />
       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -79,21 +69,30 @@ function IconUsers() {
   );
 }
 
-function IconChevron() {
+function IconChevronDown() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180">
-      <polyline points="9 18 15 12 9 6" />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
     </svg>
   );
 }
 
-function ListSkeleton() {
+function IconArrowRight() {
   return (
-    <div className="space-y-3">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
+    </svg>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <div className="animate-pulse space-y-2">
+      {[1, 2, 3, 4, 5].map((i) => (
         <div
           key={i}
-          className="h-[78px] rounded-3xl bg-white animate-pulse"
+          className="h-[72px] bg-white rounded-xl"
           style={{ boxShadow: CARD_SHADOW }}
         />
       ))}
@@ -114,10 +113,10 @@ export default function ClientsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [showAdd, setShowAdd] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
 
-  // Debounce search
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 280);
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => clearTimeout(t);
   }, [search]);
 
@@ -140,7 +139,7 @@ export default function ClientsPage() {
       }
 
       if (sortBy === "name") {
-        query = query.order("name", { ascending: true });
+        query = query.order("name");
       } else if (sortBy === "visits") {
         query = query.order("total_visits", { ascending: false });
       } else {
@@ -156,108 +155,123 @@ export default function ClientsPage() {
     fetchClients();
   }, [business, debouncedSearch, sortBy, supabase, refreshKey]);
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (showSortDropdown) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.sort-dropdown')) {
+          setShowSortDropdown(false);
+        }
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSortDropdown]);
+
+  const getCurrentSortLabel = () => {
+    return SORT_OPTIONS.find(opt => opt.value === sortBy)?.label || "Recent";
+  };
+
   if (bizLoading) return <ClientsSkeleton />;
 
   return (
-    <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
-      {/* Fixed Header */}
-      <div className="shrink-0 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
-        <div className="mx-auto w-full px-4 md:px-6 pt-6 pb-5" style={{ maxWidth: 768 }}>
+    <div className="flex flex-col h-full bg-[#F8F6F3]">
+      {/* Header Section - Centered */}
+      <div className="shrink-0 bg-white border-b border-gray-100">
+        <div className="mx-auto w-full max-w-4xl px-6 py-8">
+          {/* Title Row */}
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <h1 className="text-[28px] font-extrabold tracking-tight text-dark">Clients</h1>
-              <span
-                className="inline-flex items-center justify-center h-7 min-w-[28px] px-2.5 rounded-full text-sm font-semibold"
-                style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}
-              >
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold text-gray-900">Clients</h1>
+              <span className="text-sm text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">
                 {totalCount}
               </span>
             </div>
-
             <button
               onClick={() => setShowAdd(true)}
-              className="h-11 px-5 rounded-2xl bg-amber text-white flex items-center gap-2 font-semibold text-[14.5px] shadow-[0_3px_12px_rgba(232,146,10,0.28)] hover:bg-[#D4830A] active:scale-[0.985] transition-all"
+              className="h-9 px-3.5 rounded-md bg-amber-500 text-white flex items-center gap-1.5 text-sm font-medium hover:bg-amber-600 transition-all active:scale-95"
             >
               <IconPlus />
               Add client
             </button>
           </div>
 
-          {/* Search + Sort */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <span
-                className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: "var(--color-muted)", left: 16 }}
-              >
+          {/* Search Bar */}
+          <div className="mb-4">
+            <div className="relative max-w-sm">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <IconSearch />
               </span>
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name or phone..."
-                className="w-full h-12 rounded-2xl border bg-white text-[15px] placeholder:text-muted focus:outline-none focus:border-amber focus:ring-2 focus:ring-amber/20 transition-all"
-                style={{ borderColor: "var(--color-cream-2)", paddingLeft: 48, paddingRight: 16 }}
+                placeholder="Search clients..."
+                className="w-full h-9 pl-9 pr-3 rounded-md border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
               />
             </div>
+          </div>
 
-            <div
-              className="flex p-1 bg-white border rounded-2xl shrink-0"
-              style={{ borderColor: "var(--color-cream-2)" }}
+          {/* Sort Dropdown - Below Add Client (aligned left) */}
+          <div className="sort-dropdown relative">
+            <button
+              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              className="h-9 px-3 rounded-md border border-gray-200 bg-white flex items-center gap-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-all"
             >
-              {SORT_OPTIONS.map((option) => {
-                const active = sortBy === option.value;
-                return (
+              <span>Sort: {getCurrentSortLabel()}</span>
+              <IconChevronDown />
+            </button>
+
+            {showSortDropdown && (
+              <div className="absolute left-0 mt-1 w-36 rounded-md bg-white shadow-lg border border-gray-100 overflow-hidden z-10">
+                {SORT_OPTIONS.map((option) => (
                   <button
                     key={option.value}
-                    onClick={() => setSortBy(option.value)}
-                    className="px-5 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all"
-                    style={{
-                      background: active ? "var(--color-surface)" : "transparent",
-                      color: active ? "var(--color-dark)" : "var(--color-muted)",
-                      boxShadow: active ? "0 1px 3px rgba(30,26,20,0.08)" : "none",
+                    onClick={() => {
+                      setSortBy(option.value);
+                      setShowSortDropdown(false);
                     }}
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
+                      sortBy === option.value ? 'text-amber-500 font-medium bg-amber-50' : 'text-gray-700'
+                    }`}
                   >
                     {option.label}
                   </button>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full px-4 md:px-6 py-6" style={{ maxWidth: 768 }}>
+      {/* Table Section - Centered */}
+      <div className="flex-1 overflow-auto">
+        <div className="mx-auto w-full max-w-4xl px-6 py-5">
           {loading ? (
-            <ListSkeleton />
+            <TableSkeleton />
           ) : clients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center py-24">
-              <div
-                className="w-20 h-20 rounded-3xl flex items-center justify-center mb-8"
-                style={{ background: "rgba(232,146,10,0.1)", color: "var(--color-amber)" }}
-              >
+            <div className="flex flex-col items-center justify-center text-center py-16 mt-8">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4 bg-amber-50 text-amber-400">
                 <IconUsers />
               </div>
-
               {debouncedSearch ? (
                 <>
-                  <h2 className="text-2xl font-bold text-dark mb-3">No matches found</h2>
-                  <p className="text-[15px] max-w-xs" style={{ color: "var(--color-muted)" }}>
-                    No clients match &ldquo;{debouncedSearch}&rdquo;
-                  </p>
+                  <h3 className="text-base font-medium text-gray-900 mb-1">
+                    No results for "{debouncedSearch}"
+                  </h3>
+                  <p className="text-sm text-gray-500">Try a different search term</p>
                 </>
               ) : (
                 <>
-                  <h2 className="text-[22px] font-bold text-dark mb-3">Your client book is empty</h2>
-                  <p className="text-[15px] max-w-md leading-relaxed mb-8" style={{ color: "var(--color-muted)" }}>
-                    Add your first client with their contact details and start building relationships.
+                  <h3 className="text-base font-medium text-gray-900 mb-2">
+                    No clients yet
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Add your first client to get started
                   </p>
                   <button
                     onClick={() => setShowAdd(true)}
-                    className="h-12 px-8 rounded-2xl bg-amber text-white font-semibold text-base shadow-[0_4px_14px_rgba(232,146,10,0.25)] hover:bg-[#D4830A] active:scale-95 transition-all"
+                    className="h-9 px-4 rounded-md bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-all"
                   >
                     Add your first client
                   </button>
@@ -265,52 +279,65 @@ export default function ClientsPage() {
               )}
             </div>
           ) : (
-            <div className="space-y-3 pb-8">
-              {clients.map((client) => {
-                const tint = avatarTint(client.id || client.name);
+            <div className="space-y-2">
+              {/* Table Header */}
+              <div className="grid grid-cols-12 gap-4 px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div className="col-span-4">First Name</div>
+                <div className="col-span-3">Last Name</div>
+                <div className="col-span-2">Phone #</div>
+                <div className="col-span-2">Account</div>
+                <div className="col-span-1"></div>
+              </div>
 
+              {/* Table Rows */}
+              {clients.map((client) => {
+                const { firstName, lastName } = parseName(client.name);
                 return (
                   <button
                     key={client.id}
                     onClick={() => router.push(`/clients/${client.id}`)}
-                    className="group w-full flex items-center gap-4 bg-white rounded-3xl px-5 py-4 text-left transition-all hover:-translate-y-0.5 active:scale-[0.985]"
+                    className="group w-full grid grid-cols-12 gap-4 items-center bg-white rounded-xl px-4 py-4 text-left transition-all hover:-translate-y-0.5"
                     style={{ boxShadow: CARD_SHADOW }}
-                    onMouseEnter={(e) => (e.currentTarget.style.boxShadow = CARD_SHADOW_HOVER)}
-                    onMouseLeave={(e) => (e.currentTarget.style.boxShadow = CARD_SHADOW)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = CARD_SHADOW_HOVER;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = CARD_SHADOW;
+                    }}
                   >
-                    <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 ring-1 ring-inset"
-                      style={{
-                        background: tint.bg,
-                        color: tint.fg,
-                        boxShadow: "inset 0 1px 2px rgba(0,0,0,0.08)",
-                      }}
-                    >
-                      {firstInitial(client.name)}
+                    <div className="col-span-4">
+                      <span className="text-sm font-medium text-gray-900">
+                        {firstName}
+                      </span>
                     </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[16px] font-semibold text-dark truncate">{client.name}</div>
-                      <div className="text-[14px] mt-0.5 truncate" style={{ color: "var(--color-muted)" }}>
+                    <div className="col-span-3">
+                      <span className="text-sm text-gray-600">
+                        {lastName || '—'}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-sm text-gray-500">
                         {formatPhone(client.phone)}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-medium text-gray-900">
+                          {client.total_visits > 0
+                            ? `${client.total_visits} visit${client.total_visits !== 1 ? 's' : ''}`
+                            : 'New'}
+                        </span>
+                        {client.last_visit_at && (
+                          <span className="text-xs text-gray-400">
+                            · {format(parseISO(client.last_visit_at), 'MMM d, yyyy')}
+                          </span>
+                        )}
                       </div>
                     </div>
-
-                    <div className="text-right shrink-0 pr-2">
-                      <div className="text-[14px] font-semibold text-dark">
-                        {client.total_visits > 0
-                          ? `${client.total_visits} visit${client.total_visits !== 1 ? "s" : ""}`
-                          : "New client"}
-                      </div>
-                      <div className="text-xs mt-0.5" style={{ color: "var(--color-muted)" }}>
-                        {client.last_visit_at
-                          ? format(parseISO(client.last_visit_at), "MMM d, yyyy")
-                          : "No visits yet"}
-                      </div>
-                    </div>
-
-                    <div className="shrink-0 text-muted group-hover:text-amber transition-colors">
-                      <IconChevron />
+                    <div className="col-span-1 flex justify-end">
+                      <span className="text-gray-300 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all">
+                        <IconArrowRight />
+                      </span>
                     </div>
                   </button>
                 );
