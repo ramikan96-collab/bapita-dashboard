@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
@@ -20,14 +20,10 @@ interface BookingWithService extends Booking {
   service: Service | null;
 }
 
-const CARD_SHADOW = "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)";
-
-function firstInitial(name: string): string {
-  return name.trim().charAt(0).toUpperCase() || "?";
-}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatPhone(phone: string): string {
-  if (!phone) return "No phone";
+  if (!phone) return "—";
   if (phone.length === 10 && phone.startsWith("05")) {
     return `${phone.slice(0, 3)}.${phone.slice(3, 6)}.${phone.slice(6)}`;
   }
@@ -53,12 +49,160 @@ function bookingDate(booking: BookingWithService): Date | null {
   }
 }
 
+function getInitials(name: string): string {
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .map((p) => p[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "?"
+  );
+}
+
+// Same palette/logic as the clients list page so a client's color
+// stays consistent between the table and this profile.
+const AVATAR_COLORS = [
+  { bg: "#FEF3C7", text: "#D97706" },
+  { bg: "#DBEAFE", text: "#1D4ED8" },
+  { bg: "#D1FAE5", text: "#065F46" },
+  { bg: "#EDE9FE", text: "#6D28D9" },
+  { bg: "#FCE7F3", text: "#BE185D" },
+  { bg: "#FEE2E2", text: "#B91C1C" },
+];
+
+function Avatar({
+  name,
+  size = 34,
+  radius = 10,
+  fontSize = 12,
+}: {
+  name: string;
+  size?: number;
+  radius?: number;
+  fontSize?: number;
+}) {
+  const color = AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        background: color.bg,
+        color: color.text,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize,
+        fontWeight: 700,
+        flexShrink: 0,
+        letterSpacing: "0.02em",
+      }}
+    >
+      {getInitials(name)}
+    </div>
+  );
+}
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+function IconBack() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
+function IconPlus() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
+function IconPhone() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.63 3.38 2 2 0 0 1 3.6 1.2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.9a16 16 0 0 0 6.29 6.29l1.27-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  );
+}
+
+function IconMail() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m22 7-10 7L2 7" />
+    </svg>
+  );
+}
+
+function IconWA() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
+    </svg>
+  );
+}
+
+function IconNote() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  );
+}
+
+function IconUpcoming() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+      <path d="M12 14v3M12 14h2" />
+    </svg>
+  );
+}
+
+function IconHistory() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 7 12 12 15 14" />
+    </svg>
+  );
+}
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function ProfileSkeleton() {
+  return (
+    <div className="animate-pulse" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ height: 168, borderRadius: 16, background: "white", boxShadow: "0 1px 3px rgba(30,26,20,0.06)" }} />
+      <div style={{ height: 92, borderRadius: 16, background: "white", boxShadow: "0 1px 3px rgba(30,26,20,0.06)" }} />
+      <div style={{ height: 64, borderRadius: 13, background: "white", boxShadow: "0 1px 3px rgba(30,26,20,0.06)" }} />
+      <div style={{ height: 64, borderRadius: 13, background: "white", boxShadow: "0 1px 3px rgba(30,26,20,0.06)" }} />
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function ClientProfilePage() {
   const params = useParams();
   const router = useRouter();
   const { business } = useBusiness();
   const { showToast } = useToast();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const clientId = params.id as string;
 
   const [client, setClient] = useState<Customer | null>(null);
@@ -127,33 +271,36 @@ export default function ClientProfilePage() {
     showToast("Notes saved", "success");
   }
 
-  function newBooking() {
-    if (!client) return;
-    router.push(`/new-booking?clientId=${client.id}`);
-  }
-
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center" style={{ background: "var(--color-cream)" }}>
-        <div
-          className="w-6 h-6 rounded-full border-2 animate-spin"
-          style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }}
-        />
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-cream)" }}>
+        <div style={{ flexShrink: 0, background: "white", borderBottom: "1px solid var(--color-cream-2)" }}>
+          <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", padding: "16px 24px" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-muted)" }}>Clients</span>
+          </div>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", padding: "20px 24px 64px" }}>
+            <ProfileSkeleton />
+          </div>
+        </div>
       </div>
     );
   }
 
+  // ── Not found ─────────────────────────────────────────────────────────────
   if (!client) {
     return (
-      <div
-        className="flex flex-col h-full items-center justify-center p-6 text-center"
-        style={{ background: "var(--color-cream)" }}
-      >
-        <span style={{ fontSize: 48 }}>👤</span>
-        <p className="mt-3 text-[17px] font-bold text-dark">Client not found</p>
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", alignItems: "center", justifyContent: "center", background: "var(--color-cream)", padding: 24, textAlign: "center" }}>
+        <div style={{ width: 60, height: 60, borderRadius: 16, background: "var(--amber-soft)", color: "var(--color-amber)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, fontSize: 26 }}>
+          👤
+        </div>
+        <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 6 }}>Client not found</p>
+        <p style={{ fontSize: 13, color: "var(--color-muted)", marginBottom: 20 }}>This client may have been removed</p>
         <button
           onClick={() => router.push("/clients")}
-          className="mt-4 bg-amber text-white font-semibold text-[15px] px-5 py-3 rounded-xl hover:bg-[#D4830A] active:bg-[#B86800] transition-colors"
+          style={{ height: 34, padding: "0 18px", borderRadius: 9, background: "var(--color-amber)", color: "white", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)" }}
         >
           Back to clients
         </button>
@@ -166,178 +313,350 @@ export default function ClientProfilePage() {
     .filter((b) => b.status === "completed")
     .reduce((sum, b) => sum + (b.service?.price || 0), 0);
 
+  const now = new Date();
+
+  const upcomingBookings = bookings
+    .filter((b) => {
+      const dt = bookingDate(b);
+      return dt && dt > now && b.status !== "cancelled";
+    })
+    .sort((a, b) => bookingDate(a)!.getTime() - bookingDate(b)!.getTime());
+
+  const pastBookings = bookings.filter((b) => {
+    const dt = bookingDate(b);
+    return !dt || dt <= now || b.status === "cancelled";
+  });
+
   const notesDirty = notes !== savedNotes;
+  const isNew = !client.total_visits || client.total_visits === 0;
+  const email = (client as any).email as string | undefined;
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto" style={{ background: "var(--color-cream)" }}>
-      {/* Back row */}
-      <div className="shrink-0 px-4 pt-3">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-1 text-[14px] font-medium -ms-1 py-1"
-          style={{ color: "var(--color-muted)" }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Clients
-        </button>
-      </div>
+    <>
+      <style>{`
+        .back-link {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--color-muted);
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 4px 2px;
+          transition: color 0.15s;
+        }
+        .back-link:hover { color: var(--color-amber); }
 
-      <div className="px-4 pt-3 pb-6 space-y-3">
-        {/* Identity + stats card */}
-        <div className="bg-white rounded-2xl p-4" style={{ boxShadow: CARD_SHADOW }}>
-          <div className="flex items-center gap-3">
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-[22px] shrink-0"
-              style={{ background: "var(--color-amber)", color: "#fff" }}
+        .profile-action-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          height: 38px;
+          border-radius: 10px;
+          border: 1.5px solid var(--color-cream-2);
+          background: white;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--color-dark);
+          cursor: pointer;
+          transition: background 0.15s, border-color 0.15s, transform 0.15s;
+          text-decoration: none;
+        }
+        .profile-action-btn:hover {
+          background: var(--color-cream);
+          border-color: var(--color-amber);
+          transform: translateY(-1px);
+        }
+
+        .booking-row {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 12px 14px;
+          border-radius: 13px;
+          background: white;
+          box-shadow: 0 1px 3px rgba(30,26,20,0.06);
+          border: 1.5px solid transparent;
+          transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+        }
+        .booking-row:hover {
+          box-shadow: 0 4px 16px rgba(30,26,20,0.09), 0 1px 2px rgba(30,26,20,0.04);
+          transform: translateY(-1px);
+          border-color: var(--color-cream-2);
+        }
+        .booking-row.upcoming { border-color: var(--color-amber); }
+      `}</style>
+
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-cream)" }}>
+
+        {/* ── Header ───────────────────────────────────────────────────────── */}
+        <div style={{ flexShrink: 0, background: "white", borderBottom: "1px solid var(--color-cream-2)" }}>
+          <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <button onClick={() => router.back()} className="back-link">
+              <IconBack />
+              Clients
+            </button>
+
+            <button
+              onClick={() => router.push(`/new-booking?clientId=${client.id}`)}
+              style={{ height: 34, padding: "0 14px", borderRadius: 9, background: "var(--color-amber)", color: "white", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)", transition: "all 0.15s ease" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 18px rgba(232,146,10,0.36)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 14px rgba(232,146,10,0.28)"; }}
             >
-              {firstInitial(client.name)}
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-[22px] font-bold leading-snug text-dark truncate">{client.name}</h1>
-              <p className="text-[15px]" style={{ color: "var(--color-muted)" }}>
-                {formatPhone(client.phone)}
-              </p>
-            </div>
+              <IconPlus />
+              New booking
+            </button>
           </div>
-
-          {/* Quick actions */}
-          {client.phone && (
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              <a
-                href={whatsappLink(client.phone)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-3 rounded-xl border bg-transparent text-dark font-medium text-[15px] hover:bg-cream transition-colors"
-                style={{ borderColor: "var(--color-cream-2)" }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366" aria-hidden="true">
-                  <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm5.8 14.13c-.25.69-1.45 1.32-1.99 1.36-.53.05-1.02.24-3.44-.72-2.9-1.14-4.76-4.1-4.9-4.29-.14-.19-1.18-1.57-1.18-2.99 0-1.42.75-2.12 1.01-2.41.26-.29.57-.36.76-.36.19 0 .38 0 .55.01.18.01.41-.07.64.49.25.6.84 2.07.91 2.22.07.15.12.32.02.51-.1.19-.15.31-.29.48-.14.17-.3.38-.43.51-.14.14-.29.29-.12.58.17.29.74 1.22 1.59 1.98 1.09.97 2.01 1.27 2.3 1.42.29.14.46.12.63-.07.17-.19.73-.85.92-1.14.19-.29.38-.24.64-.14.26.1 1.66.78 1.94.93.29.14.48.21.55.33.07.12.07.69-.18 1.38Z"/>
-                </svg>
-                WhatsApp
-              </a>
-              <a
-                href={`tel:${client.phone}`}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl border bg-transparent text-dark font-medium text-[15px] hover:bg-cream transition-colors"
-                style={{ borderColor: "var(--color-cream-2)" }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/>
-                </svg>
-                Call
-              </a>
-            </div>
-          )}
-
-          <div
-            className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t"
-            style={{ borderColor: "var(--color-cream-2)" }}
-          >
-            <div className="text-center">
-              <div className="text-[20px] font-extrabold text-dark">{client.total_visits || 0}</div>
-              <div className="text-[12px]" style={{ color: "var(--color-muted)" }}>
-                Visits
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-[20px] font-extrabold text-dark">₪{totalSpent}</div>
-              <div className="text-[12px]" style={{ color: "var(--color-muted)" }}>
-                Total spent
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-[20px] font-extrabold text-dark">
-                {client.last_visit_at ? format(parseISO(client.last_visit_at), "MMM d") : "New"}
-              </div>
-              <div className="text-[12px]" style={{ color: "var(--color-muted)" }}>
-                Last seen
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={newBooking}
-            className="w-full mt-4 bg-amber text-white font-semibold text-[15px] py-3.5 rounded-xl hover:bg-[#D4830A] active:bg-[#B86800] transition-colors"
-          >
-            New booking for {client.name.split(/\s+/)[0]}
-          </button>
         </div>
 
-        {/* Internal notes */}
-        <div className="bg-white rounded-2xl p-4" style={{ boxShadow: CARD_SHADOW }}>
-          <div className="flex justify-between items-center mb-2">
-            <label className="text-[13px] font-medium text-dark">Internal notes</label>
-            {notesDirty && (
-              <button
-                onClick={saveNotes}
-                disabled={savingNotes}
-                className="text-[13px] font-semibold px-3 py-1 rounded-lg text-white disabled:opacity-50"
-                style={{ background: "var(--color-amber)" }}
-              >
-                {savingNotes ? "Saving…" : "Save"}
-              </button>
-            )}
-          </div>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            className="w-full px-3 py-2.5 rounded-[10px] border bg-white text-[15px] text-dark placeholder:text-muted transition-colors focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30"
-            style={{ borderColor: "var(--color-cream-2)" }}
-            placeholder="Preferences, allergies, usual style…"
-          />
-        </div>
+        {/* ── Content ──────────────────────────────────────────────────────── */}
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", padding: "20px 24px 64px", display: "flex", flexDirection: "column", gap: 14 }}>
 
-        {/* Booking history */}
-        <div>
-          <h2 className="text-[16px] font-semibold text-dark px-1 mb-2">Booking history</h2>
-          {bookings.length === 0 ? (
-            <div
-              className="bg-white rounded-2xl p-8 text-center"
-              style={{ boxShadow: CARD_SHADOW }}
-            >
-              <span style={{ fontSize: 32 }}>📅</span>
-              <p className="text-[15px] mt-2" style={{ color: "var(--color-muted)" }}>
-                No bookings yet
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {bookings.map((booking) => {
-                const dt = bookingDate(booking);
-                const status = booking.status as BookingStatus;
-                return (
-                  <div
-                    key={booking.id}
-                    className="bg-white rounded-2xl p-4 flex justify-between items-start gap-3"
-                    style={{ boxShadow: CARD_SHADOW }}
-                  >
-                    <div className="min-w-0">
-                      <div className="text-[15px] font-bold text-dark truncate">
-                        {booking.service?.name || "Service"}
-                      </div>
-                      <div className="text-[13px] mt-0.5" style={{ color: "var(--color-muted)" }}>
-                        {dt ? format(dt, "EEE, MMM d, yyyy · h:mm a") : "Date unavailable"}
-                      </div>
-                    </div>
-                    <div className="text-end shrink-0">
-                      <div className="text-[15px] font-bold text-dark">
-                        ₪{booking.service?.price ?? 0}
-                      </div>
-                      <span
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium mt-1"
-                        style={{ background: STATUS_BG[status], color: STATUS_COLOR[status] }}
-                      >
-                        {STATUS_LABEL[status] ?? status}
+            {/* Identity + stats + quick actions */}
+            <div style={{ background: "white", borderRadius: 16, boxShadow: "0 1px 3px rgba(30,26,20,0.06)", overflow: "hidden" }}>
+              <div style={{ padding: "20px 20px 16px", display: "flex", alignItems: "flex-start", gap: 16 }}>
+                <Avatar name={client.name} size={52} radius={14} fontSize={18} />
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--color-dark)", margin: 0, letterSpacing: "-0.01em" }}>
+                      {client.name}
+                    </h1>
+                    {isNew && (
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "#E8F0FE", color: "#1A73E8" }}>
+                        New
                       </span>
+                    )}
+                  </div>
+
+                  <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ color: "var(--color-muted)", display: "flex" }}><IconPhone /></span>
+                      <span style={{ fontSize: 13, color: "var(--color-muted)", fontWeight: 500 }}>{formatPhone(client.phone)}</span>
+                    </div>
+                    {email && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ color: "var(--color-muted)", display: "flex" }}><IconMail /></span>
+                        <span style={{ fontSize: 13, color: "var(--color-muted)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {email}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats strip */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--color-cream-2)", borderBottom: client.phone ? "1px solid var(--color-cream-2)" : "none" }}>
+                {[
+                  { value: String(client.total_visits || 0), label: "Visits" },
+                  { value: `₪${totalSpent}`, label: "Total spent" },
+                  { value: client.last_visit_at ? format(parseISO(client.last_visit_at), "MMM d") : "—", label: "Last visit" },
+                ].map((stat, i) => (
+                  <div key={stat.label} style={{ padding: "14px 8px", textAlign: "center", borderRight: i < 2 ? "1px solid var(--color-cream-2)" : "none" }}>
+                    <div style={{ fontSize: 19, fontWeight: 800, color: "var(--color-dark)", letterSpacing: "-0.02em", lineHeight: 1 }}>
+                      {stat.value}
+                    </div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      {stat.label}
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+
+              {/* Quick actions */}
+              {client.phone && (
+                <div style={{ padding: "14px 18px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <a href={whatsappLink(client.phone)} target="_blank" rel="noopener noreferrer" className="profile-action-btn" style={{ color: "#25D366" }}>
+                    <IconWA />
+                    WhatsApp
+                  </a>
+                  <a href={`tel:${client.phone}`} className="profile-action-btn">
+                    <IconPhone />
+                    Call
+                  </a>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Notes */}
+            <div style={{ background: "white", borderRadius: 16, boxShadow: "0 1px 3px rgba(30,26,20,0.06)", overflow: "hidden" }}>
+              <div style={{ padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <span style={{ color: "var(--color-muted)", display: "flex" }}><IconNote /></span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Notes</span>
+                </div>
+                {notesDirty && (
+                  <button
+                    onClick={saveNotes}
+                    disabled={savingNotes}
+                    style={{ height: 28, padding: "0 12px", borderRadius: 7, background: "var(--color-amber)", color: "white", fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", opacity: savingNotes ? 0.6 : 1, transition: "opacity 0.15s" }}
+                  >
+                    {savingNotes ? "Saving…" : "Save"}
+                  </button>
+                )}
+              </div>
+              <div style={{ padding: "10px 16px 16px" }}>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Preferences, allergies, usual style…"
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1.5px solid var(--color-cream-2)",
+                    background: "var(--color-cream)",
+                    fontSize: 13,
+                    color: "var(--color-dark)",
+                    resize: "none",
+                    outline: "none",
+                    fontFamily: "inherit",
+                    lineHeight: 1.6,
+                    boxSizing: "border-box",
+                    transition: "border-color 0.15s",
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+                />
+              </div>
+            </div>
+
+            {/* Booking history */}
+            {bookings.length === 0 ? (
+              <div style={{ background: "white", borderRadius: 16, padding: "40px 20px", textAlign: "center", boxShadow: "0 1px 3px rgba(30,26,20,0.06)" }}>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: "var(--amber-soft)", color: "var(--color-amber)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                  <IconUpcoming />
+                </div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", margin: 0 }}>No bookings yet</p>
+                <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }}>This client hasn't booked an appointment</p>
+              </div>
+            ) : (
+              <>
+                {/* Upcoming */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 4px 8px" }}>
+                    <span style={{ color: "var(--color-muted)", display: "flex" }}><IconUpcoming /></span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Upcoming</span>
+                    {upcomingBookings.length > 0 && (
+                      <span style={{ fontSize: 11, fontWeight: 700, background: "var(--color-cream-2)", color: "var(--color-muted)", padding: "1px 7px", borderRadius: 20 }}>
+                        {upcomingBookings.length}
+                      </span>
+                    )}
+                  </div>
+                  {upcomingBookings.length === 0 ? (
+                    <div style={{ background: "white", borderRadius: 13, padding: "16px", textAlign: "center", boxShadow: "0 1px 3px rgba(30,26,20,0.06)" }}>
+                      <span style={{ fontSize: 12, color: "var(--color-muted)" }}>No upcoming appointments</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {upcomingBookings.map((booking) => (
+                        <BookingRow key={booking.id} booking={booking} upcoming />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Past */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 4px 8px" }}>
+                    <span style={{ color: "var(--color-muted)", display: "flex" }}><IconHistory /></span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Past appointments</span>
+                    {pastBookings.length > 0 && (
+                      <span style={{ fontSize: 11, fontWeight: 700, background: "var(--color-cream-2)", color: "var(--color-muted)", padding: "1px 7px", borderRadius: 20 }}>
+                        {pastBookings.length}
+                      </span>
+                    )}
+                  </div>
+                  {pastBookings.length === 0 ? (
+                    <div style={{ background: "white", borderRadius: 13, padding: "16px", textAlign: "center", boxShadow: "0 1px 3px rgba(30,26,20,0.06)" }}>
+                      <span style={{ fontSize: 12, color: "var(--color-muted)" }}>No past appointments</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {pastBookings.map((booking) => (
+                        <BookingRow key={booking.id} booking={booking} upcoming={false} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Booking Row ──────────────────────────────────────────────────────────────
+
+function BookingRow({ booking, upcoming }: { booking: BookingWithService; upcoming: boolean }) {
+  const dt = bookingDate(booking);
+  const status = booking.status as BookingStatus;
+
+  return (
+    <div className={`booking-row${upcoming ? " upcoming" : ""}`}>
+      {/* Date block */}
+      <div style={{ flexShrink: 0, width: 42, textAlign: "center" }}>
+        {dt ? (
+          <>
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: upcoming ? "var(--color-amber)" : "var(--color-muted)" }}>
+              {format(dt, "MMM")}
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+              {format(dt, "d")}
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 500, color: "var(--color-muted)" }}>
+              {format(dt, "EEE")}
+            </div>
+          </>
+        ) : (
+          <div style={{ fontSize: 11, color: "var(--color-muted)" }}>—</div>
+        )}
+      </div>
+
+      {/* Divider */}
+      <div style={{ width: 1, alignSelf: "stretch", background: "var(--color-cream-2)", flexShrink: 0 }} />
+
+      {/* Service + time */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {booking.service?.name || "Service"}
+        </p>
+        {dt && (
+          <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2, fontWeight: 500 }}>
+            {format(dt, "h:mm a")}
+            {booking.service?.duration && <span style={{ marginLeft: 6 }}>· {booking.service.duration} min</span>}
+          </p>
+        )}
+      </div>
+
+      {/* Price + status */}
+      <div style={{ flexShrink: 0, textAlign: "right" }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--color-dark)", letterSpacing: "-0.01em" }}>
+          ₪{booking.service?.price ?? 0}
+        </div>
+        <span
+          style={{
+            display: "inline-flex",
+            marginTop: 4,
+            padding: "2px 8px",
+            borderRadius: 20,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "0.02em",
+            background: STATUS_BG[status],
+            color: STATUS_COLOR[status],
+          }}
+        >
+          {STATUS_LABEL[status] ?? status}
+        </span>
       </div>
     </div>
   );
