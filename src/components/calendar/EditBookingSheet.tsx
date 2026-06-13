@@ -30,7 +30,7 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
 
   const [serviceId, setServiceId] = useState<string>(booking.service_id);
   const [date, setDate] = useState<Date>(parseISO(booking.appointment_date));
-  const [time, setTime] = useState<string | null>(booking.appointment_time);
+  const [time, setTime] = useState<string | null>(booking.appointment_time.slice(0, 5));
   const [notes, setNotes] = useState<string>(booking.notes ?? "");
   const [markPaid, setMarkPaid] = useState<boolean>(booking.payment_status !== "none");
 
@@ -91,13 +91,13 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
     if (!time) return;
     setSaving(true);
     const dateStr = format(date, "yyyy-MM-dd");
-    const paymentStatus = markPaid ? "cash" : "none";
+    const paymentStatus = markPaid ? (booking.payment_status !== "none" ? booking.payment_status : "cash") : "none";
     const patch = {
       service_id: serviceId,
       appointment_date: dateStr,
       appointment_time: time,
       appointment_datetime: new Date(`${dateStr}T${time}`).toISOString(),
-      notes: notes || null,
+      notes: notes.trim() || null,
       payment_status: paymentStatus,
     };
     const { error } = await supabase
@@ -113,7 +113,7 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
       service_id: serviceId,
       appointment_date: dateStr,
       appointment_time: time,
-      notes: notes || null,
+      notes: notes.trim() || null,
       payment_status: paymentStatus as Booking["payment_status"],
       ...(selectedService
         ? {
