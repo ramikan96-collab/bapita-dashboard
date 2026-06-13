@@ -297,7 +297,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
         {/* Tabs — absolutely centered in the bar */}
         <nav className="absolute inset-0 flex items-stretch justify-center pointer-events-none">
-          <div className="flex items-stretch gap-0.5 pointer-events-auto">
+          <div className="flex items-stretch gap-2 pointer-events-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -305,7 +305,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 <button
                   key={item.path}
                   onClick={() => router.push(item.path)}
-                  className="relative flex items-center gap-1.5 px-3 transition-colors hover:text-dark"
+                  className="relative flex items-center gap-1.5 px-5 transition-colors hover:text-dark"
                   style={{
                     color: active ? "var(--color-dark)" : "var(--color-muted)",
                     fontWeight: active ? 600 : 400,
@@ -326,8 +326,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
 
-        {/* Print — calendar only, far right */}
-        <div className="ms-auto shrink-0">
+        {/* Right controls: Print (calendar only) + Lang toggle */}
+        <div className="ms-auto shrink-0 flex items-center gap-1">
           {onCalendar && (
             <button
               onClick={() => window.print()}
@@ -337,6 +337,23 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <IconPrint size={18} />
             </button>
           )}
+          <div
+            className="flex items-center rounded-full p-0.5 gap-0.5"
+            style={{ background: "var(--color-cream-2)" }}
+          >
+            <span
+              className="px-2.5 py-1 rounded-full text-[12px] font-semibold"
+              style={{ background: "var(--color-amber)", color: "#fff" }}
+            >
+              En
+            </span>
+            <span
+              className="px-2.5 py-1 rounded-full text-[12px] font-semibold"
+              style={{ color: "var(--color-muted)", cursor: "not-allowed" }}
+            >
+              He
+            </span>
+          </div>
         </div>
       </div>
 
