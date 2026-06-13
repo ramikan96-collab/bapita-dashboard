@@ -9,7 +9,6 @@ import {
   CalendarChromeProvider,
   useCalendarChrome,
   type CalView,
-  type StatusFilter,
 } from "@/components/calendar/CalendarChrome";
 import CalendarSelectorPanel from "@/components/calendar/CalendarSelectorPanel";
 import { STATUS_LABEL, type BookingStatus } from "@/types";
@@ -216,12 +215,10 @@ const calViews: { value: CalView; label: string }[] = [
   { value: "agenda", label: "Agenda" },
 ];
 
-const filterOptions: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  ...(["pending", "confirmed", "completed", "cancelled", "no_show"] as BookingStatus[]).map(
-    (s) => ({ value: s as StatusFilter, label: STATUS_LABEL[s] })
-  ),
-];
+const filterStatuses = (["pending", "confirmed", "completed", "cancelled", "no_show"] as BookingStatus[]);
+const filterOptions: { value: BookingStatus; label: string }[] = filterStatuses.map(
+  (s) => ({ value: s, label: STATUS_LABEL[s] })
+);
 
 // ─── Shell ───────────────────────────────────────────────────────────────
 
@@ -271,8 +268,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       <div className="flex flex-col h-dvh">
       {/* ─── Desktop Top Nav ─────────────────────────────────────────── */}
       <div
-        className="relative hidden md:flex h-14 shrink-0 items-center border-b z-30 px-10"
+        className="relative hidden md:flex h-14 shrink-0 items-center border-b z-30"
         style={{
+          paddingInline: 40,
           borderColor: "var(--line)",
           background: "var(--nav-bg)",
           backdropFilter: "var(--nav-blur)",
@@ -288,38 +286,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <IconMenu size={20} />
         </button>
 
-        {/* Tabs — absolutely centered in the bar */}
-        <nav className="absolute inset-0 flex items-stretch justify-center pointer-events-none">
-          <div className="flex items-stretch gap-2 pointer-events-auto">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.path);
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => router.push(item.path)}
-                  className="relative flex items-center gap-1.5 px-5 transition-colors hover:text-dark"
-                  style={{
-                    color: active ? "var(--color-dark)" : "var(--color-muted)",
-                    fontWeight: active ? 600 : 400,
-                    fontSize: 14,
-                  }}
-                >
-                  <Icon size={16} />
-                  {item.label}
-                  {active && (
-                    <span
-                      className="absolute inset-x-0 bottom-0 h-[2px] rounded-t-full"
-                      style={{ background: "var(--color-amber)" }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-
-        {/* Spacer — pushes print to far right (ms-auto unreliable with absolute tabs) */}
         <div className="flex-1" />
 
         {/* Print — calendar only, far right */}
@@ -408,7 +374,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 aria-label="Filter"
               >
                 <IconFilter size={20} />
-                {chrome.statusFilter !== "all" && (
+                {chrome.statusFilter.length > 0 && (
                   <span
                     className="absolute top-1.5 end-1.5 w-2 h-2 rounded-full"
                     style={{ background: "var(--color-amber)" }}
@@ -462,13 +428,15 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             style={{
               height: 36,
               paddingInline: 16,
-              background: chrome.statusFilter !== "all" ? "var(--color-amber)" : "var(--color-cream-2)",
-              color: chrome.statusFilter !== "all" ? "#fff" : "var(--color-dark)",
+              background: chrome.statusFilter.length > 0 ? "var(--color-amber)" : "var(--color-cream-2)",
+              color: chrome.statusFilter.length > 0 ? "#fff" : "var(--color-dark)",
             }}
           >
-            {chrome.statusFilter === "all"
+            {chrome.statusFilter.length === 0
               ? "All"
-              : STATUS_LABEL[chrome.statusFilter as BookingStatus]}
+              : chrome.statusFilter.length === 1
+                ? STATUS_LABEL[chrome.statusFilter[0]]
+                : `${chrome.statusFilter.length} filters`}
             <IconChevronDown size={14} />
           </button>
 
@@ -676,12 +644,33 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           </button>
           {viewMenuOpen && (
             <div style={{ padding: "0 8px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
+              {/* Clear all */}
+              {chrome.statusFilter.length > 0 && (
+                <button
+                  onClick={() => chrome.setStatusFilter([])}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: 10,
+                    padding: "6px 8px", borderRadius: 8, fontSize: 12, textAlign: "left",
+                    color: "var(--color-amber)", background: "transparent", border: "none",
+                    cursor: "pointer", fontWeight: 600, transition: "background 0.12s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  Clear filters
+                </button>
+              )}
               {filterOptions.map((opt) => {
-                const active = chrome.statusFilter === opt.value;
+                const active = chrome.statusFilter.includes(opt.value);
                 return (
                   <button
                     key={opt.value}
-                    onClick={() => chrome.setStatusFilter(opt.value)}
+                    onClick={() => {
+                      const next = active
+                        ? chrome.statusFilter.filter((s) => s !== opt.value)
+                        : [...chrome.statusFilter, opt.value];
+                      chrome.setStatusFilter(next);
+                    }}
                     style={{
                       width: "100%", display: "flex", alignItems: "center", gap: 10,
                       padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "left",
@@ -801,6 +790,29 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto py-2">
+          {/* Main pages — Calendar, Clients, Insights, Extras */}
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            return (
+              <button
+                key={item.path}
+                onClick={() => go(item.path)}
+                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
+                style={{
+                  height: 48,
+                  background: active ? "rgba(232,146,10,0.05)" : "transparent",
+                  borderInlineStart: active ? "3px solid var(--color-amber)" : "3px solid transparent",
+                }}
+              >
+                <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
+                  <Icon />
+                </span>
+                {item.label}
+              </button>
+            );
+          })}
+          <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
           {drawerItemsTop.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -897,14 +909,25 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             >
               Filter by status
             </div>
+            {chrome.statusFilter.length > 0 && (
+              <button
+                onClick={() => chrome.setStatusFilter([])}
+                className="w-full flex items-center px-4 text-[14px] font-semibold text-start transition-colors active:bg-cream"
+                style={{ height: 44, color: "var(--color-amber)" }}
+              >
+                Clear all filters
+              </button>
+            )}
             {filterOptions.map((opt) => {
-              const active = chrome.statusFilter === opt.value;
+              const active = chrome.statusFilter.includes(opt.value);
               return (
                 <button
                   key={opt.value}
                   onClick={() => {
-                    chrome.setStatusFilter(opt.value);
-                    setFilterSheetOpen(false);
+                    const next = active
+                      ? chrome.statusFilter.filter((s) => s !== opt.value)
+                      : [...chrome.statusFilter, opt.value];
+                    chrome.setStatusFilter(next);
                   }}
                   className="w-full flex items-center justify-between px-4 text-[15px] text-start text-dark transition-colors active:bg-cream"
                   style={{ height: 52 }}
