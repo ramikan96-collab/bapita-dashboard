@@ -9,7 +9,7 @@ import {
 
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
-import { useCalendarChrome, type StatusFilter, type CalView } from "@/components/calendar/CalendarChrome";
+import { useCalendarChrome, type CalView } from "@/components/calendar/CalendarChrome";
 import DayView from "@/components/calendar/DayView";
 import WeekView from "@/components/calendar/WeekView";
 import MonthView from "@/components/calendar/MonthView";
@@ -19,7 +19,7 @@ import BookingDrawer from "@/components/calendar/BookingDrawer";
 import BlockTimeSheet, { type BlockDraft } from "@/components/calendar/BlockTimeSheet";
 import { openHourFor, minsToTime } from "@/components/calendar/grid";
 import { CalendarSkeleton } from "@/components/LoadingSkeleton";
-import type { Booking, BlockedTime } from "@/types";
+import type { Booking, BlockedTime, BookingStatus } from "@/types";
 
 function applyPatch(bookings: Booking[], id: string, patch: Partial<Booking>): Booking[] {
   return bookings.map((b) => (b.id === id ? { ...b, ...patch } : b));
@@ -45,7 +45,7 @@ export default function CalendarPage() {
   const [loading, setLoading]     = useState(false);
   const [selected, setSelected]   = useState<Booking | null>(null);
   const [blockDraft, setBlockDraft] = useState<BlockDraft | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<BookingStatus[]>([]);
   const [calendarFilter, setCalendarFilter] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Booking[] | null>(null);
@@ -279,7 +279,7 @@ export default function CalendarPage() {
   const openHour = openHourFor(business, view === "day" ? date : undefined);
 
   const visibleBookings =
-    statusFilter === "all" ? bookings : bookings.filter((b) => b.status === statusFilter);
+    statusFilter.length === 0 ? bookings : bookings.filter((b) => statusFilter.includes(b.status));
 
   return (
     <div className="flex flex-col h-full">
