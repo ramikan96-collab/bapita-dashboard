@@ -15,6 +15,8 @@ import CalendarSelectorPanel from "@/components/calendar/CalendarSelectorPanel";
 import { STATUS_LABEL, type BookingStatus } from "@/types";
 
 // ─── Icons (inline SVG, no dep) ────────────────────────────────────────────
+// stroke-only, 24px, strokeWidth 1.5 per design system
+
 type IconProps = { size?: number };
 
 function IconCalendar({ size = 24 }: IconProps) {
@@ -68,7 +70,7 @@ function IconMenu({ size = 24 }: IconProps) {
 
 function IconPlus({ size = 24 }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="5" x2="12" y2="19"></line>
       <line x1="5" y1="12" x2="19" y2="12"></line>
     </svg>
@@ -137,6 +139,14 @@ function IconSettings({ size = 20 }: IconProps) {
   );
 }
 
+function IconUsage({ size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+    </svg>
+  );
+}
+
 function IconProfile({ size = 20 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -157,6 +167,7 @@ function IconLogout({ size = 20 }: IconProps) {
 }
 
 function IconExtras({ size = 20 }: IconProps) {
+  // sparkles — "the store of upgrades"
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"></path>
@@ -165,16 +176,7 @@ function IconExtras({ size = 20 }: IconProps) {
   );
 }
 
-function IconClose({ size = 20 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18"></line>
-      <line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>
-  );
-}
-
-// Brand mark
+// Brand mark — inlined from bapita/v2/.../img/favicon.svg
 function BapitaMark({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={(size * 90) / 110} viewBox="0 0 110 90" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -188,12 +190,9 @@ function BapitaMark({ size = 26 }: { size?: number }) {
 
 function Wordmark() {
   return (
-    <span className="flex items-center gap-2.5">
-      <BapitaMark size={24} />
-      <span
-        className="font-bold text-[17px]"
-        style={{ letterSpacing: "-0.04em", color: "var(--color-dark)" }}
-      >
+    <span className="flex items-center gap-2">
+      <BapitaMark />
+      <span className="font-extrabold text-[18px] text-dark" style={{ letterSpacing: "-0.03em" }}>
         bapita
       </span>
     </span>
@@ -250,6 +249,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
 
   const onCalendar = pathname === "/calendar";
+
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/");
 
   async function handleLogout() {
@@ -274,715 +274,634 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/* Root column: nav in normal flow on top, body fills the rest */}
       <div className="flex flex-col h-dvh">
-
-        {/* ─── Desktop Top Nav ───────────────────────────────────────────── */}
-        <header
-          className="relative hidden md:flex h-[56px] shrink-0 items-center border-b z-30"
-          style={{
-            borderColor: "var(--line)",
-            background: "rgba(255,255,255,0.92)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-          }}
+      {/* ─── Desktop Top Nav ─────────────────────────────────────────── */}
+      <div
+        className="relative hidden md:flex h-14 shrink-0 items-center border-b z-30 px-6"
+        style={{
+          borderColor: "var(--line)",
+          background: "var(--nav-bg)",
+          backdropFilter: "var(--nav-blur)",
+          WebkitBackdropFilter: "var(--nav-blur)",
+        }}
+      >
+        {/* Hamburger — left, more breathing room */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
+          aria-label="Open menu"
         >
-          {/* Left: hamburger + wordmark */}
-          <div className="flex items-center gap-3 pl-5 pr-4 shrink-0">
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-[var(--color-cream-2)]"
-              style={{ color: "var(--color-dark)" }}
-              aria-label="Open menu"
-            >
-              <IconMenu size={18} />
-            </button>
-            <Wordmark />
+          <IconMenu size={20} />
+        </button>
+
+        {/* Tabs — absolutely centered in the bar */}
+        <nav className="absolute inset-0 flex items-stretch justify-center pointer-events-none">
+          <div className="flex items-stretch gap-2 pointer-events-auto">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => router.push(item.path)}
+                  className="relative flex items-center gap-1.5 px-5 transition-colors hover:text-dark"
+                  style={{
+                    color: active ? "var(--color-dark)" : "var(--color-muted)",
+                    fontWeight: active ? 600 : 400,
+                    fontSize: 14,
+                  }}
+                >
+                  <Icon size={16} />
+                  {item.label}
+                  {active && (
+                    <span
+                      className="absolute inset-x-0 bottom-0 h-[2px] rounded-t-full"
+                      style={{ background: "var(--color-amber)" }}
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
+        </nav>
 
-          {/* Hairline separator */}
-          <div className="w-px h-5 shrink-0" style={{ background: "var(--line)" }} />
+        {/* Spacer — pushes print to far right (ms-auto unreliable with absolute tabs) */}
+        <div className="flex-1" />
 
-          {/* Center: nav tabs — absolutely centered in header */}
-          <nav className="absolute inset-0 flex items-stretch justify-center pointer-events-none">
-            <div className="flex items-stretch gap-0.5 pointer-events-auto">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.path);
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => router.push(item.path)}
-                    className="relative flex items-center gap-2 px-4 text-[13.5px] font-medium transition-colors rounded-lg mx-0.5 my-2"
-                    style={{
-                      color: active ? "var(--color-dark)" : "var(--color-muted)",
-                      background: active ? "var(--color-cream)" : "transparent",
-                      fontWeight: active ? 600 : 450,
-                    }}
-                  >
-                    <Icon size={15} />
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
+        {/* Print — calendar only, far right */}
+        {onCalendar && (
+          <button
+            onClick={() => window.print()}
+            className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
+            aria-label="Print"
+          >
+            <IconPrint size={18} />
+          </button>
+        )}
+      </div>
 
-          {/* Right: print */}
-          <div className="flex-1" />
-          {onCalendar && (
-            <div className="pr-4 shrink-0">
+      {/* ─── Mobile Top Bar ───────────────────────────────────────────── */}
+      <div
+        data-noprint
+        className="md:hidden h-16 shrink-0 flex items-center px-4 border-b z-30 relative"
+        style={{
+          borderColor: "var(--line)",
+          background: "var(--nav-bg)",
+          backdropFilter: "var(--nav-blur)",
+          WebkitBackdropFilter: "var(--nav-blur)",
+        }}
+      >
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="p-2 -ms-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+          aria-label="Open menu"
+        >
+          <IconMenu size={24} />
+        </button>
+
+        {onCalendar && chrome ? (
+          searchOpen ? (
+            /* Search mode — full-width input */
+            <>
+              <div className="flex-1 flex items-center gap-2 ms-2">
+                <input
+                  autoFocus
+                  type="search"
+                  placeholder="Search clients…"
+                  value={searchInput}
+                  onChange={(e) => {
+                    setSearchInput(e.target.value);
+                    chrome.setSearchQuery(e.target.value);
+                  }}
+                  className="flex-1 h-9 px-3 rounded-xl text-[14px] outline-none border"
+                  style={{
+                    borderColor: "var(--color-cream-2)",
+                    background: "var(--color-cream)",
+                    color: "var(--color-dark)",
+                  }}
+                />
+              </div>
               <button
-                onClick={() => window.print()}
-                className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-[var(--color-cream-2)]"
-                style={{ color: "var(--color-muted)" }}
-                aria-label="Print"
+                onClick={() => {
+                  setSearchOpen(false);
+                  setSearchInput("");
+                  chrome.setSearchQuery("");
+                }}
+                className="p-2 -me-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+                aria-label="Close search"
               >
-                <IconPrint size={17} />
+                <span style={{ fontSize: 18, lineHeight: 1 }}>✕</span>
               </button>
+            </>
+          ) : (
+            /* Normal calendar top bar */
+            <>
+              <div className="flex-1 flex items-center justify-center px-2 overflow-hidden">
+                <span className="font-semibold text-[14px] text-dark truncate text-center leading-tight">
+                  {chrome.headerLabel}
+                </span>
+              </div>
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="p-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+                aria-label="Search"
+              >
+                <IconSearch size={20} />
+              </button>
+              <button
+                onClick={() => setFilterSheetOpen(true)}
+                className="p-2 -me-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors relative"
+                aria-label="Filter"
+              >
+                <IconFilter size={20} />
+                {chrome.statusFilter !== "all" && (
+                  <span
+                    className="absolute top-1.5 end-1.5 w-2 h-2 rounded-full"
+                    style={{ background: "var(--color-amber)" }}
+                  />
+                )}
+              </button>
+            </>
+          )
+        ) : (
+          <>
+            <div className="flex-1 flex justify-center">
+              <Wordmark />
             </div>
-          )}
-        </header>
+            <div className="w-10 -me-2" />
+          </>
+        )}
+      </div>
 
-        {/* ─── Mobile Top Bar ────────────────────────────────────────────── */}
-        <header
+      {/* ─── Mobile Calendar Toolbar (calendar-only) ─────────────────── */}
+      {onCalendar && chrome && (
+        <div
           data-noprint
-          className="md:hidden shrink-0 flex items-center z-30 relative border-b"
+          className="md:hidden flex items-center gap-2 px-4 shrink-0 border-b z-20"
           style={{
-            height: 60,
-            paddingInline: 16,
+            background: "var(--nav-bg)",
+            backdropFilter: "var(--nav-blur)",
+            WebkitBackdropFilter: "var(--nav-blur)",
             borderColor: "var(--line)",
-            background: "rgba(255,255,255,0.95)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
+            height: 52,
           }}
         >
-          {/* Hamburger — 16px from edge, no negative margin trick */}
+          {/* View pill */}
           <button
-            onClick={() => setDrawerOpen(true)}
-            className="flex items-center justify-center w-10 h-10 rounded-xl transition-colors active:bg-[var(--color-cream-2)]"
-            style={{ color: "var(--color-dark)", marginInlineStart: -4 }}
-            aria-label="Open menu"
+            onClick={() => setViewSheetOpen(true)}
+            className="flex items-center gap-1.5 rounded-full text-[14px] font-semibold transition-colors active:opacity-70"
+            style={{
+              height: 36,
+              paddingInline: 16,
+              background: "var(--color-cream-2)",
+              color: "var(--color-dark)",
+            }}
           >
-            <IconMenu size={22} />
+            {calViews.find((v) => v.value === chrome.view)?.label ?? "View"}
+            <IconChevronDown size={14} />
           </button>
 
-          {onCalendar && chrome ? (
-            searchOpen ? (
-              <>
-                <div className="flex-1 flex items-center gap-2 mx-2">
-                  <div
-                    className="flex-1 flex items-center gap-2 h-9 px-3 rounded-xl"
-                    style={{ background: "var(--color-cream)", border: "1px solid var(--line)" }}
-                  >
-                    <IconSearch size={14} style={{ color: "var(--color-muted)" }} />
-                    <input
-                      autoFocus
-                      type="search"
-                      placeholder="Search clients…"
-                      value={searchInput}
-                      onChange={(e) => {
-                        setSearchInput(e.target.value);
-                        chrome.setSearchQuery(e.target.value);
-                      }}
-                      className="flex-1 text-[14px] outline-none bg-transparent"
-                      style={{ color: "var(--color-dark)" }}
-                    />
-                  </div>
-                </div>
+          {/* Filter pill */}
+          <button
+            onClick={() => setFilterSheetOpen(true)}
+            className="flex items-center gap-1.5 rounded-full text-[14px] font-semibold transition-colors active:opacity-70"
+            style={{
+              height: 36,
+              paddingInline: 16,
+              background: chrome.statusFilter !== "all" ? "var(--color-amber)" : "var(--color-cream-2)",
+              color: chrome.statusFilter !== "all" ? "#fff" : "var(--color-dark)",
+            }}
+          >
+            {chrome.statusFilter === "all"
+              ? "All"
+              : STATUS_LABEL[chrome.statusFilter as BookingStatus]}
+            <IconChevronDown size={14} />
+          </button>
+
+          <div className="flex-1" />
+
+          {/* Print */}
+          <button
+            onClick={() => window.print()}
+            className="p-1.5 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+            aria-label="Print"
+          >
+            <IconPrint size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* ─── Mobile Bottom Nav ────────────────────────────────────────── */}
+      <nav
+        className="md:hidden fixed bottom-0 start-0 end-0 flex items-stretch bg-white border-t z-30"
+        style={{
+          borderColor: "var(--color-cream-2)",
+          height: 64,
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.path);
+          return (
+            <button
+              key={item.path}
+              onClick={() => router.push(item.path)}
+              className="flex flex-col items-center justify-center flex-1 gap-1 transition-colors"
+              style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}
+            >
+              <span
+                className="flex items-center justify-center rounded-full transition-colors"
+                style={{
+                  width: 44,
+                  height: 28,
+                  background: active ? "var(--amber-soft)" : "transparent",
+                }}
+              >
+                <Icon />
+              </span>
+              <span className="text-[10px] font-medium">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* ─── FAB → New Booking (calendar-only) ────────────────────────── */}
+      {onCalendar && !drawerOpen && (
+        <button
+          data-noprint
+          onClick={() => router.push("/new-booking")}
+          className="md:hidden fixed end-4 z-40 w-14 h-14 rounded-full bg-amber text-white flex items-center justify-center active:scale-95 transition-transform"
+          style={{
+            bottom: "calc(64px + 16px + env(safe-area-inset-bottom))",
+            boxShadow: "0 4px 16px rgba(232,146,10,0.35)",
+          }}
+          aria-label="New booking"
+        >
+          <IconPlus />
+        </button>
+      )}
+
+      {/* ─── Body row: sidebar + main fill remaining height ──────────── */}
+      <div className="flex flex-1 min-h-0">
+      {/* ─── Left Sidebar (Calendar only) ────────────────────────────── */}
+      {onCalendar && chrome && (
+        <aside
+          className="hidden md:flex flex-col w-56 shrink-0 border-e overflow-y-auto"
+          style={{
+            background: "var(--color-cream)",
+            borderColor: "var(--color-cream-2)",
+            paddingTop: 12,
+          }}
+        >
+          {/* +Create button */}
+          <div className="px-3 pb-4">
+            <button
+              onClick={() => router.push("/new-booking")}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-white font-bold text-[14px] transition-all hover:-translate-y-0.5 active:scale-[0.98] shadow-[0_2px_6px_rgba(30,26,20,0.10)] hover:shadow-[0_12px_30px_rgba(232,146,10,0.32)]"
+              style={{ background: "var(--wash-amber)" }}
+            >
+              <IconPlus size={18} />
+              New Booking
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="px-3 pb-3">
+            <div
+              className="flex items-center gap-2 h-9 px-3 rounded-xl border"
+              style={{ borderColor: "var(--color-cream-2)", background: "#fff" }}
+            >
+              <IconSearch size={14} />
+              <input
+                type="search"
+                placeholder="Search clients…"
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  chrome.setSearchQuery(e.target.value);
+                }}
+                className="flex-1 text-[13px] outline-none bg-transparent"
+                style={{ color: "var(--color-dark)" }}
+              />
+              {searchInput && (
                 <button
                   onClick={() => {
-                    setSearchOpen(false);
                     setSearchInput("");
                     chrome.setSearchQuery("");
                   }}
-                  className="flex items-center justify-center w-10 h-10 rounded-xl text-[13px] font-medium transition-colors active:bg-[var(--color-cream-2)]"
-                  style={{ color: "var(--color-muted)", marginInlineEnd: -4 }}
-                  aria-label="Close search"
+                  style={{ color: "var(--color-muted)", fontSize: 12, lineHeight: 1 }}
                 >
-                  Cancel
+                  ✕
                 </button>
-              </>
-            ) : (
-              <>
-                <div className="flex-1 flex items-center justify-center px-2 overflow-hidden">
-                  <span className="font-semibold text-[15px] truncate text-center" style={{ color: "var(--color-dark)", letterSpacing: "-0.02em" }}>
-                    {chrome.headerLabel}
-                  </span>
-                </div>
-                <div className="flex items-center gap-0.5" style={{ marginInlineEnd: -4 }}>
-                  <button
-                    onClick={() => setSearchOpen(true)}
-                    className="flex items-center justify-center w-10 h-10 rounded-xl transition-colors active:bg-[var(--color-cream-2)]"
-                    style={{ color: "var(--color-muted)" }}
-                    aria-label="Search"
-                  >
-                    <IconSearch size={20} />
-                  </button>
-                  <button
-                    onClick={() => setFilterSheetOpen(true)}
-                    className="flex items-center justify-center w-10 h-10 rounded-xl transition-colors active:bg-[var(--color-cream-2)] relative"
-                    style={{ color: "var(--color-muted)" }}
-                    aria-label="Filter"
-                  >
-                    <IconFilter size={18} />
-                    {chrome.statusFilter !== "all" && (
-                      <span
-                        className="absolute top-2 end-2 w-1.5 h-1.5 rounded-full"
-                        style={{ background: "var(--color-amber)" }}
-                      />
-                    )}
-                  </button>
-                </div>
-              </>
-            )
-          ) : (
-            <>
-              <div className="flex-1 flex justify-center">
-                <Wordmark />
-              </div>
-              <div className="w-10" />
-            </>
-          )}
-        </header>
+              )}
+            </div>
+          </div>
 
-        {/* ─── Mobile Calendar Toolbar ────────────────────────────────────── */}
-        {onCalendar && chrome && (
-          <div
-            data-noprint
-            className="md:hidden flex items-center gap-2 px-4 shrink-0 border-b z-20"
-            style={{
-              background: "var(--color-cream)",
-              borderColor: "var(--line)",
-              height: 48,
-            }}
-          >
-            {/* View pill */}
+          {/* Mini calendar / date picker */}
+          <div className="px-3 pb-4">
             <button
-              onClick={() => setViewSheetOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg text-[13px] font-medium transition-colors active:opacity-70"
-              style={{
-                height: 32,
-                paddingInline: 12,
-                background: "#fff",
-                color: "var(--color-dark)",
-                border: "1px solid var(--line)",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-              }}
+              onClick={chrome.openDatePicker}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-full border text-[14px] font-medium transition-colors hover:bg-cream"
+              style={{ borderColor: "var(--color-cream-2)", color: "var(--color-dark)" }}
             >
-              {calViews.find((v) => v.value === chrome.view)?.label ?? "View"}
-              <IconChevronDown size={12} />
-            </button>
-
-            {/* Filter pill */}
-            <button
-              onClick={() => setFilterSheetOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg text-[13px] font-medium transition-colors active:opacity-70"
-              style={{
-                height: 32,
-                paddingInline: 12,
-                background: chrome.statusFilter !== "all" ? "var(--color-amber)" : "#fff",
-                color: chrome.statusFilter !== "all" ? "#fff" : "var(--color-dark)",
-                border: chrome.statusFilter !== "all" ? "1px solid transparent" : "1px solid var(--line)",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-              }}
-            >
-              {chrome.statusFilter === "all"
-                ? "All status"
-                : STATUS_LABEL[chrome.statusFilter as BookingStatus]}
-              <IconChevronDown size={12} />
-            </button>
-
-            <div className="flex-1" />
-
-            <button
-              onClick={() => window.print()}
-              className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors active:bg-[var(--color-cream-2)]"
-              style={{ color: "var(--color-muted)" }}
-              aria-label="Print"
-            >
-              <IconPrint size={16} />
+              <IconCalendar size={16} />
+              {chrome.monthYear}
+              <IconChevronDown size={14} />
             </button>
           </div>
-        )}
 
-        {/* ─── Mobile Bottom Nav ─────────────────────────────────────────── */}
-        <nav
-          className="md:hidden fixed bottom-0 start-0 end-0 flex items-stretch z-30 border-t"
-          style={{
-            background: "rgba(255,255,255,0.97)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            borderColor: "var(--line)",
-            height: 64,
-            paddingBottom: "env(safe-area-inset-bottom)",
-          }}
-        >
-          {navItems.map((item) => {
+          <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
+
+          {/* View toggles — collapsible */}
+          <div className="px-3 py-3">
+            <button
+              onClick={() => setViewSectionOpen((v) => !v)}
+              className="w-full flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide mb-2 transition-colors"
+              style={{ color: "var(--color-muted)" }}
+            >
+              View
+              <span style={{ transform: viewSectionOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                <IconChevronDown size={12} />
+              </span>
+            </button>
+            {viewSectionOpen && (
+              <div className="space-y-0.5">
+                {calViews.map((v) => {
+                  const active = chrome.view === v.value;
+                  return (
+                    <button
+                      key={v.value}
+                      onClick={() => chrome.setView(v.value)}
+                      className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[13px] text-start transition-colors hover:bg-cream-2"
+                      style={{ color: active ? "var(--color-amber)" : "var(--color-dark)" }}
+                    >
+                      {v.label}
+                      {active && (
+                        <span style={{ color: "var(--color-amber)" }}>
+                          <IconCheck size={12} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
+
+          {/* Status filter - collapsible */}
+          <div className="px-3 py-3">
+            <button
+              onClick={() => setViewMenuOpen(!viewMenuOpen)}
+              className="w-full flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide mb-2 transition-colors"
+              style={{ color: "var(--color-muted)" }}
+            >
+              Filter
+              <span style={{ transform: viewMenuOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                <IconChevronDown size={12} />
+              </span>
+            </button>
+            {viewMenuOpen && (
+              <div className="space-y-0.5 mt-1">
+                {filterOptions.map((opt) => {
+                  const active = chrome.statusFilter === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => chrome.setStatusFilter(opt.value)}
+                      className="w-full flex items-center gap-3 px-2 py-1.5 rounded-lg text-[13px] text-start transition-colors hover:bg-cream-2"
+                      style={{
+                        color: active ? "var(--color-amber)" : "var(--color-dark)",
+                      }}
+                    >
+                      <span
+                        className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors"
+                        style={{
+                          borderColor: active ? "var(--color-amber)" : "var(--color-cream-2)",
+                          background: active ? "var(--color-amber)" : "transparent",
+                        }}
+                      >
+                        {active && (
+                          <span style={{ color: "#fff" }}>
+                            <IconCheck size={10} />
+                          </span>
+                        )}
+                      </span>
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
+
+          {/* Calendars */}
+          <div className="px-3 py-3">
+            <p
+              className="text-[11px] font-semibold uppercase tracking-wide mb-2"
+              style={{ color: "var(--color-muted)" }}
+            >
+              Calendars
+            </p>
+            <CalendarSelectorPanel
+              ownerName={businessName}
+              calendarFilter={chrome.calendarFilter}
+              setCalendarFilter={chrome.setCalendarFilter}
+            />
+          </div>
+
+          {/* Jump to today */}
+          {!chrome.isToday && (
+            <>
+              <div className="h-px mx-3 my-1" style={{ background: "var(--color-cream-2)" }} />
+              <div className="px-3 py-2">
+                <button
+                  onClick={chrome.onToday}
+                  className="w-full px-3 py-2 rounded-xl text-[13px] font-medium text-start transition-colors hover:bg-cream-2"
+                  style={{ color: "var(--color-amber)" }}
+                >
+                  Jump to today
+                </button>
+              </div>
+            </>
+          )}
+        </aside>
+      )}
+
+      {/* ─── Main Content ─────────────────────────────────────────────── */}
+      <main className="flex-1 min-w-0 flex flex-col pt-4 pb-16 md:pt-0 md:pb-0">{children}</main>
+      </div>
+      </div>
+
+      {/* ─── Hamburger Drawer (slide from end/right) ──────────────────── */}
+      <div
+        data-noprint
+        className={`fixed inset-0 z-40 transition-opacity duration-200 ${
+          drawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        style={{ background: "rgba(30,26,20,0.4)" }}
+        onClick={() => setDrawerOpen(false)}
+        aria-hidden={!drawerOpen}
+      />
+      <div
+        data-noprint
+        className={`fixed top-0 bottom-0 start-0 z-50 bg-white flex flex-col transition-transform duration-200 ease-out ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+        style={{ width: "min(320px, 85vw)", boxShadow: "4px 0 24px rgba(30,26,20,0.12)" }}
+        role="dialog"
+        aria-label="Navigation menu"
+      >
+        {/* Bapita wordmark at top */}
+        <div className="px-5 py-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
+          <Wordmark />
+        </div>
+
+        {/* Nav items */}
+        <nav className="flex-1 overflow-y-auto py-2">
+          {drawerItemsTop.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
             return (
               <button
                 key={item.path}
-                onClick={() => router.push(item.path)}
-                className="flex flex-col items-center justify-center flex-1 gap-1 transition-colors"
-                style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}
+                onClick={() => go(item.path)}
+                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
+                style={{
+                  height: 48,
+                  background: active ? "rgba(232,146,10,0.05)" : "transparent",
+                  borderInlineStart: active ? "3px solid var(--color-amber)" : "3px solid transparent",
+                }}
               >
-                <span
-                  className="flex items-center justify-center rounded-lg transition-all"
-                  style={{
-                    width: 40,
-                    height: 26,
-                    background: active ? "rgba(232,146,10,0.1)" : "transparent",
-                  }}
-                >
-                  <Icon size={active ? 22 : 21} />
+                <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
+                  <Icon />
                 </span>
-                <span
-                  className="text-[10px] font-medium"
-                  style={{ fontWeight: active ? 600 : 400 }}
-                >
-                  {item.label}
+                {item.label}
+              </button>
+            );
+          })}
+          <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
+          {drawerItemsBottom.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            return (
+              <button
+                key={item.path}
+                onClick={() => go(item.path)}
+                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
+                style={{
+                  height: 48,
+                  background: active ? "rgba(232,146,10,0.05)" : "transparent",
+                  borderInlineStart: active ? "3px solid var(--color-amber)" : "3px solid transparent",
+                }}
+              >
+                <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
+                  <Icon />
                 </span>
+                {item.label}
               </button>
             );
           })}
         </nav>
 
-        {/* ─── FAB → New Booking ─────────────────────────────────────────── */}
-        {onCalendar && !drawerOpen && (
-          <button
-            data-noprint
-            onClick={() => router.push("/new-booking")}
-            className="md:hidden fixed end-4 z-40 flex items-center justify-center rounded-2xl text-white active:scale-95 transition-transform"
-            style={{
-              width: 56,
-              height: 56,
-              bottom: "calc(64px + 16px + env(safe-area-inset-bottom))",
-              background: "var(--color-amber)",
-              boxShadow: "0 4px 20px rgba(232,146,10,0.40), 0 1px 4px rgba(0,0,0,0.08)",
-            }}
-            aria-label="New booking"
-          >
-            <IconPlus size={22} />
-          </button>
-        )}
-
-        {/* ─── Body: sidebar + main ──────────────────────────────────────── */}
-        <div className="flex flex-1 min-h-0">
-
-          {/* ─── Left Sidebar (Calendar only, desktop) ───────────────────── */}
-          {onCalendar && chrome && (
-            <aside
-              className="hidden md:flex flex-col w-[220px] shrink-0 border-e overflow-y-auto"
-              style={{
-                background: "var(--color-cream)",
-                borderColor: "var(--line)",
-                paddingTop: 16,
-              }}
-            >
-              {/* + New Booking */}
-              <div className="px-3 pb-4">
-                <button
-                  onClick={() => router.push("/new-booking")}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl text-white font-semibold text-[13.5px] transition-all hover:opacity-90 active:scale-[0.98]"
-                  style={{
-                    height: 38,
-                    background: "var(--color-amber)",
-                    boxShadow: "0 1px 3px rgba(232,146,10,0.30), 0 4px 12px rgba(232,146,10,0.18)",
-                  }}
-                >
-                  <IconPlus size={16} />
-                  New Booking
-                </button>
-              </div>
-
-              {/* Search */}
-              <div className="px-3 pb-3">
-                <div
-                  className="flex items-center gap-2 h-9 px-3 rounded-xl"
-                  style={{
-                    background: "#fff",
-                    border: "1px solid var(--line)",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-                  }}
-                >
-                  <span style={{ color: "var(--color-muted)" }}><IconSearch size={13} /></span>
-                  <input
-                    type="search"
-                    placeholder="Search clients…"
-                    value={searchInput}
-                    onChange={(e) => {
-                      setSearchInput(e.target.value);
-                      chrome.setSearchQuery(e.target.value);
-                    }}
-                    className="flex-1 text-[13px] outline-none bg-transparent"
-                    style={{ color: "var(--color-dark)" }}
-                  />
-                  {searchInput && (
-                    <button
-                      onClick={() => {
-                        setSearchInput("");
-                        chrome.setSearchQuery("");
-                      }}
-                      className="flex items-center justify-center w-4 h-4 rounded-full transition-colors hover:bg-[var(--color-cream-2)]"
-                      style={{ color: "var(--color-muted)" }}
-                    >
-                      <IconClose size={10} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Date picker button */}
-              <div className="px-3 pb-4">
-                <button
-                  onClick={chrome.openDatePicker}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl text-[13px] font-medium transition-colors hover:bg-[var(--color-cream-2)]"
-                  style={{
-                    height: 34,
-                    background: "#fff",
-                    border: "1px solid var(--line)",
-                    color: "var(--color-dark)",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-                  }}
-                >
-                  <IconCalendar size={14} />
-                  {chrome.monthYear}
-                  <IconChevronDown size={12} />
-                </button>
-              </div>
-
-              <div className="h-px mx-3" style={{ background: "var(--line)" }} />
-
-              {/* View section */}
-              <div className="px-3 pt-4 pb-2">
-                <button
-                  onClick={() => setViewSectionOpen((v) => !v)}
-                  className="w-full flex items-center justify-between mb-2 px-1 transition-colors"
-                  style={{ color: "var(--color-muted)" }}
-                >
-                  <span className="text-[11px] font-semibold uppercase tracking-wider">View</span>
-                  <span style={{ transform: viewSectionOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>
-                    <IconChevronDown size={11} />
-                  </span>
-                </button>
-                {viewSectionOpen && (
-                  <div className="space-y-0.5">
-                    {calViews.map((v) => {
-                      const active = chrome.view === v.value;
-                      return (
-                        <button
-                          key={v.value}
-                          onClick={() => chrome.setView(v.value)}
-                          className="w-full flex items-center justify-between px-2.5 rounded-lg text-[13px] text-start transition-colors hover:bg-[var(--color-cream-2)]"
-                          style={{
-                            height: 34,
-                            color: active ? "var(--color-amber)" : "var(--color-dark)",
-                            background: active ? "rgba(232,146,10,0.07)" : "transparent",
-                            fontWeight: active ? 600 : 400,
-                          }}
-                        >
-                          {v.label}
-                          {active && <IconCheck size={13} />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div className="h-px mx-3 mt-2" style={{ background: "var(--line)" }} />
-
-              {/* Filter section */}
-              <div className="px-3 pt-4 pb-2">
-                <button
-                  onClick={() => setViewMenuOpen(!viewMenuOpen)}
-                  className="w-full flex items-center justify-between mb-2 px-1 transition-colors"
-                  style={{ color: "var(--color-muted)" }}
-                >
-                  <span className="text-[11px] font-semibold uppercase tracking-wider">Filter</span>
-                  <span style={{ transform: viewMenuOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>
-                    <IconChevronDown size={11} />
-                  </span>
-                </button>
-                {viewMenuOpen && (
-                  <div className="space-y-0.5">
-                    {filterOptions.map((opt) => {
-                      const active = chrome.statusFilter === opt.value;
-                      return (
-                        <button
-                          key={opt.value}
-                          onClick={() => chrome.setStatusFilter(opt.value)}
-                          className="w-full flex items-center gap-2.5 px-2.5 rounded-lg text-[13px] text-start transition-colors hover:bg-[var(--color-cream-2)]"
-                          style={{
-                            height: 34,
-                            color: active ? "var(--color-amber)" : "var(--color-dark)",
-                            background: active ? "rgba(232,146,10,0.07)" : "transparent",
-                            fontWeight: active ? 600 : 400,
-                          }}
-                        >
-                          <span
-                            className="w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 transition-colors"
-                            style={{
-                              border: active ? "none" : "1.5px solid var(--line)",
-                              background: active ? "var(--color-amber)" : "transparent",
-                            }}
-                          >
-                            {active && <IconCheck size={9} />}
-                          </span>
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div className="h-px mx-3 mt-2" style={{ background: "var(--line)" }} />
-
-              {/* Calendars */}
-              <div className="px-3 pt-4 pb-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider px-1 mb-2" style={{ color: "var(--color-muted)" }}>
-                  Calendars
-                </p>
-                <CalendarSelectorPanel
-                  ownerName={businessName}
-                  calendarFilter={chrome.calendarFilter}
-                  setCalendarFilter={chrome.setCalendarFilter}
-                />
-              </div>
-
-              {/* Jump to today */}
-              {!chrome.isToday && (
-                <>
-                  <div className="h-px mx-3 mt-2" style={{ background: "var(--line)" }} />
-                  <div className="px-3 py-3">
-                    <button
-                      onClick={chrome.onToday}
-                      className="w-full flex items-center px-2.5 rounded-lg text-[13px] font-semibold transition-colors hover:bg-[rgba(232,146,10,0.07)]"
-                      style={{ height: 34, color: "var(--color-amber)" }}
-                    >
-                      Jump to today
-                    </button>
-                  </div>
-                </>
-              )}
-            </aside>
-          )}
-
-          {/* ─── Main Content ───────────────────────────────────────────── */}
-          <main className="flex-1 min-w-0 flex flex-col pt-4 pb-16 md:pt-0 md:pb-0">{children}</main>
-        </div>
-      </div>
-
-      {/* ─── Drawer Backdrop ───────────────────────────────────────────────── */}
-      <div
-        data-noprint
-        className={`fixed inset-0 z-40 transition-opacity duration-250 ${
-          drawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        style={{ background: "rgba(15,12,8,0.45)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}
-        onClick={() => setDrawerOpen(false)}
-        aria-hidden={!drawerOpen}
-      />
-
-      {/* ─── Hamburger Drawer ──────────────────────────────────────────────── */}
-      <div
-        data-noprint
-        className={`fixed top-0 bottom-0 start-0 z-50 flex flex-col transition-transform duration-250 ease-out ${
-          drawerOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-        style={{
-          width: "min(300px, 84vw)",
-          background: "#fff",
-          boxShadow: "6px 0 32px rgba(15,12,8,0.10), 1px 0 0 var(--line)",
-        }}
-        role="dialog"
-        aria-label="Navigation menu"
-      >
-        {/* Drawer header */}
-        <div
-          className="flex items-center justify-between px-5 border-b"
-          style={{ height: 60, borderColor: "var(--line)" }}
-        >
-          <Wordmark />
-          <button
-            onClick={() => setDrawerOpen(false)}
-            className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-[var(--color-cream)]"
-            style={{ color: "var(--color-muted)" }}
-            aria-label="Close menu"
-          >
-            <IconClose size={18} />
-          </button>
-        </div>
-
-        {/* Nav items */}
-        <nav className="flex-1 overflow-y-auto py-2">
-          <div className="px-2 pt-1 pb-2">
-            <p className="px-3 text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--color-muted)" }}>
-              Menu
-            </p>
-            {drawerItemsTop.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.path);
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => go(item.path)}
-                  className="w-full flex items-center gap-3 px-3 rounded-xl text-start text-[14px] transition-colors hover:bg-[var(--color-cream)]"
-                  style={{
-                    height: 46,
-                    color: active ? "var(--color-amber)" : "var(--color-dark)",
-                    background: active ? "rgba(232,146,10,0.07)" : "transparent",
-                    fontWeight: active ? 600 : 400,
-                  }}
-                >
-                  <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
-                    <Icon size={18} />
-                  </span>
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mx-4 my-1" style={{ height: 1, background: "var(--line)" }} />
-
-          <div className="px-2 pt-2 pb-1">
-            {drawerItemsBottom.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.path);
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => go(item.path)}
-                  className="w-full flex items-center gap-3 px-3 rounded-xl text-start text-[14px] transition-colors hover:bg-[var(--color-cream)]"
-                  style={{
-                    height: 46,
-                    color: active ? "var(--color-amber)" : "var(--color-dark)",
-                    background: active ? "rgba(232,146,10,0.07)" : "transparent",
-                    fontWeight: active ? 600 : 400,
-                  }}
-                >
-                  <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
-                    <Icon size={18} />
-                  </span>
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-
-        {/* Drawer footer: business identity + sign out */}
-        <div className="border-t" style={{ borderColor: "var(--line)" }}>
-          <div className="flex items-center gap-3 px-4 py-3.5">
+        {/* Business name + sign out — bottom */}
+        <div className="border-t" style={{ borderColor: "var(--color-cream-2)" }}>
+          {/* Business identity */}
+          <div className="flex items-center gap-3 px-4 py-3">
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-[15px] shrink-0"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-[15px] shrink-0"
               style={{ background: "var(--color-amber)" }}
             >
               {initial}
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[13.5px] font-semibold truncate" style={{ color: "var(--color-dark)", letterSpacing: "-0.01em" }}>
-                {businessName}
-              </div>
-              <div className="text-[11.5px] truncate" style={{ color: "var(--color-muted)" }}>
-                {businessSlug}
-              </div>
+            <div className="min-w-0">
+              <div className="text-[14px] font-semibold text-dark truncate">{businessName}</div>
+              <div className="text-[11px] truncate" style={{ color: "var(--color-muted)" }}>{businessSlug}</div>
             </div>
           </div>
-          <div className="px-2 pb-3">
+          {/* Sign out */}
+          <div className="px-2 pb-2">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 rounded-xl text-start text-[14px] font-medium transition-colors hover:bg-[var(--color-cream)]"
+              className="w-full flex items-center gap-3 px-4 rounded-xl text-start text-[15px] font-medium transition-colors hover:bg-[var(--color-cream)]"
               style={{ height: 44, color: "var(--color-cancelled)" }}
             >
-              <IconLogout size={17} />
+              <IconLogout />
               Sign out
             </button>
           </div>
         </div>
       </div>
 
-      {/* ─── Mobile Filter Sheet ───────────────────────────────────────────── */}
+      {/* ─── Mobile Filter Sheet ──────────────────────────────────────── */}
       {filterSheetOpen && chrome && (
         <>
           <div
             className="fixed inset-0 z-40 md:hidden"
-            style={{ background: "rgba(15,12,8,0.45)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}
+            style={{ background: "rgba(30,26,20,0.4)" }}
             onClick={() => setFilterSheetOpen(false)}
           />
           <div
-            className="fixed bottom-0 start-0 end-0 z-50 md:hidden rounded-t-2xl"
-            style={{
-              background: "#fff",
-              paddingBottom: "env(safe-area-inset-bottom)",
-              boxShadow: "0 -4px 32px rgba(15,12,8,0.10)",
-            }}
+            className="fixed bottom-0 start-0 end-0 z-50 md:hidden bg-white rounded-t-2xl"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            <div className="w-9 h-1 rounded-full mx-auto mt-3 mb-1" style={{ background: "var(--line)" }} />
-            <div className="flex items-center justify-between px-5 pt-3 pb-3">
-              <span className="text-[16px] font-semibold" style={{ color: "var(--color-dark)", letterSpacing: "-0.02em" }}>
-                Filter
-              </span>
-              <button
-                onClick={() => setFilterSheetOpen(false)}
-                className="flex items-center justify-center w-8 h-8 rounded-full transition-colors active:bg-[var(--color-cream-2)]"
-                style={{ color: "var(--color-muted)" }}
-              >
-                <IconClose size={16} />
-              </button>
+            <div
+              className="w-10 h-1 rounded-full mx-auto mt-3 mb-4"
+              style={{ background: "var(--color-cream-2)" }}
+            />
+            <div
+              className="px-4 pb-2 text-[12px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--color-muted)" }}
+            >
+              Filter by status
             </div>
-            <div className="px-2 pb-2">
-              {filterOptions.map((opt) => {
-                const active = chrome.statusFilter === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    onClick={() => {
-                      chrome.setStatusFilter(opt.value);
-                      setFilterSheetOpen(false);
-                    }}
-                    className="w-full flex items-center justify-between px-4 rounded-xl text-[15px] text-start transition-colors active:bg-[var(--color-cream)]"
-                    style={{
-                      height: 50,
-                      color: active ? "var(--color-amber)" : "var(--color-dark)",
-                      fontWeight: active ? 600 : 400,
-                    }}
-                  >
-                    {opt.label}
-                    {active && (
-                      <span style={{ color: "var(--color-amber)" }}>
-                        <IconCheck size={16} />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            {filterOptions.map((opt) => {
+              const active = chrome.statusFilter === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    chrome.setStatusFilter(opt.value);
+                    setFilterSheetOpen(false);
+                  }}
+                  className="w-full flex items-center justify-between px-4 text-[15px] text-start text-dark transition-colors active:bg-cream"
+                  style={{ height: 52 }}
+                >
+                  {opt.label}
+                  {active && (
+                    <span style={{ color: "var(--color-amber)" }}>
+                      <IconCheck />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
             {!chrome.isToday && (
               <>
-                <div className="mx-4 my-1" style={{ height: 1, background: "var(--line)" }} />
-                <div className="px-2 pb-2">
-                  <button
-                    onClick={() => {
-                      chrome.onToday();
-                      setFilterSheetOpen(false);
-                    }}
-                    className="w-full flex items-center px-4 rounded-xl text-[15px] font-semibold text-start transition-colors active:bg-[rgba(232,146,10,0.07)]"
-                    style={{ height: 50, color: "var(--color-amber)" }}
-                  >
-                    Jump to today
-                  </button>
-                </div>
+                <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
+                <button
+                  onClick={() => {
+                    chrome.onToday();
+                    setFilterSheetOpen(false);
+                  }}
+                  className="w-full flex items-center px-4 text-[15px] font-medium text-start transition-colors active:bg-cream"
+                  style={{ height: 52, color: "var(--color-amber)" }}
+                >
+                  Jump to today
+                </button>
               </>
             )}
-            <div className="mx-4 my-1" style={{ height: 1, background: "var(--line)" }} />
-            <div className="px-5 pt-3 pb-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--color-muted)" }}>
-                Calendars
-              </p>
+            <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
+            <div
+              className="px-4 pt-3 pb-1 text-[12px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--color-muted)" }}
+            >
+              Calendars
             </div>
             <div className="px-2 pb-2">
               <CalendarSelectorPanel
@@ -996,62 +915,49 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      {/* ─── Mobile View Sheet ─────────────────────────────────────────────── */}
+      {/* ─── Mobile View Sheet ────────────────────────────────────────── */}
       {viewSheetOpen && chrome && (
         <>
           <div
             className="fixed inset-0 z-40 md:hidden"
-            style={{ background: "rgba(15,12,8,0.45)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}
+            style={{ background: "rgba(30,26,20,0.4)" }}
             onClick={() => setViewSheetOpen(false)}
           />
           <div
-            className="fixed bottom-0 start-0 end-0 z-50 md:hidden rounded-t-2xl"
-            style={{
-              background: "#fff",
-              paddingBottom: "env(safe-area-inset-bottom)",
-              boxShadow: "0 -4px 32px rgba(15,12,8,0.10)",
-            }}
+            className="fixed bottom-0 start-0 end-0 z-50 md:hidden bg-white rounded-t-2xl"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            <div className="w-9 h-1 rounded-full mx-auto mt-3 mb-1" style={{ background: "var(--line)" }} />
-            <div className="flex items-center justify-between px-5 pt-3 pb-3">
-              <span className="text-[16px] font-semibold" style={{ color: "var(--color-dark)", letterSpacing: "-0.02em" }}>
-                View
-              </span>
-              <button
-                onClick={() => setViewSheetOpen(false)}
-                className="flex items-center justify-center w-8 h-8 rounded-full transition-colors active:bg-[var(--color-cream-2)]"
-                style={{ color: "var(--color-muted)" }}
-              >
-                <IconClose size={16} />
-              </button>
+            <div
+              className="w-10 h-1 rounded-full mx-auto mt-3 mb-4"
+              style={{ background: "var(--color-cream-2)" }}
+            />
+            <div
+              className="px-4 pb-2 text-[12px] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--color-muted)" }}
+            >
+              View
             </div>
-            <div className="px-2 pb-2">
-              {calViews.map((v) => {
-                const active = chrome.view === v.value;
-                return (
-                  <button
-                    key={v.value}
-                    onClick={() => {
-                      chrome.setView(v.value);
-                      setViewSheetOpen(false);
-                    }}
-                    className="w-full flex items-center justify-between px-4 rounded-xl text-[15px] text-start transition-colors active:bg-[var(--color-cream)]"
-                    style={{
-                      height: 50,
-                      color: active ? "var(--color-amber)" : "var(--color-dark)",
-                      fontWeight: active ? 600 : 400,
-                    }}
-                  >
-                    {v.label}
-                    {active && (
-                      <span style={{ color: "var(--color-amber)" }}>
-                        <IconCheck size={16} />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            {calViews.map((v) => {
+              const active = chrome.view === v.value;
+              return (
+                <button
+                  key={v.value}
+                  onClick={() => {
+                    chrome.setView(v.value);
+                    setViewSheetOpen(false);
+                  }}
+                  className="w-full flex items-center justify-between px-4 text-[15px] text-start text-dark transition-colors active:bg-cream"
+                  style={{ height: 52 }}
+                >
+                  {v.label}
+                  {active && (
+                    <span style={{ color: "var(--color-amber)" }}>
+                      <IconCheck />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
             <div className="h-4" />
           </div>
         </>
