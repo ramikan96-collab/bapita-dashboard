@@ -234,6 +234,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const [viewSectionOpen, setViewSectionOpen] = useState(true);
+  const [calendarsSectionOpen, setCalendarsSectionOpen] = useState(true);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [viewSheetOpen, setViewSheetOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -486,8 +487,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
       {/* ─── Mobile Bottom Nav ────────────────────────────────────────── */}
       <nav
-        className="md:hidden fixed bottom-0 start-0 end-0 flex items-stretch bg-white border-t z-30"
+        className="md:hidden fixed bottom-0 start-0 end-0 flex items-stretch border-t z-30"
         style={{
+          background: "var(--color-surface)",
           borderColor: "var(--color-cream-2)",
           height: 64,
           paddingBottom: "env(safe-area-inset-bottom)",
@@ -563,7 +565,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <div className="px-3 pb-3">
             <div
               className="flex items-center gap-2 h-9 px-3 rounded-xl border"
-              style={{ borderColor: "var(--color-cream-2)", background: "#fff" }}
+              style={{ borderColor: "var(--color-cream-2)", background: "var(--color-surface)" }}
             >
               <IconSearch size={14} />
               <input
@@ -694,17 +696,33 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
           {/* Calendars */}
           <div className="px-3 py-3">
-            <p
-              className="text-[11px] font-semibold uppercase tracking-wide mb-2"
-              style={{ color: "var(--color-muted)" }}
-            >
-              Calendars
-            </p>
-            <CalendarSelectorPanel
-              ownerName={businessName}
-              calendarFilter={chrome.calendarFilter}
-              setCalendarFilter={chrome.setCalendarFilter}
-            />
+            <div className="flex items-center justify-between mb-2">
+              <button
+                onClick={() => setCalendarsSectionOpen((v) => !v)}
+                className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide transition-colors"
+                style={{ color: "var(--color-muted)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+              >
+                Calendars
+                <span style={{ transform: calendarsSectionOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                  <IconChevronDown size={12} />
+                </span>
+              </button>
+              <button
+                onClick={() => showToast("Multiple calendars coming soon", "info")}
+                className="flex items-center justify-center rounded-full transition-colors hover:bg-[var(--color-cream-2)]"
+                style={{ width: 22, height: 22, color: "var(--color-muted)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
+                aria-label="Add calendar"
+              >
+                <IconPlus size={12} />
+              </button>
+            </div>
+            {calendarsSectionOpen && (
+              <CalendarSelectorPanel
+                ownerName={businessName}
+                calendarFilter={chrome.calendarFilter}
+                setCalendarFilter={chrome.setCalendarFilter}
+              />
+            )}
           </div>
 
           {/* Jump to today */}
@@ -742,10 +760,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       />
       <div
         data-noprint
-        className={`fixed top-0 bottom-0 start-0 z-50 bg-white flex flex-col transition-transform duration-200 ease-out ${
+        className={`fixed top-0 bottom-0 start-0 z-50 flex flex-col transition-transform duration-200 ease-out ${
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ width: "min(320px, 85vw)", boxShadow: "4px 0 24px rgba(30,26,20,0.12)" }}
+        style={{ width: "min(320px, 85vw)", background: "var(--color-surface)", boxShadow: "4px 0 24px rgba(30,26,20,0.12)" }}
         role="dialog"
         aria-label="Navigation menu"
       >
@@ -839,8 +857,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             onClick={() => setFilterSheetOpen(false)}
           />
           <div
-            className="fixed bottom-0 start-0 end-0 z-50 md:hidden bg-white rounded-t-2xl"
-            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+            className="fixed bottom-0 start-0 end-0 z-50 md:hidden rounded-t-[20px]"
+            style={{ background: "var(--color-surface)", paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div
               className="w-10 h-1 rounded-full mx-auto mt-3 mb-4"
@@ -916,8 +934,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             onClick={() => setViewSheetOpen(false)}
           />
           <div
-            className="fixed bottom-0 start-0 end-0 z-50 md:hidden bg-white rounded-t-2xl"
-            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+            className="fixed bottom-0 start-0 end-0 z-50 md:hidden rounded-t-[20px]"
+            style={{ background: "var(--color-surface)", paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div
               className="w-10 h-1 rounded-full mx-auto mt-3 mb-4"
