@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { Business, Service } from "@/types";
-import { FloatingCTA }    from "../../components/FloatingCTA";
-import { SectionGallery } from "../../components/SectionGallery";
-import { SectionHours }   from "../../components/SectionHours";
-import { SectionLocation } from "../../components/SectionLocation";
-import { BookingOverlay }  from "../../booking/BookingOverlay";
+import { FloatingCTA }    from "../components/FloatingCTA";
+import { SectionGallery } from "../components/SectionGallery";
+import { SectionHours }   from "../components/SectionHours";
+import { SectionLocation } from "../components/SectionLocation";
+import { BookingOverlay }  from "../booking/BookingOverlay";
 
 const C = {
   bg:   "#F8F2E8",

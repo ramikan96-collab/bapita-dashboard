@@ -1,12 +1,15 @@
 "use client";
 
+import type { ComponentType } from "react";
 import type { Business, Service } from "@/types";
 import { ClassicPage } from "./themes/classic/ClassicPage";
 import { StudioAviPage } from "./customs/studio-avi";
 
+type PageComponent = ComponentType<{ business: Business; services: Service[] }>;
+
 // ─── Add new barbers here ─────────────────────────────────────────────────
 // Each entry: slug (must match businesses.slug in DB) → dedicated page component
-const CUSTOM_PAGES: Record<string, React.ComponentType<{ business: Business; services: Service[] }>> = {
+const CUSTOM_PAGES: Record<string, PageComponent> = {
   "studio-avi": StudioAviPage,
 };
 // ──────────────────────────────────────────────────────────────────────────
