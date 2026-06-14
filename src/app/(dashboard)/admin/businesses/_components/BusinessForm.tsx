@@ -437,7 +437,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
 function GalleryManager({ gallery, setGallery, businessId }: {
   gallery:    GalleryItem[];
-  setGallery: (g: GalleryItem[]) => void;
+  setGallery: React.Dispatch<React.SetStateAction<GalleryItem[]>>;
   businessId?: string;
 }) {
   const supabase   = createClient();
