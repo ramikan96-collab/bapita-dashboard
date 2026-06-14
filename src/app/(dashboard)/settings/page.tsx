@@ -253,10 +253,11 @@ function BusinessSection({
   const [phone, setPhone] = useState(business.phone || "");
   const [address, setAddress] = useState(business.address || "");
   const [slug, setSlug] = useState(business.slug || "");
+  const [defaultLang, setDefaultLang] = useState<"en" | "he">((business.default_lang as "en" | "he") || "en");
   const [saving, setSaving] = useState(false);
 
-  const original = { name: business.name || "", phone: business.phone || "", address: business.address || "", slug: business.slug || "" };
-  const dirty = name !== original.name || phone !== original.phone || address !== original.address || slug !== original.slug;
+  const original = { name: business.name || "", phone: business.phone || "", address: business.address || "", slug: business.slug || "", defaultLang: (business.default_lang as "en" | "he") || "en" };
+  const dirty = name !== original.name || phone !== original.phone || address !== original.address || slug !== original.slug || defaultLang !== original.defaultLang;
 
   const bookingUrl = `bapita.com/${slug || "your-slug"}`;
 
@@ -274,7 +275,7 @@ function BusinessSection({
       setSlug(finalSlug);
     }
     const { error } = await supabase.from("businesses").update({
-      name, phone: phone || null, address: address || null, slug: finalSlug,
+      name, phone: phone || null, address: address || null, slug: finalSlug, default_lang: defaultLang,
     }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast("Failed to save", "error"); return; }
@@ -342,19 +343,22 @@ function BusinessSection({
       </SectionCard>
 
       {/* Language */}
-      <SectionCard title="Language">
-        <div className="flex items-center justify-between">
+      <SectionCard title="Booking page language">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div>
-            <div className="text-[14px] font-medium text-dark">Dashboard language</div>
-            <div className="text-[12px] text-muted mt-0.5">Hebrew coming soon</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>Default language</div>
+            <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Clients land on this language — they can still switch</div>
           </div>
-          <div className="flex items-center rounded-full p-0.5 gap-0.5" style={{ background: "var(--color-cream-2)" }}>
-            <span className="px-3 py-1.5 rounded-full text-[13px] font-semibold" style={{ background: "var(--color-amber)", color: "#fff" }}>
-              En
-            </span>
-            <span className="px-3 py-1.5 rounded-full text-[13px] font-semibold" style={{ color: "var(--color-muted)", cursor: "not-allowed", opacity: 0.5 }}>
-              He
-            </span>
+          <div style={{ display: "flex", alignItems: "center", borderRadius: 9999, padding: "3px", gap: 2, background: "var(--color-cream-2)", flexShrink: 0 }}>
+            {(["en", "he"] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => setDefaultLang(l)}
+                style={{ padding: "6px 16px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: defaultLang === l ? "var(--color-amber)" : "transparent", color: defaultLang === l ? "#fff" : "var(--color-muted)" }}
+              >
+                {l === "en" ? "EN" : "עב"}
+              </button>
+            ))}
           </div>
         </div>
       </SectionCard>
