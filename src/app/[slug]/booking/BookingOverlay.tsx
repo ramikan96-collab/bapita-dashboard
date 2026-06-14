@@ -3,11 +3,12 @@
 import { useEffect } from "react";
 import type { Business, Service } from "@/types";
 import { useBookingFlow } from "../hooks/useBookingFlow";
-import { useSlots } from "../hooks/useSlots";
-import { DateStep } from "./steps/DateStep";
-import { TimeStep } from "./steps/TimeStep";
-import { ContactStep } from "./steps/ContactStep";
-import { SuccessScreen } from "./steps/SuccessScreen";
+import { useSlots }       from "../hooks/useSlots";
+import { DateStep }       from "./steps/DateStep";
+import { TimeStep }       from "./steps/TimeStep";
+import { ContactStep }    from "./steps/ContactStep";
+import { SuccessScreen }  from "./steps/SuccessScreen";
+import { translations, type Lang } from "../translations";
 
 interface Props {
   business: Business;
@@ -17,9 +18,13 @@ interface Props {
   accentColor: string;
   darkColor: string;
   bgColor: string;
+  lang?: Lang;
 }
 
-export function BookingOverlay({ business, services, initialService, onClose, accentColor, darkColor, bgColor }: Props) {
+export function BookingOverlay({ business, services, initialService, onClose, accentColor, darkColor, bgColor, lang = "en" }: Props) {
+  const t = translations[lang];
+  const dateLocale = lang === "he" ? "he-IL" : "en-US";
+
   const { state, setService, setDate, setTime, setContact, goBack, submit } = useBookingFlow(initialService);
   const { slots, loading: slotsLoading } = useSlots(
     business.id,
@@ -44,7 +49,6 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
     ? { date:1, time:2, contact:3, success:3 }
     : { service:1, date:2, time:3, contact:4, success:4 };
   const stepNum = STEP_NUM[state.step] ?? 1;
-
   const isFirst = fromCard ? state.step === "date" : state.step === "service";
 
   return (
@@ -68,7 +72,7 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
         display:"flex", flexDirection:"column",
         animation:"slideUpSheet 0.35s ease",
       }}>
-        {/* Header (hidden on success) */}
+        {/* Header */}
         {state.step !== "success" && (
           <div style={{
             display:"flex", alignItems:"center", justifyContent:"space-between",
@@ -83,7 +87,7 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
             <div style={{ textAlign:"center" }}>
               <div style={{ fontSize:15, fontWeight:800, color:darkColor }}>{business.name}</div>
               <div style={{ fontSize:12, color:darkColor, opacity:0.45, marginTop:2 }}>
-                {stepNum} of {totalSteps}
+                {t.overlay.stepOf(stepNum, totalSteps)}
               </div>
             </div>
             <button
@@ -98,14 +102,14 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
 
           {state.step === "service" && (
             <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-              <div style={{ fontSize:15, fontWeight:700, color:darkColor }}>Choose a service</div>
+              <div style={{ fontSize:15, fontWeight:700, color:darkColor }}>{t.steps.service.title}</div>
               {services.map(s => (
                 <button key={s.id} onClick={() => setService(s)} style={{
                   width:"100%", padding:"14px 16px", borderRadius:12,
                   border:`1.5px solid rgba(0,0,0,0.1)`,
                   background:"#fff", cursor:"pointer",
                   display:"flex", justifyContent:"space-between", alignItems:"center",
-                  textAlign:"left", transition:"border-color 0.15s ease",
+                  textAlign:"start", transition:"border-color 0.15s ease",
                   fontFamily:"inherit",
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = accentColor; }}
@@ -113,7 +117,7 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
                 >
                   <div>
                     <div style={{ fontSize:15, fontWeight:700, color:darkColor }}>{s.name}</div>
-                    <div style={{ fontSize:13, color:darkColor, opacity:0.5, marginTop:2 }}>{s.duration} min</div>
+                    <div style={{ fontSize:13, color:darkColor, opacity:0.5, marginTop:2 }}>{s.duration} {t.min}</div>
                   </div>
                   <div style={{ fontSize:17, fontWeight:900, color:accentColor }}>₪{s.price}</div>
                 </button>
@@ -126,6 +130,9 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
               service={state.service} selectedDate={state.date} onSelect={setDate}
               businessHours={business.business_hours}
               accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
+              stepTitle={t.steps.date.title}
+              minLabel={t.min}
+              calendarT={t.calendar}
             />
           )}
 
@@ -135,6 +142,8 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
               slots={slots} selectedTime={state.time} onSelect={setTime}
               loading={slotsLoading}
               accentColor={accentColor} darkColor={darkColor}
+              stepTitle={t.steps.time.title}
+              dateLocale={dateLocale}
             />
           )}
 
@@ -145,6 +154,7 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
               onSubmit={() => submit(business.id, business.name)}
               submitting={state.submitting} error={state.error}
               accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
+              t={t.steps.contact}
             />
           )}
 
@@ -156,6 +166,9 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
               businessPhone={business.phone}
               businessAddress={business.address}
               accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
+              t={t.steps.success}
+              dateLocale={dateLocale}
+              minLabel={t.min}
             />
           )}
         </div>

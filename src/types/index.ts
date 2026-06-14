@@ -87,6 +87,7 @@ export interface Business {
   plan_start_date?:    string | null;
   plan_renewal_date?:  string | null;
   plan_notes?:         string | null;
+  default_lang?:       string | null;
 }
 
 export interface BlockedTime {

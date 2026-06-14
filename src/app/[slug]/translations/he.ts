@@ -1,0 +1,48 @@
+export const he = {
+  hero: { cta: "קבע תור", bookNow: "הזמן עכשיו" },
+  services: { title: "שירותים", book: "הזמן" },
+  gallery: { title: "גלריה" },
+  about: { title: "אודות" },
+  hours: { title: "שעות פעילות", closed: "סגור" },
+  location: { title: "מיקום", directions: "← נווט" },
+  footer: { poweredBy: "מופעל על ידי", brand: "Bapita" },
+  social: { happyClients: "4.9 · 340 לקוחות מרוצים" },
+  min: "דק׳",
+  status: {
+    openNow: "פתוח עכשיו",
+    closedOpensToday: (time: string) => `סגור · פותח היום ב-${time}`,
+    closedOpens: (day: string, time: string) => `סגור · פותח ב${day} ב-${time}`,
+    closed: "סגור",
+    tomorrow: "מחר",
+  },
+  days: {
+    sunday: "ראשון", monday: "שני", tuesday: "שלישי",
+    wednesday: "רביעי", thursday: "חמישי", friday: "שישי", saturday: "שבת",
+  },
+  overlay: { stepOf: (n: number, t: number) => `${n} מתוך ${t}` },
+  steps: {
+    service: { title: "בחר שירות" },
+    date: { title: "בחר תאריך" },
+    time: { title: "בחר שעה", noSlots: "אין זמנים פנויים" },
+    contact: {
+      title: "פרטים אישיים",
+      name: "שם מלא *",
+      namePlaceholder: "השם שלך",
+      phone: "טלפון *",
+      phonePlaceholder: "05X-XXX-XXXX",
+      email: "אימייל (אופציונלי)",
+      emailPlaceholder: "you@example.com",
+      confirm: "אישור הזמנה",
+      confirming: "מאשר...",
+    },
+    success: {
+      title: "ההזמנה אושרה!",
+      seeYou: (name: string) => `להתראות, ${name}.`,
+      addToCalendar: "הוסף ליומן",
+    },
+  },
+  calendar: {
+    months: ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"],
+    weekDays: ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"],
+  },
+};

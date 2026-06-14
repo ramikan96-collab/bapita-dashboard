@@ -12,6 +12,7 @@ interface Props {
   businessHours?: BusinessHours;
   accentColor: string;
   darkColor: string;
+  calendarT?: { months: string[]; weekDays: string[] };
 }
 
 function toDateStr(d: Date) {
@@ -27,7 +28,8 @@ function getDays(year: number, month: number): (Date | null)[] {
   return days;
 }
 
-export function CalendarPicker({ selectedDate, onSelect, businessHours, accentColor, darkColor }: Props) {
+export function CalendarPicker({ selectedDate, onSelect, businessHours, accentColor, darkColor, calendarT }: Props) {
+  const cal = calendarT ?? en.calendar;
   const todayMs = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
   const now = new Date();
   const [year, setYear]   = useState(now.getFullYear());
@@ -49,7 +51,7 @@ export function CalendarPicker({ selectedDate, onSelect, businessHours, accentCo
   }
 
   const days = getDays(year, month);
-  const monthLabel = `${en.calendar.months[month]} ${year}`;
+  const monthLabel = `${cal.months[month]} ${year}`;
 
   const btnBase: React.CSSProperties = {
     width: 36, height: 36, borderRadius: 8,
@@ -68,7 +70,7 @@ export function CalendarPicker({ selectedDate, onSelect, businessHours, accentCo
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:6 }}>
-        {en.calendar.weekDays.map(d => (
+        {cal.weekDays.map(d => (
           <div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:700, color:"rgba(0,0,0,0.3)", paddingBottom:4 }}>{d}</div>
         ))}
       </div>

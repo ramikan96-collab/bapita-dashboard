@@ -1,14 +1,25 @@
 export const en = {
-  hero: { cta: "Book Appointment" },
+  hero: { cta: "Book Appointment", bookNow: "Book Now" },
   services: { title: "Services", book: "Book →" },
   gallery: { title: "Gallery" },
   about: { title: "About" },
   hours: { title: "Hours", closed: "Closed" },
   location: { title: "Location", directions: "Get Directions →" },
   footer: { poweredBy: "Powered by", brand: "Bapita" },
-  overlay: {
-    stepOf: (n: number, t: number) => `${n} of ${t}`,
+  social: { happyClients: "4.9 · 340 happy clients" },
+  min: "min",
+  status: {
+    openNow: "Open now",
+    closedOpensToday: (time: string) => `Closed · Opens today at ${time}`,
+    closedOpens: (day: string, time: string) => `Closed · Opens ${day} at ${time}`,
+    closed: "Closed",
+    tomorrow: "Tomorrow",
   },
+  days: {
+    sunday: "Sunday", monday: "Monday", tuesday: "Tuesday",
+    wednesday: "Wednesday", thursday: "Thursday", friday: "Friday", saturday: "Saturday",
+  },
+  overlay: { stepOf: (n: number, t: number) => `${n} of ${t}` },
   steps: {
     service: { title: "Choose a service" },
     date: { title: "Choose a date" },
@@ -22,6 +33,7 @@ export const en = {
       email: "Email (optional)",
       emailPlaceholder: "you@example.com",
       confirm: "Confirm Booking",
+      confirming: "Confirming…",
     },
     success: {
       title: "Booking confirmed!",
