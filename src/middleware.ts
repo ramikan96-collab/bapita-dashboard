@@ -1,7 +1,21 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
+// Dashboard routes that require auth — everything else is a public booking page
+const DASHBOARD_ROUTES = [
+  "/calendar",
+  "/clients",
+  "/extras",
+  "/financials",
+  "/insights",
+  "/new-booking",
+  "/profile",
+  "/settings",
+  "/usage",
+  "/admin",
+];
+
+export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -31,7 +45,7 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Redirect logged-in users away from auth pages
+  // Auth pages — redirect logged-in users to dashboard
   if (pathname.startsWith("/login") || pathname.startsWith("/auth")) {
     if (user) {
       return NextResponse.redirect(new URL("/calendar", request.url));
@@ -39,16 +53,21 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Public routes — allow without auth (no redirect)
-  if (pathname.startsWith("/book") || pathname.startsWith("/api/public")) {
+  // Public API routes
+  if (pathname.startsWith("/api/public")) {
     return supabaseResponse;
   }
 
-  // Protected — redirect to login if no session
-  if (!user) {
+  // Dashboard routes require auth
+  const isDashboard = DASHBOARD_ROUTES.some(
+    (r) => pathname === r || pathname.startsWith(r + "/")
+  );
+
+  if (isDashboard && !user) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // Everything else (booking pages at /[slug]) is public
   return supabaseResponse;
 }
 
