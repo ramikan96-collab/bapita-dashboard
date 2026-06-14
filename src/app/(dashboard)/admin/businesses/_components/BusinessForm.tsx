@@ -56,6 +56,9 @@ interface FormData {
   plan_start_date:    string;
   plan_renewal_date:  string;
   plan_notes:         string;
+  stat_years:         string;
+  stat_clients:       string;
+  stat_rating:        string;
 }
 
 interface GalleryItem { url: string; uploading?: boolean; }
@@ -79,6 +82,7 @@ const EMPTY_FORM: FormData = {
   status: "draft",
   plan_tier: "", plan_price: "", plan_addons: [],
   plan_booking_limit: "", plan_start_date: "", plan_renewal_date: "", plan_notes: "",
+  stat_years: "", stat_clients: "", stat_rating: "",
 };
 
 interface Props {
@@ -137,6 +141,9 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           plan_start_date:    b.plan_start_date     || "",
           plan_renewal_date:  b.plan_renewal_date   || "",
           plan_notes:         b.plan_notes          || "",
+          stat_years:         b.stat_years   != null ? String(b.stat_years)   : "",
+          stat_clients:       b.stat_clients != null ? String(b.stat_clients) : "",
+          stat_rating:        b.stat_rating          || "",
         });
         // Merge hero + gallery_images
         const imgs: string[]  = b.gallery_images || [];
@@ -238,6 +245,9 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       plan_start_date:    form.plan_start_date     || null,
       plan_renewal_date:  form.plan_renewal_date   || null,
       plan_notes:         form.plan_notes          || null,
+      stat_years:         form.stat_years   ? Number(form.stat_years)   : null,
+      stat_clients:       form.stat_clients ? Number(form.stat_clients) : null,
+      stat_rating:        form.stat_rating          || null,
     };
 
     if (mode === "new") {
@@ -462,6 +472,23 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     style={{ ...inputStyle, height:"auto", resize:"vertical", padding:"10px 13px", lineHeight:1.6 }}
                   />
                 </Field>
+              </SectionCard>
+
+              <SectionCard title="Booking Page Stats">
+                <p style={{ fontSize:13, color:"var(--color-muted)", marginTop:0, marginBottom:16 }}>
+                  Shown as social proof on the booking page. Leave blank to hide.
+                </p>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+                  <Field label="Years Experience">
+                    <input type="number" min="0" value={form.stat_years} onChange={e => set("stat_years", e.target.value)} placeholder="8" style={inputStyle} />
+                  </Field>
+                  <Field label="Total Clients">
+                    <input type="number" min="0" value={form.stat_clients} onChange={e => set("stat_clients", e.target.value)} placeholder="500" style={inputStyle} />
+                  </Field>
+                  <Field label="Google Rating">
+                    <input value={form.stat_rating} onChange={e => set("stat_rating", e.target.value)} placeholder="4.9" style={inputStyle} />
+                  </Field>
+                </div>
               </SectionCard>
 
               <SectionCard title="Section Visibility & Order">

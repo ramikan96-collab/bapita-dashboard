@@ -20,7 +20,7 @@ export default async function BookPage({ params }: Props) {
 
   const { data: business, error } = await supabase
     .from("businesses")
-    .select("id, name, slug, phone, email, address, instagram_url, facebook_url, whatsapp_number, google_review_link, google_maps_url, waze_url, business_hours, template_style, tagline, hero_image_url, gallery_images, about_text, accent_color, show_gallery, show_about, show_hours, show_location, default_lang")
+    .select("id, name, slug, phone, email, address, instagram_url, facebook_url, whatsapp_number, google_review_link, google_maps_url, waze_url, business_hours, template_style, tagline, hero_image_url, gallery_images, about_text, accent_color, show_gallery, show_about, show_hours, show_location, default_lang, stat_years, stat_clients, stat_rating")
     .eq("slug", slug)
     .single();
 

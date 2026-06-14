@@ -12,15 +12,27 @@ import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../../uti
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&q=80";
 
-function useFadeInOnEnter() {
+const P = { bg: "#FFFFFF", text: "#111111", muted: "#6B7280", surface: "#F9F9F9", border: "#E5E5E5" };
+
+function useFadeInOnEnter(threshold = 0.12) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current; if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.1 });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold });
     obs.observe(el); return () => obs.disconnect();
-  }, []);
+  }, [threshold]);
   return { ref, visible };
+}
+
+function SectionTitle({ title, accent }: { title: string; accent: string }) {
+  const { ref, visible } = useFadeInOnEnter();
+  return (
+    <div ref={ref} style={{ marginBottom: 28 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: P.text, letterSpacing: "-0.02em", marginBottom: 10 }}>{title}</h2>
+      <div style={{ height: 2, borderRadius: 2, background: accent, width: visible ? 28 : 0, transition: "width 0.55s cubic-bezier(0.4,0,0.2,1)" }} />
+    </div>
+  );
 }
 
 function IgIcon({ size = 16, color = "currentColor" }) {
@@ -40,45 +52,56 @@ export function CleanPage({ business, services }: Props) {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [hoveredCard,     setHoveredCard]     = useState<string | null>(null);
   const [showWa,          setShowWa]          = useState(false);
+  const [stickyVisible,   setStickyVisible]   = useState(false);
   const [lang,            setLang]            = useState<Lang>((business.default_lang as Lang) || "en");
 
   const t     = translations[lang];
   const isRtl = lang === "he";
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
+  const { ref: statsRef,    visible: statsVisible }    = useFadeInOnEnter(0.3);
 
   useEffect(() => {
-    const onScroll = () => setShowWa(window.scrollY > window.innerHeight * 0.7);
+    const onScroll = () => {
+      const y = window.scrollY;
+      setShowWa(y > window.innerHeight * 0.7);
+      setStickyVisible(y > window.innerHeight * 0.82);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const accent     = business.accent_color || "#1D1D1D";
+  const accent     = business.accent_color || "#111111";
   const heroImage  = business.hero_image_url || FALLBACK_HERO;
   const waNumber   = business.whatsapp_number?.replace(/\D/g, "");
   const openStatus = getOpenStatus(business.business_hours, t.status, t.days);
   const igHandle   = getInstagramHandle(business.instagram_url);
   const cityLabel  = getCityFromAddress(business.address);
 
+  const hasStats = business.stat_years != null || business.stat_clients != null || business.stat_rating != null;
+
   function openFromService(s: Service) { setSelectedService(s); setOverlayOpen(true); }
   function openFromCTA()               { setSelectedService(null); setOverlayOpen(true); }
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
-  const P = { bg: "#FFFFFF", text: "#111111", muted: "#6B7280", surface: "#F9F9F9", border: "#E5E5E5" };
-
   return (
     <div dir={isRtl ? "rtl" : "ltr"} style={{ background: P.bg, minHeight: "100svh", fontFamily: "'Plus Jakarta Sans', sans-serif", color: P.text }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-        .cl-pill { animation: fadeUp 0.5s ease-out 0.2s both; }
-        .cl-name { animation: fadeUp 0.6s ease-out 0.3s both; }
-        .cl-tag  { animation: fadeUp 0.6s ease-out 0.4s both; }
-        .cl-ig   { animation: fadeUp 0.6s ease-out 0.5s both; }
-        .cl-cta  { animation: fadeUp 0.6s ease-out 0.55s both; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        @keyframes kenBurns   { 0%{transform:scale(1.0)} 100%{transform:scale(1.07)} }
+        @keyframes fadeUp     { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideDown  { from{opacity:0;transform:translateY(-100%)} to{opacity:1;transform:translateY(0)} }
+        .cl-hero-img { animation: kenBurns 12s ease-in-out infinite alternate; }
+        .cl-pill     { animation: fadeUp 0.5s ease-out 0.2s both; }
+        .cl-name     { animation: fadeUp 0.65s ease-out 0.3s both; }
+        .cl-tag      { animation: fadeUp 0.65s ease-out 0.42s both; }
+        .cl-ig       { animation: fadeUp 0.6s ease-out 0.52s both; }
+        .cl-cta      { animation: fadeUp 0.6s ease-out 0.6s both; }
+        .cl-sticky   { animation: slideDown 0.3s ease-out both; }
+        .cl-stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08) !important; }
       `}</style>
 
-      {/* Lang toggle */}
+      {/* Lang toggle — physically top-right always */}
       <div style={{ position: "fixed", top: 16, right: 16, zIndex: 200, background: "rgba(0,0,0,0.48)", backdropFilter: "blur(8px)", borderRadius: 9999, padding: "4px", display: "flex" }}>
         {(["en", "he"] as Lang[]).map(l => (
           <button key={l} onClick={() => setLang(l)} style={{ background: lang === l ? "rgba(255,255,255,0.22)" : "none", border: "none", borderRadius: 9999, padding: "3px 11px", cursor: "pointer", fontSize: 12, fontWeight: lang === l ? 700 : 400, color: "#fff", fontFamily: "inherit", transition: "background 0.2s" }}>
@@ -87,38 +110,60 @@ export function CleanPage({ business, services }: Props) {
         ))}
       </div>
 
-      {/* Hero */}
-      <section style={{ position: "relative", height: "70svh", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "flex-start" }}>
-        <div style={{ position: "absolute", inset: 0 }}>
-          <img src={heroImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      {/* Sticky header */}
+      {stickyVisible && (
+        <div className="cl-sticky" style={{ position: "fixed", top: 0, insetInlineStart: 0, insetInlineEnd: 0, zIndex: 150, height: 56, background: "rgba(255,255,255,0.88)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", paddingInlineStart: 24, paddingInlineEnd: 100 }}>
+          <span style={{ fontSize: 15, fontWeight: 800, color: P.text, letterSpacing: "-0.02em" }}>{business.name}</span>
+          <button onClick={openFromCTA}
+            style={{ height: 36, padding: "0 18px", borderRadius: 9999, background: accent, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s", letterSpacing: "-0.01em" }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = "0.82"; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+          >{t.hero.cta}</button>
         </div>
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.62) 100%)" }} />
-        <div style={{ position: "relative", zIndex: 1, padding: "0 32px 40px", width: "100%", maxWidth: 640 }}>
-          <div className="cl-pill" style={{ marginBottom: 16 }}>
+      )}
+
+      {/* Hero — full height, bottom-left aligned content */}
+      <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "flex-start" }}>
+        <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+          <img src={heroImage} alt="" className="cl-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", transformOrigin: "center center" }} />
+        </div>
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.28) 55%, rgba(0,0,0,0.1) 100%)" }} />
+        <div style={{ position: "relative", zIndex: 1, padding: "0 32px 52px", width: "100%", maxWidth: 680 }}>
+          <div className="cl-pill" style={{ marginBottom: 18 }}>
             {openStatus ? (
-              <span style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)", color: "#fff", borderRadius: 9999, padding: "4px 12px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#22c55e" : "#9CA3AF", display: "inline-block" }} />
+              <span style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", color: "#fff", borderRadius: 9999, padding: "5px 14px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid rgba(255,255,255,0.2)" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#4ade80" : "#9CA3AF", display: "inline-block" }} />
                 {openStatus.text}
               </span>
             ) : cityLabel ? (
-              <span style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)", color: "#fff", borderRadius: 9999, padding: "4px 12px", fontSize: 12, fontWeight: 600 }}>📍 {cityLabel}</span>
+              <span style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", color: "#fff", borderRadius: 9999, padding: "5px 14px", fontSize: 12, fontWeight: 600, border: "1px solid rgba(255,255,255,0.2)" }}>📍 {cityLabel}</span>
             ) : null}
           </div>
-          <h1 className="cl-name" style={{ fontWeight: 800, fontSize: "clamp(2rem, 7vw, 3.5rem)", color: "#fff", lineHeight: 1.06, letterSpacing: "-0.03em", marginBottom: 10 }}>{business.name}</h1>
-          {business.tagline && <p className="cl-tag" style={{ fontWeight: 400, fontSize: "clamp(0.95rem, 2.5vw, 1.1rem)", color: "rgba(255,255,255,0.82)", lineHeight: 1.5, marginBottom: 16 }}>{business.tagline}</p>}
+
+          <h1 className="cl-name" style={{ fontWeight: 800, fontSize: "clamp(2.5rem, 9vw, 5rem)", color: "#fff", lineHeight: 0.95, letterSpacing: "-0.035em", marginBottom: 16 }}>
+            {business.name}
+          </h1>
+
+          {business.tagline && (
+            <p className="cl-tag" style={{ fontWeight: 400, fontSize: "clamp(1rem, 2.8vw, 1.2rem)", color: "rgba(255,255,255,0.78)", lineHeight: 1.5, marginBottom: 20, maxWidth: 420 }}>
+              {business.tagline}
+            </p>
+          )}
+
           {igHandle && (
-            <div className="cl-ig" style={{ marginBottom: 20 }}>
+            <div className="cl-ig" style={{ marginBottom: 28 }}>
               <a href={business.instagram_url ?? "#"} target="_blank" rel="noopener noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.72)", textDecoration: "none", fontSize: 13, fontWeight: 600 }}
-                onMouseEnter={e=>{e.currentTarget.style.color="#fff";}} onMouseLeave={e=>{e.currentTarget.style.color="rgba(255,255,255,0.72)";}}>
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.68)", textDecoration: "none", fontSize: 13, fontWeight: 600, transition: "color 0.2s" }}
+                onMouseEnter={e => { e.currentTarget.style.color = "#fff"; }} onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.68)"; }}>
                 <IgIcon size={14} color="currentColor" />{igHandle}
               </a>
             </div>
           )}
+
           <button className="cl-cta" onClick={openFromCTA}
-            style={{ background: "#fff", border: "none", borderRadius: 9999, color: accent, fontSize: 15, fontWeight: 800, padding: "13px 32px", cursor: "pointer", fontFamily: "inherit", transition: "background 0.2s, color 0.2s", letterSpacing: "-0.01em" }}
-            onMouseEnter={e=>{e.currentTarget.style.background=accent;e.currentTarget.style.color="#fff";}}
-            onMouseLeave={e=>{e.currentTarget.style.background="#fff";e.currentTarget.style.color=accent;}}
+            style={{ background: "#fff", border: "none", borderRadius: 9999, color: P.text, fontSize: 15, fontWeight: 800, padding: "15px 36px", cursor: "pointer", fontFamily: "inherit", letterSpacing: "-0.02em", transition: "background 0.2s, color 0.2s, transform 0.15s", display: "inline-block" }}
+            onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = "#fff"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = P.text; e.currentTarget.style.transform = "translateY(0)"; }}
           >
             {t.hero.cta}
           </button>
@@ -138,26 +183,62 @@ export function CleanPage({ business, services }: Props) {
         return business.google_review_link ? <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none" }}>{bar}</a> : bar;
       })()}
 
-      {/* Content */}
+      {/* Stats row */}
+      {hasStats && (
+        <div ref={statsRef} style={{ padding: "40px 20px 0", maxWidth: 640, margin: "0 auto" }}>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            {business.stat_years != null && (
+              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0s, transform 0.55s ease 0s, transform 0.18s ease, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+                <div style={{ fontSize: 32, fontWeight: 800, color: P.text, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_years}+</div>
+                <div style={{ fontSize: 11, color: P.muted, fontWeight: 600, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "שנות ניסיון" : "Years Exp."}</div>
+              </div>
+            )}
+            {business.stat_clients != null && (
+              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.1s, transform 0.55s ease 0.1s, transform 0.18s ease, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+                <div style={{ fontSize: 32, fontWeight: 800, color: P.text, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_clients}+</div>
+                <div style={{ fontSize: 11, color: P.muted, fontWeight: 600, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "לקוחות מרוצים" : "Happy Clients"}</div>
+              </div>
+            )}
+            {business.stat_rating != null && (
+              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.2s, transform 0.55s ease 0.2s, transform 0.18s ease, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+                <div style={{ fontSize: 32, fontWeight: 800, color: "#F59E0B", letterSpacing: "-0.04em", lineHeight: 1 }}>⭐ {business.stat_rating}</div>
+                <div style={{ fontSize: 11, color: P.muted, fontWeight: 600, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "גוגל" : "Google"}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Main content */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px" }}>
 
-        <section ref={servicesRef} style={{ paddingTop: 52 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: P.text, marginBottom: 24, letterSpacing: "-0.02em" }}>{t.services.title}</h2>
+        {/* Services */}
+        <section ref={servicesRef} style={{ paddingTop: hasStats ? 44 : 52 }}>
+          <SectionTitle title={t.services.title} accent={accent} />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {services.map((s, i) => {
               const hovered = hoveredCard === s.id;
               return (
                 <div key={s.id} onMouseEnter={() => setHoveredCard(s.id)} onMouseLeave={() => setHoveredCard(null)}
-                  style={{ background: hovered ? P.surface : P.bg, border: `1px solid ${P.border}`, borderInlineStart: `3px solid ${hovered ? accent : P.border}`, borderRadius: 8, padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: servicesVisible ? 1 : 0, transform: servicesVisible ? "translateY(0)" : "translateY(16px)", transition: [`opacity 0.45s ease ${i*60}ms`, `transform 0.45s ease ${i*60}ms`, "background 0.2s", "border-color 0.2s"].join(", ") }}
+                  style={{ background: hovered ? P.surface : P.bg, border: `1px solid ${hovered ? accent : P.border}`, borderRadius: 10, padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: servicesVisible ? 1 : 0, transform: servicesVisible ? "translateY(0)" : "translateY(16px)", transition: [`opacity 0.45s ease ${i * 60}ms`, `transform 0.45s ease ${i * 60}ms`, "background 0.2s", "border-color 0.2s", "box-shadow 0.2s"].join(", "), boxShadow: hovered ? "0 4px 16px rgba(0,0,0,0.06)" : "none" }}
                 >
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: P.text, marginBottom: 2 }}>{s.name}</div>
-                    {s.description && <div style={{ fontSize: 13, color: P.muted, marginBottom: 4, lineHeight: 1.4 }}>{s.description}</div>}
-                    <span style={{ display: "inline-block", fontSize: 12, fontWeight: 600, color: P.muted, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 4, padding: "2px 8px" }}>{s.duration} {t.min}</span>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: P.text, marginBottom: 3 }}>{s.name}</div>
+                    {s.description && <div style={{ fontSize: 13, color: P.muted, marginBottom: 5, lineHeight: 1.4 }}>{s.description}</div>}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: P.muted }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      {s.duration} {t.min}
+                    </span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0, marginInlineStart: 12 }}>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: accent }}>₪{s.price}</span>
-                    <button onClick={() => openFromService(s)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, color: accent, textDecoration: "underline", fontFamily: "inherit", padding: 0 }}>{t.services.book}</button>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0, marginInlineStart: 14 }}>
+                    <span style={{ fontSize: 17, fontWeight: 800, color: P.text, letterSpacing: "-0.02em" }}>₪{s.price}</span>
+                    <button onClick={() => openFromService(s)}
+                      style={{ height: 36, padding: "0 18px", borderRadius: 9999, background: hovered ? accent : P.text, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.2s, transform 0.15s", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.04)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
+                    >
+                      {t.services.book}
+                    </button>
                   </div>
                 </div>
               );
@@ -165,42 +246,52 @@ export function CleanPage({ business, services }: Props) {
           </div>
         </section>
 
+        {/* About */}
         {business.show_about !== false && business.about_text && (
-          <section style={{ paddingTop: 52 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: P.muted, display: "block", marginBottom: 8 }}>{t.about.title}</span>
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: P.text, marginBottom: 16, letterSpacing: "-0.02em" }}>{business.name}</h2>
-            <p style={{ fontSize: 16, lineHeight: 1.8, color: P.muted }}>{business.about_text}</p>
+          <section style={{ paddingTop: 56 }}>
+            <SectionTitle title={t.about.title} accent={accent} />
+            {business.hero_image_url && (
+              <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
+                <img src={business.hero_image_url} alt={business.name} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${P.border}`, flexShrink: 0 }} />
+                <span style={{ fontSize: 14, fontWeight: 700, color: P.text }}>{business.name}</span>
+              </div>
+            )}
+            <p style={{ fontSize: 16, lineHeight: 1.85, color: P.muted }}>{business.about_text}</p>
           </section>
         )}
 
+        {/* Gallery */}
         {business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 && (
-          <section style={{ paddingTop: 52 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: P.text, marginBottom: 20, letterSpacing: "-0.02em" }}>{t.gallery.title}</h2>
-            <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={8} />
+          <section style={{ paddingTop: 56 }}>
+            <SectionTitle title={t.gallery.title} accent={accent} />
+            <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={10} />
           </section>
         )}
 
+        {/* Hours */}
         {business.show_hours !== false && business.business_hours && (
-          <section style={{ paddingTop: 52 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: P.text, marginBottom: 20, letterSpacing: "-0.02em" }}>{t.hours.title}</h2>
+          <section style={{ paddingTop: 56 }}>
+            <SectionTitle title={t.hours.title} accent={accent} />
             <SectionHours hours={business.business_hours} darkColor={P.text} accentColor={accent} dayLabels={t.days} closedLabel={t.hours.closed} />
           </section>
         )}
 
+        {/* Location */}
         {business.show_location !== false && business.address && (
-          <section style={{ paddingTop: 52 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: P.text, marginBottom: 20, letterSpacing: "-0.02em" }}>{t.location.title}</h2>
+          <section style={{ paddingTop: 56 }}>
+            <SectionTitle title={t.location.title} accent={accent} />
             <SectionLocation address={business.address} darkColor={P.text} accentColor={accent} directionsLabel={t.location.directions} />
           </section>
         )}
 
-        <footer style={{ marginTop: 64, textAlign: "center" }}>
+        {/* Footer */}
+        <footer style={{ marginTop: 64, paddingTop: 32, borderTop: `1px solid ${P.border}`, textAlign: "center" }}>
           {business.phone && <a href={`tel:${business.phone}`} style={{ display: "block", fontSize: 13, color: P.muted, textDecoration: "none", marginBottom: 14 }}>{business.phone}</a>}
           {(business.instagram_url || business.whatsapp_number || business.facebook_url) && (
-            <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 14 }}>
-              {business.instagram_url && <a href={business.instagram_url} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: "50%", background: P.surface, border: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=P.border;}}><IgIcon size={16} color={P.text}/></a>}
-              {business.whatsapp_number && <a href={`https://wa.me/${business.whatsapp_number.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: "50%", background: P.surface, border: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=P.border;}}><WaIcon size={16} color={P.text}/></a>}
-              {business.facebook_url && <a href={business.facebook_url} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: "50%", background: P.surface, border: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=P.border;}}><FbIcon size={16} color={P.text}/></a>}
+            <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 20 }}>
+              {business.instagram_url && <a href={business.instagram_url} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: "50%", background: P.surface, border: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "center", transition: "border-color 0.2s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = accent; }} onMouseLeave={e => { e.currentTarget.style.borderColor = P.border; }}><IgIcon size={16} color={P.text}/></a>}
+              {business.whatsapp_number && <a href={`https://wa.me/${business.whatsapp_number.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: "50%", background: P.surface, border: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "center", transition: "border-color 0.2s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = accent; }} onMouseLeave={e => { e.currentTarget.style.borderColor = P.border; }}><WaIcon size={16} color={P.text}/></a>}
+              {business.facebook_url && <a href={business.facebook_url} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: "50%", background: P.surface, border: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "center", transition: "border-color 0.2s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = accent; }} onMouseLeave={e => { e.currentTarget.style.borderColor = P.border; }}><FbIcon size={16} color={P.text}/></a>}
             </div>
           )}
           <div style={{ fontSize: 12, color: P.muted }}>{t.footer.poweredBy}{" "}<a href="https://bapita.com" style={{ color: accent, textDecoration: "none", fontWeight: 700 }}>{t.footer.brand}</a></div>
