@@ -99,6 +99,8 @@ export function CleanPage({ business, services }: Props) {
         .cl-cta      { animation: fadeUp 0.6s ease-out 0.6s both; }
         .cl-sticky   { animation: slideDown 0.3s ease-out both; }
         .cl-stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08) !important; }
+        .cl-hero-section { align-items: flex-end; }
+        @media (min-width: 768px) { .cl-hero-section { align-items: center; } }
       `}</style>
 
       {/* Lang toggle — physically top-right always */}
@@ -112,7 +114,7 @@ export function CleanPage({ business, services }: Props) {
 
       {/* Sticky header */}
       {stickyVisible && (
-        <div className="cl-sticky" style={{ position: "fixed", top: 0, insetInlineStart: 0, insetInlineEnd: 0, zIndex: 150, height: 56, background: "rgba(255,255,255,0.88)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", paddingInlineStart: 24, paddingInlineEnd: 100 }}>
+        <div className="cl-sticky" style={{ position: "fixed", top: 0, insetInlineStart: 0, insetInlineEnd: 0, zIndex: 150, height: 56, background: "rgba(255,255,255,0.88)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", paddingInlineStart: 24, paddingInlineEnd: 140 }}>
           <span style={{ fontSize: 15, fontWeight: 800, color: P.text, letterSpacing: "-0.02em" }}>{business.name}</span>
           <button onClick={openFromCTA}
             style={{ height: 36, padding: "0 18px", borderRadius: 9999, background: accent, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s", letterSpacing: "-0.01em" }}
@@ -122,13 +124,13 @@ export function CleanPage({ business, services }: Props) {
         </div>
       )}
 
-      {/* Hero — full height, bottom-left aligned content */}
-      <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "flex-start" }}>
+      {/* Hero — bottom-left on mobile, vertically centred on desktop */}
+      <section className="cl-hero-section" style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", justifyContent: "flex-start" }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
           <img src={heroImage} alt="" className="cl-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", transformOrigin: "center center" }} />
         </div>
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.28) 55%, rgba(0,0,0,0.1) 100%)" }} />
-        <div style={{ position: "relative", zIndex: 1, padding: "0 32px 52px", width: "100%", maxWidth: 680 }}>
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.38) 60%, rgba(0,0,0,0.18) 100%)" }} />
+        <div style={{ position: "relative", zIndex: 1, paddingInlineStart: 36, paddingInlineEnd: 36, paddingTop: 80, paddingBottom: 0, width: "100%", maxWidth: 680 }}>
           <div className="cl-pill" style={{ marginBottom: 18 }}>
             {openStatus ? (
               <span style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", color: "#fff", borderRadius: 9999, padding: "5px 14px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid rgba(255,255,255,0.2)" }}>
@@ -145,7 +147,7 @@ export function CleanPage({ business, services }: Props) {
           </h1>
 
           {business.tagline && (
-            <p className="cl-tag" style={{ fontWeight: 400, fontSize: "clamp(1rem, 2.8vw, 1.2rem)", color: "rgba(255,255,255,0.78)", lineHeight: 1.5, marginBottom: 20, maxWidth: 420 }}>
+            <p className="cl-tag" dir="auto" style={{ fontWeight: 400, fontSize: "clamp(1rem, 2.8vw, 1.2rem)", color: "rgba(255,255,255,0.78)", lineHeight: 1.5, marginBottom: 20, maxWidth: 420 }}>
               {business.tagline}
             </p>
           )}
