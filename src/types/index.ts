@@ -62,6 +62,17 @@ export interface Business {
   instagram_url: string | null;
   google_review_link: string | null;
   business_hours?: BusinessHours;
+  // booking page fields
+  template_style?: string | null;
+  tagline?: string | null;
+  hero_image_url?: string | null;
+  gallery_images?: string[] | null;
+  about_text?: string | null;
+  accent_color?: string | null;
+  show_gallery?: boolean | null;
+  show_about?: boolean | null;
+  show_hours?: boolean | null;
+  show_location?: boolean | null;
 }
 
 export interface BlockedTime {
