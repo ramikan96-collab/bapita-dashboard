@@ -116,6 +116,7 @@ export interface Service {
   name: string;
   duration: number;
   price: number;
+  description?: string | null;
   active: boolean;
   display_order: number;
   created_at?: string;

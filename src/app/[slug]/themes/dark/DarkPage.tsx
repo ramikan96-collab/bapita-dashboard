@@ -8,16 +8,7 @@ import { SectionHours }   from "../../components/SectionHours";
 import { SectionLocation } from "../../components/SectionLocation";
 import { BookingOverlay }  from "../../booking/BookingOverlay";
 
-const C = {
-  bg:      "#F8F2E8",
-  dark:    "#221510",
-  gold:    "#B8862A",
-  cream2:  "#F0E8D8",
-};
-
-const FALLBACK_HERO = "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=1200&q=80";
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
+const FALLBACK_HERO = "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=1200&q=80";
 
 const DAYS: DayKey[] = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
 
@@ -68,8 +59,6 @@ function getCityFromAddress(address?: string | null): string | null {
   return parts.length >= 2 ? parts[parts.length - 2] : parts[0] || null;
 }
 
-// ─── SVG Icons ──────────────────────────────────────────────────────────────
-
 function IgIcon({ size = 16, color = "currentColor" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -94,8 +83,6 @@ function FbIcon({ size = 16, color = "currentColor" }) {
   );
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
 function useFadeInOnEnter() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -104,7 +91,7 @@ function useFadeInOnEnter() {
     if (!el) return;
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
-      { threshold: 0.15 }
+      { threshold: 0.1 }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -112,28 +99,12 @@ function useFadeInOnEnter() {
   return { ref, visible };
 }
 
-function SectionTitle({ title, accentColor, darkColor }: { title: string; accentColor: string; darkColor: string }) {
-  const { ref, visible } = useFadeInOnEnter();
-  return (
-    <div ref={ref}>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: darkColor, marginBottom: 10, letterSpacing: "-0.01em" }}>{title}</h2>
-      <div style={{
-        height: 3, borderRadius: 2, background: accentColor,
-        width: visible ? 32 : 0,
-        transition: "width 0.5s ease",
-      }} />
-    </div>
-  );
-}
-
-// ─── Main Component ──────────────────────────────────────────────────────────
-
 interface Props {
   business: Business;
   services: Service[];
 }
 
-export function ClassicPage({ business, services }: Props) {
+export function DarkPage({ business, services }: Props) {
   const [overlayOpen,     setOverlayOpen]     = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [hoveredCard,     setHoveredCard]     = useState<string | null>(null);
@@ -147,126 +118,126 @@ export function ClassicPage({ business, services }: Props) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const accent    = business.accent_color || C.gold;
+  const accent    = business.accent_color || "#C9A24A";
   const heroImage = business.hero_image_url || FALLBACK_HERO;
+  const waNumber  = business.whatsapp_number?.replace(/\D/g, "");
+
+  const openStatus = getOpenStatus(business.business_hours);
+  const igHandle   = getInstagramHandle(business.instagram_url);
+  const cityLabel  = getCityFromAddress(business.address);
 
   function openFromService(s: Service) { setSelectedService(s); setOverlayOpen(true); }
   function openFromCTA()               { setSelectedService(null); setOverlayOpen(true); }
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
-  const openStatus    = getOpenStatus(business.business_hours);
-  const igHandle      = getInstagramHandle(business.instagram_url);
-  const cityLabel     = getCityFromAddress(business.address);
-  const waNumber      = business.whatsapp_number?.replace(/\D/g, "");
+  const D = {
+    bg:      "#0D0D0D",
+    surface: "#1A1A1A",
+    raised:  "#222222",
+    text:    "#F0F0F0",
+    muted:   "#888888",
+    border:  "rgba(255,255,255,0.08)",
+  };
 
   return (
-    <div style={{ background: C.bg, minHeight: "100svh", fontFamily: "'Heebo', sans-serif", color: C.dark }}>
+    <div style={{ background: D.bg, minHeight: "100svh", color: D.text, fontFamily: "'Inter', system-ui, sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&display=swap');
 
-        @keyframes kenBurns   { 0%{transform:scale(1.0)} 100%{transform:scale(1.06)} }
-        @keyframes fadeUpLoad { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+        .dk-pill { animation: fadeUp 0.5s ease-out 0.15s both; }
+        .dk-name { animation: fadeUp 0.7s ease-out 0.25s both; }
+        .dk-tag  { animation: fadeUp 0.6s ease-out 0.4s both; }
+        .dk-ig   { animation: fadeUp 0.6s ease-out 0.5s both; }
+        .dk-cta  { animation: fadeUp 0.6s ease-out 0.55s both; }
 
-        .c-hero-img  { animation: kenBurns 10s ease-in-out infinite alternate; }
-        .c-pill      { animation: fadeUpLoad 0.5s ease-out 0.2s both; }
-        .c-name      { animation: fadeUpLoad 0.6s ease-out 0.3s both; }
-        .c-tagline   { animation: fadeUpLoad 0.6s ease-out 0.45s both; }
-        .c-ig        { animation: fadeUpLoad 0.6s ease-out 0.5s both; }
-        .c-hero-cta  { animation: fadeUpLoad 0.6s ease-out 0.55s both; }
-
-        .about-row { display:flex; flex-direction:column; align-items:center; gap:20px; }
-        @media(min-width:480px) {
-          .about-row { flex-direction:row; align-items:flex-start; }
-        }
+        .dk-about-row { display:flex; flex-direction:column; align-items:center; gap:20px; }
+        @media(min-width:480px) { .dk-about-row { flex-direction:row; align-items:flex-start; } }
       `}</style>
 
       {/* ─── Hero ─── */}
       <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-          <img src={heroImage} alt="" className="c-hero-img"
-            style={{ width: "100%", height: "100%", objectFit: "cover", transformOrigin: "center center" }}
-          />
+        <div style={{ position: "absolute", inset: 0 }}>
+          <img src={heroImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
-        <div style={{ position: "absolute", inset: 0, background: "rgba(34,21,16,0.65)" }} />
-        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", width: "100%", maxWidth: 640 }}>
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.82) 100%)" }} />
+        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", width: "100%", maxWidth: 700 }}>
 
-          {/* Status pill or city pill */}
-          <div className="c-pill" style={{ marginBottom: 18, display: "flex", justifyContent: "center" }}>
+          {/* Status pill */}
+          <div className="dk-pill" style={{ marginBottom: 20, display: "flex", justifyContent: "center" }}>
             {openStatus ? (
               <span style={{
-                background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)",
+                background: "rgba(255,255,255,0.1)", backdropFilter: "blur(8px)",
                 color: "#fff", borderRadius: 9999, padding: "5px 14px",
                 fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6,
+                border: "1px solid rgba(255,255,255,0.15)",
               }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: openStatus.open ? "#22c55e" : "#888", display: "inline-block" }} />
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#22c55e" : "#666", display: "inline-block" }} />
                 {openStatus.text}
               </span>
             ) : cityLabel ? (
               <span style={{
-                background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)",
+                background: "rgba(255,255,255,0.1)", backdropFilter: "blur(8px)",
                 color: "#fff", borderRadius: 9999, padding: "5px 14px",
                 fontSize: 12, fontWeight: 600,
+                border: "1px solid rgba(255,255,255,0.15)",
               }}>
                 📍 {cityLabel}
               </span>
             ) : null}
           </div>
 
-          <h1 className="c-name" style={{
-            fontFamily: "'Playfair Display', serif",
+          <h1 className="dk-name" style={{
+            fontFamily: "'Oswald', sans-serif",
             fontWeight: 700,
-            fontSize: "clamp(2.25rem, 8vw, 4.5rem)",
-            color: "#fff", lineHeight: 1.08, marginBottom: 14,
+            fontSize: "clamp(2.5rem, 9vw, 5.5rem)",
+            color: "#fff", lineHeight: 1.0,
+            letterSpacing: "0.04em", textTransform: "uppercase",
+            marginBottom: 16,
           }}>
             {business.name}
           </h1>
 
           {business.tagline && (
-            <p className="c-tagline" style={{
-              fontSize: "clamp(1rem, 3vw, 1.2rem)",
-              color: "rgba(255,255,255,0.78)", fontWeight: 300,
-              lineHeight: 1.5, marginBottom: 20,
+            <p className="dk-tag" style={{
+              fontFamily: "'Oswald', sans-serif",
+              fontWeight: 400, fontSize: "clamp(0.95rem, 2.5vw, 1.15rem)",
+              color: accent, lineHeight: 1.5,
+              letterSpacing: "0.08em", marginBottom: 20,
+              textTransform: "uppercase",
             }}>
               {business.tagline}
             </p>
           )}
 
-          {/* Instagram link */}
           {igHandle && (
-            <div className="c-ig" style={{ marginBottom: 28, display: "flex", justifyContent: "center" }}>
-              <a
-                href={business.instagram_url ?? "#"}
-                target="_blank" rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  color: "rgba(255,255,255,0.72)", textDecoration: "none",
-                  fontSize: 13, fontWeight: 500,
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.color = "#fff"; }}
-                onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.72)"; }}
+            <div className="dk-ig" style={{ marginBottom: 28, display: "flex", justifyContent: "center" }}>
+              <a href={business.instagram_url ?? "#"} target="_blank" rel="noopener noreferrer"
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, color: accent, textDecoration: "none", fontSize: 13, fontWeight: 600 }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = "0.75"; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
               >
-                <IgIcon size={15} color="currentColor" />
+                <IgIcon size={14} color={accent} />
                 {igHandle}
               </a>
             </div>
           )}
 
-          {/* CTA button — solid white fill */}
           <button
-            className="c-hero-cta"
+            className="dk-cta"
             onClick={openFromCTA}
             style={{
-              background: "#fff", border: "2px solid #fff",
-              color: C.dark, padding: "14px 36px", borderRadius: 9999,
+              fontFamily: "'Oswald', sans-serif",
+              background: accent, border: "none",
+              color: D.bg, padding: "14px 40px", borderRadius: 4,
               fontSize: 16, fontWeight: 700, cursor: "pointer",
-              letterSpacing: "0.02em", transition: "background 0.2s, color 0.2s",
-              fontFamily: "inherit",
+              letterSpacing: "0.06em", textTransform: "uppercase",
+              transition: "background 0.2s, color 0.2s",
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.borderColor = accent; e.currentTarget.style.color = "#fff"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#fff"; e.currentTarget.style.color = C.dark; }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = D.bg; }}
+            onMouseLeave={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = D.bg; }}
           >
-            Book Appointment
+            Book Now
           </button>
         </div>
       </section>
@@ -275,10 +246,10 @@ export function ClassicPage({ business, services }: Props) {
       {(() => {
         const bar = (
           <div style={{
-            background: C.bg, borderTop: `1px solid rgba(34,21,16,0.08)`,
-            borderBottom: `1px solid rgba(34,21,16,0.08)`,
+            background: D.surface,
             padding: "16px 20px", textAlign: "center",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+            borderBottom: `1px solid ${D.border}`,
           }}>
             <span style={{ display: "flex", gap: 2, color: accent }}>
               {[0,1,2,3,4].map(i => (
@@ -287,7 +258,7 @@ export function ClassicPage({ business, services }: Props) {
                 </svg>
               ))}
             </span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: C.dark }}>4.9 · 340 happy clients</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: D.text }}>4.9 · 340 happy clients</span>
           </div>
         );
         return business.google_review_link ? (
@@ -297,13 +268,19 @@ export function ClassicPage({ business, services }: Props) {
         ) : bar;
       })()}
 
-      {/* ─── Sections ─── */}
+      {/* ─── Content ─── */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px" }}>
 
-        {/* 1. Services */}
-        <section ref={servicesRef} style={{ paddingTop: 56 }}>
-          <SectionTitle title="Services" accentColor={accent} darkColor={C.dark} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 28 }}>
+        {/* Services */}
+        <section ref={servicesRef} style={{ paddingTop: 60 }}>
+          <h2 style={{
+            fontFamily: "'Oswald', sans-serif", fontWeight: 700,
+            fontSize: 26, letterSpacing: "0.06em", textTransform: "uppercase",
+            color: accent, marginBottom: 28,
+          }}>
+            Services
+          </h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {services.map((s, i) => {
               const hovered = hoveredCard === s.id;
               return (
@@ -312,44 +289,43 @@ export function ClassicPage({ business, services }: Props) {
                   onMouseEnter={() => setHoveredCard(s.id)}
                   onMouseLeave={() => setHoveredCard(null)}
                   style={{
-                    background: "#fff",
-                    borderRadius: 10,
-                    boxShadow: hovered ? "0 4px 16px rgba(34,21,16,0.10)" : "0 1px 4px rgba(34,21,16,0.06)",
+                    background: D.surface,
+                    border: `1px solid ${D.border}`,
+                    borderInlineStart: `3px solid ${hovered ? accent : "transparent"}`,
+                    borderRadius: 8,
                     padding: "16px 18px",
                     display: "flex", justifyContent: "space-between", alignItems: "center",
-                    borderInlineStart: `3px solid ${hovered ? accent : "transparent"}`,
                     opacity: servicesVisible ? 1 : 0,
-                    transform: servicesVisible
-                      ? (hovered ? "translateY(-2px)" : "translateY(0)")
-                      : "translateY(20px)",
+                    transform: servicesVisible ? "translateY(0)" : "translateY(18px)",
                     transition: [
-                      `opacity 0.5s ease ${i * 80}ms`,
-                      `transform 0.5s ease ${i * 80}ms`,
-                      "box-shadow 0.2s ease",
-                      "border-color 0.2s ease",
+                      `opacity 0.5s ease ${i * 70}ms`,
+                      `transform 0.5s ease ${i * 70}ms`,
+                      "border-color 0.2s",
                     ].join(", "),
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginBottom: 2 }}>{s.name}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontFamily: "inherit", fontSize: 15, fontWeight: 600, color: D.text, marginBottom: 2 }}>{s.name}</div>
                     {s.description && (
-                      <div style={{ fontSize: 13, color: C.dark, opacity: 0.55, marginBottom: 2, lineHeight: 1.4 }}>{s.description}</div>
+                      <div style={{ fontSize: 13, color: D.muted, marginBottom: 4, lineHeight: 1.4 }}>{s.description}</div>
                     )}
-                    <div style={{ fontSize: 13, color: C.dark, opacity: 0.55 }}>{s.duration} min</div>
+                    <div style={{ fontSize: 12, color: D.muted }}>{s.duration} min</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0, marginInlineStart: 12 }}>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: C.dark }}>₪{s.price}</div>
+                    <span style={{ fontSize: 17, fontWeight: 700, color: accent, fontFamily: "'Oswald', sans-serif" }}>₪{s.price}</span>
                     <button
                       onClick={() => openFromService(s)}
                       style={{
-                        height: 36, padding: "0 16px", borderRadius: 9999,
-                        background: C.dark, color: C.bg,
-                        fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer",
-                        whiteSpace: "nowrap", transition: "background 0.2s ease",
-                        fontFamily: "inherit",
+                        fontFamily: "'Oswald', sans-serif",
+                        background: accent, color: D.bg,
+                        border: "none", borderRadius: 4,
+                        padding: "7px 16px", fontSize: 13, fontWeight: 700,
+                        cursor: "pointer", letterSpacing: "0.04em",
+                        transition: "background 0.2s",
+                        whiteSpace: "nowrap",
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = accent; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = C.dark; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "#fff"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = accent; }}
                     >
                       Book →
                     </button>
@@ -360,117 +336,136 @@ export function ClassicPage({ business, services }: Props) {
           </div>
         </section>
 
-        {/* 2. About — with barber circle photo */}
+        {/* About — with circle photo */}
         {business.show_about !== false && business.about_text && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title="About" accentColor={accent} darkColor={C.dark} />
-            <div className="about-row" style={{ marginTop: 20 }}>
-              {business.hero_image_url && (
-                <div style={{ textAlign: "center", flexShrink: 0 }}>
-                  <img
-                    src={business.hero_image_url}
-                    alt={business.name}
-                    style={{
-                      width: 72, height: 72, borderRadius: "50%", objectFit: "cover",
-                      border: `3px solid ${accent}`, display: "block", margin: "0 auto 6px",
-                    }}
-                  />
-                  <span style={{ fontSize: 11, fontVariant: "small-caps", color: accent, fontWeight: 700, letterSpacing: "0.06em" }}>
-                    {business.name}
-                  </span>
-                </div>
-              )}
-              <p style={{ fontSize: 16, lineHeight: 1.8, color: C.dark, opacity: 0.82, margin: 0 }}>
-                {business.about_text}
-              </p>
+          <section style={{ paddingTop: 60 }}>
+            <h2 style={{
+              fontFamily: "'Oswald', sans-serif", fontWeight: 700,
+              fontSize: 26, letterSpacing: "0.06em", textTransform: "uppercase",
+              color: accent, marginBottom: 24,
+            }}>
+              About
+            </h2>
+            <div style={{ background: D.surface, borderRadius: 10, padding: "24px 20px", border: `1px solid ${D.border}` }}>
+              <div className="dk-about-row">
+                {business.hero_image_url && (
+                  <div style={{ textAlign: "center", flexShrink: 0 }}>
+                    <img
+                      src={business.hero_image_url}
+                      alt={business.name}
+                      style={{
+                        width: 72, height: 72, borderRadius: "50%", objectFit: "cover",
+                        border: `3px solid ${accent}`, display: "block", margin: "0 auto 6px",
+                      }}
+                    />
+                    <span style={{ fontSize: 11, fontVariant: "small-caps", color: accent, fontWeight: 700, letterSpacing: "0.06em" }}>
+                      {business.name}
+                    </span>
+                  </div>
+                )}
+                <p style={{ fontSize: 15, lineHeight: 1.8, color: D.muted, margin: 0 }}>
+                  {business.about_text}
+                </p>
+              </div>
             </div>
           </section>
         )}
 
-        {/* 3. Gallery */}
-        {business.show_gallery !== false &&
-         business.gallery_images && business.gallery_images.length > 0 && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title="Gallery" accentColor={accent} darkColor={C.dark} />
-            <div style={{ marginTop: 28 }}>
-              <SectionGallery photos={business.gallery_images} />
-            </div>
+        {/* Gallery */}
+        {business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 && (
+          <section style={{ paddingTop: 60 }}>
+            <h2 style={{
+              fontFamily: "'Oswald', sans-serif", fontWeight: 700,
+              fontSize: 26, letterSpacing: "0.06em", textTransform: "uppercase",
+              color: accent, marginBottom: 20,
+            }}>
+              Gallery
+            </h2>
+            <SectionGallery photos={business.gallery_images} layout="grid" borderRadius={6} />
           </section>
         )}
 
-        {/* 4. Hours */}
+        {/* Hours */}
         {business.show_hours !== false && business.business_hours && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title="Hours" accentColor={accent} darkColor={C.dark} />
-            <div style={{ marginTop: 20 }}>
-              <SectionHours hours={business.business_hours} darkColor={C.dark} accentColor={accent} />
+          <section style={{ paddingTop: 60 }}>
+            <h2 style={{
+              fontFamily: "'Oswald', sans-serif", fontWeight: 700,
+              fontSize: 26, letterSpacing: "0.06em", textTransform: "uppercase",
+              color: accent, marginBottom: 20,
+            }}>
+              Hours
+            </h2>
+            <div style={{ background: D.surface, borderRadius: 10, padding: "8px 4px", border: `1px solid ${D.border}` }}>
+              <SectionHours hours={business.business_hours} darkColor={D.text} accentColor={accent} />
             </div>
           </section>
         )}
 
-        {/* 5. Location */}
+        {/* Location */}
         {business.show_location !== false && business.address && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title="Location" accentColor={accent} darkColor={C.dark} />
-            <div style={{ marginTop: 20 }}>
-              <SectionLocation address={business.address} darkColor={C.dark} accentColor={accent} />
+          <section style={{ paddingTop: 60 }}>
+            <h2 style={{
+              fontFamily: "'Oswald', sans-serif", fontWeight: 700,
+              fontSize: 26, letterSpacing: "0.06em", textTransform: "uppercase",
+              color: accent, marginBottom: 20,
+            }}>
+              Location
+            </h2>
+            <div style={{ background: D.surface, borderRadius: 10, padding: "20px", border: `1px solid ${D.border}` }}>
+              <SectionLocation address={business.address} darkColor={D.text} accentColor={accent} />
             </div>
           </section>
         )}
 
         {/* Footer */}
         <footer style={{ marginTop: 64, textAlign: "center" }}>
-          {/* Phone */}
           {business.phone && (
-            <a href={`tel:${business.phone}`} style={{ display: "block", fontSize: 13, color: C.dark, opacity: 0.5, textDecoration: "none", marginBottom: 14 }}>
+            <a href={`tel:${business.phone}`} style={{ display: "block", fontSize: 13, color: D.muted, textDecoration: "none", marginBottom: 14 }}>
               {business.phone}
             </a>
           )}
-
-          {/* Social icons */}
           {(business.instagram_url || business.whatsapp_number || business.facebook_url) && (
             <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 14 }}>
               {business.instagram_url && (
                 <a href={business.instagram_url} target="_blank" rel="noopener noreferrer"
-                  style={{ width: 36, height: 36, borderRadius: "50%", background: C.cream2, display: "flex", alignItems: "center", justifyContent: "center", transition: "opacity 0.2s" }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.7"; }}
+                  style={{ width: 36, height: 36, borderRadius: "50%", background: accent, display: "flex", alignItems: "center", justifyContent: "center", transition: "opacity 0.2s" }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.75"; }}
                   onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
                 >
-                  <IgIcon size={16} color={C.dark} />
+                  <IgIcon size={16} color={D.bg} />
                 </a>
               )}
               {business.whatsapp_number && (
                 <a href={`https://wa.me/${business.whatsapp_number.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
-                  style={{ width: 36, height: 36, borderRadius: "50%", background: C.cream2, display: "flex", alignItems: "center", justifyContent: "center", transition: "opacity 0.2s" }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.7"; }}
+                  style={{ width: 36, height: 36, borderRadius: "50%", background: accent, display: "flex", alignItems: "center", justifyContent: "center", transition: "opacity 0.2s" }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.75"; }}
                   onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
                 >
-                  <WaIcon size={16} color={C.dark} />
+                  <WaIcon size={16} color={D.bg} />
                 </a>
               )}
               {business.facebook_url && (
                 <a href={business.facebook_url} target="_blank" rel="noopener noreferrer"
-                  style={{ width: 36, height: 36, borderRadius: "50%", background: C.cream2, display: "flex", alignItems: "center", justifyContent: "center", transition: "opacity 0.2s" }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.7"; }}
+                  style={{ width: 36, height: 36, borderRadius: "50%", background: accent, display: "flex", alignItems: "center", justifyContent: "center", transition: "opacity 0.2s" }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.75"; }}
                   onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
                 >
-                  <FbIcon size={16} color={C.dark} />
+                  <FbIcon size={16} color={D.bg} />
                 </a>
               )}
             </div>
           )}
-
-          <div style={{ fontSize: 12, color: C.dark, opacity: 0.38 }}>
+          <div style={{ fontSize: 12, color: accent, fontWeight: 600 }}>
             Powered by{" "}
-            <a href="https://bapita.com" style={{ color: accent, textDecoration: "none", fontWeight: 700 }}>Bapita</a>
+            <a href="https://bapita.com" style={{ color: accent, textDecoration: "none" }}>Bapita</a>
           </div>
         </footer>
       </div>
 
-      {/* ─── Floating CTA ─── */}
-      <FloatingCTA shopName={business.name} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
+      {/* Floating CTA */}
+      <FloatingCTA shopName={business.name} onBook={openFromCTA} bgColor={accent} textColor={D.bg} />
 
-      {/* ─── WhatsApp floating button ─── */}
+      {/* WhatsApp button */}
       {waNumber && (
         <a
           href={`https://wa.me/${waNumber}`}
@@ -479,21 +474,19 @@ export function ClassicPage({ business, services }: Props) {
             position: "fixed", bottom: 90, insetInlineStart: 20,
             width: 52, height: 52, borderRadius: "50%",
             background: accent, display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.22)",
+            boxShadow: `0 4px 20px ${accent}44`,
             zIndex: 50,
             transform: showWa ? "translateY(0) scale(1)" : "translateY(20px) scale(0.85)",
             opacity: showWa ? 1 : 0,
             transition: "transform 0.35s ease, opacity 0.35s ease",
             pointerEvents: showWa ? "auto" : "none",
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px) scale(1.06)"; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = showWa ? "translateY(0) scale(1)" : "translateY(20px) scale(0.85)"; }}
         >
-          <WaIcon size={22} color="#fff" />
+          <WaIcon size={22} color={D.bg} />
         </a>
       )}
 
-      {/* ─── Booking overlay ─── */}
+      {/* Booking overlay */}
       {overlayOpen && (
         <BookingOverlay
           business={business}
@@ -501,8 +494,8 @@ export function ClassicPage({ business, services }: Props) {
           initialService={selectedService}
           onClose={closeOverlay}
           accentColor={accent}
-          darkColor={C.dark}
-          bgColor={C.bg}
+          darkColor={D.text}
+          bgColor={D.surface}
         />
       )}
     </div>
