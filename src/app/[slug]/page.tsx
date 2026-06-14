@@ -1,7 +1,14 @@
 import { notFound } from "next/navigation";
-import { createServiceClient } from "@/lib/supabase/service";
+import { createClient } from "@supabase/supabase-js";
 import BookingShell from "./BookingShell";
 import type { Business, Service } from "@/types";
+
+function getPublicClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -9,15 +16,15 @@ interface Props {
 
 export default async function BookPage({ params }: Props) {
   const { slug } = await params;
-  const supabase = createServiceClient();
+  const supabase = getPublicClient();
 
-  const { data: business } = await supabase
+  const { data: business, error } = await supabase
     .from("businesses")
     .select("id, name, slug, phone, email, address, instagram_url, google_review_link, business_hours, template_style, tagline, hero_image_url, gallery_images, about_text, accent_color, show_gallery, show_about, show_hours, show_location")
     .eq("slug", slug)
     .single();
 
-  if (!business) return notFound();
+  if (error || !business) return notFound();
 
   const { data: services } = await supabase
     .from("services")
@@ -36,7 +43,7 @@ export default async function BookPage({ params }: Props) {
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const supabase = createServiceClient();
+  const supabase = getPublicClient();
   const { data } = await supabase.from("businesses").select("name").eq("slug", slug).single();
   return {
     title: data?.name ? `Book at ${data.name}` : "Book an appointment",
