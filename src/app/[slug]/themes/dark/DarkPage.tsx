@@ -217,10 +217,10 @@ export function DarkPage({ business, services }: Props) {
 
       {/* Sticky header */}
       {stickyVisible && (
-        <div className="dk-sticky" style={{ position: "fixed", top: 0, insetInlineStart: 0, insetInlineEnd: 0, zIndex: 150, height: 56, background: "rgba(13,13,13,0.92)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${accent}25`, display: "flex", alignItems: "center", justifyContent: "space-between", paddingInlineStart: 24, paddingInlineEnd: 140 }}>
-          <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, color: D.text, letterSpacing: "0.08em", textTransform: "uppercase" }}>{business.name}</span>
+        <div className="dk-sticky" style={{ position: "fixed", top: 0, insetInlineStart: 0, insetInlineEnd: 0, zIndex: 150, height: 56, background: "rgba(13,13,13,0.92)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${accent}25`, display: "flex", alignItems: "center", paddingInlineStart: 24 }}>
+          <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, color: D.text, letterSpacing: "0.08em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "55%" }}>{business.name}</span>
           <button onClick={openFromCTA}
-            style={{ fontFamily: "'Oswald', sans-serif", height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s" }}
+            style={{ fontFamily: "'Oswald', sans-serif", position: "absolute", insetInlineEnd: 128, top: "50%", transform: "translateY(-50%)", height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
             onMouseEnter={e => { e.currentTarget.style.background = "#fff"; }}
             onMouseLeave={e => { e.currentTarget.style.background = accent; }}
           >{t.hero.bookNow}</button>

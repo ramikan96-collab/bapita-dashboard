@@ -32,7 +32,11 @@ interface Props {
 }
 
 export function ContactStep({ service, date, time, contact, onChange, onSubmit, submitting, error, accentColor, darkColor, bgColor, t }: Props) {
-  const canSubmit = !!contact.name.trim() && !!contact.phone.trim() && !submitting;
+  const canSubmit  = !!contact.name.trim() && !!contact.phone.trim() && !submitting;
+  const isDark     = /^#[01]/.test(bgColor);
+  const borderClr  = isDark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.12)";
+  const disabledBg = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.1)";
+  const disabledTx = isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.3)";
 
   const FIELDS = [
     { label: t.name,  key: "name"  as const, type: "text",  placeholder: t.namePlaceholder  },
@@ -66,13 +70,13 @@ export function ContactStep({ service, date, time, contact, onChange, onSubmit, 
               placeholder={placeholder}
               style={{
                 width:"100%", height:48, borderRadius:12,
-                border:`1.5px solid rgba(0,0,0,0.12)`,
+                border:`1.5px solid ${borderClr}`,
                 background: bgColor, fontSize:15, color:darkColor,
                 padding:"0 14px", outline:"none", fontFamily:"inherit",
                 boxSizing: "border-box",
               }}
               onFocus={e => { e.currentTarget.style.borderColor = accentColor; }}
-              onBlur={e  => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.12)"; }}
+              onBlur={e  => { e.currentTarget.style.borderColor = borderClr; }}
             />
           </div>
         ))}
@@ -85,8 +89,8 @@ export function ContactStep({ service, date, time, contact, onChange, onSubmit, 
         disabled={!canSubmit}
         style={{
           width:"100%", height:52, borderRadius:9999, border:"none",
-          background: canSubmit ? accentColor : "rgba(0,0,0,0.1)",
-          color: canSubmit ? "#fff" : "rgba(0,0,0,0.3)",
+          background: canSubmit ? accentColor : disabledBg,
+          color: canSubmit ? "#fff" : disabledTx,
           fontSize:16, fontWeight:800, cursor: canSubmit ? "pointer" : "default",
           transition:"all 0.2s ease", fontFamily:"inherit",
         }}

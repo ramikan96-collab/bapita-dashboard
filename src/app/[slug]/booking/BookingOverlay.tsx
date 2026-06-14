@@ -23,6 +23,11 @@ interface Props {
 
 export function BookingOverlay({ business, services, initialService, onClose, accentColor, darkColor, bgColor, lang = "en" }: Props) {
   const t = translations[lang];
+  const isDark     = /^#[01]/.test(bgColor);
+  const cardBg     = isDark ? "rgba(255,255,255,0.07)" : "#fff";
+  const borderClr  = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)";
+  const dividerClr = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
+  const btnBg      = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.06)";
   const dateLocale = lang === "he" ? "he-IL" : "en-US";
 
   const { state, setService, setDate, setTime, setContact, goBack, submit } = useBookingFlow(initialService);
@@ -77,12 +82,12 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
           <div style={{
             display:"flex", alignItems:"center", justifyContent:"space-between",
             padding:"18px 20px 14px",
-            borderBottom:`1px solid rgba(0,0,0,0.08)`,
+            borderBottom:`1px solid ${dividerClr}`,
             flexShrink:0,
           }}>
             <button
               onClick={isFirst ? onClose : goBack}
-              style={{ width:36, height:36, borderRadius:8, border:"none", background:"rgba(0,0,0,0.06)", cursor:"pointer", fontSize:18, color:darkColor, fontFamily:"inherit" }}
+              style={{ width:36, height:36, borderRadius:8, border:"none", background:btnBg, cursor:"pointer", fontSize:18, color:darkColor, fontFamily:"inherit" }}
             >←</button>
             <div style={{ textAlign:"center" }}>
               <div style={{ fontSize:15, fontWeight:800, color:darkColor }}>{business.name}</div>
@@ -92,7 +97,7 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
             </div>
             <button
               onClick={onClose}
-              style={{ width:36, height:36, borderRadius:8, border:"none", background:"rgba(0,0,0,0.06)", cursor:"pointer", fontSize:20, color:darkColor, fontFamily:"inherit" }}
+              style={{ width:36, height:36, borderRadius:8, border:"none", background:btnBg, cursor:"pointer", fontSize:20, color:darkColor, fontFamily:"inherit" }}
             >×</button>
           </div>
         )}
@@ -106,14 +111,14 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
               {services.map(s => (
                 <button key={s.id} onClick={() => setService(s)} style={{
                   width:"100%", padding:"14px 16px", borderRadius:12,
-                  border:`1.5px solid rgba(0,0,0,0.1)`,
-                  background:"#fff", cursor:"pointer",
+                  border:`1.5px solid ${borderClr}`,
+                  background:cardBg, cursor:"pointer",
                   display:"flex", justifyContent:"space-between", alignItems:"center",
                   textAlign:"start", transition:"border-color 0.15s ease",
                   fontFamily:"inherit",
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = accentColor; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.1)"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = borderClr; }}
                 >
                   <div>
                     <div style={{ fontSize:15, fontWeight:700, color:darkColor }}>{s.name}</div>

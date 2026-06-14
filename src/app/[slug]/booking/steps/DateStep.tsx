@@ -33,6 +33,7 @@ export function DateStep({ service, selectedDate, onSelect, businessHours, accen
         businessHours={businessHours}
         accentColor={accentColor}
         darkColor={darkColor}
+        bgColor={bgColor}
         calendarT={calendarT}
       />
     </div>

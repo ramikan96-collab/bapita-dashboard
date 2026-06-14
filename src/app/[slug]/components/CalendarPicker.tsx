@@ -12,6 +12,7 @@ interface Props {
   businessHours?: BusinessHours;
   accentColor: string;
   darkColor: string;
+  bgColor?: string;
   calendarT?: { months: string[]; weekDays: string[] };
 }
 
@@ -28,8 +29,9 @@ function getDays(year: number, month: number): (Date | null)[] {
   return days;
 }
 
-export function CalendarPicker({ selectedDate, onSelect, businessHours, accentColor, darkColor, calendarT }: Props) {
-  const cal = calendarT ?? en.calendar;
+export function CalendarPicker({ selectedDate, onSelect, businessHours, accentColor, darkColor, bgColor, calendarT }: Props) {
+  const cal    = calendarT ?? en.calendar;
+  const isDark = /^#[01]/.test(bgColor ?? "");
   const todayMs = (() => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
   const now = new Date();
   const [year, setYear]   = useState(now.getFullYear());
@@ -56,7 +58,7 @@ export function CalendarPicker({ selectedDate, onSelect, businessHours, accentCo
   const btnBase: React.CSSProperties = {
     width: 36, height: 36, borderRadius: 8,
     border: "none", cursor: "pointer",
-    background: "rgba(0,0,0,0.06)",
+    background: isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.06)",
     fontSize: 18, color: darkColor,
     display: "flex", alignItems: "center", justifyContent: "center",
   };
@@ -71,7 +73,7 @@ export function CalendarPicker({ selectedDate, onSelect, businessHours, accentCo
 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:6 }}>
         {cal.weekDays.map(d => (
-          <div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:700, color:"rgba(0,0,0,0.3)", paddingBottom:4 }}>{d}</div>
+          <div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:700, color: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)", paddingBottom:4 }}>{d}</div>
         ))}
       </div>
 
@@ -92,8 +94,8 @@ export function CalendarPicker({ selectedDate, onSelect, businessHours, accentCo
                 height:40, borderRadius:8,
                 border: `2px solid ${selected ? accentColor : "transparent"}`,
                 background: selected ? accentColor
-                  : open && !past ? "rgba(0,0,0,0.04)" : "transparent",
-                color: selected ? "#fff" : disabled ? "rgba(0,0,0,0.2)" : darkColor,
+                  : open && !past ? (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)") : "transparent",
+                color: selected ? "#fff" : disabled ? (isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)") : darkColor,
                 fontSize:14, fontWeight: selected ? 700 : 400,
                 cursor: disabled ? "default" : "pointer",
                 transition:"all 0.15s ease",
