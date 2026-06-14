@@ -163,7 +163,16 @@ function BusinessRow({ business: b, deleting, onEdit, onDelete }: {
             {TEMPLATE_LABELS[template] || template}
           </span>
         </div>
-        <div style={{ fontSize:13, color:"var(--color-muted)", display:"flex", gap:12, flexWrap:"wrap" }}>
+        <div style={{ fontSize:13, color:"var(--color-muted)", display:"flex", gap:12, flexWrap:"wrap", alignItems:"center" }}>
+          {/* Status pill */}
+          <span style={{
+            fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20,
+            background: (b as any).status === "live" ? "#D1FAE5" : "var(--color-cream-2)",
+            color:      (b as any).status === "live" ? "#065F46" : "var(--color-muted)",
+            letterSpacing:"0.04em",
+          }}>
+            {(b as any).status === "live" ? "● LIVE" : "○ DRAFT"}
+          </span>
           {b.slug && (
             <a
               href={`https://book.bapita.com/${b.slug}`}

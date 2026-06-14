@@ -60,7 +60,12 @@ export interface Business {
   email: string | null;
   address: string | null;
   instagram_url: string | null;
+  facebook_url: string | null;
+  whatsapp_number: string | null;
   google_review_link: string | null;
+  google_maps_url: string | null;
+  waze_url: string | null;
+  status: "draft" | "live";
   business_hours?: BusinessHours;
   // booking page fields
   template_style?: string | null;
@@ -73,6 +78,7 @@ export interface Business {
   show_about?: boolean | null;
   show_hours?: boolean | null;
   show_location?: boolean | null;
+  section_order?: string[] | null;
 }
 
 export interface BlockedTime {
