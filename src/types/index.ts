@@ -79,6 +79,14 @@ export interface Business {
   show_hours?: boolean | null;
   show_location?: boolean | null;
   section_order?: string[] | null;
+  // Bapita plan (Rami-only)
+  plan_tier?:          string | null;
+  plan_price?:         number | null;
+  plan_addons?:        string[] | null;
+  plan_booking_limit?: number | null;
+  plan_start_date?:    string | null;
+  plan_renewal_date?:  string | null;
+  plan_notes?:         string | null;
 }
 
 export interface BlockedTime {

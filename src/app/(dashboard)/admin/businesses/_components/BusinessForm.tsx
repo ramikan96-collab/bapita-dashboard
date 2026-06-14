@@ -1,8 +1,29 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Service } from "@/types";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const SECTION_LABELS: Record<string, string> = {
+  services: "Services",
+  gallery:  "Gallery",
+  about:    "About",
+  hours:    "Hours",
+  location: "Location",
+};
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location"];
+
+const PLAN_TIERS = ["Starter", "Pro", "Custom"];
+const PLAN_ADDONS = [
+  { key: "whatsapp_reminders", label: "WhatsApp Reminders" },
+  { key: "custom_domain",      label: "Custom Domain"       },
+  { key: "priority_support",   label: "Priority Support"    },
+  { key: "stripe_payments",    label: "Stripe Payments"     },
+  { key: "social_boost",       label: "Social Boost"        },
+  { key: "google_ads",         label: "Google Ads"          },
+];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,11 +48,26 @@ interface FormData {
   show_hours:         boolean;
   show_location:      boolean;
   status:             "draft" | "live";
+  // plan
+  plan_tier:          string;
+  plan_price:         string;
+  plan_addons:        string[];
+  plan_booking_limit: string;
+  plan_start_date:    string;
+  plan_renewal_date:  string;
+  plan_notes:         string;
 }
 
 interface GalleryItem { url: string; uploading?: boolean; }
 
-type Tab = "profile" | "gallery" | "services";
+interface Stats {
+  total:          number;
+  thisMonth:      number;
+  lastBooking:    string | null;
+  activeServices: number;
+}
+
+type Tab = "profile" | "gallery" | "services" | "plan";
 
 const EMPTY_FORM: FormData = {
   name: "", slug: "", template_style: "classic",
@@ -41,6 +77,8 @@ const EMPTY_FORM: FormData = {
   about_text: "", accent_color: "",
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
   status: "draft",
+  plan_tier: "", plan_price: "", plan_addons: [],
+  plan_booking_limit: "", plan_start_date: "", plan_renewal_date: "", plan_notes: "",
 };
 
 interface Props {
@@ -50,20 +88,22 @@ interface Props {
   onCancel:    () => void;
 }
 
-// ─── Main component ────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Props) {
   const supabase = createClient();
-  const [form,     setForm]     = useState<FormData>(EMPTY_FORM);
-  const [services, setServices] = useState<Service[]>([]);
-  const [gallery,  setGallery]  = useState<GalleryItem[]>([]);
-  const [tab,      setTab]      = useState<Tab>("profile");
-  const [saving,   setSaving]   = useState(false);
-  const [error,    setError]    = useState("");
-  const [saved,    setSaved]    = useState(false);
-  const [loading,  setLoading]  = useState(mode === "edit");
 
-  // Load existing business
+  const [form,         setForm]         = useState<FormData>(EMPTY_FORM);
+  const [services,     setServices]     = useState<Service[]>([]);
+  const [gallery,      setGallery]      = useState<GalleryItem[]>([]);
+  const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
+  const [stats,        setStats]        = useState<Stats>({ total: 0, thisMonth: 0, lastBooking: null, activeServices: 0 });
+  const [tab,          setTab]          = useState<Tab>("profile");
+  const [saving,       setSaving]       = useState(false);
+  const [error,        setError]        = useState("");
+  const [saved,        setSaved]        = useState(false);
+  const [loading,      setLoading]      = useState(mode === "edit");
+
   useEffect(() => {
     if (mode !== "edit" || !businessId) return;
     (async () => {
@@ -90,16 +130,52 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           show_hours:         b.show_hours          ?? true,
           show_location:      b.show_location       ?? true,
           status:             b.status              || "draft",
+          plan_tier:          b.plan_tier           || "",
+          plan_price:         b.plan_price != null   ? String(b.plan_price) : "",
+          plan_addons:        Array.isArray(b.plan_addons) ? b.plan_addons : [],
+          plan_booking_limit: b.plan_booking_limit  != null ? String(b.plan_booking_limit) : "",
+          plan_start_date:    b.plan_start_date     || "",
+          plan_renewal_date:  b.plan_renewal_date   || "",
+          plan_notes:         b.plan_notes          || "",
         });
-        // Build gallery — merge hero + gallery_images deduped, hero first
-        const imgs: string[] = b.gallery_images || [];
-        const hero: string   = b.hero_image_url || "";
-        const merged = hero && !imgs.includes(hero) ? [hero, ...imgs] : imgs;
+        // Merge hero + gallery_images
+        const imgs: string[]  = b.gallery_images || [];
+        const hero: string    = b.hero_image_url || "";
+        const merged          = hero && !imgs.includes(hero) ? [hero, ...imgs] : imgs;
         setGallery(merged.map((url: string) => ({ url })));
+        // Section order
+        if (Array.isArray(b.section_order) && b.section_order.length > 0) {
+          setSectionOrder(b.section_order);
+        }
       }
+
+      // Load services
       const { data: sv } = await supabase
         .from("services").select("*").eq("business_id", businessId).order("display_order");
       setServices((sv as Service[]) || []);
+
+      // Load stats
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      const startStr = startOfMonth.toISOString().split("T")[0];
+      const [
+        { count: total },
+        { count: thisMonth },
+        { data: lastBook },
+        { count: activeServices },
+      ] = await Promise.all([
+        supabase.from("bookings").select("*", { count: "exact", head: true }).eq("business_id", businessId),
+        supabase.from("bookings").select("*", { count: "exact", head: true }).eq("business_id", businessId).gte("appointment_date", startStr),
+        supabase.from("bookings").select("appointment_date").eq("business_id", businessId).order("appointment_date", { ascending: false }).limit(1),
+        supabase.from("services").select("*", { count: "exact", head: true }).eq("business_id", businessId).eq("active", true),
+      ]);
+      setStats({
+        total:          total          || 0,
+        thisMonth:      thisMonth      || 0,
+        lastBooking:    lastBook?.[0]?.appointment_date || null,
+        activeServices: activeServices || 0,
+      });
+
       setLoading(false);
     })();
   }, [businessId, mode]);
@@ -111,6 +187,15 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         .replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
       setForm(f => ({ ...f, name: value as string, slug }));
     }
+  }
+
+  function toggleAddon(key: string) {
+    setForm(f => ({
+      ...f,
+      plan_addons: f.plan_addons.includes(key)
+        ? f.plan_addons.filter(k => k !== key)
+        : [...f.plan_addons, key],
+    }));
   }
 
   async function handleSave() {
@@ -144,12 +229,20 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_location:      form.show_location,
       status:             form.status,
       gallery_images:     urls,
-      hero_image_url:     urls[0] || null,
+      hero_image_url:     urls[0]                 || null,
+      section_order:      sectionOrder,
+      plan_tier:          form.plan_tier           || null,
+      plan_price:         form.plan_price          ? Number(form.plan_price) : null,
+      plan_addons:        form.plan_addons,
+      plan_booking_limit: form.plan_booking_limit  ? Number(form.plan_booking_limit) : null,
+      plan_start_date:    form.plan_start_date     || null,
+      plan_renewal_date:  form.plan_renewal_date   || null,
+      plan_notes:         form.plan_notes          || null,
     };
 
     if (mode === "new") {
-      const { data, error: e } = await supabase.from("businesses")
-        .insert({ ...payload, owner_id: user.id }).select("id").single();
+      const { error: e } = await supabase.from("businesses")
+        .insert({ ...payload, owner_id: user.id });
       if (e) { setError(e.message); setSaving(false); return; }
     } else {
       const { error: e } = await supabase.from("businesses").update(payload).eq("id", businessId!);
@@ -169,18 +262,21 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     );
   }
 
-  const title   = mode === "new" ? "New Business" : (form.name || "Business");
+  const title      = mode === "new" ? "New Business" : (form.name || "Business");
   const previewUrl = form.slug ? `https://book.bapita.com/${form.slug}` : null;
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: "profile",  label: "Profile"  },
-    { id: "gallery",  label: `Gallery ${gallery.filter(g => !g.uploading).length > 0 ? `(${gallery.filter(g => !g.uploading).length})` : ""}` },
-    ...(mode === "edit" ? [{ id: "services" as Tab, label: `Services (${services.length})` }] : []),
+    { id: "profile", label: "Profile" },
+    { id: "gallery", label: `Gallery${gallery.filter(g => !g.uploading).length > 0 ? ` (${gallery.filter(g => !g.uploading).length})` : ""}` },
+    ...(mode === "edit" ? [
+      { id: "services" as Tab, label: `Services (${services.length})` },
+      { id: "plan"     as Tab, label: "Plan & Stats"                  },
+    ] : []),
   ];
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", background:"var(--color-cream)" }}>
-      {/* Header */}
+      {/* ── Header ── */}
       <div style={{ flexShrink:0, background:"var(--color-surface)", borderBottom:"var(--line)" }}>
         <div style={{ maxWidth:760, margin:"0 auto", padding:"14px 24px", display:"flex", alignItems:"center", gap:12 }}>
           <button onClick={onCancel} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--color-muted)", fontSize:14, fontFamily:"inherit", padding:0, flexShrink:0 }}>
@@ -190,16 +286,15 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
             {title}
           </h1>
 
-          {/* Status pill */}
+          {/* Status toggle */}
           <button
             onClick={() => set("status", form.status === "draft" ? "live" : "draft")}
             style={{
               height:28, padding:"0 10px", borderRadius:20, border:"none", cursor:"pointer",
-              fontSize:11, fontWeight:700, letterSpacing:"0.04em", fontFamily:"inherit",
+              fontSize:11, fontWeight:700, letterSpacing:"0.04em", fontFamily:"inherit", flexShrink:0,
               background: form.status === "live" ? "#D1FAE5" : "var(--color-cream-2)",
               color:      form.status === "live" ? "#065F46" : "var(--color-muted)",
               transition:"background 0.2s, color 0.2s",
-              flexShrink:0,
             }}
           >
             {form.status === "live" ? "● LIVE" : "○ DRAFT"}
@@ -214,9 +309,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
               style={{
                 height:32, padding:"0 12px", borderRadius:9, border:"1.5px solid var(--color-cream-2)",
                 background:"var(--color-cream)", color:"var(--color-dark)",
-                fontSize:12, fontWeight:700, textDecoration:"none",
-                display:"flex", alignItems:"center", gap:5, flexShrink:0,
-                transition:"border-color 0.15s",
+                fontSize:12, fontWeight:700, textDecoration:"none", flexShrink:0,
+                display:"flex", alignItems:"center", gap:5, transition:"border-color 0.15s",
               }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-amber)"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-cream-2)"; }}
@@ -230,14 +324,12 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
             onClick={handleSave}
             disabled={saving}
             style={{
-              height:32, padding:"0 16px", borderRadius:9, border:"none",
+              height:32, padding:"0 16px", borderRadius:9, border:"none", flexShrink:0,
               background: saved ? "#16A34A" : "var(--color-amber)",
               color:"#fff", fontSize:13, fontWeight:700,
               cursor: saving ? "not-allowed" : "pointer",
-              opacity: saving ? 0.7 : 1,
-              transition:"background 0.3s",
-              fontFamily:"inherit", flexShrink:0,
-              boxShadow:"0 2px 8px rgba(232,146,10,0.25)",
+              opacity: saving ? 0.7 : 1, transition:"background 0.3s",
+              fontFamily:"inherit", boxShadow:"0 2px 8px rgba(232,146,10,0.25)",
             }}
           >
             {saving ? "Saving…" : saved ? "Saved ✓" : "Save"}
@@ -245,18 +337,17 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         </div>
 
         {/* Tabs */}
-        <div style={{ maxWidth:760, margin:"0 auto", padding:"0 24px", display:"flex", gap:0, borderTop:"var(--line)" }}>
+        <div style={{ maxWidth:760, margin:"0 auto", padding:"0 24px", display:"flex", borderTop:"var(--line)" }}>
           {TABS.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               style={{
                 padding:"10px 16px", border:"none", background:"none", cursor:"pointer",
-                fontSize:13, fontWeight:tab === t.id ? 700 : 500,
-                color: tab === t.id ? "var(--color-amber)" : "var(--color-muted)",
+                fontSize:13, fontWeight: tab === t.id ? 700 : 500, fontFamily:"inherit",
+                color:       tab === t.id ? "var(--color-amber)" : "var(--color-muted)",
                 borderBottom: tab === t.id ? "2px solid var(--color-amber)" : "2px solid transparent",
-                fontFamily:"inherit", transition:"color 0.15s, border-color 0.15s",
-                marginBottom:-1,
+                transition:"color 0.15s, border-color 0.15s", marginBottom:-1,
               }}
             >
               {t.label}
@@ -265,7 +356,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         </div>
       </div>
 
-      {/* Body */}
+      {/* ── Body ── */}
       <div style={{ flex:1, overflowY:"auto" }}>
         <div style={{ maxWidth:760, margin:"0 auto", padding:"20px 24px 80px" }}>
 
@@ -275,9 +366,10 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
             </div>
           )}
 
-          {/* ── PROFILE TAB ── */}
+          {/* ── PROFILE ── */}
           {tab === "profile" && (
             <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+
               <SectionCard title="Business Info">
                 <Row>
                   <Field label="Business Name *">
@@ -287,8 +379,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     <input
                       value={form.slug}
                       onChange={e => set("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                      placeholder="studio-avi"
-                      style={inputStyle}
+                      placeholder="studio-avi" style={inputStyle}
                     />
                     {form.slug && (
                       <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
@@ -311,14 +402,10 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                         type="color"
                         value={form.accent_color || "#B8862A"}
                         onChange={e => set("accent_color", e.target.value)}
-                        style={{ width:44, height:44, border:"1.5px solid var(--color-cream-2)", borderRadius:9, cursor:"pointer", padding:2 }}
+                        style={{ width:44, height:44, border:"1.5px solid var(--color-cream-2)", borderRadius:9, cursor:"pointer", padding:2, flexShrink:0 }}
                       />
-                      <input
-                        value={form.accent_color}
-                        onChange={e => set("accent_color", e.target.value)}
-                        placeholder="Leave blank for template default"
-                        style={{ ...inputStyle, flex:1 }}
-                      />
+                      <input value={form.accent_color} onChange={e => set("accent_color", e.target.value)}
+                        placeholder="Leave blank for default" style={{ ...inputStyle, flex:1 }} />
                     </div>
                   </Field>
                 </Row>
@@ -369,9 +456,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
               <SectionCard title="About Text">
                 <Field label="Short paragraph shown in About section">
-                  <textarea
-                    value={form.about_text}
-                    onChange={e => set("about_text", e.target.value)}
+                  <textarea value={form.about_text} onChange={e => set("about_text", e.target.value)}
                     placeholder="Studio Avi has been serving Tel Aviv since 2018…"
                     rows={4}
                     style={{ ...inputStyle, height:"auto", resize:"vertical", padding:"10px 13px", lineHeight:1.6 }}
@@ -379,10 +464,12 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 </Field>
               </SectionCard>
 
-              <SectionCard title="Section Visibility">
-                <p style={{ fontSize:13, color:"var(--color-muted)", marginBottom:16, marginTop:0 }}>
-                  Toggle which sections appear on the booking page.
+              <SectionCard title="Section Visibility & Order">
+                <p style={{ fontSize:13, color:"var(--color-muted)", marginTop:0, marginBottom:16 }}>
+                  Toggle visibility. Drag to reorder on the booking page.
                 </p>
+                <SectionReorder order={sectionOrder} setOrder={setSectionOrder} />
+                <div style={{ height:1, background:"var(--color-cream-2)", margin:"16px 0" }} />
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                   {([
                     ["show_gallery",  "Gallery"],
@@ -414,40 +501,183 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
             </div>
           )}
 
-          {/* ── GALLERY TAB ── */}
+          {/* ── GALLERY ── */}
           {tab === "gallery" && (
-            <GalleryManager
-              gallery={gallery}
-              setGallery={setGallery}
-              businessId={businessId}
-            />
+            <GalleryManager gallery={gallery} setGallery={setGallery} businessId={businessId} />
           )}
 
-          {/* ── SERVICES TAB ── */}
+          {/* ── SERVICES ── */}
           {tab === "services" && mode === "edit" && businessId && (
             <ServicesPanel businessId={businessId} services={services} setServices={setServices} />
           )}
+
+          {/* ── PLAN & STATS ── */}
+          {tab === "plan" && mode === "edit" && (
+            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+
+              {/* Stats */}
+              <SectionCard title="Barber Stats">
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:10 }}>
+                  {[
+                    { label:"All Time",      value: stats.total,          suffix: "bookings" },
+                    { label:"This Month",    value: stats.thisMonth,      suffix: "bookings" },
+                    { label:"Last Booking",  value: stats.lastBooking ? new Date(stats.lastBooking).toLocaleDateString("en-IL", { day:"numeric", month:"short" }) : "—", suffix: "" },
+                    { label:"Active Svcs",   value: stats.activeServices, suffix: "services" },
+                  ].map(s => (
+                    <div key={s.label} style={{
+                      background:"var(--color-cream)", borderRadius:12, padding:"14px 12px",
+                      textAlign:"center", border:"1.5px solid var(--color-cream-2)",
+                    }}>
+                      <div style={{ fontSize:24, fontWeight:900, color:"var(--color-dark)", lineHeight:1 }}>
+                        {s.value}
+                      </div>
+                      <div style={{ fontSize:10, color:"var(--color-muted)", marginTop:5, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>
+                        {s.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+
+              {/* Plan */}
+              <SectionCard title="Bapita Plan — Internal">
+                <p style={{ fontSize:12, color:"var(--color-muted)", marginTop:0, marginBottom:4, fontStyle:"italic" }}>
+                  Your business records. Not visible to the barber.
+                </p>
+                <Row>
+                  <Field label="Plan Tier">
+                    <select value={form.plan_tier} onChange={e => set("plan_tier", e.target.value)} style={inputStyle}>
+                      <option value="">— select —</option>
+                      {PLAN_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Monthly Price (₪)">
+                    <input value={form.plan_price} onChange={e => set("plan_price", e.target.value)}
+                      type="number" placeholder="299" style={inputStyle} />
+                  </Field>
+                </Row>
+                <Row>
+                  <Field label="Booking Limit / month">
+                    <input value={form.plan_booking_limit} onChange={e => set("plan_booking_limit", e.target.value)}
+                      type="number" placeholder="100" style={inputStyle} />
+                  </Field>
+                  <div /> {/* spacer */}
+                </Row>
+                <Row>
+                  <Field label="Start Date">
+                    <input value={form.plan_start_date} onChange={e => set("plan_start_date", e.target.value)}
+                      type="date" style={inputStyle} />
+                  </Field>
+                  <Field label="Renewal Date">
+                    <input value={form.plan_renewal_date} onChange={e => set("plan_renewal_date", e.target.value)}
+                      type="date" style={inputStyle} />
+                  </Field>
+                </Row>
+
+                <Field label="Add-ons Enabled">
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:4 }}>
+                    {PLAN_ADDONS.map(a => (
+                      <label key={a.key} style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", padding:"8px 10px", borderRadius:8, background:"var(--color-cream)", border:`1.5px solid ${form.plan_addons.includes(a.key) ? "var(--color-amber)" : "var(--color-cream-2)"}`, transition:"border-color 0.15s" }}>
+                        <input
+                          type="checkbox"
+                          checked={form.plan_addons.includes(a.key)}
+                          onChange={() => toggleAddon(a.key)}
+                          style={{ accentColor:"var(--color-amber)", width:14, height:14, flexShrink:0 }}
+                        />
+                        <span style={{ fontSize:13, color:"var(--color-dark)", fontWeight:form.plan_addons.includes(a.key) ? 700 : 500 }}>
+                          {a.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </Field>
+
+                <Field label="Internal Notes">
+                  <textarea
+                    value={form.plan_notes}
+                    onChange={e => set("plan_notes", e.target.value)}
+                    placeholder="e.g. Pays on the 1st. Wants to add WhatsApp next month."
+                    rows={3}
+                    style={{ ...inputStyle, height:"auto", resize:"vertical", padding:"10px 13px", lineHeight:1.6 }}
+                  />
+                </Field>
+              </SectionCard>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Gallery Manager ───────────────────────────────────────────────────────────
+// ─── Section Reorder ──────────────────────────────────────────────────────────
+
+function SectionReorder({ order, setOrder }: { order: string[]; setOrder: (o: string[]) => void }) {
+  const dragIdx = useRef<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+
+  function onDragStart(i: number) { dragIdx.current = i; }
+  function onDragEnter(i: number) { setDragOver(i); }
+  function onDragEnd()            { dragIdx.current = null; setDragOver(null); }
+
+  function onDrop(i: number) {
+    const from = dragIdx.current;
+    if (from === null || from === i) { setDragOver(null); return; }
+    const next = [...order];
+    const [moved] = next.splice(from, 1);
+    next.splice(i, 0, moved);
+    setOrder(next);
+    dragIdx.current = null;
+    setDragOver(null);
+  }
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+      {order.map((key, i) => (
+        <div
+          key={key}
+          draggable
+          onDragStart={() => onDragStart(i)}
+          onDragEnter={() => onDragEnter(i)}
+          onDragEnd={onDragEnd}
+          onDrop={e => { e.preventDefault(); onDrop(i); }}
+          onDragOver={e => e.preventDefault()}
+          style={{
+            display:"flex", alignItems:"center", gap:10, padding:"10px 12px",
+            background:"var(--color-cream)", borderRadius:9,
+            border: `1.5px solid ${dragOver === i ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+            cursor:"grab", transition:"border-color 0.15s",
+            opacity: dragOver === i ? 0.7 : 1,
+          }}
+        >
+          <span style={{ color:"var(--color-muted)", fontSize:14, userSelect:"none" }}>⠿</span>
+          <span style={{ fontSize:13, fontWeight:600, color:"var(--color-dark)" }}>
+            {SECTION_LABELS[key] || key}
+          </span>
+          <span style={{ fontSize:11, color:"var(--color-muted)", marginInlineStart:"auto" }}>#{i + 1}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Gallery Manager ──────────────────────────────────────────────────────────
 
 function GalleryManager({ gallery, setGallery, businessId }: {
   gallery:    GalleryItem[];
   setGallery: React.Dispatch<React.SetStateAction<GalleryItem[]>>;
   businessId?: string;
 }) {
-  const supabase   = createClient();
-  const inputRef   = useRef<HTMLInputElement>(null);
-  const dragIdx    = useRef<number | null>(null);
-  const [dragOver, setDragOver] = useState<number | null>(null);
+  const supabase  = createClient();
+  const inputRef  = useRef<HTMLInputElement>(null);
+  const dragIdx   = useRef<number | null>(null);
+  const [dragOver,  setDragOver]  = useState<number | null>(null);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   async function uploadFiles(files: File[]) {
     const placeholders: GalleryItem[] = files.map(() => ({ url: "", uploading: true }));
-    setGallery([...gallery, ...placeholders]);
+    setGallery(prev => [...prev, ...placeholders]);
     const startIdx = gallery.length;
 
     const results = await Promise.all(files.map(async (file, i) => {
@@ -463,7 +693,7 @@ function GalleryManager({ gallery, setGallery, businessId }: {
       const next = [...prev];
       results.forEach((url, i) => {
         if (url) next[startIdx + i] = { url };
-        else next.splice(startIdx + i, 1);
+        else     next.splice(startIdx + i, 1);
       });
       return next;
     });
@@ -496,25 +726,24 @@ function GalleryManager({ gallery, setGallery, businessId }: {
     setDragOver(null);
   }
 
-  function removeImage(i: number) {
-    setGallery(gallery.filter((_, idx) => idx !== i));
-  }
+  function removeImage(i: number)  { setGallery(prev => prev.filter((_, idx) => idx !== i)); }
 
   function setAsHero(i: number) {
     if (i === 0) return;
-    const next = [...gallery];
-    const [img] = next.splice(i, 1);
-    next.unshift(img);
-    setGallery(next);
+    setGallery(prev => {
+      const next = [...prev];
+      const [img] = next.splice(i, 1);
+      next.unshift(img);
+      return next;
+    });
   }
 
   return (
     <SectionCard title="Gallery">
-      <p style={{ fontSize:13, color:"var(--color-muted)", marginBottom:16, marginTop:0 }}>
+      <p style={{ fontSize:13, color:"var(--color-muted)", marginTop:0, marginBottom:16 }}>
         Drag to reorder. First image = hero on booking page.
       </p>
 
-      {/* Grid */}
       {gallery.length > 0 && (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10, marginBottom:16 }}>
           {gallery.map((item, i) => (
@@ -526,9 +755,10 @@ function GalleryManager({ gallery, setGallery, businessId }: {
               onDragEnd={handleDragEnd}
               onDrop={e => { e.preventDefault(); handleDrop(i); }}
               onDragOver={e => e.preventDefault()}
+              onMouseEnter={() => setHoveredIdx(i)}
+              onMouseLeave={() => setHoveredIdx(null)}
               style={{
-                position:"relative", aspectRatio:"1 / 1",
-                borderRadius:10, overflow:"hidden",
+                position:"relative", aspectRatio:"1 / 1", borderRadius:10, overflow:"hidden",
                 border: dragOver === i ? "2px solid var(--color-amber)" : "2px solid transparent",
                 cursor: item.uploading ? "wait" : "grab",
                 transition:"border-color 0.15s, opacity 0.15s",
@@ -537,70 +767,47 @@ function GalleryManager({ gallery, setGallery, businessId }: {
               }}
             >
               {item.url && (
-                <img
-                  src={item.url}
-                  alt=""
-                  style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", pointerEvents:"none" }}
-                />
+                <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", pointerEvents:"none" }} />
               )}
               {item.uploading && (
-                <div style={{
-                  position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:12, color:"var(--color-muted)",
-                }}>
+                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"var(--color-muted)" }}>
                   Uploading…
                 </div>
               )}
 
-              {/* Hero badge (first, not uploading) */}
+              {/* Hero badge */}
               {i === 0 && !item.uploading && (
                 <div style={{
                   position:"absolute", top:6, insetInlineStart:6,
                   background:"var(--color-amber)", color:"#fff",
-                  fontSize:9, fontWeight:800, padding:"2px 6px", borderRadius:20,
-                  letterSpacing:"0.05em",
+                  fontSize:9, fontWeight:800, padding:"2px 6px", borderRadius:20, letterSpacing:"0.05em",
                 }}>
                   ★ HERO
                 </div>
               )}
 
-              {/* Actions on hover */}
-              {!item.uploading && (
-                <div style={{
-                  position:"absolute", inset:0,
-                  background:"rgba(34,21,16,0)",
-                  display:"flex", flexDirection:"column", justifyContent:"space-between", padding:6,
-                }}>
-                  {/* Set as hero */}
-                  {i !== 0 && (
+              {/* Hover actions */}
+              {hoveredIdx === i && !item.uploading && (
+                <div style={{ position:"absolute", inset:0, background:"rgba(34,21,16,0.28)", display:"flex", flexDirection:"column", justifyContent:"space-between", padding:6 }}>
+                  {i !== 0 ? (
                     <button
                       onClick={() => setAsHero(i)}
-                      title="Set as hero"
                       style={{
-                        alignSelf:"flex-start",
-                        background:"rgba(34,21,16,0.55)", border:"none", borderRadius:6,
-                        color:"#fff", fontSize:9, fontWeight:700, padding:"3px 7px",
-                        cursor:"pointer", fontFamily:"inherit", backdropFilter:"blur(4px)",
-                        opacity:0,
+                        alignSelf:"flex-start", background:"rgba(34,21,16,0.7)", border:"none",
+                        borderRadius:6, color:"#fff", fontSize:9, fontWeight:700, padding:"3px 7px",
+                        cursor:"pointer", fontFamily:"inherit",
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity="1"; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity="0"; }}
-                      className="gallery-set-hero"
                     >
                       Set hero
                     </button>
-                  )}
-                  {/* Delete */}
+                  ) : <div />}
                   <button
                     onClick={() => removeImage(i)}
-                    title="Remove"
                     style={{
-                      alignSelf:"flex-end",
-                      width:24, height:24, borderRadius:6,
-                      background:"rgba(239,68,68,0.85)", border:"none",
-                      color:"#fff", fontSize:14, fontWeight:700,
-                      cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
-                      lineHeight:1,
+                      alignSelf:"flex-end", width:24, height:24, borderRadius:6,
+                      background:"rgba(239,68,68,0.9)", border:"none",
+                      color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer",
+                      display:"flex", alignItems:"center", justifyContent:"center",
                     }}
                   >
                     ✕
@@ -635,45 +842,39 @@ function GalleryManager({ gallery, setGallery, businessId }: {
   );
 }
 
-// ─── Services Panel ────────────────────────────────────────────────────────────
+// ─── Services Panel ───────────────────────────────────────────────────────────
 
 function ServicesPanel({ businessId, services, setServices }: {
   businessId: string;
-  services: Service[];
+  services:   Service[];
   setServices: (s: Service[]) => void;
 }) {
-  const supabase    = createClient();
-  const [adding,    setAdding]   = useState(false);
-  const [editing,   setEditing]  = useState<Service | null>(null);
-  const [name,      setName]     = useState("");
-  const [price,     setPrice]    = useState("");
-  const [duration,  setDuration] = useState("");
-  const [desc,      setDesc]     = useState("");
-  const [saving,    setSaving]   = useState(false);
-  const [deleteId,  setDeleteId] = useState<string | null>(null);
+  const supabase   = createClient();
+  const [adding,   setAdding]   = useState(false);
+  const [editing,  setEditing]  = useState<Service | null>(null);
+  const [name,     setName]     = useState("");
+  const [price,    setPrice]    = useState("");
+  const [duration, setDuration] = useState("");
+  const [desc,     setDesc]     = useState("");
+  const [saving,   setSaving]   = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   async function reload() {
     const { data } = await supabase.from("services").select("*").eq("business_id", businessId).order("display_order");
     setServices((data as Service[]) || []);
   }
 
-  function startAdd()          { setEditing(null); setName(""); setPrice(""); setDuration(""); setDesc(""); setAdding(true); }
-  function startEdit(s: Service) { setEditing(s); setName(s.name); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(""); setAdding(true); }
-  function cancelAdd()         { setAdding(false); setEditing(null); }
+  function startAdd()             { setEditing(null); setName(""); setPrice(""); setDuration(""); setDesc(""); setAdding(true); }
+  function startEdit(s: Service)  { setEditing(s); setName(s.name); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(""); setAdding(true); }
+  function cancelAdd()            { setAdding(false); setEditing(null); }
 
   async function saveService() {
     if (!name.trim() || !price || !duration) return;
     setSaving(true);
     if (editing) {
-      await supabase.from("services").update({
-        name: name.trim(), price: Number(price), duration: Number(duration), description: desc || null,
-      }).eq("id", editing.id);
+      await supabase.from("services").update({ name: name.trim(), price: Number(price), duration: Number(duration), description: desc || null }).eq("id", editing.id);
     } else {
-      await supabase.from("services").insert({
-        business_id: businessId, name: name.trim(),
-        price: Number(price), duration: Number(duration),
-        description: desc || null, active: true, display_order: services.length + 1,
-      });
+      await supabase.from("services").insert({ business_id: businessId, name: name.trim(), price: Number(price), duration: Number(duration), description: desc || null, active: true, display_order: services.length + 1 });
     }
     await reload();
     setSaving(false); setAdding(false); setEditing(null);
@@ -681,8 +882,7 @@ function ServicesPanel({ businessId, services, setServices }: {
 
   async function confirmDelete(id: string) {
     await supabase.from("services").delete().eq("id", id);
-    setDeleteId(null);
-    reload();
+    setDeleteId(null); reload();
   }
 
   async function toggleActive(s: Service) {
@@ -697,26 +897,15 @@ function ServicesPanel({ businessId, services, setServices }: {
           <p style={{ fontSize:13, color:"var(--color-muted)", textAlign:"center", padding:"16px 0" }}>No services yet.</p>
         )}
         {services.map(s => (
-          <div key={s.id} style={{
-            display:"flex", alignItems:"center", gap:12, padding:"12px 14px",
-            background:"var(--color-cream)", borderRadius:10,
-            border:"1.5px solid var(--color-cream-2)",
-            opacity: s.active ? 1 : 0.5,
-          }}>
+          <div key={s.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", background:"var(--color-cream)", borderRadius:10, border:"1.5px solid var(--color-cream-2)", opacity: s.active ? 1 : 0.5 }}>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:14, fontWeight:700, color:"var(--color-dark)" }}>{s.name}</div>
               <div style={{ fontSize:12, color:"var(--color-muted)", marginTop:2 }}>{s.duration} min · ₪{s.price}</div>
             </div>
-            <button onClick={() => toggleActive(s)} style={{
-              fontSize:11, fontWeight:700, padding:"3px 8px", borderRadius:20, border:"none", cursor:"pointer",
-              background: s.active ? "#D1FAE5" : "var(--color-cream-2)",
-              color: s.active ? "#065F46" : "var(--color-muted)", fontFamily:"inherit",
-            }}>
+            <button onClick={() => toggleActive(s)} style={{ fontSize:11, fontWeight:700, padding:"3px 8px", borderRadius:20, border:"none", cursor:"pointer", background: s.active ? "#D1FAE5" : "var(--color-cream-2)", color: s.active ? "#065F46" : "var(--color-muted)", fontFamily:"inherit" }}>
               {s.active ? "Active" : "Hidden"}
             </button>
             <button onClick={() => startEdit(s)} style={ghostBtn}>Edit</button>
-
-            {/* Inline delete confirmation */}
             {deleteId === s.id ? (
               <div style={{ display:"flex", gap:4, alignItems:"center" }}>
                 <span style={{ fontSize:11, color:"var(--color-muted)" }}>Sure?</span>
@@ -735,36 +924,16 @@ function ServicesPanel({ businessId, services, setServices }: {
               {editing ? "Edit service" : "New service"}
             </p>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
-              <div>
-                <label style={labelStyle}>Name *</label>
-                <input value={name} onChange={e => setName(e.target.value)} placeholder="Haircut" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Price (₪) *</label>
-                <input value={price} onChange={e => setPrice(e.target.value)} type="number" placeholder="80" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Duration (min) *</label>
-                <input value={duration} onChange={e => setDuration(e.target.value)} type="number" placeholder="30" style={inputStyle} />
-              </div>
+              <div><label style={labelStyle}>Name *</label><input value={name} onChange={e => setName(e.target.value)} placeholder="Haircut" style={inputStyle} /></div>
+              <div><label style={labelStyle}>Price (₪) *</label><input value={price} onChange={e => setPrice(e.target.value)} type="number" placeholder="80" style={inputStyle} /></div>
+              <div><label style={labelStyle}>Duration (min) *</label><input value={duration} onChange={e => setDuration(e.target.value)} type="number" placeholder="30" style={inputStyle} /></div>
             </div>
-            <div>
-              <label style={labelStyle}>Description (optional)</label>
-              <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Short description" style={inputStyle} />
-            </div>
+            <div><label style={labelStyle}>Description (optional)</label><input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Short description" style={inputStyle} /></div>
             <div style={{ display:"flex", gap:8 }}>
-              <button onClick={saveService} disabled={saving} style={{
-                height:34, padding:"0 16px", borderRadius:9, border:"none",
-                background:"var(--color-amber)", color:"#fff",
-                fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
-              }}>
+              <button onClick={saveService} disabled={saving} style={{ height:34, padding:"0 16px", borderRadius:9, border:"none", background:"var(--color-amber)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                 {saving ? "Saving…" : editing ? "Update" : "Add Service"}
               </button>
-              <button onClick={cancelAdd} style={{
-                height:34, padding:"0 16px", borderRadius:9,
-                border:"1.5px solid var(--color-cream-2)", background:"transparent",
-                color:"var(--color-muted)", fontSize:13, cursor:"pointer", fontFamily:"inherit",
-              }}>
+              <button onClick={cancelAdd} style={{ height:34, padding:"0 16px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"transparent", color:"var(--color-muted)", fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                 Cancel
               </button>
             </div>
@@ -772,13 +941,8 @@ function ServicesPanel({ businessId, services, setServices }: {
         )}
 
         {!adding && (
-          <button
-            onClick={startAdd}
-            style={{
-              height:38, borderRadius:10, border:"2px dashed var(--color-cream-2)",
-              background:"transparent", color:"var(--color-muted)", fontSize:13, fontWeight:600,
-              cursor:"pointer", fontFamily:"inherit", transition:"border-color 0.15s, color 0.15s",
-            }}
+          <button onClick={startAdd}
+            style={{ height:38, borderRadius:10, border:"2px dashed var(--color-cream-2)", background:"transparent", color:"var(--color-muted)", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"border-color 0.15s, color 0.15s" }}
             onMouseEnter={e => { e.currentTarget.style.borderColor="var(--color-amber)"; e.currentTarget.style.color="var(--color-amber)"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor="var(--color-cream-2)"; e.currentTarget.style.color="var(--color-muted)"; }}
           >
@@ -790,7 +954,7 @@ function ServicesPanel({ businessId, services, setServices }: {
   );
 }
 
-// ─── Shared layout helpers ─────────────────────────────────────────────────────
+// ─── Shared UI helpers ────────────────────────────────────────────────────────
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -817,8 +981,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const labelStyle: React.CSSProperties = {
-  fontSize:11, fontWeight:700, color:"var(--color-muted)",
-  textTransform:"uppercase", letterSpacing:"0.05em",
+  fontSize:11, fontWeight:700, color:"var(--color-muted)", textTransform:"uppercase", letterSpacing:"0.05em",
 };
 
 const inputStyle: React.CSSProperties = {
@@ -826,8 +989,7 @@ const inputStyle: React.CSSProperties = {
   borderRadius:11, border:"1.5px solid var(--color-cream-2)",
   background:"var(--color-cream)", fontSize:14,
   color:"var(--color-dark)", outline:"none",
-  fontFamily:"inherit", boxSizing:"border-box",
-  transition:"border-color 0.15s",
+  fontFamily:"inherit", boxSizing:"border-box", transition:"border-color 0.15s",
 };
 
 const ghostBtn: React.CSSProperties = {
