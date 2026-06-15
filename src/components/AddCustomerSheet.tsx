@@ -187,20 +187,26 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/40 z-40 backdrop-blur-[2px]" onClick={onClose} />
+      <style>{`
+        .csheet-outer { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); padding: 0; }
+        @media (min-width: 640px) { .csheet-outer { align-items: center; padding: 20px; } }
+        .csheet-inner { width: 100%; max-height: 92dvh; display: flex; flex-direction: column; background: var(--color-surface); border-radius: 20px 20px 0 0; box-shadow: 0 -4px 24px rgba(30,26,20,0.12); }
+        @media (min-width: 640px) { .csheet-inner { max-width: 480px; border-radius: 20px; max-height: 88dvh; box-shadow: 0 8px 48px rgba(30,26,20,0.18); } }
+        .csheet-handle { display: flex; justify-content: center; padding: 12px 0 4px; }
+        @media (min-width: 640px) { .csheet-handle { display: none; } }
+      `}</style>
 
-      {/* Sheet */}
-      <div
-        className="fixed bottom-0 inset-x-0 z-50 flex flex-col"
-        style={{ maxHeight: "92dvh", background: "var(--color-surface)", borderRadius: "20px 20px 0 0", boxShadow: "0 -4px 24px rgba(30,26,20,0.12)" }}
-        role="dialog"
-        aria-label="Add client"
-      >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full" style={{ background: "var(--color-cream-2)" }} />
-        </div>
+      <div className="csheet-outer" onClick={onClose}>
+        <div
+          className="csheet-inner"
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-label={isEdit ? "Edit client" : "Add client"}
+        >
+          {/* Drag handle — mobile only */}
+          <div className="csheet-handle">
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: "var(--color-cream-2)" }} />
+          </div>
 
         {/* Title */}
         <div className="px-5 pb-3 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
@@ -379,6 +385,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
           >
             {submitting ? "Saving…" : isEdit ? "Save changes" : attach ? "Save & book" : "Save client"}
           </button>
+        </div>
         </div>
       </div>
     </>

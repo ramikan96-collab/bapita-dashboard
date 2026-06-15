@@ -380,6 +380,10 @@ export default function ClientsPage() {
         .dd-menu-item:hover { background: var(--color-cream); }
         .dd-menu-item.selected { font-weight: 700; color: var(--color-amber); }
         .dd-menu-item.selected-bg { background: var(--amber-soft); }
+        .print-btn-wrap { display: flex; }
+        @media (max-width: 639px) { .print-btn-wrap { display: none; } }
+        .table-scroll { overflow-x: auto; }
+        .table-min { min-width: 480px; }
       `}</style>
 
       <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-cream)" }}>
@@ -548,16 +552,18 @@ export default function ClientsPage() {
                 )}
               </div>
 
-              {/* Print */}
-              <button
-                onClick={() => window.print()}
-                title="Print / Download"
-                style={{ height: 34, width: 34, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-muted)", cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s, color 0.15s" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-amber)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-muted)"; }}
-              >
-                <IconPrint />
-              </button>
+              {/* Print — desktop only */}
+              <div className="print-btn-wrap">
+                <button
+                  onClick={() => window.print()}
+                  title="Print / Download"
+                  style={{ height: 34, width: 34, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-muted)", cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s, color 0.15s" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-amber)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-muted)"; }}
+                >
+                  <IconPrint />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -591,36 +597,38 @@ export default function ClientsPage() {
                 )}
               </div>
             ) : (
-              <div>
-                {/* Column header row — exact same grid as rows */}
-                <div style={{ display: "grid", gridTemplateColumns: gridCols, gap: "0 14px", padding: "0 14px 8px", alignItems: "center" }}>
-                  <div />
-                  {orderedCols.map((key) => (
-                    <span key={key} style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--color-muted)" }}>
-                      {ALL_COLUMNS.find((c) => c.key === key)?.label}
-                    </span>
-                  ))}
-                  <div />
-                </div>
+              <div className="table-scroll">
+                <div className="table-min">
+                  {/* Column header row — exact same grid as rows */}
+                  <div style={{ display: "grid", gridTemplateColumns: gridCols, gap: "0 14px", padding: "0 14px 8px", alignItems: "center" }}>
+                    <div />
+                    {orderedCols.map((key) => (
+                      <span key={key} style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--color-muted)" }}>
+                        {ALL_COLUMNS.find((c) => c.key === key)?.label}
+                      </span>
+                    ))}
+                    <div />
+                  </div>
 
-                {/* Rows */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {clients.map((client) => {
-                    const { firstName, lastName } = parseName(client.name);
-                    return (
-                      <ClientRow
-                        key={client.id}
-                        client={client}
-                        firstName={firstName}
-                        lastName={lastName}
-                        visibleColumns={orderedCols}
-                        gridCols={gridCols}
-                        onClick={() => router.push(`/clients/${client.id}`)}
-                        onEdit={() => setEditClient(client)}
-                        onDelete={() => setDeleteTarget(client)}
-                      />
-                    );
-                  })}
+                  {/* Rows */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {clients.map((client) => {
+                      const { firstName, lastName } = parseName(client.name);
+                      return (
+                        <ClientRow
+                          key={client.id}
+                          client={client}
+                          firstName={firstName}
+                          lastName={lastName}
+                          visibleColumns={orderedCols}
+                          gridCols={gridCols}
+                          onClick={() => router.push(`/clients/${client.id}`)}
+                          onEdit={() => setEditClient(client)}
+                          onDelete={() => setDeleteTarget(client)}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
