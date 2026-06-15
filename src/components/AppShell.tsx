@@ -341,13 +341,15 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       {onCalendar && chrome && (
         <div
           data-noprint
-          className="md:hidden flex items-center gap-3 px-4 shrink-0 border-b z-20"
+          className="md:hidden flex items-center shrink-0 border-b z-20"
           style={{
             background: "var(--nav-bg)",
             backdropFilter: "var(--nav-blur)",
             WebkitBackdropFilter: "var(--nav-blur)",
             borderColor: "var(--line)",
             height: 52,
+            gap: 10,
+            paddingInline: 20,
           }}
         >
           {searchOpen ? (
@@ -470,7 +472,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <button
                 onClick={() => window.print()}
                 className="rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
-                style={{ padding: 10, marginInlineEnd: 20 }}
+                style={{ padding: 10 }}
                 aria-label="Print"
               >
                 <IconPrint size={18} />
