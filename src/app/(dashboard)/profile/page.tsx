@@ -34,12 +34,14 @@ export default function ProfilePage() {
   const supabase = createClient();
   const { showToast } = useToast();
 
-  const [email,           setEmail]           = useState("");
-  const [newPassword,     setNewPassword]     = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading,         setLoading]         = useState(false);
-  const [showNew,         setShowNew]         = useState(false);
-  const [showConfirm,     setShowConfirm]     = useState(false);
+  const [email,              setEmail]              = useState("");
+  const [newPassword,        setNewPassword]        = useState("");
+  const [confirmPassword,    setConfirmPassword]    = useState("");
+  const [loading,            setLoading]            = useState(false);
+  const [showNew,            setShowNew]            = useState(false);
+  const [showConfirm,        setShowConfirm]        = useState(false);
+  const [showDeleteConfirm,  setShowDeleteConfirm]  = useState(false);
+  const [deletingAccount,    setDeletingAccount]    = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -60,6 +62,20 @@ export default function ProfilePage() {
       setNewPassword("");
       setConfirmPassword("");
     }
+  }
+
+  async function deleteAccount() {
+    setDeletingAccount(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setDeletingAccount(false); return; }
+    const res = await fetch("/api/delete-account", { method: "POST" });
+    if (!res.ok) {
+      showToast("Couldn't delete account. Contact support.", "error");
+      setDeletingAccount(false);
+      return;
+    }
+    await supabase.auth.signOut();
+    router.push("/login");
   }
 
   const mismatch = !!confirmPassword && newPassword !== confirmPassword;
@@ -195,6 +211,33 @@ export default function ProfilePage() {
             </button>
           </div>
 
+          {/* Delete account */}
+          <div style={{ ...cardStyle, padding: "14px 20px" }}>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              style={{
+                width: "100%",
+                height: 42,
+                borderRadius: 11,
+                border: "none",
+                background: "#FEE2E2",
+                color: "#B91C1C",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#FECACA")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "#FEE2E2")}
+            >
+              Delete my account
+            </button>
+          </div>
+
           {/* Sign out */}
           <div style={{ ...cardStyle, marginBottom: 0, padding: "14px 20px" }}>
             <button
@@ -222,6 +265,47 @@ export default function ProfilePage() {
               Sign out
             </button>
           </div>
+
+          {/* Delete account confirm dialog */}
+          {showDeleteConfirm && (
+            <div
+              style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(30,26,20,0.48)", backdropFilter: "blur(4px)", padding: 20 }}
+              onClick={() => !deletingAccount && setShowDeleteConfirm(false)}
+            >
+              <div
+                style={{ width: "100%", maxWidth: 380, background: "var(--color-surface)", borderRadius: 20, padding: "28px 24px", border: "1px solid var(--color-cream-2)", boxShadow: "0 8px 48px rgba(30,26,20,0.18)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: "#FEE2E2", color: "#B91C1C", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </div>
+                <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", margin: "0 0 8px" }}>Delete your account?</p>
+                <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 6px", lineHeight: 1.6 }}>
+                  This will permanently delete your account, business profile, all clients, and all booking history.
+                </p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "#B91C1C", margin: "0 0 22px" }}>This action cannot be undone.</p>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deletingAccount}
+                    style={{ flex: 1, height: 44, borderRadius: 12, border: "1.5px solid var(--color-cream-2)", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={deleteAccount}
+                    disabled={deletingAccount}
+                    style={{ flex: 1, height: 44, borderRadius: 12, border: "none", background: "#B91C1C", color: "white", fontSize: 14, fontWeight: 700, cursor: deletingAccount ? "not-allowed" : "pointer", opacity: deletingAccount ? 0.7 : 1 }}
+                  >
+                    {deletingAccount ? "Deleting…" : "Yes, delete"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>
