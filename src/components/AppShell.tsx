@@ -286,18 +286,18 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <IconMenu size={20} />
         </button>
 
-        {/* Print — calendar only, sits right after hamburger */}
+        <div className="flex-1" />
+
+        {/* Print — calendar only, right side */}
         {onCalendar && (
           <button
             onClick={() => window.print()}
-            className="p-2 ms-1 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
+            className="p-2 me-1 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
             aria-label="Print"
           >
             <IconPrint size={18} />
           </button>
         )}
-
-        <div className="flex-1" />
       </div>
 
       {/* ─── Mobile Top Bar ───────────────────────────────────────────── */}
@@ -313,7 +313,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       >
         <button
           onClick={() => setDrawerOpen(true)}
-          className="p-3 ms-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+          className="p-3 ms-3 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
           aria-label="Open menu"
         >
           <IconMenu size={24} />
@@ -468,7 +468,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               {/* Print */}
               <button
                 onClick={() => window.print()}
-                className="p-2.5 me-1 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+                className="p-2.5 me-3 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
                 aria-label="Print"
               >
                 <IconPrint size={18} />
@@ -789,7 +789,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ─── Main Content ─────────────────────────────────────────────── */}
-      <main className="flex-1 min-w-0 flex flex-col pt-4 pb-16 md:pt-0 md:pb-0">{children}</main>
+      <main className="flex-1 min-w-0 overflow-y-auto flex flex-col pt-4 pb-16 md:overflow-visible md:pt-0 md:pb-0">{children}</main>
       </div>
       </div>
 
@@ -910,66 +910,64 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               style={{ background: "var(--color-cream-2)" }}
             />
             <div
-              className="px-5 pb-2 text-[12px] font-semibold uppercase tracking-wide"
+              className="px-6 pb-3 text-[12px] font-semibold uppercase tracking-wide"
               style={{ color: "var(--color-muted)" }}
             >
               Filter by status
             </div>
-            {chrome.statusFilter.length > 0 && (
-              <button
-                onClick={() => chrome.setStatusFilter([])}
-                className="w-full flex items-center px-5 text-[14px] font-semibold text-start transition-colors active:bg-cream"
-                style={{ height: 44, color: "var(--color-amber)" }}
-              >
-                Clear all filters
-              </button>
-            )}
-            {filterOptions.map((opt) => {
-              const active = chrome.statusFilter.includes(opt.value);
-              return (
-                <button
-                  key={opt.value}
-                  onClick={() => {
-                    const next = active
-                      ? chrome.statusFilter.filter((s) => s !== opt.value)
-                      : [...chrome.statusFilter, opt.value];
-                    chrome.setStatusFilter(next);
-                  }}
-                  className="w-full flex items-center justify-between px-5 text-[15px] text-start text-dark transition-colors active:bg-cream"
-                  style={{ height: 52 }}
-                >
-                  {opt.label}
-                  {active && (
-                    <span style={{ color: "var(--color-amber)" }}>
-                      <IconCheck />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+            <div className="mx-4 mb-2 overflow-hidden rounded-2xl" style={{ border: "1px solid var(--color-cream-2)" }}>
+              {chrome.statusFilter.length > 0 && (
+                <>
+                  <button
+                    onClick={() => chrome.setStatusFilter([])}
+                    className="w-full flex items-center px-4 text-[14px] font-semibold text-start transition-colors active:bg-[var(--color-cream)]"
+                    style={{ height: 48, color: "var(--color-amber)", background: "var(--color-surface)" }}
+                  >
+                    Clear all filters
+                  </button>
+                  <div style={{ height: 1, background: "var(--color-cream-2)" }} />
+                </>
+              )}
+              {filterOptions.map((opt, i) => {
+                const active = chrome.statusFilter.includes(opt.value);
+                return (
+                  <div key={opt.value}>
+                    {i > 0 && <div style={{ height: 1, background: "var(--color-cream-2)" }} />}
+                    <button
+                      onClick={() => {
+                        const next = active
+                          ? chrome.statusFilter.filter((s) => s !== opt.value)
+                          : [...chrome.statusFilter, opt.value];
+                        chrome.setStatusFilter(next);
+                      }}
+                      className="w-full flex items-center justify-between px-4 text-[15px] text-start transition-colors active:bg-[var(--color-cream)]"
+                      style={{ height: 52, background: "var(--color-surface)", color: active ? "var(--color-amber)" : "var(--color-dark)" }}
+                    >
+                      {opt.label}
+                      {active && <IconCheck />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
             {!chrome.isToday && (
-              <>
-                <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
+              <div className="mx-4 mb-2 overflow-hidden rounded-2xl" style={{ border: "1px solid var(--color-cream-2)" }}>
                 <button
-                  onClick={() => {
-                    chrome.onToday();
-                    setFilterSheetOpen(false);
-                  }}
-                  className="w-full flex items-center px-5 text-[15px] font-medium text-start transition-colors active:bg-cream"
-                  style={{ height: 52, color: "var(--color-amber)" }}
+                  onClick={() => { chrome.onToday(); setFilterSheetOpen(false); }}
+                  className="w-full flex items-center px-4 text-[15px] font-semibold text-start transition-colors active:bg-[var(--color-cream)]"
+                  style={{ height: 52, background: "var(--color-surface)", color: "var(--color-amber)" }}
                 >
                   Jump to today
                 </button>
-              </>
+              </div>
             )}
-            <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
             <div
-              className="px-5 pt-3 pb-1 text-[12px] font-semibold uppercase tracking-wide"
+              className="px-6 pt-2 pb-3 text-[12px] font-semibold uppercase tracking-wide"
               style={{ color: "var(--color-muted)" }}
             >
               Calendars
             </div>
-            <div className="px-2 pb-2">
+            <div className="mx-4 mb-2 overflow-hidden rounded-2xl" style={{ border: "1px solid var(--color-cream-2)" }}>
               <CalendarSelectorPanel
                 ownerName={businessName}
                 calendarFilter={chrome.calendarFilter}
@@ -998,33 +996,29 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               style={{ background: "var(--color-cream-2)" }}
             />
             <div
-              className="px-5 pb-2 text-[12px] font-semibold uppercase tracking-wide"
+              className="px-6 pb-3 text-[12px] font-semibold uppercase tracking-wide"
               style={{ color: "var(--color-muted)" }}
             >
               View
             </div>
-            {calViews.map((v) => {
-              const active = chrome.view === v.value;
-              return (
-                <button
-                  key={v.value}
-                  onClick={() => {
-                    chrome.setView(v.value);
-                    setViewSheetOpen(false);
-                  }}
-                  className="w-full flex items-center justify-between px-5 text-[15px] text-start text-dark transition-colors active:bg-cream"
-                  style={{ height: 52 }}
-                >
-                  {v.label}
-                  {active && (
-                    <span style={{ color: "var(--color-amber)" }}>
-                      <IconCheck />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-            <div className="h-4" />
+            <div className="mx-4 mb-4 overflow-hidden rounded-2xl" style={{ border: "1px solid var(--color-cream-2)" }}>
+              {calViews.map((v, i) => {
+                const active = chrome.view === v.value;
+                return (
+                  <div key={v.value}>
+                    {i > 0 && <div style={{ height: 1, background: "var(--color-cream-2)" }} />}
+                    <button
+                      onClick={() => { chrome.setView(v.value); setViewSheetOpen(false); }}
+                      className="w-full flex items-center justify-between px-4 text-[15px] text-start transition-colors active:bg-[var(--color-cream)]"
+                      style={{ height: 52, background: "var(--color-surface)", color: active ? "var(--color-amber)" : "var(--color-dark)" }}
+                    >
+                      {v.label}
+                      {active && <IconCheck />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </>
       )}
