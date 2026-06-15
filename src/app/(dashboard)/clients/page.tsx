@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { ClientsSkeleton } from "@/components/LoadingSkeleton";
 import AddCustomerSheet from "@/components/AddCustomerSheet";
+import { useToast } from "@/components/Toast";
 import type { Customer } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -147,6 +148,26 @@ function IconCheck() {
   );
 }
 
+function IconEdit() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function RowSkeleton() {
@@ -204,6 +225,7 @@ const dropdownBtnStyle = (active: boolean): React.CSSProperties => ({
 export default function ClientsPage() {
   const router = useRouter();
   const { business, loading: bizLoading } = useBusiness();
+  const { showToast } = useToast();
   const supabase = useMemo(() => createClient(), []);
 
   const [search, setSearch] = useState("");
@@ -215,6 +237,9 @@ export default function ClientsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [showAdd, setShowAdd] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [editClient, setEditClient] = useState<Customer | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // dropdown open states
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -286,6 +311,16 @@ export default function ClientsPage() {
     fetchClients();
   }, [business, debouncedSearch, sortBy, showFilter, customFrom, customTo, supabase, refreshKey]);
 
+  async function deleteClient(client: Customer) {
+    setDeleting(true);
+    const { error } = await supabase.from("customers").delete().eq("id", client.id).eq("business_id", client.business_id);
+    setDeleting(false);
+    if (error) { showToast("Couldn't delete client", "error"); return; }
+    showToast("Client deleted", "success");
+    setDeleteTarget(null);
+    setRefreshKey((k) => k + 1);
+  }
+
   if (bizLoading) return <ClientsSkeleton />;
 
   const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Recent";
@@ -332,7 +367,13 @@ export default function ClientsPage() {
           border-color: var(--color-cream-2);
         }
         .client-row:hover .row-arrow { color: var(--color-amber); transform: translateX(2px); }
+        .client-row:hover .row-actions { opacity: 1; }
         .row-arrow { display: flex; justify-content: flex-end; color: var(--color-cream-2); transition: color 0.15s ease, transform 0.15s ease; }
+        .row-actions { opacity: 0; display: flex; gap: 4px; transition: opacity 0.15s ease; }
+        @media (max-width: 640px) { .row-actions { opacity: 1; } }
+        .row-action-btn { height: 26px; width: 26px; border-radius: 7px; border: 1.5px solid var(--color-cream-2); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-muted); transition: all 0.12s; flex-shrink: 0; }
+        .row-action-btn:hover { border-color: var(--color-amber); color: var(--color-amber); background: var(--amber-soft); }
+        .row-action-btn.delete:hover { border-color: #EF4444; color: #EF4444; background: #FEF2F2; }
         .col-check { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--color-cream-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.12s; }
         .col-check.checked { background: var(--color-amber); border-color: var(--color-amber); color: white; }
         .dd-menu-item { width: 100%; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--color-dark); background: transparent; border: none; cursor: pointer; text-align: left; transition: background 0.1s; }
@@ -575,6 +616,8 @@ export default function ClientsPage() {
                         visibleColumns={orderedCols}
                         gridCols={gridCols}
                         onClick={() => router.push(`/clients/${client.id}`)}
+                        onEdit={() => setEditClient(client)}
+                        onDelete={() => setDeleteTarget(client)}
                       />
                     );
                   })}
@@ -591,6 +634,46 @@ export default function ClientsPage() {
             onCreated={() => { setRefreshKey((k) => k + 1); setShowAdd(false); }}
           />
         )}
+
+        {editClient && business && (
+          <AddCustomerSheet
+            business={business}
+            clientToEdit={editClient}
+            onClose={() => setEditClient(null)}
+            onCreated={() => { setRefreshKey((k) => k + 1); setEditClient(null); }}
+          />
+        )}
+
+        {deleteTarget && (
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(30,26,20,0.48)", backdropFilter: "blur(4px)", padding: 20 }}
+            onClick={() => !deleting && setDeleteTarget(null)}
+          >
+            <div
+              style={{ width: "100%", maxWidth: 360, background: "var(--color-surface)", borderRadius: 20, padding: "24px", border: "1px solid var(--color-cream-2)", boxShadow: "0 8px 48px rgba(30,26,20,0.16)" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p style={{ fontSize: 16, fontWeight: 800, color: "var(--color-dark)", margin: "0 0 6px" }}>Delete {deleteTarget.name}?</p>
+              <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>All their booking history will be permanently deleted. This can't be undone.</p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                  style={{ flex: 1, height: 42, borderRadius: 12, border: "1.5px solid var(--color-cream-2)", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => deleteClient(deleteTarget)}
+                  disabled={deleting}
+                  style={{ flex: 1, height: 42, borderRadius: 12, border: "none", background: "#EF4444", color: "white", fontSize: 14, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}
+                >
+                  {deleting ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
@@ -605,6 +688,8 @@ function ClientRow({
   visibleColumns,
   gridCols,
   onClick,
+  onEdit,
+  onDelete,
 }: {
   client: Customer;
   firstName: string;
@@ -612,6 +697,8 @@ function ClientRow({
   visibleColumns: ColumnKey[];
   gridCols: string;
   onClick: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   const isNew = !client.total_visits || client.total_visits === 0;
 
@@ -664,10 +751,10 @@ function ClientRow({
   }
 
   return (
-    <button
+    <div
       className="client-row"
+      style={{ gridTemplateColumns: gridCols, cursor: "pointer" } as React.CSSProperties}
       onClick={onClick}
-      style={{ gridTemplateColumns: gridCols } as React.CSSProperties}
     >
       <Avatar name={client.name} />
       {visibleColumns.map((key) => (
@@ -675,7 +762,13 @@ function ClientRow({
           {renderCell(key)}
         </div>
       ))}
-      <div className="row-arrow"><IconArrowRight /></div>
-    </button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
+        <div className="row-actions" onClick={(e) => e.stopPropagation()}>
+          <button className="row-action-btn" title="Edit" onClick={onEdit}><IconEdit /></button>
+          <button className="row-action-btn delete" title="Delete" onClick={onDelete}><IconTrash /></button>
+        </div>
+        <div className="row-arrow"><IconArrowRight /></div>
+      </div>
+    </div>
   );
 }

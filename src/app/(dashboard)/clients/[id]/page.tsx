@@ -15,6 +15,7 @@ import {
   type Service,
   type BookingStatus,
 } from "@/types";
+import AddCustomerSheet from "@/components/AddCustomerSheet";
 
 interface BookingWithService extends Booking {
   service: Service | null;
@@ -182,6 +183,26 @@ function IconHistory() {
   );
 }
 
+function IconEdit() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function ProfileSkeleton() {
@@ -211,6 +232,9 @@ export default function ClientProfilePage() {
   const [savedNotes, setSavedNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showEdit, setShowEdit] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -269,6 +293,16 @@ export default function ClientProfilePage() {
     setSavedNotes(notes);
     setClient({ ...client, notes });
     showToast("Notes saved", "success");
+  }
+
+  async function deleteClient() {
+    if (!client) return;
+    setDeleting(true);
+    const { error } = await supabase.from("customers").delete().eq("id", client.id).eq("business_id", client.business_id);
+    setDeleting(false);
+    if (error) { showToast("Couldn't delete client", "error"); return; }
+    showToast("Client deleted", "success");
+    router.push("/clients");
   }
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -394,10 +428,32 @@ export default function ClientProfilePage() {
 
         {/* ── Header ───────────────────────────────────────────────────────── */}
         <div style={{ flexShrink: 0, background: "white", borderBottom: "1px solid var(--color-cream-2)" }}>
-          <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", padding: "16px 24px", display: "flex", alignItems: "center", gap: 8 }}>
             <button onClick={() => router.back()} className="back-link">
               <IconBack />
               Clients
+            </button>
+
+            <div style={{ flex: 1 }} />
+
+            <button
+              onClick={() => setShowEdit(true)}
+              style={{ height: 34, padding: "0 12px", borderRadius: 9, background: "white", color: "var(--color-dark)", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid var(--color-cream-2)", cursor: "pointer", transition: "all 0.15s ease" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-amber)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-dark)"; }}
+            >
+              <IconEdit />
+              Edit
+            </button>
+
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              style={{ height: 34, padding: "0 12px", borderRadius: 9, background: "white", color: "#EF4444", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid rgba(239,68,68,0.3)", cursor: "pointer", transition: "all 0.15s ease" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#FEF2F2"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "white"; }}
+            >
+              <IconTrash />
+              Delete
             </button>
 
             <button
@@ -590,6 +646,51 @@ export default function ClientProfilePage() {
           </div>
         </div>
       </div>
+
+      {showEdit && business && (
+        <AddCustomerSheet
+          business={business}
+          clientToEdit={client}
+          onClose={() => setShowEdit(false)}
+          onCreated={() => {
+            setShowEdit(false);
+            supabase.from("customers").select("*").eq("id", clientId).single().then(({ data }) => {
+              if (data) { setClient(data); setNotes(data.notes || ""); setSavedNotes(data.notes || ""); }
+            });
+          }}
+        />
+      )}
+
+      {showDeleteConfirm && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(30,26,20,0.48)", backdropFilter: "blur(4px)", padding: 20 }}
+          onClick={() => !deleting && setShowDeleteConfirm(false)}
+        >
+          <div
+            style={{ width: "100%", maxWidth: 360, background: "var(--color-surface)", borderRadius: 20, padding: "24px", border: "1px solid var(--color-cream-2)", boxShadow: "0 8px 48px rgba(30,26,20,0.16)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p style={{ fontSize: 16, fontWeight: 800, color: "var(--color-dark)", margin: "0 0 6px" }}>Delete {client.name}?</p>
+            <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>All their booking history will be permanently deleted. This can&apos;t be undone.</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                style={{ flex: 1, height: 42, borderRadius: 12, border: "1.5px solid var(--color-cream-2)", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteClient}
+                disabled={deleting}
+                style={{ flex: 1, height: 42, borderRadius: 12, border: "none", background: "#EF4444", color: "white", fontSize: 14, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

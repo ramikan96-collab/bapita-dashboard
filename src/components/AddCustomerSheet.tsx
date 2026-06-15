@@ -5,15 +5,15 @@ import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
 import { getAvailableSlots, type TimeSlot } from "@/lib/availability";
-import type { Business, Service } from "@/types";
+import type { Business, Service, Customer } from "@/types";
 
 const CARD_SHADOW = "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)";
 
 interface Props {
   business: Business;
   onClose: () => void;
-  /** Fired after a customer (and optional booking) is saved, so the list can refresh. */
   onCreated: () => void;
+  clientToEdit?: Customer;
 }
 
 function Spinner() {
@@ -25,14 +25,17 @@ function Spinner() {
   );
 }
 
-export default function AddCustomerSheet({ business, onClose, onCreated }: Props) {
+export default function AddCustomerSheet({ business, onClose, onCreated, clientToEdit }: Props) {
   const { showToast } = useToast();
   const supabase = createClient();
+  const isEdit = !!clientToEdit;
 
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [lastVisit, setLastVisit] = useState("");
+  const [name, setName] = useState(clientToEdit?.name ?? "");
+  const [phone, setPhone] = useState(clientToEdit?.phone ?? "");
+  const [email, setEmail] = useState((clientToEdit as any)?.email ?? "");
+  const [lastVisit, setLastVisit] = useState(
+    clientToEdit?.last_visit_at ? format(parseISO(clientToEdit.last_visit_at), "yyyy-MM-dd") : ""
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const [attach, setAttach] = useState(false);
@@ -93,12 +96,32 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
       showToast("Name and phone are required.", "error");
       return;
     }
-    if (attach && (!service || !time)) {
+    if (!isEdit && attach && (!service || !time)) {
       showToast("Pick a service and time, or turn off the appointment.", "error");
       return;
     }
 
     setSubmitting(true);
+
+    if (isEdit && clientToEdit) {
+      const { error } = await supabase
+        .from("customers")
+        .update({
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim() || null,
+          last_visit_at: lastVisit ? new Date(lastVisit).toISOString() : clientToEdit.last_visit_at,
+        })
+        .eq("id", clientToEdit.id)
+        .eq("business_id", business.id);
+
+      setSubmitting(false);
+      if (error) { showToast("Couldn't update client.", "error"); return; }
+      showToast("Client updated", "success");
+      onCreated();
+      onClose();
+      return;
+    }
 
     const { data: customer, error: custErr } = await supabase
       .from("customers")
@@ -133,7 +156,6 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
       });
 
       if (bookErr) {
-        // Customer saved fine; only the booking failed — say so honestly.
         showToast("Client saved, but the booking failed. Add it from the calendar.", "error");
         setSubmitting(false);
         onCreated();
@@ -182,7 +204,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
 
         {/* Title */}
         <div className="px-5 pb-3 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--color-dark)", margin: 0 }}>Add client</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--color-dark)", margin: 0 }}>{isEdit ? "Edit client" : "Add client"}</h2>
         </div>
 
         {/* Content */}
@@ -244,8 +266,8 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
             />
           </div>
 
-          {/* Attach booking toggle */}
-          <button
+          {/* Attach booking toggle — add mode only */}
+          {!isEdit && <button
             onClick={() => setAttach((v) => !v)}
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 12, border: "1.5px solid var(--color-cream-2)", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)")}
@@ -255,9 +277,9 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
             <span style={{ position: "relative", width: 40, height: 24, borderRadius: 99, background: attach ? "var(--color-amber)" : "var(--color-cream-2)", transition: "background 0.2s", flexShrink: 0 }}>
               <span style={{ position: "absolute", top: 2, insetInlineStart: attach ? 18 : 2, width: 20, height: 20, borderRadius: "50%", background: "white", transition: "all 0.2s" }} />
             </span>
-          </button>
+          </button>}
 
-          {attach && (
+          {!isEdit && attach && (
             <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 4 }}>
               {/* Service */}
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -355,7 +377,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
             disabled={submitting}
             style={{ flex: 1, height: 46, borderRadius: 13, border: "none", background: submitting ? "var(--color-cream-2)" : "var(--wash-amber)", color: submitting ? "var(--color-muted)" : "#fff", fontSize: 14, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer", boxShadow: submitting ? "none" : "0 4px 14px rgba(232,146,10,0.28)", transition: "all 0.15s" }}
           >
-            {submitting ? "Saving…" : attach ? "Save & book" : "Save client"}
+            {submitting ? "Saving…" : isEdit ? "Save changes" : attach ? "Save & book" : "Save client"}
           </button>
         </div>
       </div>
