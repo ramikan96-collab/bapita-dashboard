@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, useCallback } from "react";
 import {
   startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, format,
 } from "date-fns";
@@ -38,6 +38,19 @@ export default function WeekView({
 
   const swipe = useSwipe(onNext, onPrev);
 
+  // Touchpad horizontal scroll → next/prev week (debounced 600ms).
+  const lastWheelAt = useRef(0);
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      const now = Date.now();
+      if (now - lastWheelAt.current > 600) {
+        lastWheelAt.current = now;
+        if (e.deltaX > 20) onNext();
+        else if (e.deltaX < -20) onPrev();
+      }
+    }
+  }, [onNext, onPrev]);
+
   // Bucket bookings + blocked by day key once.
   const byDay = useMemo(() => {
     const map: Record<string, { bookings: Booking[]; blocked: BlockedTime[] }> = {};
@@ -50,9 +63,15 @@ export default function WeekView({
     return map;
   }, [bookings, blocked]);
 
-  // Auto-scroll to opening hour on mount / week change.
+  // Auto-scroll: current time if today is in view, else opening hour.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: Math.max(0, openHour * PX_PER_HOUR - 32) });
+    const now = new Date();
+    const isCurrentWeek = days.some((d) => isSameDay(d, now));
+    const target = isCurrentWeek
+      ? Math.max(0, (now.getHours() * 60 + now.getMinutes()) * PX_PER_MIN - 32)
+      : Math.max(0, openHour * PX_PER_HOUR - 32);
+    scrollRef.current?.scrollTo({ top: target });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openHour, weekStart.getTime()]);
 
   return (
@@ -62,6 +81,7 @@ export default function WeekView({
       style={{ background: "var(--color-cream)" }}
       onTouchStart={swipe.onTouchStart}
       onTouchEnd={swipe.onTouchEnd}
+      onWheel={handleWheel}
     >
       {/* Sticky week strip */}
       <div
@@ -252,7 +272,7 @@ function WeekDayColumn({
               width: `calc(${widthPct}% - 4px)`,
               borderColor: borderColor,
               background: `${statusColor}14`,
-              padding: "2px 4px",
+              padding: "4px 6px",
               zIndex: 6,
               opacity: isPast ? 0.4 : 1,
             }}

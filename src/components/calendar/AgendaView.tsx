@@ -11,9 +11,9 @@ interface Props {
 
 export default function AgendaView({ bookings, onSelectBooking, onNewBooking }: Props) {
   return (
-    <div className="flex-1 overflow-y-auto" style={{ background: "var(--color-cream)" }}>
+    <div className="flex-1 overflow-y-auto flex flex-col" style={{ background: "var(--color-cream)" }}>
       {bookings.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+        <div className="flex flex-col items-center justify-center flex-1 py-16 px-6 text-center">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
             style={{ background: "rgba(232,146,10,0.12)" }}

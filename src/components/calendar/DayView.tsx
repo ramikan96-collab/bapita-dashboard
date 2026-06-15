@@ -38,9 +38,14 @@ export default function DayView({
   );
   const swipe = useSwipe(onNext, onPrev);
 
-  // Auto-scroll to opening hour on mount / day change.
+  // Auto-scroll: current time if viewing today, else opening hour.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: Math.max(0, openHour * PX_PER_HOUR - 32) });
+    const today = new Date();
+    const viewingToday = isSameDay(date, today);
+    const target = viewingToday
+      ? Math.max(0, (today.getHours() * 60 + today.getMinutes()) * PX_PER_MIN - 32)
+      : Math.max(0, openHour * PX_PER_HOUR - 32);
+    scrollRef.current?.scrollTo({ top: target });
   }, [openHour, date]);
 
   const laid = useMemo(

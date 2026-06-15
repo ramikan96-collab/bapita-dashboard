@@ -728,12 +728,16 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "left",
                   color: "var(--color-muted)", background: "transparent", border: "none",
                   cursor: "pointer", marginTop: 4, transition: "background 0.12s, color 0.12s",
+                  opacity: 0.6,
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-dark)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-muted)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 <IconPlus size={13} />
                 Add calendar
+                <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "var(--color-cream-2)", padding: "2px 6px", borderRadius: 4, color: "var(--color-muted)", letterSpacing: "0.04em" }}>
+                  SOON
+                </span>
               </button>
             </div>
           )}
