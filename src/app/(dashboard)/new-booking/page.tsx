@@ -220,7 +220,7 @@ function NewBookingInner() {
     let cancelled = false;
     (async () => {
       setLoadingSlots(true);
-      const { data: existing } = await supabase.from("bookings").select("appointment_time, service:services(duration:duration_minutes)").eq("business_id", business.id).eq("appointment_date", format(selectedDate, "yyyy-MM-dd")).not("status", "eq", "cancelled");
+      const { data: existing } = await supabase.from("bookings").select("appointment_time, service:services(duration)").eq("business_id", business.id).eq("appointment_date", format(selectedDate, "yyyy-MM-dd")).not("status", "eq", "cancelled");
       if (cancelled) return;
       const next = getAvailableSlots(selectedDate, selectedService.duration, business.business_hours, (existing || []) as unknown as { appointment_time: string; service?: { duration: number } | null }[]);
       if (selectedTime && !next.some((s) => s.time === selectedTime && s.available)) setSelectedTime(null);
