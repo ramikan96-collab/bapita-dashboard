@@ -215,7 +215,7 @@ function WeekDayColumn({
 
   return (
     <div
-      className="flex-1 relative border-s touch-none"
+      className="flex-1 relative border-s touch-pan-y"
       style={{ borderColor: GRID_LINE, background: isToday ? "rgba(232,146,10,0.04)" : "transparent" }}
       {...gestures}
     >

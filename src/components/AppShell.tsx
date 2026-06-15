@@ -196,10 +196,10 @@ const navItems = [
   { path: "/calendar", icon: IconCalendar, label: "Calendar" },
   { path: "/clients", icon: IconClients, label: "Clients" },
   { path: "/insights", icon: IconInsights, label: "Insights" },
-  { path: "/extras", icon: IconExtras, label: "Extras" },
 ] as const;
 
 const drawerItemsTop = [
+  { path: "/extras", icon: IconExtras, label: "Extras" },
   { path: "/settings", icon: IconSettings, label: "Settings" },
   { path: "/financials", icon: IconFinancials, label: "Financials" },
 ] as const;
@@ -277,7 +277,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           WebkitBackdropFilter: "var(--nav-blur)",
         }}
       >
-        {/* Hamburger — left, more breathing room */}
+        {/* Hamburger */}
         <button
           onClick={() => setDrawerOpen(true)}
           className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
@@ -286,18 +286,18 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <IconMenu size={20} />
         </button>
 
-        <div className="flex-1" />
-
-        {/* Print — calendar only, far right */}
+        {/* Print — calendar only, sits right after hamburger */}
         {onCalendar && (
           <button
             onClick={() => window.print()}
-            className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
+            className="p-2 ms-1 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
             aria-label="Print"
           >
             <IconPrint size={18} />
           </button>
         )}
+
+        <div className="flex-1" />
       </div>
 
       {/* ─── Mobile Top Bar ───────────────────────────────────────────── */}
@@ -313,7 +313,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       >
         <button
           onClick={() => setDrawerOpen(true)}
-          className="p-3 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+          className="p-3 ms-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
           aria-label="Open menu"
         >
           <IconMenu size={24} />
@@ -444,6 +444,26 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               </button>
 
               <div className="flex-1" />
+
+              {/* Jump to today */}
+              {!chrome.isToday && (
+                <button
+                  onClick={chrome.onToday}
+                  className="flex items-center gap-1 rounded-full active:opacity-70 transition-opacity shrink-0"
+                  style={{
+                    height: 32,
+                    paddingInline: 12,
+                    background: "var(--color-surface)",
+                    border: "1.5px solid var(--color-cream-2)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--color-amber)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Today
+                </button>
+              )}
 
               {/* Print */}
               <button
@@ -799,29 +819,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto py-2">
-          {/* Main pages — Calendar, Clients, Insights, Extras */}
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            return (
-              <button
-                key={item.path}
-                onClick={() => go(item.path)}
-                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
-                style={{
-                  height: 48,
-                  background: active ? "rgba(232,146,10,0.05)" : "transparent",
-                  borderInlineStart: active ? "3px solid var(--color-amber)" : "3px solid transparent",
-                }}
-              >
-                <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
-                  <Icon />
-                </span>
-                {item.label}
-              </button>
-            );
-          })}
-          <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
           {drawerItemsTop.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -913,7 +910,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               style={{ background: "var(--color-cream-2)" }}
             />
             <div
-              className="px-4 pb-2 text-[12px] font-semibold uppercase tracking-wide"
+              className="px-5 pb-2 text-[12px] font-semibold uppercase tracking-wide"
               style={{ color: "var(--color-muted)" }}
             >
               Filter by status
@@ -921,7 +918,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             {chrome.statusFilter.length > 0 && (
               <button
                 onClick={() => chrome.setStatusFilter([])}
-                className="w-full flex items-center px-4 text-[14px] font-semibold text-start transition-colors active:bg-cream"
+                className="w-full flex items-center px-5 text-[14px] font-semibold text-start transition-colors active:bg-cream"
                 style={{ height: 44, color: "var(--color-amber)" }}
               >
                 Clear all filters
@@ -938,7 +935,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                       : [...chrome.statusFilter, opt.value];
                     chrome.setStatusFilter(next);
                   }}
-                  className="w-full flex items-center justify-between px-4 text-[15px] text-start text-dark transition-colors active:bg-cream"
+                  className="w-full flex items-center justify-between px-5 text-[15px] text-start text-dark transition-colors active:bg-cream"
                   style={{ height: 52 }}
                 >
                   {opt.label}
@@ -958,7 +955,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     chrome.onToday();
                     setFilterSheetOpen(false);
                   }}
-                  className="w-full flex items-center px-4 text-[15px] font-medium text-start transition-colors active:bg-cream"
+                  className="w-full flex items-center px-5 text-[15px] font-medium text-start transition-colors active:bg-cream"
                   style={{ height: 52, color: "var(--color-amber)" }}
                 >
                   Jump to today
@@ -967,7 +964,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             )}
             <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
             <div
-              className="px-4 pt-3 pb-1 text-[12px] font-semibold uppercase tracking-wide"
+              className="px-5 pt-3 pb-1 text-[12px] font-semibold uppercase tracking-wide"
               style={{ color: "var(--color-muted)" }}
             >
               Calendars
@@ -1001,7 +998,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               style={{ background: "var(--color-cream-2)" }}
             />
             <div
-              className="px-4 pb-2 text-[12px] font-semibold uppercase tracking-wide"
+              className="px-5 pb-2 text-[12px] font-semibold uppercase tracking-wide"
               style={{ color: "var(--color-muted)" }}
             >
               View
@@ -1015,7 +1012,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     chrome.setView(v.value);
                     setViewSheetOpen(false);
                   }}
-                  className="w-full flex items-center justify-between px-4 text-[15px] text-start text-dark transition-colors active:bg-cream"
+                  className="w-full flex items-center justify-between px-5 text-[15px] text-start text-dark transition-colors active:bg-cream"
                   style={{ height: 52 }}
                 >
                   {v.label}

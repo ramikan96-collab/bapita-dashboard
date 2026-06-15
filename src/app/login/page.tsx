@@ -135,36 +135,6 @@ export default function LoginPage() {
         </div>
 
         <div style={{ padding: "24px 24px 28px" }}>
-          {/* Google OAuth */}
-          {!signupDone && (
-            <>
-              <button
-                type="button"
-                onClick={handleGoogle}
-                disabled={loading}
-                style={{
-                  width: "100%", height: 46, borderRadius: 12,
-                  border: "1.5px solid var(--color-cream-2)",
-                  background: "var(--color-surface)",
-                  color: "var(--color-dark)", fontSize: 15, fontWeight: 600,
-                  cursor: loading ? "not-allowed" : "pointer",
-                  opacity: loading ? 0.7 : 1,
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                  transition: "border-color 0.15s", boxSizing: "border-box", fontFamily: "inherit",
-                }}
-                onMouseEnter={(e) => { if (!loading) e.currentTarget.style.borderColor = "var(--color-amber)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; }}
-              >
-                <GoogleIcon />
-                Continue with Google
-              </button>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0" }}>
-                <div style={{ flex: 1, height: 1, background: "var(--color-cream-2)" }} />
-                <span style={{ fontSize: 12, color: "var(--color-muted)", fontWeight: 500 }}>or</span>
-                <div style={{ flex: 1, height: 1, background: "var(--color-cream-2)" }} />
-              </div>
-            </>
-          )}
           {signupDone ? (
             <div style={{ textAlign: "center", padding: "16px 0" }}>
               <div style={{ width: 56, height: 56, borderRadius: 16, background: "var(--amber-soft)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
@@ -176,6 +146,7 @@ export default function LoginPage() {
               </p>
             </div>
           ) : (
+            <>
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {tab === "signup" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -250,6 +221,33 @@ export default function LoginPage() {
                 {loading ? "…" : tab === "login" ? "Log in" : "Create account"}
               </button>
             </form>
+            {/* Google OAuth — shown below email form */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0 14px" }}>
+              <div style={{ flex: 1, height: 1, background: "var(--color-cream-2)" }} />
+              <span style={{ fontSize: 12, color: "var(--color-muted)", fontWeight: 500 }}>or</span>
+              <div style={{ flex: 1, height: 1, background: "var(--color-cream-2)" }} />
+            </div>
+            <button
+              type="button"
+              onClick={handleGoogle}
+              disabled={loading}
+              style={{
+                width: "100%", height: 46, borderRadius: 12,
+                border: "1.5px solid var(--color-cream-2)",
+                background: "var(--color-surface)",
+                color: "var(--color-dark)", fontSize: 15, fontWeight: 600,
+                cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? 0.7 : 1,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                transition: "border-color 0.15s", boxSizing: "border-box", fontFamily: "inherit",
+              }}
+              onMouseEnter={(e) => { if (!loading) e.currentTarget.style.borderColor = "var(--color-amber)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; }}
+            >
+              <GoogleIcon />
+              Continue with Google
+            </button>
+            </>
           )}
         </div>
       </div>
