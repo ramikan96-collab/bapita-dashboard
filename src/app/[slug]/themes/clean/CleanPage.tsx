@@ -12,7 +12,7 @@ import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../../uti
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&q=80";
 
-const P = { bg: "#FFFFFF", text: "#111111", muted: "#6B7280", surface: "#F9F9F9", border: "#E5E5E5" };
+const P = { bg: "#FFFFFF", text: "#111111", muted: "#6B7280", surface: "#F9F9F9", border: "#E5E5E5", panel: "#141414" };
 
 function useFadeInOnEnter(threshold = 0.12) {
   const ref = useRef<HTMLDivElement>(null);
@@ -71,14 +71,16 @@ export function CleanPage({ business, services }: Props) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const accent     = business.accent_color || "#111111";
-  const heroImage  = business.hero_image_url || FALLBACK_HERO;
-  const waNumber   = business.whatsapp_number?.replace(/\D/g, "");
-  const openStatus = getOpenStatus(business.business_hours, t.status, t.days);
-  const igHandle   = getInstagramHandle(business.instagram_url);
-  const cityLabel  = getCityFromAddress(business.address);
-
-  const hasStats = business.stat_years != null || business.stat_clients != null || business.stat_rating != null;
+  const accent       = business.accent_color || "#111111";
+  const heroImage    = business.hero_image_url || FALLBACK_HERO;
+  const waNumber     = business.whatsapp_number?.replace(/\D/g, "");
+  const openStatus   = getOpenStatus(business.business_hours, t.status, t.days);
+  const igHandle     = getInstagramHandle(business.instagram_url);
+  const cityLabel    = getCityFromAddress(business.address);
+  const hasStats     = business.stat_years != null || business.stat_clients != null || business.stat_rating != null;
+  const displayName  = (isRtl && business.name_he) ? business.name_he : business.name;
+  const displayTag   = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
+  const displayAbout = (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
   function openFromService(s: Service) { setSelectedService(s); setOverlayOpen(true); }
   function openFromCTA()               { setSelectedService(null); setOverlayOpen(true); }
@@ -88,22 +90,30 @@ export function CleanPage({ business, services }: Props) {
     <div dir={isRtl ? "rtl" : "ltr"} style={{ background: P.bg, minHeight: "100svh", fontFamily: "'Plus Jakarta Sans', sans-serif", color: P.text }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        @keyframes kenBurns   { 0%{transform:scale(1.0)} 100%{transform:scale(1.07)} }
-        @keyframes fadeUp     { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes slideDown  { from{opacity:0;transform:translateY(-100%)} to{opacity:1;transform:translateY(0)} }
-        .cl-hero-img { animation: kenBurns 12s ease-in-out infinite alternate; }
-        .cl-pill     { animation: fadeUp 0.5s ease-out 0.2s both; }
-        .cl-name     { animation: fadeUp 0.65s ease-out 0.3s both; }
-        .cl-tag      { animation: fadeUp 0.65s ease-out 0.42s both; }
-        .cl-ig       { animation: fadeUp 0.6s ease-out 0.52s both; }
-        .cl-cta      { animation: fadeUp 0.6s ease-out 0.6s both; }
-        .cl-sticky   { animation: slideDown 0.3s ease-out both; }
+        @keyframes fadeUp    { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideDown { from{opacity:0;transform:translateY(-100%)} to{opacity:1;transform:translateY(0)} }
+        @keyframes imgReveal { from{transform:scale(1.06)} to{transform:scale(1)} }
+        .cl-name    { animation: fadeUp 0.65s ease-out 0.2s both; }
+        .cl-pill    { animation: fadeUp 0.5s ease-out 0.3s both; }
+        .cl-tag     { animation: fadeUp 0.65s ease-out 0.38s both; }
+        .cl-stars   { animation: fadeUp 0.5s ease-out 0.48s both; }
+        .cl-cta     { animation: fadeUp 0.6s ease-out 0.55s both; }
+        .cl-ig      { animation: fadeUp 0.5s ease-out 0.6s both; }
+        .cl-sticky  { animation: slideDown 0.3s ease-out both; }
+        .cl-hero-img { animation: imgReveal 1.2s ease-out both; }
         .cl-stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08) !important; }
-        .cl-hero-section { align-items: flex-end; }
-        @media (min-width: 768px) { .cl-hero-section { align-items: center; } }
+        /* Split hero */
+        .cl-hero { display: flex; height: 100svh; }
+        .cl-hero-panel { width: 50%; background: ${P.panel}; display: flex; flex-direction: column; justify-content: center; padding: 60px 52px 60px 52px; box-sizing: border-box; position: relative; overflow: hidden; }
+        .cl-hero-photo { width: 50%; position: relative; overflow: hidden; }
+        @media (max-width: 767px) {
+          .cl-hero { flex-direction: column; }
+          .cl-hero-panel { width: 100%; padding: 44px 28px 52px; justify-content: flex-end; min-height: 48svh; }
+          .cl-hero-photo { width: 100%; height: 52svh; }
+        }
       `}</style>
 
-      {/* Lang toggle — physically top-right always */}
+      {/* Lang toggle — always top-right, never flips */}
       <div style={{ position: "fixed", top: 16, right: 16, zIndex: 200, background: "rgba(0,0,0,0.48)", backdropFilter: "blur(8px)", borderRadius: 9999, padding: "4px", display: "flex" }}>
         {(["en", "he"] as Lang[]).map(l => (
           <button key={l} onClick={() => setLang(l)} style={{ background: lang === l ? "rgba(255,255,255,0.22)" : "none", border: "none", borderRadius: 9999, padding: "3px 11px", cursor: "pointer", fontSize: 12, fontWeight: lang === l ? 700 : 400, color: "#fff", fontFamily: "inherit", transition: "background 0.2s" }}>
@@ -112,97 +122,114 @@ export function CleanPage({ business, services }: Props) {
         ))}
       </div>
 
-      {/* Sticky header */}
+      {/* Sticky header — fixed positioning, no logical properties */}
       {stickyVisible && (
-        <div className="cl-sticky" style={{ position: "fixed", top: 0, insetInlineStart: 0, insetInlineEnd: 0, zIndex: 150, height: 56, background: "rgba(255,255,255,0.88)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", paddingInlineStart: 24, paddingInlineEnd: 140 }}>
-          <span style={{ fontSize: 15, fontWeight: 800, color: P.text, letterSpacing: "-0.02em" }}>{business.name}</span>
+        <div className="cl-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", paddingLeft: 24, paddingRight: 140 }}>
+          <span style={{ fontSize: 15, fontWeight: 800, color: P.text, letterSpacing: "-0.02em", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
           <button onClick={openFromCTA}
-            style={{ height: 36, padding: "0 18px", borderRadius: 9999, background: accent, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s", letterSpacing: "-0.01em" }}
+            style={{ position: "absolute", right: 140, top: "50%", transform: "translateY(-50%)", height: 36, padding: "0 18px", borderRadius: 9999, background: accent, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}
             onMouseEnter={e => { e.currentTarget.style.opacity = "0.82"; }}
             onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
           >{t.hero.cta}</button>
         </div>
       )}
 
-      {/* Hero — bottom-left on mobile, vertically centred on desktop */}
-      <section className="cl-hero-section" style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", justifyContent: "flex-start" }}>
-        <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-          <img src={heroImage} alt="" className="cl-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", transformOrigin: "center center" }} />
-        </div>
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.38) 60%, rgba(0,0,0,0.18) 100%)" }} />
-        <div style={{ position: "relative", zIndex: 1, paddingInlineStart: 36, paddingInlineEnd: 36, paddingTop: 80, paddingBottom: 0, width: "100%", maxWidth: 680 }}>
-          <div className="cl-pill" style={{ marginBottom: 18 }}>
+      {/* Split hero */}
+      <section className="cl-hero">
+        {/* Left — dark text panel */}
+        <div className="cl-hero-panel">
+          {/* Subtle grain overlay */}
+          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.04 }} xmlns="http://www.w3.org/2000/svg" aria-hidden>
+            <filter id="cl-grain"><feTurbulence type="fractalNoise" baseFrequency="0.68" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+            <rect width="100%" height="100%" filter="url(#cl-grain)"/>
+          </svg>
+
+          {/* Open status / city pill */}
+          <div className="cl-pill" style={{ marginBottom: 20 }}>
             {openStatus ? (
-              <span style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", color: "#fff", borderRadius: 9999, padding: "5px 14px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid rgba(255,255,255,0.2)" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#4ade80" : "#9CA3AF", display: "inline-block" }} />
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.1)", borderRadius: 9999, padding: "5px 13px", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#4ade80" : "#9CA3AF", flexShrink: 0 }} />
                 {openStatus.text}
               </span>
             ) : cityLabel ? (
-              <span style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", color: "#fff", borderRadius: 9999, padding: "5px 14px", fontSize: 12, fontWeight: 600, border: "1px solid rgba(255,255,255,0.2)" }}>📍 {cityLabel}</span>
+              <span style={{ display: "inline-flex", background: "rgba(255,255,255,0.1)", borderRadius: 9999, padding: "5px 13px", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>📍 {cityLabel}</span>
             ) : null}
           </div>
 
-          <h1 className="cl-name" style={{ fontWeight: 800, fontSize: "clamp(2.5rem, 9vw, 5rem)", color: "#fff", lineHeight: 0.95, letterSpacing: "-0.035em", marginBottom: 16 }}>
-            {business.name}
+          {/* Name */}
+          <h1 className="cl-name" style={{ fontWeight: 800, fontSize: "clamp(2.4rem, 5vw, 4.2rem)", color: "#fff", lineHeight: 0.95, letterSpacing: "-0.03em", marginBottom: 16, marginTop: 0 }}>
+            {displayName}
           </h1>
 
-          {business.tagline && (
-            <p className="cl-tag" dir="auto" style={{ fontWeight: 400, fontSize: "clamp(1rem, 2.8vw, 1.2rem)", color: "rgba(255,255,255,0.78)", lineHeight: 1.5, marginBottom: 20, maxWidth: 420 }}>
-              {business.tagline}
+          {/* Tagline */}
+          {displayTag && (
+            <p className="cl-tag" dir="auto" style={{ fontWeight: 400, fontSize: "clamp(0.95rem, 1.6vw, 1.1rem)", color: "rgba(255,255,255,0.62)", lineHeight: 1.55, marginBottom: 24, maxWidth: 340 }}>
+              {displayTag}
             </p>
           )}
 
+          {/* Stars strip */}
+          <div className="cl-stars" style={{ marginBottom: 28 }}>
+            {business.google_review_link ? (
+              <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.1)", borderRadius: 9999, padding: "6px 14px", textDecoration: "none" }}>
+                <span style={{ display: "flex", gap: 2, color: accent || "#F59E0B" }}>{[0,1,2,3,4].map(i => <svg key={i} width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>)}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>{t.social.happyClients}</span>
+              </a>
+            ) : (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.1)", borderRadius: 9999, padding: "6px 14px" }}>
+                <span style={{ display: "flex", gap: 2, color: accent || "#F59E0B" }}>{[0,1,2,3,4].map(i => <svg key={i} width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>)}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>{t.social.happyClients}</span>
+              </div>
+            )}
+          </div>
+
+          {/* CTA */}
+          <button className="cl-cta" onClick={openFromCTA}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", border: "none", borderRadius: 9999, color: P.panel, fontSize: 15, fontWeight: 800, padding: "15px 32px", cursor: "pointer", fontFamily: "inherit", letterSpacing: "-0.02em", transition: "background 0.2s, color 0.2s, transform 0.15s", marginBottom: 20, whiteSpace: "nowrap" }}
+            onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = "#fff"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = P.panel; e.currentTarget.style.transform = "translateY(0)"; }}
+          >
+            {t.hero.cta}
+          </button>
+
+          {/* IG handle */}
           {igHandle && (
-            <div className="cl-ig" style={{ marginBottom: 28 }}>
+            <div className="cl-ig">
               <a href={business.instagram_url ?? "#"} target="_blank" rel="noopener noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.68)", textDecoration: "none", fontSize: 13, fontWeight: 600, transition: "color 0.2s" }}
-                onMouseEnter={e => { e.currentTarget.style.color = "#fff"; }} onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.68)"; }}>
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.45)", textDecoration: "none", fontSize: 13, fontWeight: 600, transition: "color 0.2s" }}
+                onMouseEnter={e => { e.currentTarget.style.color = "rgba(255,255,255,0.85)"; }}
+                onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.45)"; }}
+              >
                 <IgIcon size={14} color="currentColor" />{igHandle}
               </a>
             </div>
           )}
+        </div>
 
-          <button className="cl-cta" onClick={openFromCTA}
-            style={{ background: "#fff", border: "none", borderRadius: 9999, color: P.text, fontSize: 15, fontWeight: 800, padding: "15px 36px", cursor: "pointer", fontFamily: "inherit", letterSpacing: "-0.02em", transition: "background 0.2s, color 0.2s, transform 0.15s", display: "inline-block" }}
-            onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = "#fff"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = P.text; e.currentTarget.style.transform = "translateY(0)"; }}
-          >
-            {t.hero.cta}
-          </button>
+        {/* Right — photo */}
+        <div className="cl-hero-photo">
+          <img src={heroImage} alt="" className="cl-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         </div>
       </section>
-
-      {/* Social proof bar */}
-      {(() => {
-        const bar = (
-          <div style={{ background: P.bg, borderTop: `1px solid ${P.border}`, borderBottom: `1px solid ${P.border}`, padding: "14px 20px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-            <span style={{ display: "flex", gap: 2, color: "#F59E0B" }}>
-              {[0,1,2,3,4].map(i => <svg key={i} width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>)}
-            </span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: P.text }}>{t.social.happyClients}</span>
-          </div>
-        );
-        return business.google_review_link ? <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none" }}>{bar}</a> : bar;
-      })()}
 
       {/* Stats row */}
       {hasStats && (
         <div ref={statsRef} style={{ padding: "40px 20px 0", maxWidth: 640, margin: "0 auto" }}>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {business.stat_years != null && (
-              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0s, transform 0.55s ease 0s, transform 0.18s ease, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0s, transform 0.55s ease 0s, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
                 <div style={{ fontSize: 32, fontWeight: 800, color: P.text, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_years}+</div>
                 <div style={{ fontSize: 11, color: P.muted, fontWeight: 600, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "שנות ניסיון" : "Years Exp."}</div>
               </div>
             )}
             {business.stat_clients != null && (
-              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.1s, transform 0.55s ease 0.1s, transform 0.18s ease, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.1s, transform 0.55s ease 0.1s, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
                 <div style={{ fontSize: 32, fontWeight: 800, color: P.text, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_clients}+</div>
                 <div style={{ fontSize: 11, color: P.muted, fontWeight: 600, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "לקוחות מרוצים" : "Happy Clients"}</div>
               </div>
             )}
             {business.stat_rating != null && (
-              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.2s, transform 0.55s ease 0.2s, transform 0.18s ease, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.2s, transform 0.55s ease 0.2s, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
                 <div style={{ fontSize: 32, fontWeight: 800, color: "#F59E0B", letterSpacing: "-0.04em", lineHeight: 1 }}>⭐ {business.stat_rating}</div>
                 <div style={{ fontSize: 11, color: P.muted, fontWeight: 600, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "גוגל" : "Google"}</div>
               </div>
@@ -220,13 +247,15 @@ export function CleanPage({ business, services }: Props) {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {services.map((s, i) => {
               const hovered = hoveredCard === s.id;
+              const sName = (isRtl && s.name_he) ? s.name_he : s.name;
+              const sDesc = (isRtl && s.description_he) ? s.description_he : s.description;
               return (
                 <div key={s.id} onMouseEnter={() => setHoveredCard(s.id)} onMouseLeave={() => setHoveredCard(null)}
                   style={{ background: hovered ? P.surface : P.bg, border: `1px solid ${hovered ? accent : P.border}`, borderRadius: 10, padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: servicesVisible ? 1 : 0, transform: servicesVisible ? "translateY(0)" : "translateY(16px)", transition: [`opacity 0.45s ease ${i * 60}ms`, `transform 0.45s ease ${i * 60}ms`, "background 0.2s", "border-color 0.2s", "box-shadow 0.2s"].join(", "), boxShadow: hovered ? "0 4px 16px rgba(0,0,0,0.06)" : "none" }}
                 >
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: P.text, marginBottom: 3 }}>{s.name}</div>
-                    {s.description && <div style={{ fontSize: 13, color: P.muted, marginBottom: 5, lineHeight: 1.4 }}>{s.description}</div>}
+                    <div style={{ fontSize: 15, fontWeight: 700, color: P.text, marginBottom: 3 }}>{sName}</div>
+                    {sDesc && <div style={{ fontSize: 13, color: P.muted, marginBottom: 5, lineHeight: 1.4 }}>{sDesc}</div>}
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: P.muted }}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                       {s.duration} {t.min}
@@ -249,16 +278,16 @@ export function CleanPage({ business, services }: Props) {
         </section>
 
         {/* About */}
-        {business.show_about !== false && business.about_text && (
+        {business.show_about !== false && displayAbout && (
           <section style={{ paddingTop: 56 }}>
             <SectionTitle title={t.about.title} accent={accent} />
             {business.hero_image_url && (
               <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
-                <img src={business.hero_image_url} alt={business.name} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${P.border}`, flexShrink: 0 }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: P.text }}>{business.name}</span>
+                <img src={business.hero_image_url} alt={displayName} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${P.border}`, flexShrink: 0 }} />
+                <span style={{ fontSize: 14, fontWeight: 700, color: P.text }}>{displayName}</span>
               </div>
             )}
-            <p style={{ fontSize: 16, lineHeight: 1.85, color: P.muted }}>{business.about_text}</p>
+            <p style={{ fontSize: 16, lineHeight: 1.85, color: P.muted }}>{displayAbout}</p>
           </section>
         )}
 
@@ -266,7 +295,7 @@ export function CleanPage({ business, services }: Props) {
         {business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 && (
           <section style={{ paddingTop: 56 }}>
             <SectionTitle title={t.gallery.title} accent={accent} />
-            <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={10} />
+            <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={10} initialCount={4} />
           </section>
         )}
 
@@ -300,11 +329,11 @@ export function CleanPage({ business, services }: Props) {
         </footer>
       </div>
 
-      <FloatingCTA shopName={business.name} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
+      <FloatingCTA shopName={displayName} bookLabel={t.hero.cta} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
 
       {waNumber && (
         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
-          style={{ position: "fixed", bottom: 90, insetInlineStart: 20, width: 52, height: 52, borderRadius: "50%", background: accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", zIndex: 50, transform: showWa ? "translateY(0) scale(1)" : "translateY(20px) scale(0.85)", opacity: showWa ? 1 : 0, transition: "transform 0.35s ease, opacity 0.35s ease", pointerEvents: showWa ? "auto" : "none" }}>
+          style={{ position: "fixed", bottom: 90, left: 20, width: 52, height: 52, borderRadius: "50%", background: accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", zIndex: 50, transform: showWa ? "translateY(0) scale(1)" : "translateY(20px) scale(0.85)", opacity: showWa ? 1 : 0, transition: "transform 0.35s ease, opacity 0.35s ease", pointerEvents: showWa ? "auto" : "none" }}>
           <WaIcon size={22} color="#fff" />
         </a>
       )}

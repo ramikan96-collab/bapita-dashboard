@@ -250,14 +250,22 @@ function BusinessSection({
 }) {
   const { showToast } = useToast();
   const [name, setName] = useState(business.name || "");
+  const [nameHe, setNameHe] = useState(business.name_he || "");
   const [phone, setPhone] = useState(business.phone || "");
   const [address, setAddress] = useState(business.address || "");
   const [slug, setSlug] = useState(business.slug || "");
+  const [taglineHe, setTaglineHe] = useState(business.tagline_he || "");
+  const [aboutHe, setAboutHe] = useState(business.about_text_he || "");
   const [defaultLang, setDefaultLang] = useState<"en" | "he">((business.default_lang as "en" | "he") || "en");
   const [saving, setSaving] = useState(false);
 
-  const original = { name: business.name || "", phone: business.phone || "", address: business.address || "", slug: business.slug || "", defaultLang: (business.default_lang as "en" | "he") || "en" };
-  const dirty = name !== original.name || phone !== original.phone || address !== original.address || slug !== original.slug || defaultLang !== original.defaultLang;
+  const original = {
+    name: business.name || "", nameHe: business.name_he || "",
+    phone: business.phone || "", address: business.address || "", slug: business.slug || "",
+    taglineHe: business.tagline_he || "", aboutHe: business.about_text_he || "",
+    defaultLang: (business.default_lang as "en" | "he") || "en",
+  };
+  const dirty = name !== original.name || nameHe !== original.nameHe || phone !== original.phone || address !== original.address || slug !== original.slug || defaultLang !== original.defaultLang || taglineHe !== original.taglineHe || aboutHe !== original.aboutHe;
 
   const bookingUrl = `bapita.com/${slug || "your-slug"}`;
 
@@ -275,7 +283,10 @@ function BusinessSection({
       setSlug(finalSlug);
     }
     const { error } = await supabase.from("businesses").update({
-      name, phone: phone || null, address: address || null, slug: finalSlug, default_lang: defaultLang,
+      name, name_he: nameHe || null,
+      phone: phone || null, address: address || null, slug: finalSlug,
+      default_lang: defaultLang,
+      tagline_he: taglineHe || null, about_text_he: aboutHe || null,
     }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast("Failed to save", "error"); return; }
@@ -289,6 +300,25 @@ function BusinessSection({
         <InputField label="Business name" value={name} onChange={setName} placeholder="e.g. Studio Avi" />
         <InputField label="Phone" type="tel" value={phone} onChange={setPhone} placeholder="050-000-0000" />
         <InputField label="Address" value={address} onChange={setAddress} placeholder="Street, city" />
+      </SectionCard>
+
+      <SectionCard title="Hebrew version (עברית)">
+        <p style={{ fontSize: 12, color: "var(--color-muted)", margin: "0 0 4px" }}>Shown when visitors switch to Hebrew. Leave blank to show the English version.</p>
+        <InputField label="שם העסק" value={nameHe} onChange={setNameHe} placeholder="e.g. סטודיו אבי" />
+        <InputField label="תיאור קצר (tagline)" value={taglineHe} onChange={setTaglineHe} placeholder="תיאור קצר שיופיע בהירו" />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-dark">אודות העסק</label>
+          <textarea
+            value={aboutHe}
+            onChange={e => setAboutHe(e.target.value)}
+            placeholder="ספר על העסק שלך בעברית..."
+            rows={4}
+            dir="rtl"
+            style={{ width: "100%", padding: "10px 13px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", resize: "vertical", boxSizing: "border-box", transition: "border-color 0.15s" }}
+            onFocus={e => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+            onBlur={e  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+          />
+        </div>
       </SectionCard>
 
       <SectionCard title="Booking page">
@@ -382,6 +412,8 @@ function ServicesSection({
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
+  const [newNameHe, setNewNameHe] = useState("");
+  const [newDescHe, setNewDescHe] = useState("");
   const [newDuration, setNewDuration] = useState(30);
   const [newPrice, setNewPrice] = useState(100);
   const [saving, setSaving] = useState(false);
@@ -398,13 +430,15 @@ function ServicesSection({
   useEffect(() => { loadServices(); }, [loadServices]);
 
   function resetForm() {
-    setNewName(""); setNewDuration(30); setNewPrice(100);
+    setNewName(""); setNewNameHe(""); setNewDescHe(""); setNewDuration(30); setNewPrice(100);
     setShowForm(false); setEditingId(null);
   }
 
   function startEdit(s: Service) {
     setEditingId(s.id);
     setNewName(s.name);
+    setNewNameHe(s.name_he || "");
+    setNewDescHe(s.description_he || "");
     setNewDuration(s.duration);
     setNewPrice(s.price);
     setShowForm(false);
@@ -414,9 +448,17 @@ function ServicesSection({
     if (!newName.trim()) return;
     setSaving(true);
     if (editingId) {
-      await supabase.from("services").update({ name: newName.trim(), duration: newDuration, price: newPrice }).eq("id", editingId);
+      await supabase.from("services").update({
+        name: newName.trim(), name_he: newNameHe.trim() || null,
+        description_he: newDescHe.trim() || null,
+        duration: newDuration, price: newPrice,
+      }).eq("id", editingId);
     } else {
-      await supabase.from("services").insert({ business_id: business.id, name: newName.trim(), duration: newDuration, price: newPrice, active: true, display_order: services.length });
+      await supabase.from("services").insert({
+        business_id: business.id, name: newName.trim(),
+        name_he: newNameHe.trim() || null, description_he: newDescHe.trim() || null,
+        duration: newDuration, price: newPrice, active: true, display_order: services.length,
+      });
     }
     await loadServices();
     resetForm();
@@ -465,6 +507,32 @@ function ServicesSection({
           onChange={(e) => setNewName(e.target.value)}
           placeholder="e.g. Haircut"
           autoFocus
+          style={svcInput}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+          onBlur={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+        />
+      </div>
+      <div>
+        <label style={svcLabel}>שם השירות (עברית)</label>
+        <input
+          type="text"
+          value={newNameHe}
+          onChange={(e) => setNewNameHe(e.target.value)}
+          placeholder="e.g. תספורת"
+          dir="rtl"
+          style={svcInput}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+          onBlur={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+        />
+      </div>
+      <div>
+        <label style={svcLabel}>תיאור (עברית)</label>
+        <input
+          type="text"
+          value={newDescHe}
+          onChange={(e) => setNewDescHe(e.target.value)}
+          placeholder="תיאור קצר של השירות"
+          dir="rtl"
           style={svcInput}
           onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
           onBlur={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}

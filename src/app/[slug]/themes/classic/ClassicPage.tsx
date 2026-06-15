@@ -64,12 +64,15 @@ export function ClassicPage({ business, services }: Props) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const accent     = business.accent_color || C.gold;
-  const heroImage  = business.hero_image_url || FALLBACK_HERO;
-  const openStatus = getOpenStatus(business.business_hours, t.status, t.days);
-  const igHandle   = getInstagramHandle(business.instagram_url);
-  const cityLabel  = getCityFromAddress(business.address);
-  const waNumber   = business.whatsapp_number?.replace(/\D/g, "");
+  const accent      = business.accent_color || C.gold;
+  const heroImage   = business.hero_image_url || FALLBACK_HERO;
+  const openStatus  = getOpenStatus(business.business_hours, t.status, t.days);
+  const igHandle    = getInstagramHandle(business.instagram_url);
+  const cityLabel   = getCityFromAddress(business.address);
+  const waNumber    = business.whatsapp_number?.replace(/\D/g, "");
+  const displayName = (isRtl && business.name_he) ? business.name_he : business.name;
+  const displayTag  = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
+  const displayAbout= (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
   function openFromService(s: Service) { setSelectedService(s); setOverlayOpen(true); }
   function openFromCTA()               { setSelectedService(null); setOverlayOpen(true); }
@@ -120,15 +123,15 @@ export function ClassicPage({ business, services }: Props) {
             ) : null}
           </div>
           <h1 className="c-name" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: "clamp(2.25rem, 8vw, 4.5rem)", color: "#fff", lineHeight: 1.08, marginBottom: 14 }}>
-            {business.name}
+            {displayName}
           </h1>
-          {business.tagline && (
+          {displayTag && (
             <p className="c-tagline" style={{ fontSize: "clamp(1rem, 3vw, 1.2rem)", color: "rgba(255,255,255,0.78)", fontWeight: 300, lineHeight: 1.5, marginBottom: 20 }}>
-              {business.tagline}
+              {displayTag}
             </p>
           )}
           {igHandle && (
-            <div className="c-ig" style={{ marginBottom: 28, display: "flex", justifyContent: "center" }}>
+            <div className="c-ig" style={{ marginBottom: 20, display: "flex", justifyContent: "center" }}>
               <a href={business.instagram_url ?? "#"} target="_blank" rel="noopener noreferrer"
                 style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.72)", textDecoration: "none", fontSize: 13, fontWeight: 500, transition: "color 0.2s" }}
                 onMouseEnter={e => { e.currentTarget.style.color = "#fff"; }}
@@ -138,6 +141,20 @@ export function ClassicPage({ business, services }: Props) {
               </a>
             </div>
           )}
+          {/* Stars strip — always visible in hero */}
+          <div className="c-hero-cta" style={{ marginBottom: 24, display: "flex", justifyContent: "center" }}>
+            {business.google_review_link ? (
+              <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(0,0,0,0.38)", backdropFilter: "blur(6px)", borderRadius: 9999, padding: "6px 14px", textDecoration: "none" }}>
+                <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <svg key={i} width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>)}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{t.social.happyClients}</span>
+              </a>
+            ) : (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(0,0,0,0.38)", backdropFilter: "blur(6px)", borderRadius: 9999, padding: "6px 14px" }}>
+                <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <svg key={i} width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>)}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{t.social.happyClients}</span>
+              </div>
+            )}
+          </div>
           <button className="c-hero-cta" onClick={openFromCTA}
             style={{ background: "#fff", border: "2px solid #fff", color: C.dark, padding: "14px 36px", borderRadius: 9999, fontSize: 16, fontWeight: 700, cursor: "pointer", letterSpacing: "0.02em", transition: "background 0.2s, color 0.2s, border-color 0.2s", fontFamily: "inherit" }}
             onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.borderColor = accent; e.currentTarget.style.color = "#fff"; }}
@@ -172,14 +189,16 @@ export function ClassicPage({ business, services }: Props) {
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 28 }}>
             {services.map((s, i) => {
               const hovered = hoveredCard === s.id;
+              const sName = (isRtl && s.name_he) ? s.name_he : s.name;
+              const sDesc = (isRtl && s.description_he) ? s.description_he : s.description;
               return (
                 <div key={s.id}
                   onMouseEnter={() => setHoveredCard(s.id)} onMouseLeave={() => setHoveredCard(null)}
                   style={{ background: "#fff", borderRadius: 10, boxShadow: hovered ? "0 4px 16px rgba(34,21,16,0.10)" : "0 1px 4px rgba(34,21,16,0.06)", padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", borderInlineStart: `3px solid ${hovered ? accent : "transparent"}`, opacity: servicesVisible ? 1 : 0, transform: servicesVisible ? (hovered ? "translateY(-2px)" : "translateY(0)") : "translateY(20px)", transition: [`opacity 0.5s ease ${i*80}ms`, `transform 0.5s ease ${i*80}ms`, "box-shadow 0.2s", "border-color 0.2s"].join(", ") }}
                 >
                   <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginBottom: 2 }}>{s.name}</div>
-                    {s.description && <div style={{ fontSize: 13, color: C.dark, opacity: 0.55, marginBottom: 2, lineHeight: 1.4 }}>{s.description}</div>}
+                    <div style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginBottom: 2 }}>{sName}</div>
+                    {sDesc && <div style={{ fontSize: 13, color: C.dark, opacity: 0.55, marginBottom: 2, lineHeight: 1.4 }}>{sDesc}</div>}
                     <div style={{ fontSize: 13, color: C.dark, opacity: 0.55 }}>{s.duration} {t.min}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0, marginInlineStart: 12 }}>
@@ -199,17 +218,17 @@ export function ClassicPage({ business, services }: Props) {
         </section>
 
         {/* About */}
-        {business.show_about !== false && business.about_text && (
+        {business.show_about !== false && displayAbout && (
           <section style={{ paddingTop: 56 }}>
             <SectionTitle title={t.about.title} accentColor={accent} darkColor={C.dark} />
             <div className="about-row" style={{ marginTop: 20 }}>
               {business.hero_image_url && (
                 <div style={{ textAlign: "center", flexShrink: 0 }}>
-                  <img src={business.hero_image_url} alt={business.name} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: `3px solid ${accent}`, display: "block", margin: "0 auto 6px" }} />
-                  <span style={{ fontSize: 11, fontVariant: "small-caps", color: accent, fontWeight: 700, letterSpacing: "0.06em" }}>{business.name}</span>
+                  <img src={business.hero_image_url} alt={displayName} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: `3px solid ${accent}`, display: "block", margin: "0 auto 6px" }} />
+                  <span style={{ fontSize: 11, fontVariant: "small-caps", color: accent, fontWeight: 700, letterSpacing: "0.06em" }}>{displayName}</span>
                 </div>
               )}
-              <p style={{ fontSize: 16, lineHeight: 1.8, color: C.dark, opacity: 0.82, margin: 0 }}>{business.about_text}</p>
+              <p style={{ fontSize: 16, lineHeight: 1.8, color: C.dark, opacity: 0.82, margin: 0 }}>{displayAbout}</p>
             </div>
           </section>
         )}
@@ -218,7 +237,7 @@ export function ClassicPage({ business, services }: Props) {
         {business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 && (
           <section style={{ paddingTop: 56 }}>
             <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} />
-            <div style={{ marginTop: 28 }}><SectionGallery photos={business.gallery_images} /></div>
+            <div style={{ marginTop: 28 }}><SectionGallery photos={business.gallery_images} initialCount={4} /></div>
           </section>
         )}
 
@@ -260,7 +279,7 @@ export function ClassicPage({ business, services }: Props) {
         </footer>
       </div>
 
-      <FloatingCTA shopName={business.name} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
+      <FloatingCTA shopName={displayName} bookLabel={t.hero.cta} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
 
       {waNumber && (
         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"

@@ -6,10 +6,16 @@ interface Props {
   photos: string[];
   layout?: "featured" | "masonry" | "grid";
   borderRadius?: number;
+  initialCount?: number;
 }
 
-export function SectionGallery({ photos, layout = "featured", borderRadius = 10 }: Props) {
+export function SectionGallery({ photos, layout = "featured", borderRadius = 10, initialCount }: Props) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  const limit = (initialCount && !expanded) ? initialCount : photos.length;
+  const visible = photos.slice(0, limit);
+  const hiddenCount = photos.length - limit;
 
   useEffect(() => {
     if (lightboxIdx === null) return;
@@ -32,8 +38,8 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10 
   let galleryNode: React.ReactNode;
 
   if (layout === "masonry") {
-    const col1 = photos.filter((_, i) => i % 2 === 0);
-    const col2 = photos.filter((_, i) => i % 2 === 1);
+    const col1 = visible.filter((_, i) => i % 2 === 0);
+    const col2 = visible.filter((_, i) => i % 2 === 1);
     const h1 = [220, 160, 220, 160, 220];
     const h2 = [160, 220, 160, 220, 160];
     galleryNode = (
@@ -65,7 +71,7 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10 
       <>
         <style>{`.sg-grid{display:grid;grid-template-columns:1fr;gap:8px}@media(min-width:600px){.sg-grid{grid-template-columns:1fr 1fr}}`}</style>
         <div className="sg-grid">
-          {photos.map((photo, i) => (
+          {visible.map((photo, i) => (
             <div key={i} style={{ borderRadius, overflow: "hidden", aspectRatio: "4/3", position: "relative" }}>
               <img src={photo} alt="" style={{ ...imgStyle, position: "absolute", inset: 0 }}
                 onClick={() => setLightboxIdx(i)}
@@ -79,7 +85,7 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10 
     );
   } else {
     // featured: 2fr main + 1fr stack
-    const [main, ...rest] = photos;
+    const [main, ...rest] = visible;
     galleryNode = (
       <div style={{ display: "grid", gridTemplateColumns: rest.length ? "2fr 1fr" : "1fr", gap: 8 }}>
         <div style={{ borderRadius, overflow: "hidden", aspectRatio: "4/3" }}>
@@ -102,6 +108,24 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10 
     <>
       {galleryNode}
 
+      {/* Show more / collapse */}
+      {initialCount && photos.length > initialCount && (
+        <button
+          onClick={() => setExpanded(v => !v)}
+          style={{
+            marginTop: 12, width: "100%", height: 44, borderRadius: borderRadius,
+            border: "1.5px solid #E5E5E5", background: "transparent",
+            fontSize: 13, fontWeight: 700, color: "#6B7280",
+            cursor: "pointer", transition: "border-color 0.2s, color 0.2s",
+            fontFamily: "inherit",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "#111"; e.currentTarget.style.color = "#111"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.color = "#6B7280"; }}
+        >
+          {expanded ? "Show less" : `Show ${hiddenCount} more photo${hiddenCount !== 1 ? "s" : ""}`}
+        </button>
+      )}
+
       {/* Lightbox */}
       {lightboxIdx !== null && (
         <div
@@ -114,7 +138,7 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10 
           <button
             onClick={() => setLightboxIdx(null)}
             style={{
-              position: "absolute", top: 20, insetInlineEnd: 20,
+              position: "absolute", top: 20, right: 20,
               background: "none", border: "none", color: "#fff",
               fontSize: 32, cursor: "pointer", lineHeight: 1, padding: "4px 10px",
             }}

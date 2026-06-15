@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 
 interface Props {
   shopName: string;
+  bookLabel: string;
   onBook: () => void;
   bgColor: string;
   textColor: string;
 }
 
-export function FloatingCTA({ shopName, onBook, bgColor, textColor }: Props) {
+export function FloatingCTA({ shopName, bookLabel, onBook, bgColor, textColor }: Props) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export function FloatingCTA({ shopName, onBook, bgColor, textColor }: Props) {
           gap:6, boxShadow:"0 4px 20px rgba(0,0,0,0.18)",
         }}
       >
-        {shopName} · Book Appointment →
+        {shopName} · {bookLabel}
       </button>
     </div>
   );

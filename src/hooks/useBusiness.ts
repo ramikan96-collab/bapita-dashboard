@@ -20,9 +20,10 @@ export function useBusiness() {
       .from("businesses")
       .select("*")
       .eq("owner_id", user.id)
-      .single();
+      .order("created_at", { ascending: true })
+      .limit(1);
 
-    setBusiness(data);
+    setBusiness(data?.[0] ?? null);
     setLoading(false);
   }, [supabase]);
 

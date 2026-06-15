@@ -239,6 +239,7 @@ export function StudioAviPage({ business, services }: Props) {
       {/* Floating CTA */}
       <FloatingCTA
         shopName={business.name}
+        bookLabel="Book Appointment"
         onBook={openFromCTA}
         bgColor={accent}
         textColor="#fff"

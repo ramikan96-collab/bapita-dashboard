@@ -163,13 +163,16 @@ export function DarkPage({ business, services }: Props) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const accent     = business.accent_color || "#C9A24A";
-  const heroImage  = business.hero_image_url || FALLBACK_HERO;
-  const waNumber   = business.whatsapp_number?.replace(/\D/g, "");
-  const openStatus = getOpenStatus(business.business_hours, t.status, t.days);
-  const igHandle   = getInstagramHandle(business.instagram_url);
-  const cityLabel  = getCityFromAddress(business.address);
-  const hasStats   = business.stat_years != null || business.stat_clients != null || business.stat_rating != null;
+  const accent       = business.accent_color || "#C9A24A";
+  const heroImage    = business.hero_image_url || FALLBACK_HERO;
+  const waNumber     = business.whatsapp_number?.replace(/\D/g, "");
+  const openStatus   = getOpenStatus(business.business_hours, t.status, t.days);
+  const igHandle     = getInstagramHandle(business.instagram_url);
+  const cityLabel    = getCityFromAddress(business.address);
+  const hasStats     = business.stat_years != null || business.stat_clients != null || business.stat_rating != null;
+  const displayName  = (isRtl && business.name_he) ? business.name_he : business.name;
+  const displayTag   = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
+  const displayAbout = (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
   function openFromService(s: Service) { setSelectedService(s); setOverlayOpen(true); }
   function openFromCTA()               { setSelectedService(null); setOverlayOpen(true); }
@@ -217,10 +220,10 @@ export function DarkPage({ business, services }: Props) {
 
       {/* Sticky header */}
       {stickyVisible && (
-        <div className="dk-sticky" style={{ position: "fixed", top: 0, insetInlineStart: 0, insetInlineEnd: 0, zIndex: 150, height: 56, background: "rgba(13,13,13,0.92)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${accent}25`, display: "flex", alignItems: "center", paddingInlineStart: 24 }}>
-          <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, color: D.text, letterSpacing: "0.08em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "55%" }}>{business.name}</span>
+        <div className="dk-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(13,13,13,0.92)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${accent}25`, display: "flex", alignItems: "center", paddingLeft: 24, paddingRight: 128 }}>
+          <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, color: D.text, letterSpacing: "0.08em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayName}</span>
           <button onClick={openFromCTA}
-            style={{ fontFamily: "'Oswald', sans-serif", position: "absolute", insetInlineEnd: 128, top: "50%", transform: "translateY(-50%)", height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
+            style={{ fontFamily: "'Oswald', sans-serif", position: "absolute", right: 128, top: "50%", transform: "translateY(-50%)", height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
             onMouseEnter={e => { e.currentTarget.style.background = "#fff"; }}
             onMouseLeave={e => { e.currentTarget.style.background = accent; }}
           >{t.hero.bookNow}</button>
@@ -246,15 +249,15 @@ export function DarkPage({ business, services }: Props) {
             ) : null}
           </div>
           <h1 className="dk-name" style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: "clamp(3rem, 11vw, 7rem)", color: "#fff", lineHeight: 0.92, letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: 18 }}>
-            {business.name}
+            {displayName}
           </h1>
-          {business.tagline && (
+          {displayTag && (
             <p className="dk-tag" style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 400, fontSize: "clamp(0.9rem, 2.2vw, 1.1rem)", color: accent, lineHeight: 1.5, letterSpacing: "0.1em", marginBottom: 24, textTransform: "uppercase" }}>
-              {business.tagline}
+              {displayTag}
             </p>
           )}
           {igHandle && (
-            <div className="dk-ig" style={{ marginBottom: 32, display: "flex", justifyContent: "center" }}>
+            <div className="dk-ig" style={{ marginBottom: 20, display: "flex", justifyContent: "center" }}>
               <a href={business.instagram_url ?? "#"} target="_blank" rel="noopener noreferrer"
                 style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.55)", textDecoration: "none", fontSize: 13, fontWeight: 500, transition: "color 0.2s" }}
                 onMouseEnter={e => { e.currentTarget.style.color = accent; }} onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}>
@@ -262,6 +265,20 @@ export function DarkPage({ business, services }: Props) {
               </a>
             </div>
           )}
+          {/* Stars strip in hero */}
+          <div className="dk-cta" style={{ marginBottom: 28, display: "flex", justifyContent: "center" }}>
+            {business.google_review_link ? (
+              <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", border: `1px solid ${accent}40`, borderRadius: 9999, padding: "6px 16px", textDecoration: "none" }}>
+                <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>)}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#fff" }}>{t.social.happyClients}</span>
+              </a>
+            ) : (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", border: `1px solid ${accent}40`, borderRadius: 9999, padding: "6px 16px" }}>
+                <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>)}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#fff" }}>{t.social.happyClients}</span>
+              </div>
+            )}
+          </div>
           <button className="dk-cta" onClick={openFromCTA}
             style={{ fontFamily: "'Oswald', sans-serif", background: accent, border: `2px solid ${accent}`, color: D.bg, padding: "15px 48px", borderRadius: 2, fontSize: 16, fontWeight: 700, cursor: "pointer", letterSpacing: "0.1em", textTransform: "uppercase", transition: "background 0.2s, color 0.2s, transform 0.15s" }}
             onMouseEnter={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = accent; e.currentTarget.style.transform = "translateY(-2px)"; }}
@@ -328,6 +345,8 @@ export function DarkPage({ business, services }: Props) {
             {services.map((s, i) => {
               const hovered = hoveredCard === s.id;
               const fromInlineStart = i % 2 === 0;
+              const sName = (isRtl && s.name_he) ? s.name_he : s.name;
+              const sDesc = (isRtl && s.description_he) ? s.description_he : s.description;
               return (
                 <div key={s.id} onMouseEnter={() => setHoveredCard(s.id)} onMouseLeave={() => setHoveredCard(null)}
                   style={{
@@ -353,8 +372,8 @@ export function DarkPage({ business, services }: Props) {
                   }}
                 >
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: D.text, marginBottom: 3 }}>{s.name}</div>
-                    {s.description && <div style={{ fontSize: 13, color: D.muted, marginBottom: 5, lineHeight: 1.4 }}>{s.description}</div>}
+                    <div style={{ fontSize: 15, fontWeight: 600, color: D.text, marginBottom: 3 }}>{sName}</div>
+                    {sDesc && <div style={{ fontSize: 13, color: D.muted, marginBottom: 5, lineHeight: 1.4 }}>{sDesc}</div>}
                     <div style={{ fontSize: 12, color: D.muted }}>{s.duration} {t.min}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0, marginInlineStart: 14 }}>
@@ -378,7 +397,7 @@ export function DarkPage({ business, services }: Props) {
         </section>
 
         {/* About */}
-        {business.show_about !== false && business.about_text && (
+        {business.show_about !== false && displayAbout && (
           <>
             <GoldDivider accent={accent} />
             <DarkSectionTitle title={t.about.title} accent={accent} isRtl={isRtl} />
@@ -386,11 +405,11 @@ export function DarkPage({ business, services }: Props) {
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 16 }}>
                 {business.hero_image_url && (
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <img src={business.hero_image_url} alt={business.name} style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}`, flexShrink: 0 }} />
-                    <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 13, color: accent, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>{business.name}</span>
+                    <img src={business.hero_image_url} alt={displayName} style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}`, flexShrink: 0 }} />
+                    <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 13, color: accent, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>{displayName}</span>
                   </div>
                 )}
-                <p style={{ fontSize: 15, lineHeight: 1.85, color: D.muted, margin: 0 }}>{business.about_text}</p>
+                <p style={{ fontSize: 15, lineHeight: 1.85, color: D.muted, margin: 0 }}>{displayAbout}</p>
               </div>
             </div>
           </>
@@ -401,7 +420,7 @@ export function DarkPage({ business, services }: Props) {
           <>
             <GoldDivider accent={accent} />
             <DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} />
-            <SectionGallery photos={business.gallery_images} layout="grid" borderRadius={2} />
+            <SectionGallery photos={business.gallery_images} layout="grid" borderRadius={2} initialCount={4} />
           </>
         )}
 
@@ -443,7 +462,7 @@ export function DarkPage({ business, services }: Props) {
         </footer>
       </div>
 
-      <FloatingCTA shopName={business.name} onBook={openFromCTA} bgColor={accent} textColor={D.bg} />
+      <FloatingCTA shopName={displayName} bookLabel={t.hero.bookNow} onBook={openFromCTA} bgColor={accent} textColor={D.bg} />
 
       {waNumber && (
         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"

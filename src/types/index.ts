@@ -70,15 +70,19 @@ export interface Business {
   // booking page fields
   template_style?: string | null;
   tagline?: string | null;
+  tagline_he?: string | null;
   hero_image_url?: string | null;
   gallery_images?: string[] | null;
   about_text?: string | null;
+  about_text_he?: string | null;
   accent_color?: string | null;
   show_gallery?: boolean | null;
   show_about?: boolean | null;
   show_hours?: boolean | null;
   show_location?: boolean | null;
   section_order?: string[] | null;
+  // bilingual name
+  name_he?: string | null;
   // Bapita plan (Rami-only)
   plan_tier?:          string | null;
   plan_price?:         number | null;
@@ -119,9 +123,11 @@ export interface Service {
   id: string;
   business_id: string;
   name: string;
+  name_he?: string | null;
   duration: number;
   price: number;
   description?: string | null;
+  description_he?: string | null;
   active: boolean;
   display_order: number;
   created_at?: string;
