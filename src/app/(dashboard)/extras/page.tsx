@@ -15,7 +15,6 @@ interface Addon {
   activated_at: string | null;
 }
 
-const WA_NUMBER = "972501234567";
 const MONTHLY: AddonType[] = ["whatsapp", "stripe", "google", "ads"];
 const ONETIME: AddonType[] = ["google_business"];
 const ALL_TYPES: AddonType[] = [...MONTHLY, ...ONETIME];
@@ -97,7 +96,6 @@ interface Entry {
   blurb: string;
   color: string;
   icon: React.ReactNode;
-  waMsg: string;
   tags?: string[];
   statLabel: string;
   recurring: boolean;
@@ -109,7 +107,6 @@ const CATALOG: Record<AddonType, Entry> = {
     blurb: "Automatic booking confirmations and reminders over WhatsApp or SMS.",
     color: "#25D366",
     icon: <IconWA />,
-    waMsg: "Hi, I want to enable Reminders & Confirmations",
     tags: ["WhatsApp", "SMS"],
     statLabel: "Messages sent",
     recurring: true,
@@ -119,7 +116,6 @@ const CATALOG: Record<AddonType, Entry> = {
     blurb: "Collect deposits or full payment at the time of booking.",
     color: "#635BFF",
     icon: <IconCard />,
-    waMsg: "Hi, I want to set up Online Payments",
     statLabel: "Payments collected",
     recurring: true,
   },
@@ -128,7 +124,6 @@ const CATALOG: Record<AddonType, Entry> = {
     blurb: "Automatic review requests sent to happy clients at the right moment.",
     color: "#FBBC05",
     icon: <IconStar />,
-    waMsg: "Hi, I want to enable Google Reviews automation",
     statLabel: "Reviews collected",
     recurring: true,
   },
@@ -137,7 +132,6 @@ const CATALOG: Record<AddonType, Entry> = {
     blurb: "Meta campaigns that bring new clients straight into your booking flow.",
     color: "#0866FF",
     icon: <IconTarget />,
-    waMsg: "Hi, I want to run Paid Ads",
     statLabel: "Ad impressions",
     recurring: true,
   },
@@ -146,7 +140,6 @@ const CATALOG: Record<AddonType, Entry> = {
     blurb: "Full profile setup so you appear when someone nearby searches for what you do.",
     color: "#0F9D58",
     icon: <IconPin />,
-    waMsg: "Hi, I want to set up my Google Business profile",
     statLabel: "Profile views",
     recurring: false,
   },
@@ -291,19 +284,42 @@ function UsageBar({
   );
 }
 
-// ─── Modals ───────────────────────────────────────────────────────────────────
+// ─── Shared close button ──────────────────────────────────────────────────────
+
+function CloseBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "var(--color-cream-2)", color: "var(--color-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, marginLeft: 8 }}
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    </button>
+  );
+}
+
+// ─── Modal shell — bottom-sheet on mobile, centered on desktop ────────────────
 
 function ModalShell({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   return (
     <>
-      <style>{`.extras-modal-inner { border-radius: 20px 20px 0 0; } @media(min-width:640px){ .extras-modal-inner { border-radius: 20px !important; } }`}</style>
+      <style>{`
+        .extras-backdrop { display:flex; align-items:flex-end; justify-content:center; }
+        .extras-modal-inner { border-radius: 20px 20px 0 0; width:100%; }
+        @media(min-width:640px){
+          .extras-backdrop { align-items:center; }
+          .extras-modal-inner { border-radius: 20px !important; max-width: 440px; }
+        }
+      `}</style>
       <div
-        style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(30,26,20,0.48)", backdropFilter: "saturate(140%) blur(4px)" }}
+        className="extras-backdrop"
+        style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(30,26,20,0.48)", backdropFilter: "saturate(140%) blur(4px)" }}
         onClick={onClose}
       >
         <div
           className="extras-modal-inner"
-          style={{ width: "100%", maxWidth: 400, background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "0 -8px 48px rgba(30,26,20,0.14), 0 0 0 1px rgba(30,26,20,0.03)", padding: "24px 24px 28px" }}
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "0 8px 48px rgba(30,26,20,0.16)", padding: "24px 24px 28px" }}
           onClick={(e) => e.stopPropagation()}
         >
           {children}
@@ -313,135 +329,263 @@ function ModalShell({ onClose, children }: { onClose: () => void; children: Reac
   );
 }
 
-function EnableRequestModal({
+// ─── Shared request form fields ───────────────────────────────────────────────
+
+type ContactMethod = "whatsapp" | "email" | "phone";
+
+interface RequestFormState {
+  name: string;
+  phone: string;
+  email: string;
+  preferredContact: ContactMethod;
+  notes: string;
+}
+
+function RequestForm({
+  state,
+  onChange,
+  submitting,
+  onSubmit,
+  submitLabel,
+}: {
+  state: RequestFormState;
+  onChange: (patch: Partial<RequestFormState>) => void;
+  submitting: boolean;
+  onSubmit: () => void;
+  submitLabel: string;
+}) {
+  const inputStyle: React.CSSProperties = {
+    width: "100%", height: 42, padding: "0 13px", borderRadius: 11,
+    border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)",
+    fontSize: 13, color: "var(--color-dark)", outline: "none", fontFamily: "inherit",
+    transition: "border-color 0.15s", boxSizing: "border-box" as const,
+  };
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const,
+    letterSpacing: "0.05em", color: "var(--color-muted)", display: "block", marginBottom: 6,
+  };
+  const canSubmit = !!state.name.trim() && (!!state.phone.trim() || !!state.email.trim()) && !submitting;
+  const CONTACT_OPTIONS: { value: ContactMethod; label: string }[] = [
+    { value: "whatsapp", label: "WhatsApp" },
+    { value: "email",    label: "Email"     },
+    { value: "phone",    label: "Phone"     },
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Name */}
+      <div>
+        <label style={labelStyle}>Your name *</label>
+        <input
+          type="text" value={state.name} placeholder="e.g. Avi Cohen"
+          onChange={(e) => onChange({ name: e.target.value })}
+          style={inputStyle}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+        />
+      </div>
+
+      {/* Phone */}
+      <div>
+        <label style={labelStyle}>Phone (at least one contact required)</label>
+        <input
+          type="tel" value={state.phone} placeholder="05X XXX XXXX"
+          onChange={(e) => onChange({ phone: e.target.value })}
+          style={inputStyle}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+        />
+      </div>
+
+      {/* Email */}
+      <div>
+        <label style={labelStyle}>Email</label>
+        <input
+          type="email" value={state.email} placeholder="name@example.com"
+          onChange={(e) => onChange({ email: e.target.value })}
+          style={inputStyle}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+        />
+      </div>
+
+      {/* Preferred contact */}
+      <div>
+        <label style={labelStyle}>Preferred contact method</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          {CONTACT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => onChange({ preferredContact: opt.value })}
+              style={{
+                flex: 1, height: 34, borderRadius: 9, border: `1.5px solid ${state.preferredContact === opt.value ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+                background: state.preferredContact === opt.value ? "var(--amber-soft)" : "var(--color-cream)",
+                color: state.preferredContact === opt.value ? "var(--color-amber)" : "var(--color-muted)",
+                fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.12s",
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div>
+        <label style={labelStyle}>Notes (optional)</label>
+        <textarea
+          value={state.notes} placeholder="Any questions or details…" rows={2}
+          onChange={(e) => onChange({ notes: e.target.value })}
+          style={{ ...inputStyle, height: "auto", padding: "10px 13px", resize: "none" as const, lineHeight: 1.5 }}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+        />
+      </div>
+
+      <button
+        onClick={onSubmit}
+        disabled={!canSubmit}
+        style={{ width: "100%", height: 46, borderRadius: 14, border: "none", background: canSubmit ? "var(--wash-amber)" : "var(--color-cream-2)", color: canSubmit ? "#fff" : "var(--color-muted)", fontSize: 14, fontWeight: 700, cursor: canSubmit ? "pointer" : "not-allowed", boxShadow: canSubmit ? "0 6px 18px rgba(232,146,10,0.28)" : "none", transition: "all 0.15s", marginTop: 2 }}
+      >
+        {submitting ? "Sending…" : submitLabel}
+      </button>
+    </div>
+  );
+}
+
+// ─── Success state ────────────────────────────────────────────────────────────
+
+function SuccessView({ onClose }: { onClose: () => void }) {
+  return (
+    <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(34,197,94,0.12)", color: "#16A34A", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24 }}>✓</div>
+      <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", margin: "0 0 6px" }}>Request received!</p>
+      <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>We&apos;ll reach out via your preferred contact method soon.</p>
+      <button
+        onClick={onClose}
+        style={{ height: 42, padding: "0 24px", borderRadius: 12, border: "none", background: "var(--color-amber)", color: "white", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)" }}
+      >
+        Done
+      </button>
+    </div>
+  );
+}
+
+// ─── Addon request modal ──────────────────────────────────────────────────────
+
+function AddonRequestModal({
+  addonType,
   addonName,
   addonColor,
   addonIcon,
-  waMsg,
+  businessId,
   onClose,
 }: {
+  addonType: string;
   addonName: string;
   addonColor: string;
   addonIcon: React.ReactNode;
-  waMsg: string;
+  businessId: string;
   onClose: () => void;
 }) {
-  const [notes, setNotes] = useState("");
+  const supabase = createClient();
+  const [form, setForm] = React.useState<RequestFormState>({ name: "", phone: "", email: "", preferredContact: "whatsapp", notes: "" });
+  const [submitting, setSubmitting] = React.useState(false);
+  const [done, setDone] = React.useState(false);
 
-  function send() {
-    const msg = notes.trim() ? `${waMsg}. Notes: ${notes.trim()}` : waMsg;
-    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
-    onClose();
+  async function submit() {
+    setSubmitting(true);
+    await supabase.from("addon_requests").insert({
+      business_id: businessId,
+      addon_type: addonType,
+      name: form.name.trim(),
+      phone: form.phone.trim() || null,
+      email: form.email.trim() || null,
+      preferred_contact: form.preferredContact,
+      notes: form.notes.trim() || null,
+    });
+    setSubmitting(false);
+    setDone(true);
   }
 
   return (
     <ModalShell onClose={onClose}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: `${addonColor}18`, color: addonColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {addonIcon}
+      {done ? (
+        <SuccessView onClose={onClose} />
+      ) : (
+        <>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: `${addonColor}18`, color: addonColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {addonIcon}
+              </div>
+              <div>
+                <p style={{ fontSize: 16, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1.2, margin: 0 }}>Enable {addonName}</p>
+                <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Fill in your details and we&apos;ll set you up.</p>
+              </div>
+            </div>
+            <CloseBtn onClick={onClose} />
           </div>
-          <div>
-            <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1.2 }}>Enable {addonName}</p>
-            <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Our team will reach out to set you up.</p>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "var(--color-cream-2)", color: "var(--color-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, marginLeft: 8 }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Divider */}
-      <div style={{ height: 1, background: "var(--color-cream-2)", marginBottom: 16 }} />
-
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        placeholder="Any notes or questions? (optional)"
-        rows={3}
-        style={{ width: "100%", borderRadius: 12, padding: "10px 13px", fontSize: 13, resize: "none", outline: "none", border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)", fontFamily: "inherit", transition: "border-color 0.15s", marginBottom: 14, display: "block", boxSizing: "border-box" }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-      />
-
-      <button
-        onClick={send}
-        style={{ width: "100%", height: 46, borderRadius: 14, border: "none", background: "var(--wash-amber)", boxShadow: "0 6px 18px rgba(232,146,10,0.30)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "transform 0.15s, box-shadow 0.15s" }}
-        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(232,146,10,0.38)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,146,10,0.30)"; }}
-      >
-        <IconWA size={16} />
-        Send via WhatsApp
-      </button>
+          <div style={{ height: 1, background: "var(--color-cream-2)", marginBottom: 16 }} />
+          <RequestForm
+            state={form}
+            onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+            submitting={submitting}
+            onSubmit={submit}
+            submitLabel="Send request"
+          />
+        </>
+      )}
     </ModalShell>
   );
 }
 
-function CustomRequestModal({ onClose }: { onClose: () => void }) {
-  const [notes, setNotes] = useState("");
-  const [contact, setContact] = useState("");
+// ─── Custom request modal ─────────────────────────────────────────────────────
 
-  function send() {
-    const msg = `Custom integration request.${notes ? ` Notes: ${notes}` : ""}${contact ? ` Contact: ${contact}` : ""}`;
-    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
-    onClose();
+function CustomRequestModal({ businessId, onClose }: { businessId: string; onClose: () => void }) {
+  const supabase = createClient();
+  const [form, setForm] = React.useState<RequestFormState>({ name: "", phone: "", email: "", preferredContact: "whatsapp", notes: "" });
+  const [submitting, setSubmitting] = React.useState(false);
+  const [done, setDone] = React.useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    await supabase.from("addon_requests").insert({
+      business_id: businessId,
+      addon_type: "custom",
+      name: form.name.trim(),
+      phone: form.phone.trim() || null,
+      email: form.email.trim() || null,
+      preferred_contact: form.preferredContact,
+      notes: form.notes.trim() || null,
+    });
+    setSubmitting(false);
+    setDone(true);
   }
 
   return (
     <ModalShell onClose={onClose}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1.2 }}>Need something custom?</p>
-          <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 3 }}>Tell us what you need — we'll build it.</p>
-        </div>
-        <button
-          onClick={onClose}
-          style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "var(--color-cream-2)", color: "var(--color-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, marginLeft: 8 }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
-
-      <div style={{ height: 1, background: "var(--color-cream-2)", marginBottom: 16 }} />
-
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        placeholder="Describe the integration you need..."
-        rows={3}
-        style={{ width: "100%", borderRadius: 12, padding: "10px 13px", fontSize: 13, resize: "none", outline: "none", border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)", fontFamily: "inherit", transition: "border-color 0.15s", marginBottom: 10, display: "block", boxSizing: "border-box" }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-      />
-
-      <input
-        type="text"
-        value={contact}
-        onChange={(e) => setContact(e.target.value)}
-        placeholder="Your email or phone (optional)"
-        style={{ width: "100%", height: 40, borderRadius: 12, padding: "0 13px", fontSize: 13, outline: "none", border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)", fontFamily: "inherit", transition: "border-color 0.15s", marginBottom: 14, display: "block", boxSizing: "border-box" }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-      />
-
-      <button
-        onClick={send}
-        style={{ width: "100%", height: 46, borderRadius: 14, border: "none", background: "var(--wash-amber)", boxShadow: "0 6px 18px rgba(232,146,10,0.30)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "transform 0.15s, box-shadow 0.15s" }}
-        onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(232,146,10,0.38)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,146,10,0.30)"; }}
-      >
-        <IconWA size={16} />
-        Send via WhatsApp
-      </button>
+      {done ? (
+        <SuccessView onClose={onClose} />
+      ) : (
+        <>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+            <div>
+              <p style={{ fontSize: 16, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1.2, margin: 0 }}>Need something custom?</p>
+              <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 3 }}>Tell us what you need — we&apos;ll build it.</p>
+            </div>
+            <CloseBtn onClick={onClose} />
+          </div>
+          <div style={{ height: 1, background: "var(--color-cream-2)", marginBottom: 16 }} />
+          <RequestForm
+            state={form}
+            onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+            submitting={submitting}
+            onSubmit={submit}
+            submitLabel="Send request"
+          />
+        </>
+      )}
     </ModalShell>
   );
 }
@@ -713,17 +857,18 @@ export default function ExtrasPage() {
         </div>
       </div>
 
-      {requesting && (
-        <EnableRequestModal
+      {requesting && business && (
+        <AddonRequestModal
+          addonType={requesting}
           addonName={CATALOG[requesting].name}
           addonColor={CATALOG[requesting].color}
           addonIcon={CATALOG[requesting].icon}
-          waMsg={CATALOG[requesting].waMsg}
+          businessId={business.id}
           onClose={() => setRequesting(null)}
         />
       )}
 
-      {showCustomModal && <CustomRequestModal onClose={() => setShowCustomModal(false)} />}
+      {showCustomModal && business && <CustomRequestModal businessId={business.id} onClose={() => setShowCustomModal(false)} />}
     </>
   );
 }
