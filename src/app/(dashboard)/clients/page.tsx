@@ -129,6 +129,16 @@ function IconColumns() {
   );
 }
 
+function IconPrint() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 6 2 18 2 18 9" />
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+      <rect x="6" y="14" width="12" height="8" />
+    </svg>
+  );
+}
+
 function IconCheck() {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -360,10 +370,10 @@ export default function ClientsPage() {
               </button>
             </div>
 
-            {/* Search + Show + Sort */}
+            {/* Search + Show + Sort + Columns + Print */}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {/* Search */}
-              <div style={{ position: "relative", flex: 1, maxWidth: 300 }}>
+              <div style={{ position: "relative", flex: 1 }}>
                 <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--color-muted)", display: "flex", pointerEvents: "none" }}>
                   <IconSearch />
                 </span>
@@ -372,14 +382,11 @@ export default function ClientsPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name, phone or email…"
-                  style={{ width: "100%", height: 34, paddingLeft: 32, paddingRight: 10, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 13, color: "var(--color-dark)", outline: "none", transition: "border-color 0.15s" }}
+                  style={{ width: "100%", height: 34, paddingLeft: 32, paddingRight: 10, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", fontSize: 13, color: "var(--color-dark)", outline: "none", transition: "border-color 0.15s" }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
                 />
               </div>
-
-              {/* Spacer */}
-              <div style={{ flex: 1 }} />
 
               {/* Show dropdown */}
               <div className="dd-filter" style={{ position: "relative" }}>
@@ -462,6 +469,54 @@ export default function ClientsPage() {
                   </div>
                 )}
               </div>
+
+              {/* Columns picker */}
+              <div className="dd-columns" style={{ position: "relative" }}>
+                <button
+                  onClick={() => { setShowColumnsDropdown(!showColumnsDropdown); setShowSortDropdown(false); setShowFilterDropdown(false); }}
+                  title="Choose columns"
+                  style={{ height: 34, padding: "0 10px", borderRadius: 9, border: `1.5px solid ${showColumnsDropdown ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showColumnsDropdown ? "var(--amber-soft)" : "white", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: showColumnsDropdown ? "var(--color-amber)" : "var(--color-muted)", cursor: "pointer", transition: "all 0.15s" }}
+                >
+                  <IconColumns />
+                  Columns
+                </button>
+
+                {showColumnsDropdown && (
+                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 180, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)", padding: "4px 12px 8px" }}>
+                      Visible columns
+                    </p>
+                    {ALL_COLUMNS.map((col) => {
+                      const on = visibleColumns.has(col.key);
+                      return (
+                        <button
+                          key={col.key}
+                          onClick={() => toggleColumn(col.key)}
+                          style={{ width: "100%", padding: "7px 12px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: on ? 600 : 400, color: "var(--color-dark)", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
+                          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)")}
+                          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
+                        >
+                          <span className={`col-check${on ? " checked" : ""}`}>
+                            {on && <IconCheck />}
+                          </span>
+                          {col.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Print */}
+              <button
+                onClick={() => window.print()}
+                title="Print / Download"
+                style={{ height: 34, width: 34, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-muted)", cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s, color 0.15s" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-amber)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-muted)"; }}
+              >
+                <IconPrint />
+              </button>
             </div>
           </div>
         </div>
@@ -496,55 +551,15 @@ export default function ClientsPage() {
               </div>
             ) : (
               <div>
-                {/* Column header row with Columns picker on the right */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px 8px" }}>
-                  {/* Column labels — match grid */}
-                  <div style={{ display: "grid", gridTemplateColumns: gridCols, gap: "0 14px", flex: 1, alignItems: "center" }}>
-                    <div />
-                    {orderedCols.map((key) => (
-                      <span key={key} style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--color-muted)" }}>
-                        {ALL_COLUMNS.find((c) => c.key === key)?.label}
-                      </span>
-                    ))}
-                    <div />
-                  </div>
-
-                  {/* Columns picker */}
-                  <div className="dd-columns" style={{ position: "relative", marginLeft: 10, flexShrink: 0 }}>
-                    <button
-                      onClick={() => { setShowColumnsDropdown(!showColumnsDropdown); setShowSortDropdown(false); setShowFilterDropdown(false); }}
-                      title="Choose columns"
-                      style={{ height: 26, padding: "0 8px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: showColumnsDropdown ? "var(--amber-soft)" : "white", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: showColumnsDropdown ? "var(--color-amber)" : "var(--color-muted)", cursor: "pointer", transition: "all 0.15s" }}
-                    >
-                      <IconColumns />
-                      Columns
-                    </button>
-
-                    {showColumnsDropdown && (
-                      <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 180, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
-                        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)", padding: "4px 12px 8px" }}>
-                          Visible columns
-                        </p>
-                        {ALL_COLUMNS.map((col) => {
-                          const on = visibleColumns.has(col.key);
-                          return (
-                            <button
-                              key={col.key}
-                              onClick={() => toggleColumn(col.key)}
-                              style={{ width: "100%", padding: "7px 12px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: on ? 600 : 400, color: "var(--color-dark)", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
-                              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)")}
-                              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
-                            >
-                              <span className={`col-check${on ? " checked" : ""}`}>
-                                {on && <IconCheck />}
-                              </span>
-                              {col.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                {/* Column header row — exact same grid as rows */}
+                <div style={{ display: "grid", gridTemplateColumns: gridCols, gap: "0 14px", padding: "0 14px 8px", alignItems: "center" }}>
+                  <div />
+                  {orderedCols.map((key) => (
+                    <span key={key} style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--color-muted)" }}>
+                      {ALL_COLUMNS.find((c) => c.key === key)?.label}
+                    </span>
+                  ))}
+                  <div />
                 </div>
 
                 {/* Rows */}
