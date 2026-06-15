@@ -254,6 +254,8 @@ function BusinessSection({
   const [phone, setPhone] = useState(business.phone || "");
   const [address, setAddress] = useState(business.address || "");
   const [slug, setSlug] = useState(business.slug || "");
+  const [tagline, setTagline] = useState(business.tagline || "");
+  const [about, setAbout] = useState(business.about_text || "");
   const [taglineHe, setTaglineHe] = useState(business.tagline_he || "");
   const [aboutHe, setAboutHe] = useState(business.about_text_he || "");
   const [defaultLang, setDefaultLang] = useState<"en" | "he">((business.default_lang as "en" | "he") || "en");
@@ -262,12 +264,13 @@ function BusinessSection({
   const original = {
     name: business.name || "", nameHe: business.name_he || "",
     phone: business.phone || "", address: business.address || "", slug: business.slug || "",
+    tagline: business.tagline || "", about: business.about_text || "",
     taglineHe: business.tagline_he || "", aboutHe: business.about_text_he || "",
     defaultLang: (business.default_lang as "en" | "he") || "en",
   };
-  const dirty = name !== original.name || nameHe !== original.nameHe || phone !== original.phone || address !== original.address || slug !== original.slug || defaultLang !== original.defaultLang || taglineHe !== original.taglineHe || aboutHe !== original.aboutHe;
+  const dirty = name !== original.name || nameHe !== original.nameHe || phone !== original.phone || address !== original.address || slug !== original.slug || defaultLang !== original.defaultLang || tagline !== original.tagline || about !== original.about || taglineHe !== original.taglineHe || aboutHe !== original.aboutHe;
 
-  const bookingUrl = `bapita.com/${slug || "your-slug"}`;
+  const bookingUrl = `book.bapita.com/${slug || "your-slug"}`;
 
   function copyLink() {
     navigator.clipboard.writeText(`https://${bookingUrl}`);
@@ -286,6 +289,7 @@ function BusinessSection({
       name, name_he: nameHe || null,
       phone: phone || null, address: address || null, slug: finalSlug,
       default_lang: defaultLang,
+      tagline: tagline || null, about_text: about || null,
       tagline_he: taglineHe || null, about_text_he: aboutHe || null,
     }).eq("id", business.id);
     setSaving(false);
@@ -300,6 +304,19 @@ function BusinessSection({
         <InputField label="Business name" value={name} onChange={setName} placeholder="e.g. Studio Avi" />
         <InputField label="Phone" type="tel" value={phone} onChange={setPhone} placeholder="050-000-0000" />
         <InputField label="Address" value={address} onChange={setAddress} placeholder="Street, city" />
+        <InputField label="Tagline" value={tagline} onChange={setTagline} placeholder="e.g. Premium cuts since 2010" />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-dark">About us</label>
+          <textarea
+            value={about}
+            onChange={e => setAbout(e.target.value)}
+            placeholder="Tell clients about your business…"
+            rows={4}
+            style={{ width: "100%", padding: "10px 13px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", resize: "vertical", boxSizing: "border-box", transition: "border-color 0.15s" }}
+            onFocus={e => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+            onBlur={e  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+          />
+        </div>
       </SectionCard>
 
       <SectionCard title="Hebrew version (עברית)">
@@ -330,7 +347,7 @@ function BusinessSection({
             onBlurCapture={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
           >
             <span style={{ padding: "0 12px", fontSize: 13, fontWeight: 500, color: "var(--color-muted)", background: "var(--color-cream-2)", borderInlineEnd: "1px solid var(--color-cream-2)", height: "100%", display: "flex", alignItems: "center", flexShrink: 0, userSelect: "none" }}>
-              bapita.com/
+              book.bapita.com/
             </span>
             <input
               type="text"
@@ -513,7 +530,7 @@ function ServicesSection({
         />
       </div>
       <div>
-        <label style={svcLabel}>שם השירות (עברית)</label>
+        <label style={svcLabel}>Service name (Hebrew)</label>
         <input
           type="text"
           value={newNameHe}
@@ -526,7 +543,7 @@ function ServicesSection({
         />
       </div>
       <div>
-        <label style={svcLabel}>תיאור (עברית)</label>
+        <label style={svcLabel}>Description (Hebrew)</label>
         <input
           type="text"
           value={newDescHe}

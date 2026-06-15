@@ -209,7 +209,7 @@ function NewBookingInner() {
   useEffect(() => {
     if (!business) return;
     (async () => {
-      const { data } = await supabase.from("services").select("id, name, duration:duration_minutes, price:price_nis, active, display_order, business_id").eq("business_id", business.id).eq("active", true).order("display_order");
+      const { data } = await supabase.from("services").select("id, name, name_he, duration, price, active, display_order, business_id").eq("business_id", business.id).eq("active", true).order("display_order");
       setServices(data || []);
     })();
   }, [business, supabase]);
@@ -644,7 +644,7 @@ function NewBookingInner() {
       </div>
 
       {/* Footer */}
-      <div style={{ flexShrink: 0, background: "var(--color-surface)", borderTop: "1px solid var(--color-cream-2)" }}>
+      <div style={{ flexShrink: 0, background: "var(--color-surface)", borderTop: "1px solid var(--color-cream-2)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", padding: "12px 20px", display: "flex", gap: 10 }}>
           {step !== "client" && <SecondaryBtn onClick={goBack}>Back</SecondaryBtn>}
 
