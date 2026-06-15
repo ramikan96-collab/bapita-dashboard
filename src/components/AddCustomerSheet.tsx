@@ -32,6 +32,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [lastVisit, setLastVisit] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const [attach, setAttach] = useState(false);
@@ -107,6 +108,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
         phone: phone.trim(),
         email: email.trim() || null,
         total_visits: 0,
+        last_visit_at: lastVisit ? new Date(lastVisit).toISOString() : null,
       })
       .select()
       .single();
@@ -168,8 +170,8 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
 
       {/* Sheet */}
       <div
-        className="fixed bottom-0 inset-x-0 z-50 bg-white rounded-t-[20px] flex flex-col"
-        style={{ maxHeight: "92dvh", boxShadow: "0 -4px 24px rgba(30,26,20,0.12)" }}
+        className="fixed bottom-0 inset-x-0 z-50 flex flex-col"
+        style={{ maxHeight: "92dvh", background: "var(--color-surface)", borderRadius: "20px 20px 0 0", boxShadow: "0 -4px 24px rgba(30,26,20,0.12)" }}
         role="dialog"
         aria-label="Add client"
       >
@@ -179,92 +181,101 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
         </div>
 
         {/* Title */}
-        <div className="px-4 pb-3 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
-          <h2 className="text-[18px] font-bold text-dark">Add client</h2>
+        <div className="px-5 pb-3 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--color-dark)", margin: 0 }}>Add client</h2>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-dark">Full name *</label>
+        <div className="flex-1 overflow-y-auto" style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+
+          {/* Name */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--color-muted)" }}>Full name *</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Avi Cohen"
-              className="h-12 px-4 rounded-[10px] border bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
-              style={{ borderColor: "var(--color-cream-2)" }}
+              style={{ height: 44, padding: "0 14px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", transition: "border-color 0.15s", boxSizing: "border-box" as const, width: "100%" }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-dark">Phone *</label>
+
+          {/* Phone */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--color-muted)" }}>Phone *</label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="05X XXX XXXX"
-              className="h-12 px-4 rounded-[10px] border bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
-              style={{ borderColor: "var(--color-cream-2)" }}
+              style={{ height: 44, padding: "0 14px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", transition: "border-color 0.15s", boxSizing: "border-box" as const, width: "100%" }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[13px] font-medium text-dark">Email (optional)</label>
+
+          {/* Email */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--color-muted)" }}>Email (optional)</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
-              className="h-12 px-4 rounded-[10px] border bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
-              style={{ borderColor: "var(--color-cream-2)" }}
+              style={{ height: 44, padding: "0 14px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", transition: "border-color 0.15s", boxSizing: "border-box" as const, width: "100%" }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+            />
+          </div>
+
+          {/* Last visit */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--color-muted)" }}>Last visit (optional)</label>
+            <input
+              type="date"
+              value={lastVisit}
+              max={format(new Date(), "yyyy-MM-dd")}
+              onChange={(e) => setLastVisit(e.target.value)}
+              style={{ height: 44, padding: "0 14px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: lastVisit ? "var(--color-dark)" : "var(--color-muted)", outline: "none", fontFamily: "inherit", transition: "border-color 0.15s", boxSizing: "border-box" as const, width: "100%" }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
             />
           </div>
 
           {/* Attach booking toggle */}
           <button
             onClick={() => setAttach((v) => !v)}
-            className="w-full flex items-center justify-between py-3 px-4 rounded-xl border bg-transparent transition-colors hover:bg-cream"
-            style={{ borderColor: "var(--color-cream-2)" }}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 12, border: "1.5px solid var(--color-cream-2)", background: "transparent", cursor: "pointer", transition: "background 0.15s" }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
           >
-            <span className="text-[15px] font-medium text-dark">Book an appointment too</span>
-            <span
-              className="relative w-10 h-6 rounded-full transition-colors shrink-0"
-              style={{ background: attach ? "var(--color-amber)" : "var(--color-cream-2)" }}
-            >
-              <span
-                className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
-                style={{ insetInlineStart: attach ? 18 : 2 }}
-              />
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>Book an appointment too</span>
+            <span style={{ position: "relative", width: 40, height: 24, borderRadius: 99, background: attach ? "var(--color-amber)" : "var(--color-cream-2)", transition: "background 0.2s", flexShrink: 0 }}>
+              <span style={{ position: "absolute", top: 2, insetInlineStart: attach ? 18 : 2, width: 20, height: 20, borderRadius: "50%", background: "white", transition: "all 0.2s" }} />
             </span>
           </button>
 
           {attach && (
-            <div className="space-y-4 pt-1">
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 4 }}>
               {/* Service */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[13px] font-medium text-dark">Service</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--color-muted)" }}>Service</label>
                 {services.length === 0 ? (
-                  <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>
-                    No services yet. Add one in Settings first.
-                  </p>
+                  <p style={{ fontSize: 13, color: "var(--color-muted)" }}>No services yet. Add one in Settings first.</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {services.map((s) => {
                       const active = service?.id === s.id;
                       return (
                         <button
                           key={s.id}
-                          onClick={() => {
-                            setService(s);
-                            setTime(null);
-                          }}
-                          className="w-full text-start bg-white rounded-xl p-3 border transition-colors"
-                          style={{
-                            borderColor: active ? "var(--color-amber)" : "var(--color-cream-2)",
-                            boxShadow: active ? "0 0 0 1px var(--color-amber)" : CARD_SHADOW,
-                          }}
+                          onClick={() => { setService(s); setTime(null); }}
+                          style={{ width: "100%", textAlign: "left", padding: "10px 14px", borderRadius: 12, border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: active ? "var(--amber-soft)" : "var(--color-cream)", cursor: "pointer", boxShadow: active ? "0 0 0 1px var(--color-amber)" : CARD_SHADOW, transition: "all 0.15s" }}
                         >
-                          <div className="text-[15px] font-bold text-dark">{s.name}</div>
-                          <div className="text-[13px] flex gap-3 mt-0.5" style={{ color: "var(--color-muted)" }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)" }}>{s.name}</div>
+                          <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2, display: "flex", gap: 12 }}>
                             <span>{s.duration} min</span>
                             <span>₪{s.price}</span>
                           </div>
@@ -277,35 +288,31 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
 
               {service && (
                 <>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[13px] font-medium text-dark">Date</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--color-muted)" }}>Date</label>
                     <input
                       type="date"
                       value={format(date, "yyyy-MM-dd")}
                       min={format(new Date(), "yyyy-MM-dd")}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          setDate(parseISO(e.target.value));
-                          setTime(null);
-                        }
-                      }}
-                      className="h-12 px-4 rounded-[10px] border bg-white text-[15px] text-dark focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors"
-                      style={{ borderColor: "var(--color-cream-2)" }}
+                      onChange={(e) => { if (e.target.value) { setDate(parseISO(e.target.value)); setTime(null); } }}
+                      style={{ height: 44, padding: "0 14px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", transition: "border-color 0.15s", boxSizing: "border-box" as const, width: "100%" }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[13px] font-medium text-dark mb-2 block">Available times</label>
+                    <label style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--color-muted)", display: "block", marginBottom: 8 }}>Available times</label>
                     {loadingSlots ? (
-                      <div className="flex justify-center py-8">
+                      <div style={{ display: "flex", justifyContent: "center", padding: "24px 0" }}>
                         <Spinner />
                       </div>
                     ) : slots.length === 0 ? (
-                      <p className="text-[14px] text-center py-4" style={{ color: "var(--color-muted)" }}>
+                      <p style={{ fontSize: 13, textAlign: "center", padding: "16px 0", color: "var(--color-muted)" }}>
                         No times available. Try another date.
                       </p>
                     ) : (
-                      <div className="grid grid-cols-3 gap-2">
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
                         {slots.map((slot) => {
                           const active = time === slot.time;
                           return (
@@ -313,19 +320,11 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
                               key={slot.time}
                               onClick={() => slot.available && setTime(slot.time)}
                               disabled={!slot.available}
-                              className="py-2.5 rounded-xl text-[14px] font-semibold transition-colors border"
-                              style={
-                                active
-                                  ? { background: "var(--color-amber)", color: "#fff", borderColor: "var(--color-amber)" }
-                                  : slot.available
-                                  ? { background: "#fff", color: "var(--color-dark)", borderColor: "var(--color-cream-2)" }
-                                  : {
-                                      background: "var(--color-cream-2)",
-                                      color: "var(--color-muted)",
-                                      borderColor: "transparent",
-                                      textDecoration: "line-through",
-                                      cursor: "not-allowed",
-                                    }
+                              style={active
+                                ? { padding: "10px 0", borderRadius: 11, border: "1.5px solid var(--color-amber)", background: "var(--color-amber)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }
+                                : slot.available
+                                ? { padding: "10px 0", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)", fontSize: 13, fontWeight: 600, cursor: "pointer" }
+                                : { padding: "10px 0", borderRadius: 11, border: "1.5px solid transparent", background: "var(--color-cream-2)", color: "var(--color-muted)", fontSize: 13, fontWeight: 600, cursor: "not-allowed", textDecoration: "line-through" }
                               }
                             >
                               {slot.time}
@@ -342,18 +341,19 @@ export default function AddCustomerSheet({ business, onClose, onCreated }: Props
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 p-4 border-t flex gap-3" style={{ borderColor: "var(--color-cream-2)" }}>
+        <div style={{ flexShrink: 0, padding: "14px 20px 20px", borderTop: "1px solid var(--color-cream-2)", display: "flex", gap: 10 }}>
           <button
             onClick={onClose}
-            className="flex-1 py-3.5 rounded-xl text-[15px] font-semibold border bg-transparent text-dark hover:bg-cream transition-colors"
-            style={{ borderColor: "var(--color-cream-2)" }}
+            style={{ flex: 1, height: 46, borderRadius: 13, border: "1.5px solid var(--color-cream-2)", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer", transition: "background 0.15s" }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={submitting}
-            className="flex-1 bg-amber text-white font-semibold text-[15px] py-3.5 rounded-xl hover:bg-[#D4830A] active:bg-[#B86800] transition-colors disabled:opacity-50"
+            style={{ flex: 1, height: 46, borderRadius: 13, border: "none", background: submitting ? "var(--color-cream-2)" : "var(--wash-amber)", color: submitting ? "var(--color-muted)" : "#fff", fontSize: 14, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer", boxShadow: submitting ? "none" : "0 4px 14px rgba(232,146,10,0.28)", transition: "all 0.15s" }}
           >
             {submitting ? "Saving…" : attach ? "Save & book" : "Save client"}
           </button>
