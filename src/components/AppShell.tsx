@@ -313,82 +313,25 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       >
         <button
           onClick={() => setDrawerOpen(true)}
-          className="p-2 -ms-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+          className="p-3 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
           aria-label="Open menu"
         >
           <IconMenu size={24} />
         </button>
 
         {onCalendar && chrome ? (
-          searchOpen ? (
-            /* Search mode — full-width input */
-            <>
-              <div className="flex-1 flex items-center gap-2 ms-2">
-                <input
-                  autoFocus
-                  type="search"
-                  placeholder="Search clients…"
-                  value={searchInput}
-                  onChange={(e) => {
-                    setSearchInput(e.target.value);
-                    chrome.setSearchQuery(e.target.value);
-                  }}
-                  className="flex-1 h-9 px-3 rounded-xl text-[14px] outline-none border"
-                  style={{
-                    borderColor: "var(--color-cream-2)",
-                    background: "var(--color-cream)",
-                    color: "var(--color-dark)",
-                  }}
-                />
-              </div>
-              <button
-                onClick={() => {
-                  setSearchOpen(false);
-                  setSearchInput("");
-                  chrome.setSearchQuery("");
-                }}
-                className="p-2 -me-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
-                aria-label="Close search"
-              >
-                <span style={{ fontSize: 18, lineHeight: 1 }}>✕</span>
-              </button>
-            </>
-          ) : (
-            /* Normal calendar top bar */
-            <>
-              <div className="flex-1 flex items-center justify-center px-2 overflow-hidden">
-                <span className="font-semibold text-[14px] text-dark truncate text-center leading-tight">
-                  {chrome.headerLabel}
-                </span>
-              </div>
-              <button
-                onClick={() => setSearchOpen(true)}
-                className="p-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
-                aria-label="Search"
-              >
-                <IconSearch size={20} />
-              </button>
-              <button
-                onClick={() => setFilterSheetOpen(true)}
-                className="p-2 -me-2 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors relative"
-                aria-label="Filter"
-              >
-                <IconFilter size={20} />
-                {chrome.statusFilter.length > 0 && (
-                  <span
-                    className="absolute top-1.5 end-1.5 w-2 h-2 rounded-full"
-                    style={{ background: "var(--color-amber)" }}
-                  />
-                )}
-              </button>
-            </>
-          )
+          /* Calendar top bar — just the header label; search/filter live in toolbar */
+          <div className="flex-1 flex items-center justify-center px-2 overflow-hidden">
+            <span className="font-semibold text-[14px] text-dark truncate text-center leading-tight">
+              {chrome.headerLabel}
+            </span>
+          </div>
         ) : (
           <>
             <div className="flex-1 flex justify-center">
               <Wordmark />
             </div>
-            <div className="w-10 -me-2" />
+            <div className="w-10" />
           </>
         )}
       </div>
@@ -397,7 +340,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       {onCalendar && chrome && (
         <div
           data-noprint
-          className="md:hidden flex items-center gap-2 px-4 shrink-0 border-b z-20"
+          className="md:hidden flex items-center gap-3 px-4 shrink-0 border-b z-20"
           style={{
             background: "var(--nav-bg)",
             backdropFilter: "var(--nav-blur)",
@@ -406,50 +349,112 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             height: 52,
           }}
         >
-          {/* View pill */}
-          <button
-            onClick={() => setViewSheetOpen(true)}
-            className="flex items-center gap-1.5 rounded-full text-[14px] font-semibold transition-colors active:opacity-70"
-            style={{
-              height: 36,
-              paddingInline: 16,
-              background: "var(--color-cream-2)",
-              color: "var(--color-dark)",
-            }}
-          >
-            {calViews.find((v) => v.value === chrome.view)?.label ?? "View"}
-            <IconChevronDown size={14} />
-          </button>
+          {searchOpen ? (
+            /* Search mode — full-width input in toolbar */
+            <>
+              <input
+                autoFocus
+                type="search"
+                placeholder="Search clients…"
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  chrome.setSearchQuery(e.target.value);
+                }}
+                className="flex-1 h-9 px-3 rounded-xl text-[14px] outline-none border"
+                style={{
+                  borderColor: "var(--color-cream-2)",
+                  background: "var(--color-cream)",
+                  color: "var(--color-dark)",
+                }}
+              />
+              <button
+                onClick={() => {
+                  setSearchOpen(false);
+                  setSearchInput("");
+                  chrome.setSearchQuery("");
+                }}
+                className="shrink-0 text-[14px] font-semibold transition-opacity active:opacity-60"
+                style={{ color: "var(--color-amber)" }}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              {/* View pill */}
+              <button
+                onClick={() => setViewSheetOpen(true)}
+                className="flex items-center gap-1.5 rounded-full active:opacity-70 transition-opacity shrink-0"
+                style={{
+                  height: 36,
+                  paddingInline: 14,
+                  background: "var(--color-surface)",
+                  border: "1.5px solid var(--color-cream-2)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "var(--color-dark)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {calViews.find((v) => v.value === chrome.view)?.label ?? "View"}
+                <IconChevronDown size={14} />
+              </button>
 
-          {/* Filter pill */}
-          <button
-            onClick={() => setFilterSheetOpen(true)}
-            className="flex items-center gap-1.5 rounded-full text-[14px] font-semibold transition-colors active:opacity-70"
-            style={{
-              height: 36,
-              paddingInline: 16,
-              background: chrome.statusFilter.length > 0 ? "var(--color-amber)" : "var(--color-cream-2)",
-              color: chrome.statusFilter.length > 0 ? "#fff" : "var(--color-dark)",
-            }}
-          >
-            {chrome.statusFilter.length === 0
-              ? "All"
-              : chrome.statusFilter.length === 1
-                ? STATUS_LABEL[chrome.statusFilter[0]]
-                : `${chrome.statusFilter.length} filters`}
-            <IconChevronDown size={14} />
-          </button>
+              {/* Filter pill */}
+              <button
+                onClick={() => setFilterSheetOpen(true)}
+                className="flex items-center gap-1.5 rounded-full active:opacity-70 transition-opacity shrink-0"
+                style={{
+                  height: 36,
+                  paddingInline: 14,
+                  background: chrome.statusFilter.length > 0 ? "var(--color-amber)" : "var(--color-surface)",
+                  border: `1.5px solid ${chrome.statusFilter.length > 0 ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: chrome.statusFilter.length > 0 ? "#fff" : "var(--color-dark)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {chrome.statusFilter.length === 0
+                  ? "All"
+                  : chrome.statusFilter.length === 1
+                    ? STATUS_LABEL[chrome.statusFilter[0]]
+                    : `${chrome.statusFilter.length} filters`}
+                <IconChevronDown size={14} />
+              </button>
 
-          <div className="flex-1" />
+              {/* Search pill */}
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="flex items-center gap-1.5 rounded-full active:opacity-70 transition-opacity shrink-0"
+                style={{
+                  height: 36,
+                  paddingInline: 14,
+                  background: "var(--color-surface)",
+                  border: "1.5px solid var(--color-cream-2)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "var(--color-dark)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <IconSearch size={14} />
+                Search
+              </button>
 
-          {/* Print */}
-          <button
-            onClick={() => window.print()}
-            className="p-1.5 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
-            aria-label="Print"
-          >
-            <IconPrint size={18} />
-          </button>
+              <div className="flex-1" />
+
+              {/* Print */}
+              <button
+                onClick={() => window.print()}
+                className="p-2.5 me-1 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+                aria-label="Print"
+              >
+                <IconPrint size={18} />
+              </button>
+            </>
+          )}
         </div>
       )}
 
