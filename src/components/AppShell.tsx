@@ -246,7 +246,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     setDrawerOpen(false);
     try {
       await supabase.auth.signOut();
-      router.push("/login");
+      window.location.href = "https://bapita.com";
     } catch (error) {
       console.error("Logout error:", error);
       showToast("Failed to sign out", "error");
@@ -313,7 +313,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       >
         <button
           onClick={() => setDrawerOpen(true)}
-          className="p-3 ms-3 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+          className="rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+          style={{ padding: 14, marginInlineStart: 20 }}
           aria-label="Open menu"
         >
           <IconMenu size={24} />
@@ -468,7 +469,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               {/* Print */}
               <button
                 onClick={() => window.print()}
-                className="p-2.5 me-3 rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+                className="rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
+                style={{ padding: 10, marginInlineEnd: 20 }}
                 aria-label="Print"
               >
                 <IconPrint size={18} />
@@ -902,26 +904,24 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             onClick={() => setFilterSheetOpen(false)}
           />
           <div
-            className="fixed bottom-0 start-0 end-0 z-50 md:hidden rounded-t-[20px]"
-            style={{ background: "var(--color-surface)", paddingBottom: "env(safe-area-inset-bottom)" }}
+            className="fixed bottom-0 start-0 end-0 z-50 md:hidden"
+            style={{ background: "var(--color-surface)", borderRadius: "20px 20px 0 0", paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            <div
-              className="w-10 h-1 rounded-full mx-auto mt-3 mb-4"
-              style={{ background: "var(--color-cream-2)" }}
-            />
-            <div
-              className="px-6 pb-3 text-[12px] font-semibold uppercase tracking-wide"
-              style={{ color: "var(--color-muted)" }}
-            >
+            {/* Handle */}
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: "var(--color-cream-2)", margin: "12px auto 16px" }} />
+
+            {/* Section label */}
+            <div style={{ padding: "0 24px 10px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)" }}>
               Filter by status
             </div>
-            <div className="mx-4 mb-2 overflow-hidden rounded-2xl" style={{ border: "1px solid var(--color-cream-2)" }}>
+
+            {/* Options card */}
+            <div style={{ margin: "0 16px 12px", borderRadius: 16, overflow: "hidden", border: "1px solid var(--color-cream-2)" }}>
               {chrome.statusFilter.length > 0 && (
                 <>
                   <button
                     onClick={() => chrome.setStatusFilter([])}
-                    className="w-full flex items-center px-4 text-[14px] font-semibold text-start transition-colors active:bg-[var(--color-cream)]"
-                    style={{ height: 48, color: "var(--color-amber)", background: "var(--color-surface)" }}
+                    style={{ width: "100%", display: "flex", alignItems: "center", padding: "0 18px", height: 48, fontSize: 14, fontWeight: 700, textAlign: "left", background: "var(--color-surface)", border: "none", cursor: "pointer", color: "var(--color-amber)" }}
                   >
                     Clear all filters
                   </button>
@@ -940,8 +940,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                           : [...chrome.statusFilter, opt.value];
                         chrome.setStatusFilter(next);
                       }}
-                      className="w-full flex items-center justify-between px-4 text-[15px] text-start transition-colors active:bg-[var(--color-cream)]"
-                      style={{ height: 52, background: "var(--color-surface)", color: active ? "var(--color-amber)" : "var(--color-dark)" }}
+                      style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 18px", height: 52, fontSize: 15, textAlign: "left", background: "var(--color-surface)", border: "none", cursor: "pointer", color: active ? "var(--color-amber)" : "var(--color-dark)" }}
                     >
                       {opt.label}
                       {active && <IconCheck />}
@@ -950,31 +949,30 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 );
               })}
             </div>
+
+            {/* Jump to today card */}
             {!chrome.isToday && (
-              <div className="mx-4 mb-2 overflow-hidden rounded-2xl" style={{ border: "1px solid var(--color-cream-2)" }}>
+              <div style={{ margin: "0 16px 12px", borderRadius: 16, overflow: "hidden", border: "1px solid var(--color-cream-2)" }}>
                 <button
                   onClick={() => { chrome.onToday(); setFilterSheetOpen(false); }}
-                  className="w-full flex items-center px-4 text-[15px] font-semibold text-start transition-colors active:bg-[var(--color-cream)]"
-                  style={{ height: 52, background: "var(--color-surface)", color: "var(--color-amber)" }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", padding: "0 18px", height: 52, fontSize: 15, fontWeight: 600, textAlign: "left", background: "var(--color-surface)", border: "none", cursor: "pointer", color: "var(--color-amber)" }}
                 >
                   Jump to today
                 </button>
               </div>
             )}
-            <div
-              className="px-6 pt-2 pb-3 text-[12px] font-semibold uppercase tracking-wide"
-              style={{ color: "var(--color-muted)" }}
-            >
+
+            {/* Calendars */}
+            <div style={{ padding: "4px 24px 10px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)" }}>
               Calendars
             </div>
-            <div className="mx-4 mb-2 overflow-hidden rounded-2xl" style={{ border: "1px solid var(--color-cream-2)" }}>
+            <div style={{ margin: "0 16px 16px", borderRadius: 16, overflow: "hidden", border: "1px solid var(--color-cream-2)" }}>
               <CalendarSelectorPanel
                 ownerName={businessName}
                 calendarFilter={chrome.calendarFilter}
                 setCalendarFilter={chrome.setCalendarFilter}
               />
             </div>
-            <div className="h-4" />
           </div>
         </>
       )}
@@ -988,20 +986,19 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             onClick={() => setViewSheetOpen(false)}
           />
           <div
-            className="fixed bottom-0 start-0 end-0 z-50 md:hidden rounded-t-[20px]"
-            style={{ background: "var(--color-surface)", paddingBottom: "env(safe-area-inset-bottom)" }}
+            className="fixed bottom-0 start-0 end-0 z-50 md:hidden"
+            style={{ background: "var(--color-surface)", borderRadius: "20px 20px 0 0", paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            <div
-              className="w-10 h-1 rounded-full mx-auto mt-3 mb-4"
-              style={{ background: "var(--color-cream-2)" }}
-            />
-            <div
-              className="px-6 pb-3 text-[12px] font-semibold uppercase tracking-wide"
-              style={{ color: "var(--color-muted)" }}
-            >
+            {/* Handle */}
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: "var(--color-cream-2)", margin: "12px auto 16px" }} />
+
+            {/* Label */}
+            <div style={{ padding: "0 24px 10px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)" }}>
               View
             </div>
-            <div className="mx-4 mb-4 overflow-hidden rounded-2xl" style={{ border: "1px solid var(--color-cream-2)" }}>
+
+            {/* Options card */}
+            <div style={{ margin: "0 16px 20px", borderRadius: 16, overflow: "hidden", border: "1px solid var(--color-cream-2)" }}>
               {calViews.map((v, i) => {
                 const active = chrome.view === v.value;
                 return (
@@ -1009,8 +1006,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     {i > 0 && <div style={{ height: 1, background: "var(--color-cream-2)" }} />}
                     <button
                       onClick={() => { chrome.setView(v.value); setViewSheetOpen(false); }}
-                      className="w-full flex items-center justify-between px-4 text-[15px] text-start transition-colors active:bg-[var(--color-cream)]"
-                      style={{ height: 52, background: "var(--color-surface)", color: active ? "var(--color-amber)" : "var(--color-dark)" }}
+                      style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 18px", height: 52, fontSize: 15, textAlign: "left", background: "var(--color-surface)", border: "none", cursor: "pointer", color: active ? "var(--color-amber)" : "var(--color-dark)" }}
                     >
                       {v.label}
                       {active && <IconCheck />}
