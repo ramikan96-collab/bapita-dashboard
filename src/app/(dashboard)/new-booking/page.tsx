@@ -266,6 +266,34 @@ function NewBookingInner() {
   async function createBooking() {
     if (!business || !selectedClient || !selectedService || !selectedTime) { showToast("Something's missing. Check the booking details.", "error"); return; }
     setSubmitting(true);
+
+    // Race-condition guard: re-check slot is still free before inserting
+    const { data: fresh } = await supabase
+      .from("bookings")
+      .select("appointment_time, service:services(duration)")
+      .eq("business_id", business.id)
+      .eq("appointment_date", format(selectedDate, "yyyy-MM-dd"))
+      .in("status", ["confirmed", "pending"]);
+    if (fresh) {
+      const toMins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+      const newStart = toMins(selectedTime);
+      const newEnd = newStart + selectedService.duration;
+      const conflict = (fresh as { appointment_time: string; service: { duration: number }[] | { duration: number } | null }[]).some((b) => {
+        const bStart = toMins(b.appointment_time);
+        const bDur = Array.isArray(b.service) ? (b.service[0]?.duration || 30) : (b.service?.duration || 30);
+        return newStart < bStart + bDur && newEnd > bStart;
+      });
+      if (conflict) {
+        const updated = getAvailableSlots(selectedDate, selectedService.duration, business.business_hours, fresh as unknown as { appointment_time: string; service?: { duration: number } | null }[]);
+        setSlots(updated);
+        setSelectedTime(null);
+        setStep("datetime");
+        showToast("That slot was just taken. Pick another time.", "error");
+        setSubmitting(false);
+        return;
+      }
+    }
+
     const { error } = await supabase.from("bookings").insert({ business_id: business.id, customer_id: selectedClient.id, service_id: selectedService.id, customer_name: selectedClient.name, customer_phone: selectedClient.phone || null, customer_email: selectedClient.email || null, appointment_date: format(selectedDate, "yyyy-MM-dd"), appointment_time: selectedTime, status: "confirmed", payment_status: markAsPaid ? "cash" : "none", notes: notes.trim() || null });
     if (error) { showToast("Couldn't create the booking. Please try again.", "error"); setSubmitting(false); return; }
     if (selectedClient.email) {

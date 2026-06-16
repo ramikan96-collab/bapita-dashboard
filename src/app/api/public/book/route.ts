@@ -30,6 +30,28 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceClient();
 
+  // Conflict check — prevent double-booking race conditions
+  const { data: existingBookings } = await supabase
+    .from("bookings")
+    .select("appointment_time, service:services(duration)")
+    .eq("business_id", businessId)
+    .eq("appointment_date", date)
+    .in("status", ["confirmed", "pending"]);
+
+  if (existingBookings && serviceDuration) {
+    const toMins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+    const newStart = toMins(time);
+    const newEnd = newStart + serviceDuration;
+    const conflict = existingBookings.some((b: { appointment_time: string; service: { duration: number } | { duration: number }[] | null }) => {
+      const bStart = toMins(b.appointment_time);
+      const bDur = Array.isArray(b.service) ? (b.service[0]?.duration || 30) : (b.service?.duration || 30);
+      return newStart < bStart + bDur && newEnd > bStart;
+    });
+    if (conflict) {
+      return NextResponse.json({ error: "This time slot was just taken. Please go back and choose another time." }, { status: 409 });
+    }
+  }
+
   // Upsert customer by phone + business
   const { data: customer, error: customerError } = await supabase
     .from("customers")
