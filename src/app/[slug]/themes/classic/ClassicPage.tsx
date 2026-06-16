@@ -57,6 +57,7 @@ export function ClassicPage({ business, services }: Props) {
   const isRtl  = lang === "he";
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
+  const { ref: statsRef,    visible: statsVisible }    = useFadeInOnEnter();
 
   useEffect(() => {
     const onScroll = () => setShowWa(window.scrollY > window.innerHeight * 0.7);
@@ -71,6 +72,7 @@ export function ClassicPage({ business, services }: Props) {
   const cityLabel   = getCityFromAddress(business.address);
   const waNumber    = business.whatsapp_number?.replace(/\D/g, "");
   const displayName = (isRtl && business.name_he) ? business.name_he : business.name;
+  const hasStats    = business.stat_years != null || business.stat_clients != null || business.stat_rating != null;
   const displayTag  = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
   const displayAbout= (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
@@ -180,11 +182,38 @@ export function ClassicPage({ business, services }: Props) {
           : bar;
       })()}
 
+      {/* Stats chips */}
+      {business.show_stats !== false && hasStats && (
+        <div ref={statsRef} style={{ padding: "32px 20px 0", maxWidth: 640, margin: "0 auto" }}>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+            {business.stat_years != null && (
+              <div style={{ flex: "1 1 100px", maxWidth: 160, background: "#fff", border: `1px solid ${accent}33`, borderRadius: 12, padding: "18px 14px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0s, transform 0.55s ease 0s", boxShadow: "0 1px 6px rgba(34,21,16,0.06)" }}>
+                <div style={{ fontSize: 30, fontWeight: 900, color: C.dark, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_years}+</div>
+                <div style={{ fontSize: 10, color: C.dark, opacity: 0.5, fontWeight: 700, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "שנות ניסיון" : "Years Exp."}</div>
+              </div>
+            )}
+            {business.stat_clients != null && (
+              <div style={{ flex: "1 1 100px", maxWidth: 160, background: "#fff", border: `1px solid ${accent}33`, borderRadius: 12, padding: "18px 14px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.1s, transform 0.55s ease 0.1s", boxShadow: "0 1px 6px rgba(34,21,16,0.06)" }}>
+                <div style={{ fontSize: 30, fontWeight: 900, color: C.dark, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_clients}+</div>
+                <div style={{ fontSize: 10, color: C.dark, opacity: 0.5, fontWeight: 700, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "לקוחות מרוצים" : "Happy Clients"}</div>
+              </div>
+            )}
+            {business.stat_rating != null && (
+              <div style={{ flex: "1 1 100px", maxWidth: 160, background: "#fff", border: `1px solid ${accent}33`, borderRadius: 12, padding: "18px 14px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.2s, transform 0.55s ease 0.2s", boxShadow: "0 1px 6px rgba(34,21,16,0.06)" }}>
+                <div style={{ fontSize: 30, fontWeight: 900, color: "#F59E0B", letterSpacing: "-0.04em", lineHeight: 1 }}>⭐ {business.stat_rating}</div>
+                <div style={{ fontSize: 10, color: C.dark, opacity: 0.5, fontWeight: 700, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "גוגל" : "Google"}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Sections */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px" }}>
 
         {/* Services */}
-        <section ref={servicesRef} style={{ paddingTop: 56 }}>
+        {business.show_services !== false && (
+        <section ref={servicesRef} style={{ paddingTop: (business.show_stats !== false && hasStats) ? 44 : 56 }}>
           <SectionTitle title={t.services.title} accentColor={accent} darkColor={C.dark} />
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 28 }}>
             {services.map((s, i) => {
@@ -216,6 +245,7 @@ export function ClassicPage({ business, services }: Props) {
             })}
           </div>
         </section>
+        )}
 
         {/* About */}
         {business.show_about !== false && displayAbout && (

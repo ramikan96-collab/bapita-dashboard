@@ -96,6 +96,8 @@ export interface Business {
   stat_years?:         number | null;
   stat_clients?:       number | null;
   stat_rating?:        string | null;
+  show_stats?:         boolean | null;
+  show_services?:      boolean | null;
 }
 
 export interface BlockedTime {

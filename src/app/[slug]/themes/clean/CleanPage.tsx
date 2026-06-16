@@ -213,7 +213,7 @@ export function CleanPage({ business, services }: Props) {
       </section>
 
       {/* Stats row */}
-      {hasStats && (
+      {business.show_stats !== false && hasStats && (
         <div ref={statsRef} style={{ padding: "40px 20px 0", maxWidth: 640, margin: "0 auto" }}>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {business.stat_years != null && (
@@ -242,7 +242,8 @@ export function CleanPage({ business, services }: Props) {
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px" }}>
 
         {/* Services */}
-        <section ref={servicesRef} style={{ paddingTop: hasStats ? 44 : 52 }}>
+        {business.show_services !== false && (
+        <section ref={servicesRef} style={{ paddingTop: (business.show_stats !== false && hasStats) ? 44 : 52 }}>
           <SectionTitle title={t.services.title} accent={accent} />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {services.map((s, i) => {
@@ -276,6 +277,7 @@ export function CleanPage({ business, services }: Props) {
             })}
           </div>
         </section>
+        )}
 
         {/* About */}
         {business.show_about !== false && displayAbout && (

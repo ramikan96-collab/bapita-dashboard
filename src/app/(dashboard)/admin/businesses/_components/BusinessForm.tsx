@@ -71,6 +71,8 @@ interface FormData {
   show_about:         boolean;
   show_hours:         boolean;
   show_location:      boolean;
+  show_stats:         boolean;
+  show_services:      boolean;
   status:             "draft" | "live";
   // plan
   plan_tier:          string;
@@ -103,6 +105,7 @@ const EMPTY_FORM: FormData = {
   google_review_link: "", google_maps_url: "", waze_url: "",
   about_text: "", about_text_he: "", accent_color: "",
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
+  show_stats: true, show_services: true,
   status: "draft",
   plan_tier: "", plan_price: "", plan_addons: [],
   plan_booking_limit: "", plan_start_date: "", plan_renewal_date: "", plan_notes: "",
@@ -164,6 +167,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           show_about:         b.show_about          ?? true,
           show_hours:         b.show_hours          ?? true,
           show_location:      b.show_location       ?? true,
+          show_stats:         b.show_stats          ?? true,
+          show_services:      b.show_services       ?? true,
           status:             b.status              || "draft",
           plan_tier:          b.plan_tier           || "",
           plan_price:         b.plan_price != null   ? String(b.plan_price) : "",
@@ -279,6 +284,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_about:         form.show_about,
       show_hours:         form.show_hours,
       show_location:      form.show_location,
+      show_stats:         form.show_stats,
+      show_services:      form.show_services,
       status:             form.status,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
@@ -574,6 +581,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 <div style={{ height:1, background:"var(--color-cream-2)", margin:"16px 0" }} />
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                   {([
+                    ["show_services", "Services"],
+                    ["show_stats",    "Stats Chips"],
                     ["show_gallery",  "Gallery"],
                     ["show_about",    "About"],
                     ["show_hours",    "Business Hours"],

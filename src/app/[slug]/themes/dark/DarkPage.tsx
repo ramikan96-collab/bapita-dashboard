@@ -303,7 +303,7 @@ export function DarkPage({ business, services }: Props) {
       })()}
 
       {/* Stats row with count-up */}
-      {hasStats && (
+      {business.show_stats !== false && hasStats && (
         <div ref={statsRef} style={{ position: "relative", zIndex: 1, maxWidth: 640, margin: "0 auto", padding: "0 20px" }}>
           <div style={{ display: "flex", gap: 2, marginTop: 2 }}>
             {business.stat_years != null && (
@@ -338,6 +338,7 @@ export function DarkPage({ business, services }: Props) {
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px", position: "relative", zIndex: 1 }}>
 
         {/* Services */}
+        {business.show_services !== false && (<>
         <GoldDivider accent={accent} />
         <section ref={servicesRef} style={{ paddingTop: 0 }}>
           <DarkSectionTitle title={t.services.title} accent={accent} isRtl={isRtl} />
@@ -395,6 +396,7 @@ export function DarkPage({ business, services }: Props) {
             })}
           </div>
         </section>
+        </>)}
 
         {/* About */}
         {business.show_about !== false && displayAbout && (
