@@ -33,19 +33,71 @@ export default async function BookPage({ params }: Props) {
     .eq("active", true)
     .order("display_order");
 
+  const b = business as unknown as Business;
+  const pageUrl = `https://bapita.com/${slug}`;
+
+  const localBusinessSchema = {
+    "@context": "https://schema.org",
+    "@type": "HairSalon",
+    name: b.name,
+    url: pageUrl,
+    ...(b.phone && { telephone: b.phone }),
+    ...(b.address && { address: { "@type": "PostalAddress", streetAddress: b.address } }),
+    ...(b.hero_image_url && { image: b.hero_image_url }),
+    ...(b.google_maps_url && { hasMap: b.google_maps_url }),
+  };
+
   return (
-    <BookingShell
-      business={business as unknown as Business}
-      services={(services || []) as Service[]}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(localBusinessSchema).replace(/</g, "\\u003c"),
+        }}
+      />
+      <BookingShell
+        business={b}
+        services={(services || []) as Service[]}
+      />
+    </>
   );
 }
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const supabase = getPublicClient();
-  const { data } = await supabase.from("businesses").select("name").eq("slug", slug).single();
+  const { data } = await supabase
+    .from("businesses")
+    .select("name, tagline, hero_image_url, address")
+    .eq("slug", slug)
+    .single();
+
+  if (!data) return { title: "Book an appointment" };
+
+  const title = `${data.name} — Online Booking`;
+  const description =
+    data.tagline ||
+    `Book an appointment at ${data.name}${data.address ? `, ${data.address}` : ""}. Fast online booking.`;
+  const pageUrl = `https://bapita.com/${slug}`;
+  const image = data.hero_image_url || "https://bapita.com/og-image.png";
+
   return {
-    title: data?.name ? `Book at ${data.name}` : "Book an appointment",
+    title,
+    description,
+    alternates: { canonical: pageUrl },
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "Bapita",
+      images: [{ url: image, width: 1200, height: 630, alt: data.name }],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
   };
 }
