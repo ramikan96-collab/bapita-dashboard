@@ -272,9 +272,10 @@ interface Props {
   booking: Booking;
   onClose: () => void;
   onUpdated: (patch: Partial<Booking>) => void;
+  onDeleted?: (id: string) => void;
 }
 
-export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
+export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }: Props) {
   const supabase = createClient();
 
   const [current, setCurrent] = useState<Booking>(booking);
@@ -283,6 +284,8 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
   const [showReschedule, setShowReschedule] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
 
@@ -378,6 +381,20 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
     } else {
       updateStatus(newStatus);
     }
+  }
+
+  // ── Delete ─────────────────────────────────────────────────────────────────
+
+  async function handleDelete() {
+    setDeleting(true);
+    const { error } = await supabase.from("bookings").delete().eq("id", current.id);
+    if (error) {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+      return;
+    }
+    onDeleted?.(current.id);
+    onClose();
   }
 
   // ── Derived values ─────────────────────────────────────────────────────────
@@ -861,26 +878,51 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
 
         {/* Sticky footer */}
         <div
-          className="shrink-0 px-5 py-4 flex gap-3 border-t"
-          style={{
-            borderColor: "var(--color-cream-2)",
-            background: "var(--color-surface)",
-          }}
+          className="shrink-0 px-5 py-4 border-t"
+          style={{ borderColor: "var(--color-cream-2)", background: "var(--color-surface)" }}
         >
-          <button
-            onClick={() => setShowEdit(true)}
-            className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold"
-            style={{ background: "var(--wash-amber)", color: "var(--color-amber)" }}
-          >
-            Edit appointment
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold"
-            style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}
-          >
-            Print
-          </button>
+          {showDeleteConfirm ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-center text-[13px] font-semibold" style={{ color: "var(--color-muted)" }}>
+                Delete this booking? This cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold"
+                  style={{ background: "var(--color-cream-2)", color: "var(--color-dark)" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold disabled:opacity-50"
+                  style={{ background: "#EF4444", color: "#fff" }}
+                >
+                  {deleting ? "Deleting…" : "Yes, delete"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowEdit(true)}
+                className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold"
+                style={{ background: "var(--wash-amber)", color: "var(--color-amber)" }}
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="py-3.5 px-5 rounded-2xl text-[14px] font-bold"
+                style={{ background: "#FEE2E2", color: "#EF4444" }}
+              >
+                Delete
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

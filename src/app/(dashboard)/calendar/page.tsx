@@ -368,7 +368,17 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {selected && <BookingDrawer booking={selected} onClose={() => setSelected(null)} onUpdated={handleUpdated} />}
+      {selected && (
+        <BookingDrawer
+          booking={selected}
+          onClose={() => setSelected(null)}
+          onUpdated={handleUpdated}
+          onDeleted={(id) => {
+            setBookings((prev) => prev.filter((b) => b.id !== id));
+            setSelected(null);
+          }}
+        />
+      )}
       {blockDraft && (
         <BlockTimeSheet
           draft={blockDraft}
