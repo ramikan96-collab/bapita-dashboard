@@ -169,6 +169,7 @@ function NewBookingInner() {
   const [newClientName,    setNewClientName]    = useState("");
   const [newClientPhone,   setNewClientPhone]   = useState("");
   const [newClientEmail,   setNewClientEmail]   = useState("");
+  const [recentClients,    setRecentClients]    = useState<Customer[]>([]);
 
   const [services,         setServices]         = useState<Service[]>([]);
   const [selectedService,  setSelectedService]  = useState<Service | null>(null);
@@ -193,6 +194,20 @@ function NewBookingInner() {
     })();
     return () => { cancelled = true; };
   }, [business, clientIdParam, supabase]);
+
+  // ─── Recent clients (shown when search is empty) ────────────────────────
+  useEffect(() => {
+    if (!business) return;
+    (async () => {
+      const { data } = await supabase
+        .from("customers")
+        .select("*")
+        .eq("business_id", business.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setRecentClients(data || []);
+    })();
+  }, [business, supabase]);
 
   // ─── Client search ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -388,7 +403,8 @@ function NewBookingInner() {
                     />
                   </div>
 
-                  {clients.length > 0 && (
+                  {/* Search results */}
+                  {clientSearch.trim().length >= 2 && clients.length > 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {clients.map((client) => {
                         const active = selectedClient?.id === client.id;
@@ -422,6 +438,42 @@ function NewBookingInner() {
                     <p style={{ fontSize: 13, textAlign: "center", color: "var(--color-muted)", padding: "4px 0" }}>
                       No client matches &quot;{clientSearch.trim()}&quot;
                     </p>
+                  )}
+
+                  {/* Recent clients — shown when search is empty */}
+                  {clientSearch.trim().length < 2 && recentClients.length > 0 && (
+                    <div>
+                      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)", marginBottom: 8 }}>
+                        Recent clients
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {recentClients.map((client) => {
+                          const active = selectedClient?.id === client.id;
+                          return (
+                            <button
+                              key={client.id}
+                              onClick={() => setSelectedClient(client)}
+                              style={{
+                                width: "100%",
+                                textAlign: "start",
+                                padding: "11px 14px",
+                                borderRadius: 13,
+                                background: "var(--color-surface)",
+                                border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+                                boxShadow: active ? "0 2px 8px rgba(232,146,10,0.12)" : "var(--shadow-sm)",
+                                cursor: "pointer",
+                                transition: "border-color 0.15s, box-shadow 0.15s",
+                              }}
+                            >
+                              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)" }}>{client.name}</div>
+                              <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>
+                                {client.phone}{client.email && ` · ${client.email}`}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   )}
 
                   <button

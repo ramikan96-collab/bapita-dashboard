@@ -283,6 +283,8 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
   const [showReschedule, setShowReschedule] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
+  const [copiedPhone, setCopiedPhone] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
 
   const [notes, setNotes] = useState(current.notes ?? "");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -452,6 +454,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
         style={{
           background: "var(--color-surface)",
           border: "1px solid var(--color-cream-2)",
+          boxShadow: "0 2px 8px rgba(30,26,20,0.06)",
         }}
       >
         {label ? (
@@ -494,6 +497,13 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
     );
   }
 
+  function copyText(text: string, setCopied: (v: boolean) => void) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   function renderContact() {
     return (
       <div
@@ -501,23 +511,33 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
         style={{
           background: "var(--color-surface)",
           border: "1px solid var(--color-cream-2)",
+          boxShadow: "0 2px 8px rgba(30,26,20,0.06)",
         }}
       >
         {current.customer_phone ? (
-          <a
-            href={`tel:${current.customer_phone}`}
-            className="flex items-center gap-4 px-5 py-4"
+          <button
+            onClick={() => copyText(current.customer_phone!, setCopiedPhone)}
+            className="flex items-center gap-4 px-5 py-4 w-full text-start"
             style={{
-              color: "var(--color-dark)",
-              textDecoration: "none",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
               borderBottom: current.customer_email
                 ? "1px solid var(--color-cream-2)"
                 : "none",
             }}
           >
             <span className="text-[18px] shrink-0">📞</span>
-            <span className="text-[15px] font-semibold">{current.customer_phone}</span>
-          </a>
+            <span className="text-[15px] font-semibold flex-1" style={{ color: "var(--color-dark)" }}>
+              {current.customer_phone}
+            </span>
+            <span
+              className="text-[12px] font-semibold shrink-0"
+              style={{ color: copiedPhone ? "#22c55e" : "var(--color-muted)" }}
+            >
+              {copiedPhone ? "Copied ✓" : "Copy"}
+            </span>
+          </button>
         ) : (
           <div
             className="flex items-center gap-4 px-5 py-4"
@@ -534,16 +554,22 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
           </div>
         )}
         {current.customer_email ? (
-          <a
-            href={`mailto:${current.customer_email}`}
-            className="flex items-center gap-4 px-5 py-4"
-            style={{ color: "var(--color-dark)", textDecoration: "none" }}
+          <button
+            onClick={() => copyText(current.customer_email!, setCopiedEmail)}
+            className="flex items-center gap-4 px-5 py-4 w-full text-start"
+            style={{ background: "none", border: "none", cursor: "pointer" }}
           >
             <span className="text-[18px] shrink-0">✉️</span>
-            <span className="text-[15px] font-semibold truncate">
+            <span className="text-[15px] font-semibold flex-1 truncate" style={{ color: "var(--color-dark)" }}>
               {current.customer_email}
             </span>
-          </a>
+            <span
+              className="text-[12px] font-semibold shrink-0"
+              style={{ color: copiedEmail ? "#22c55e" : "var(--color-muted)" }}
+            >
+              {copiedEmail ? "Copied ✓" : "Copy"}
+            </span>
+          </button>
         ) : (
           <div className="flex items-center gap-4 px-5 py-4">
             <span className="text-[18px] shrink-0 opacity-30">✉️</span>
@@ -574,6 +600,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
           style={{
             background: "var(--color-surface)",
             border: "1px solid var(--color-cream-2)",
+            boxShadow: "0 2px 8px rgba(30,26,20,0.06)",
           }}
         >
           <div
@@ -671,6 +698,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
           style={{
             background: "var(--color-surface)",
             border: "1px solid var(--color-cream-2)",
+            boxShadow: "0 2px 8px rgba(30,26,20,0.06)",
           }}
         >
           <p className="text-[15px] font-bold" style={{ color: "var(--color-dark)" }}>
@@ -698,6 +726,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
           style={{
             background: "var(--color-surface)",
             border: "1px solid var(--color-cream-2)",
+            boxShadow: "0 2px 8px rgba(30,26,20,0.06)",
             color: "var(--color-amber)",
           }}
         >
