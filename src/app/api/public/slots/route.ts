@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceClient();
 
-  const { data: business, error: bizError } = await supabase
+  const { data: business } = await supabase
     .from("businesses")
     .select("business_hours")
     .eq("id", businessId)
@@ -67,21 +67,12 @@ export async function GET(req: NextRequest) {
     duration: Array.isArray(b.service) ? (b.service[0]?.duration || 30) : (b.service?.duration || 30),
   }));
 
-  const dateObj = new Date(date + "T00:00:00");
-  const dayKey = DAY_NAMES[dateObj.getDay()];
-  const bh = business?.business_hours as BusinessHours | null;
-  const slots = getSlots(dateObj, duration, bh, booked);
+  const slots = getSlots(
+    new Date(date + "T00:00:00"),
+    duration,
+    business?.business_hours as BusinessHours | null,
+    booked
+  );
 
-  return NextResponse.json({
-    slots,
-    _debug: {
-      businessFound: !!business,
-      bizError: bizError ? { code: bizError.code, message: bizError.message } : null,
-      dayKey,
-      dayHours: bh?.[dayKey as keyof BusinessHours] ?? null,
-      duration,
-      date,
-      bookedCount: booked.length,
-    },
-  });
+  return NextResponse.json({ slots });
 }
