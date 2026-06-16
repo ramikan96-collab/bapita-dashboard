@@ -448,7 +448,7 @@ export function DarkPage({ business, services }: Props) {
                   <GoldDivider accent={accent} />
                   <DarkSectionTitle title={t.location.title} accent={accent} isRtl={isRtl} />
                   <div style={{ background: D.surface, borderRadius: 2, padding: "20px", border: `1px solid ${D.border}` }}>
-                    <SectionLocation address={business.address} darkColor={D.text} accentColor={accent} directionsLabel={t.location.directions} />
+                    <SectionLocation address={business.address} darkColor={D.text} accentColor={accent} directionsLabel={t.location.directions} googleMapsUrl={business.google_maps_url} wazeUrl={business.waze_url} />
                   </div>
                 </div>
               ) : null;

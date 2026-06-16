@@ -302,7 +302,7 @@ export function ClassicPage({ business, services }: Props) {
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.location.title} accentColor={accent} darkColor={C.dark} />
                   <div style={{ marginTop: 20 }}>
-                    <SectionLocation address={business.address} darkColor={C.dark} accentColor={accent} directionsLabel={t.location.directions} />
+                    <SectionLocation address={business.address} darkColor={C.dark} accentColor={accent} directionsLabel={t.location.directions} googleMapsUrl={business.google_maps_url} wazeUrl={business.waze_url} />
                   </div>
                 </section>
               ) : null;

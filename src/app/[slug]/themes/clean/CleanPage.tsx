@@ -331,7 +331,7 @@ export function CleanPage({ business, services }: Props) {
               return business.show_location !== false && business.address ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.location.title} accent={accent} />
-                  <SectionLocation address={business.address} darkColor={P.text} accentColor={accent} directionsLabel={t.location.directions} />
+                  <SectionLocation address={business.address} darkColor={P.text} accentColor={accent} directionsLabel={t.location.directions} googleMapsUrl={business.google_maps_url} wazeUrl={business.waze_url} />
                 </section>
               ) : null;
             default:
