@@ -139,7 +139,7 @@ function StatusSheet({
       <div className="absolute inset-0 bg-black/50" />
       <div
         className="relative w-full max-w-md rounded-t-2xl px-5 pt-3 pb-10"
-        style={{ background: "#fff" }}
+        style={{ background: "var(--color-surface)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -231,7 +231,7 @@ function CheckoutModal({ booking, onDone, onClose }: CheckoutProps) {
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-md rounded-t-2xl px-6 pt-6 pb-10 shadow-2xl"
-        style={{ background: "#fff" }}
+        style={{ background: "var(--color-surface)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -470,32 +470,42 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
 
     if (s === "pending") {
       return (
-        <div className="flex gap-2">
-          <ActionBtn
-            label="Confirm"
-            color={AMBER}
-            onClick={() => updateStatus("confirmed")}
-            loading={false}
-            primary
-          />
-          <ActionBtn
-            label="Complete"
-            color={GREEN}
-            onClick={() => setShowCheckout(true)}
-            loading={false}
-          />
-          <ActionBtn
-            label="Cancel"
-            color={RED}
-            onClick={() => updateStatus("cancelled")}
-            loading={false}
-          />
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <ActionBtn
+              label="Confirm"
+              color={AMBER}
+              onClick={() => updateStatus("confirmed")}
+              loading={false}
+              primary
+            />
+            <ActionBtn
+              label="Complete"
+              color={GREEN}
+              onClick={() => setShowCheckout(true)}
+              loading={false}
+            />
+          </div>
+          <div className="flex gap-2">
+            <ActionBtn
+              label="No-show"
+              color={RED}
+              onClick={() => updateStatus("no_show")}
+              loading={false}
+            />
+            <ActionBtn
+              label="Cancel"
+              color={RED}
+              onClick={() => updateStatus("cancelled")}
+              loading={false}
+            />
+          </div>
         </div>
       );
     }
     if (s === "confirmed") {
       return (
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
           <ActionBtn
             label="Complete"
             color={GREEN}
@@ -503,18 +513,26 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
             loading={false}
             primary
           />
-          <ActionBtn
-            label="Reschedule"
-            color={SLATE}
-            onClick={() => setShowReschedule(true)}
-            loading={false}
-          />
-          <ActionBtn
-            label="Cancel"
-            color={RED}
-            onClick={() => updateStatus("cancelled")}
-            loading={false}
-          />
+          <div className="flex gap-2">
+            <ActionBtn
+              label="No-show"
+              color={RED}
+              onClick={() => updateStatus("no_show")}
+              loading={false}
+            />
+            <ActionBtn
+              label="Reschedule"
+              color={SLATE}
+              onClick={() => setShowReschedule(true)}
+              loading={false}
+            />
+            <ActionBtn
+              label="Cancel"
+              color={RED}
+              onClick={() => updateStatus("cancelled")}
+              loading={false}
+            />
+          </div>
         </div>
       );
     }
@@ -764,7 +782,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
       <div
         className="fixed bottom-0 inset-x-0 z-50 rounded-t-[20px] max-h-[85vh] flex flex-col md:inset-y-0 md:left-auto md:end-0 md:w-96 md:rounded-none md:max-h-none"
         style={{
-          background: "#fff",
+          background: "var(--color-cream)",
           boxShadow: "0 -4px 24px rgba(30,26,20,0.12)",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -790,50 +808,57 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
             ✕
           </button>
 
-          {/* Avatar + name + status badge */}
-          <div className="flex flex-col items-start gap-1 mt-5 mb-2">
-            {/* Avatar */}
-            <div
-              className="w-11 h-11 rounded-full flex items-center justify-center text-base font-black shrink-0"
-              style={{ background: "var(--color-amber)", color: "#fff" }}
-            >
-              {initials(current.customer_name)}
+          {/* Header card */}
+          <div
+            className="mt-4 mb-3 rounded-2xl p-4"
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "var(--shadow-sm)" }}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              {/* Avatar */}
+              <div
+                className="w-11 h-11 rounded-full flex items-center justify-center text-base font-black shrink-0"
+                style={{ background: "var(--color-amber)", color: "#fff" }}
+              >
+                {initials(current.customer_name)}
+              </div>
+              <div className="flex-1 min-w-0">
+                {/* Name */}
+                <p className="font-black truncate" style={{ fontSize: 17, color: "var(--color-dark)" }}>
+                  {current.customer_name}
+                </p>
+                {/* Status badge — tappable */}
+                <button
+                  onClick={() => setShowStatusSheet(true)}
+                  className="mt-0.5 px-2 py-0.5 rounded-full text-xs font-bold"
+                  style={{ background: statusBg, color }}
+                  title="Tap to change status"
+                >
+                  {STATUS_LABEL[current.status]} ▾
+                </button>
+              </div>
             </div>
-            {/* Name */}
-            <p
-              className="font-black mt-1"
-              style={{ fontSize: 18, color: "var(--color-dark)" }}
+            {/* Date · time · service */}
+            <div
+              className="rounded-xl px-3 py-2.5 flex flex-col gap-1"
+              style={{ background: "var(--color-cream)" }}
             >
-              {current.customer_name}
-            </p>
-            {/* Status badge — tappable */}
-            <button
-              onClick={() => setShowStatusSheet(true)}
-              className="px-2.5 py-1 rounded-full text-xs font-bold"
-              style={{ background: statusBg, color }}
-            >
-              {STATUS_LABEL[current.status]}
-            </button>
+              <p className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>
+                {format(date, "EEEE, d MMM yyyy")}
+              </p>
+              <p className="text-sm font-bold" style={{ color: "var(--color-dark)" }}>
+                {timeStart}–{timeEnd} · {duration} min
+                {current.service?.name && <span style={{ color: "var(--color-muted)", fontWeight: 500 }}> · {current.service.name}</span>}
+              </p>
+            </div>
           </div>
 
-          {/* Date · time · duration line */}
-          <p className="text-sm mb-0.5" style={{ color: "var(--color-muted)" }}>
-            {format(date, "EEEE, d MMM yyyy")} · {timeStart}–{timeEnd} · {duration} min
-          </p>
-          {/* Service name */}
-          {current.service?.name && (
-            <p className="text-sm mb-4" style={{ color: "var(--color-muted)" }}>
-              {current.service.name}
-            </p>
-          )}
-
           {/* Action buttons */}
-          <div className="mb-4">{renderActions()}</div>
+          <div className="mb-3">{renderActions()}</div>
 
           {/* Accordion sections */}
           <div
-            className="rounded-xl border mb-4 px-1"
-            style={{ borderColor: "var(--color-cream-2)" }}
+            className="rounded-2xl border mb-4 px-1 overflow-hidden"
+            style={{ borderColor: "var(--color-cream-2)", background: "var(--color-surface)" }}
           >
             <AccordionSection
               id="label"
@@ -881,7 +906,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
         {/* Sticky footer — outside scroll */}
         <div
           className="shrink-0 px-5 py-4 flex gap-3 border-t"
-          style={{ borderColor: "var(--color-cream-2)" }}
+          style={{ borderColor: "var(--color-cream-2)", background: "var(--color-surface)" }}
         >
           <button
             onClick={() => setShowEdit(true)}
@@ -897,7 +922,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
             onClick={() => window.print()}
             className="flex-1 py-3 rounded-xl text-sm font-bold"
             style={{
-              background: "var(--color-cream)",
+              background: "var(--color-cream-2)",
               color: "var(--color-muted)",
             }}
           >

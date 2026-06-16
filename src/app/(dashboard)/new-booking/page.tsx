@@ -643,7 +643,7 @@ function NewBookingInner() {
       </div>
 
       {/* Footer */}
-      <div style={{ flexShrink: 0, background: "var(--color-surface)", borderTop: "1px solid var(--color-cream-2)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <div style={{ flexShrink: 0, background: "var(--color-surface)", borderTop: "1px solid var(--color-cream-2)" }}>
         <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", padding: "12px 20px", display: "flex", gap: 10 }}>
           {step !== "client" && <SecondaryBtn onClick={goBack}>Back</SecondaryBtn>}
 
@@ -670,6 +670,8 @@ function NewBookingInner() {
             </PrimaryBtn>
           )}
         </div>
+        {/* Mobile bottom nav spacer */}
+        <div className="md:hidden" style={{ height: "calc(64px + env(safe-area-inset-bottom, 0px))" }} />
       </div>
 
     </div>
