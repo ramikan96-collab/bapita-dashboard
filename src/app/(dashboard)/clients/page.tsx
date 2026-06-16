@@ -346,6 +346,7 @@ export default function ClientsPage() {
   return (
     <>
       <style>{`
+        /* ── Desktop table row ─────────────────────────────────────────────── */
         .client-row {
           width: 100%;
           display: grid;
@@ -370,7 +371,6 @@ export default function ClientsPage() {
         .client-row:hover .row-actions { opacity: 1; }
         .row-arrow { display: flex; justify-content: flex-end; color: var(--color-cream-2); transition: color 0.15s ease, transform 0.15s ease; }
         .row-actions { opacity: 0; display: flex; gap: 4px; transition: opacity 0.15s ease; }
-        @media (max-width: 640px) { .row-actions { opacity: 1; } }
         .row-action-btn { height: 26px; width: 26px; border-radius: 7px; border: 1.5px solid var(--color-cream-2); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-muted); transition: all 0.12s; flex-shrink: 0; }
         .row-action-btn:hover { border-color: var(--color-amber); color: var(--color-amber); background: var(--amber-soft); }
         .row-action-btn.delete:hover { border-color: #EF4444; color: #EF4444; background: #FEF2F2; }
@@ -381,9 +381,26 @@ export default function ClientsPage() {
         .dd-menu-item.selected { font-weight: 700; color: var(--color-amber); }
         .dd-menu-item.selected-bg { background: var(--amber-soft); }
         .print-btn-wrap { display: flex; }
-        @media (max-width: 639px) { .print-btn-wrap { display: none; } }
         .table-scroll { overflow-x: auto; }
-        .table-min { min-width: 480px; }
+        .table-min { min-width: 560px; }
+        /* Desktop: hide mobile card elements */
+        .row-mobile { display: none; }
+        .row-desktop { display: contents; }
+        /* ── Mobile card row ───────────────────────────────────────────────── */
+        @media (max-width: 639px) {
+          .print-btn-wrap { display: none; }
+          .table-scroll { overflow-x: visible; }
+          .table-min { min-width: unset; }
+          .client-header-row { display: none; }
+          .client-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
+          .row-desktop { display: none; }
+          .row-mobile { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; }
+          .row-mobile-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+          .row-mobile-name { font-size: 14px; font-weight: 700; color: var(--color-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .row-mobile-sub { font-size: 12px; color: var(--color-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .row-actions { opacity: 1; }
+          .row-arrow { display: none; }
+        }
       `}</style>
 
       <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-cream)" }}>
@@ -600,7 +617,7 @@ export default function ClientsPage() {
               <div className="table-scroll">
                 <div className="table-min">
                   {/* Column header row — exact same grid as rows */}
-                  <div style={{ display: "grid", gridTemplateColumns: gridCols, gap: "0 14px", padding: "0 14px 8px", alignItems: "center" }}>
+                  <div className="client-header-row" style={{ display: "grid", gridTemplateColumns: gridCols, gap: "0 14px", padding: "0 14px 8px", alignItems: "center" }}>
                     <div />
                     {orderedCols.map((key) => (
                       <span key={key} style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--color-muted)" }}>
@@ -758,24 +775,45 @@ function ClientRow({
     }
   }
 
+  const mobilePhone = client.phone ? formatPhone(client.phone) : null;
+  const mobileEmail = (client as any).email as string | null | undefined;
+  const mobileSub = [mobilePhone, mobileEmail].filter(Boolean).join(" · ") || "—";
+
   return (
     <div
       className="client-row"
       style={{ gridTemplateColumns: gridCols, cursor: "pointer" } as React.CSSProperties}
       onClick={onClick}
     >
+      {/* Avatar — shown in both layouts */}
       <Avatar name={client.name} />
-      {visibleColumns.map((key) => (
-        <div key={key} style={{ minWidth: 0 }}>
-          {renderCell(key)}
+
+      {/* Mobile card layout */}
+      <div className="row-mobile">
+        <div className="row-mobile-text">
+          <span className="row-mobile-name">{client.name || "—"}</span>
+          <span className="row-mobile-sub">{mobileSub}</span>
         </div>
-      ))}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
         <div className="row-actions" onClick={(e) => e.stopPropagation()}>
           <button className="row-action-btn" title="Edit" onClick={onEdit}><IconEdit /></button>
           <button className="row-action-btn delete" title="Delete" onClick={onDelete}><IconTrash /></button>
         </div>
-        <div className="row-arrow"><IconArrowRight /></div>
+      </div>
+
+      {/* Desktop table layout */}
+      <div className="row-desktop">
+        {visibleColumns.map((key) => (
+          <div key={key} style={{ minWidth: 0 }}>
+            {renderCell(key)}
+          </div>
+        ))}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
+          <div className="row-actions" onClick={(e) => e.stopPropagation()}>
+            <button className="row-action-btn" title="Edit" onClick={onEdit}><IconEdit /></button>
+            <button className="row-action-btn delete" title="Delete" onClick={onDelete}><IconTrash /></button>
+          </div>
+          <div className="row-arrow"><IconArrowRight /></div>
+        </div>
       </div>
     </div>
   );

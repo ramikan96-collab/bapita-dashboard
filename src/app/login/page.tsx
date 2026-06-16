@@ -233,18 +233,7 @@ export default function LoginPage() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Password</label>
-                  {tab === "login" && (
-                    <button
-                      type="button"
-                      onClick={() => switchTab("forgot")}
-                      style={{ fontSize: 12, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                    >
-                      Forgot password?
-                    </button>
-                  )}
-                </div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Password</label>
                 <input
                   type="password"
                   value={password}
@@ -256,6 +245,15 @@ export default function LoginPage() {
                   onFocus={(e) => { if (!error) e.currentTarget.style.borderColor = "var(--color-amber)"; }}
                   onBlur={(e)  => { if (!error) e.currentTarget.style.borderColor = "var(--color-cream-2)"; }}
                 />
+                {tab === "login" && (
+                  <button
+                    type="button"
+                    onClick={() => switchTab("forgot")}
+                    style={{ alignSelf: "flex-end", fontSize: 12, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    Forgot password?
+                  </button>
+                )}
               </div>
 
               {error && (
