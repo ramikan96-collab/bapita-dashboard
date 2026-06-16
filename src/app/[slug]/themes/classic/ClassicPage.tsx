@@ -11,6 +11,7 @@ import { translations, type Lang } from "../../translations";
 import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../../utils/openStatus";
 
 const C = { bg: "#F8F2E8", dark: "#221510", gold: "#B8862A", cream2: "#F0E8D8" };
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location"];
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=1200&q=80";
 
 function useFadeInOnEnter() {
@@ -208,88 +209,89 @@ export function ClassicPage({ business, services }: Props) {
         </div>
       )}
 
-      {/* Sections */}
+      {/* Sections — ordered by business.section_order */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px" }}>
-
-        {/* Services */}
-        {business.show_services !== false && (
-        <section ref={servicesRef} style={{ paddingTop: (business.show_stats !== false && hasStats) ? 44 : 56 }}>
-          <SectionTitle title={t.services.title} accentColor={accent} darkColor={C.dark} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 28 }}>
-            {services.map((s, i) => {
-              const hovered = hoveredCard === s.id;
-              const sName = (isRtl && s.name_he) ? s.name_he : s.name;
-              const sDesc = (isRtl && s.description_he) ? s.description_he : s.description;
-              return (
-                <div key={s.id}
-                  onMouseEnter={() => setHoveredCard(s.id)} onMouseLeave={() => setHoveredCard(null)}
-                  style={{ background: "#fff", borderRadius: 10, boxShadow: hovered ? "0 4px 16px rgba(34,21,16,0.10)" : "0 1px 4px rgba(34,21,16,0.06)", padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", borderInlineStart: `3px solid ${hovered ? accent : "transparent"}`, opacity: servicesVisible ? 1 : 0, transform: servicesVisible ? (hovered ? "translateY(-2px)" : "translateY(0)") : "translateY(20px)", transition: [`opacity 0.5s ease ${i*80}ms`, `transform 0.5s ease ${i*80}ms`, "box-shadow 0.2s", "border-color 0.2s"].join(", ") }}
-                >
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginBottom: 2 }}>{sName}</div>
-                    {sDesc && <div style={{ fontSize: 13, color: C.dark, opacity: 0.55, marginBottom: 2, lineHeight: 1.4 }}>{sDesc}</div>}
-                    <div style={{ fontSize: 13, color: C.dark, opacity: 0.55 }}>{s.duration} {t.min}</div>
+        {(business.section_order || DEFAULT_SECTION_ORDER).map(key => {
+          switch (key) {
+            case "services":
+              return business.show_services !== false ? (
+                <section key={key} ref={servicesRef} style={{ paddingTop: (business.show_stats !== false && hasStats) ? 44 : 56 }}>
+                  <SectionTitle title={t.services.title} accentColor={accent} darkColor={C.dark} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 28 }}>
+                    {services.map((s, i) => {
+                      const hovered = hoveredCard === s.id;
+                      const sName = (isRtl && s.name_he) ? s.name_he : s.name;
+                      const sDesc = (isRtl && s.description_he) ? s.description_he : s.description;
+                      return (
+                        <div key={s.id}
+                          onMouseEnter={() => setHoveredCard(s.id)} onMouseLeave={() => setHoveredCard(null)}
+                          style={{ background: "#fff", borderRadius: 10, boxShadow: hovered ? "0 4px 16px rgba(34,21,16,0.10)" : "0 1px 4px rgba(34,21,16,0.06)", padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", borderInlineStart: `3px solid ${hovered ? accent : "transparent"}`, opacity: servicesVisible ? 1 : 0, transform: servicesVisible ? (hovered ? "translateY(-2px)" : "translateY(0)") : "translateY(20px)", transition: [`opacity 0.5s ease ${i*80}ms`, `transform 0.5s ease ${i*80}ms`, "box-shadow 0.2s", "border-color 0.2s"].join(", ") }}
+                        >
+                          <div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginBottom: 2 }}>{sName}</div>
+                            {sDesc && <div style={{ fontSize: 13, color: C.dark, opacity: 0.55, marginBottom: 2, lineHeight: 1.4 }}>{sDesc}</div>}
+                            <div style={{ fontSize: 13, color: C.dark, opacity: 0.55 }}>{s.duration} {t.min}</div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0, marginInlineStart: 12 }}>
+                            <div style={{ fontSize: 18, fontWeight: 900, color: C.dark }}>₪{s.price}</div>
+                            <button onClick={() => openFromService(s)}
+                              style={{ height: 36, padding: "0 16px", borderRadius: 9999, background: C.dark, color: C.bg, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", whiteSpace: "nowrap", transition: "background 0.2s", fontFamily: "inherit" }}
+                              onMouseEnter={e => { e.currentTarget.style.background = accent; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = C.dark; }}
+                            >
+                              {t.services.book}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0, marginInlineStart: 12 }}>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: C.dark }}>₪{s.price}</div>
-                    <button onClick={() => openFromService(s)}
-                      style={{ height: 36, padding: "0 16px", borderRadius: 9999, background: C.dark, color: C.bg, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", whiteSpace: "nowrap", transition: "background 0.2s", fontFamily: "inherit" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = accent; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = C.dark; }}
-                    >
-                      {t.services.book}
-                    </button>
+                </section>
+              ) : null;
+            case "about":
+              return business.show_about !== false && displayAbout ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.about.title} accentColor={accent} darkColor={C.dark} />
+                  <div className="about-row" style={{ marginTop: 20 }}>
+                    {business.hero_image_url && (
+                      <div style={{ textAlign: "center", flexShrink: 0 }}>
+                        <img src={business.hero_image_url} alt={displayName} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: `3px solid ${accent}`, display: "block", margin: "0 auto 6px" }} />
+                        <span style={{ fontSize: 11, fontVariant: "small-caps", color: accent, fontWeight: 700, letterSpacing: "0.06em" }}>{displayName}</span>
+                      </div>
+                    )}
+                    <p style={{ fontSize: 16, lineHeight: 1.8, color: C.dark, opacity: 0.82, margin: 0 }}>{displayAbout}</p>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-        )}
-
-        {/* About */}
-        {business.show_about !== false && displayAbout && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title={t.about.title} accentColor={accent} darkColor={C.dark} />
-            <div className="about-row" style={{ marginTop: 20 }}>
-              {business.hero_image_url && (
-                <div style={{ textAlign: "center", flexShrink: 0 }}>
-                  <img src={business.hero_image_url} alt={displayName} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: `3px solid ${accent}`, display: "block", margin: "0 auto 6px" }} />
-                  <span style={{ fontSize: 11, fontVariant: "small-caps", color: accent, fontWeight: 700, letterSpacing: "0.06em" }}>{displayName}</span>
-                </div>
-              )}
-              <p style={{ fontSize: 16, lineHeight: 1.8, color: C.dark, opacity: 0.82, margin: 0 }}>{displayAbout}</p>
-            </div>
-          </section>
-        )}
-
-        {/* Gallery */}
-        {business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} />
-            <div style={{ marginTop: 28 }}><SectionGallery photos={business.gallery_images} initialCount={4} /></div>
-          </section>
-        )}
-
-        {/* Hours */}
-        {business.show_hours !== false && business.business_hours && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title={t.hours.title} accentColor={accent} darkColor={C.dark} />
-            <div style={{ marginTop: 20 }}>
-              <SectionHours hours={business.business_hours} darkColor={C.dark} accentColor={accent} dayLabels={t.days} closedLabel={t.hours.closed} />
-            </div>
-          </section>
-        )}
-
-        {/* Location */}
-        {business.show_location !== false && business.address && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title={t.location.title} accentColor={accent} darkColor={C.dark} />
-            <div style={{ marginTop: 20 }}>
-              <SectionLocation address={business.address} darkColor={C.dark} accentColor={accent} directionsLabel={t.location.directions} />
-            </div>
-          </section>
-        )}
+                </section>
+              ) : null;
+            case "gallery":
+              return business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} />
+                  <div style={{ marginTop: 28 }}><SectionGallery photos={business.gallery_images} initialCount={4} /></div>
+                </section>
+              ) : null;
+            case "hours":
+              return business.show_hours !== false && business.business_hours ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.hours.title} accentColor={accent} darkColor={C.dark} />
+                  <div style={{ marginTop: 20 }}>
+                    <SectionHours hours={business.business_hours} darkColor={C.dark} accentColor={accent} dayLabels={t.days} closedLabel={t.hours.closed} />
+                  </div>
+                </section>
+              ) : null;
+            case "location":
+              return business.show_location !== false && business.address ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.location.title} accentColor={accent} darkColor={C.dark} />
+                  <div style={{ marginTop: 20 }}>
+                    <SectionLocation address={business.address} darkColor={C.dark} accentColor={accent} directionsLabel={t.location.directions} />
+                  </div>
+                </section>
+              ) : null;
+            default:
+              return null;
+          }
+        })}
 
         {/* Footer */}
         <footer style={{ marginTop: 64, textAlign: "center" }}>

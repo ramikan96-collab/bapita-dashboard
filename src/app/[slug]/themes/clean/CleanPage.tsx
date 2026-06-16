@@ -13,6 +13,7 @@ import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../../uti
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&q=80";
 
 const P = { bg: "#FFFFFF", text: "#111111", muted: "#6B7280", surface: "#F9F9F9", border: "#E5E5E5", panel: "#141414" };
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location"];
 
 function useFadeInOnEnter(threshold = 0.12) {
   const ref = useRef<HTMLDivElement>(null);
@@ -241,81 +242,84 @@ export function CleanPage({ business, services }: Props) {
       {/* Main content */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px" }}>
 
-        {/* Services */}
-        {business.show_services !== false && (
-        <section ref={servicesRef} style={{ paddingTop: (business.show_stats !== false && hasStats) ? 44 : 52 }}>
-          <SectionTitle title={t.services.title} accent={accent} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {services.map((s, i) => {
-              const hovered = hoveredCard === s.id;
-              const sName = (isRtl && s.name_he) ? s.name_he : s.name;
-              const sDesc = (isRtl && s.description_he) ? s.description_he : s.description;
-              return (
-                <div key={s.id} onMouseEnter={() => setHoveredCard(s.id)} onMouseLeave={() => setHoveredCard(null)}
-                  style={{ background: hovered ? P.surface : P.bg, border: `1px solid ${hovered ? accent : P.border}`, borderRadius: 10, padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: servicesVisible ? 1 : 0, transform: servicesVisible ? "translateY(0)" : "translateY(16px)", transition: [`opacity 0.45s ease ${i * 60}ms`, `transform 0.45s ease ${i * 60}ms`, "background 0.2s", "border-color 0.2s", "box-shadow 0.2s"].join(", "), boxShadow: hovered ? "0 4px 16px rgba(0,0,0,0.06)" : "none" }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: P.text, marginBottom: 3 }}>{sName}</div>
-                    {sDesc && <div style={{ fontSize: 13, color: P.muted, marginBottom: 5, lineHeight: 1.4 }}>{sDesc}</div>}
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: P.muted }}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      {s.duration} {t.min}
-                    </span>
+        {/* Sections — ordered by business.section_order */}
+        {(business.section_order || DEFAULT_SECTION_ORDER).map(key => {
+          switch (key) {
+            case "services":
+              return business.show_services !== false ? (
+                <section key={key} ref={servicesRef} style={{ paddingTop: (business.show_stats !== false && hasStats) ? 44 : 52 }}>
+                  <SectionTitle title={t.services.title} accent={accent} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {services.map((s, i) => {
+                      const hovered = hoveredCard === s.id;
+                      const sName = (isRtl && s.name_he) ? s.name_he : s.name;
+                      const sDesc = (isRtl && s.description_he) ? s.description_he : s.description;
+                      return (
+                        <div key={s.id} onMouseEnter={() => setHoveredCard(s.id)} onMouseLeave={() => setHoveredCard(null)}
+                          style={{ background: hovered ? P.surface : P.bg, border: `1px solid ${hovered ? accent : P.border}`, borderRadius: 10, padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: servicesVisible ? 1 : 0, transform: servicesVisible ? "translateY(0)" : "translateY(16px)", transition: [`opacity 0.45s ease ${i * 60}ms`, `transform 0.45s ease ${i * 60}ms`, "background 0.2s", "border-color 0.2s", "box-shadow 0.2s"].join(", "), boxShadow: hovered ? "0 4px 16px rgba(0,0,0,0.06)" : "none" }}
+                        >
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: P.text, marginBottom: 3 }}>{sName}</div>
+                            {sDesc && <div style={{ fontSize: 13, color: P.muted, marginBottom: 5, lineHeight: 1.4 }}>{sDesc}</div>}
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: P.muted }}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                              {s.duration} {t.min}
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0, marginInlineStart: 14 }}>
+                            <span style={{ fontSize: 17, fontWeight: 800, color: P.text, letterSpacing: "-0.02em" }}>₪{s.price}</span>
+                            <button onClick={() => openFromService(s)}
+                              style={{ height: 36, padding: "0 18px", borderRadius: 9999, background: hovered ? accent : P.text, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.2s, transform 0.15s", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}
+                              onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.04)"; }}
+                              onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
+                            >
+                              {t.services.book}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0, marginInlineStart: 14 }}>
-                    <span style={{ fontSize: 17, fontWeight: 800, color: P.text, letterSpacing: "-0.02em" }}>₪{s.price}</span>
-                    <button onClick={() => openFromService(s)}
-                      style={{ height: 36, padding: "0 18px", borderRadius: 9999, background: hovered ? accent : P.text, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.2s, transform 0.15s", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}
-                      onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.04)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
-                    >
-                      {t.services.book}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-        )}
-
-        {/* About */}
-        {business.show_about !== false && displayAbout && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title={t.about.title} accent={accent} />
-            {business.hero_image_url && (
-              <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
-                <img src={business.hero_image_url} alt={displayName} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${P.border}`, flexShrink: 0 }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: P.text }}>{displayName}</span>
-              </div>
-            )}
-            <p style={{ fontSize: 16, lineHeight: 1.85, color: P.muted }}>{displayAbout}</p>
-          </section>
-        )}
-
-        {/* Gallery */}
-        {business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title={t.gallery.title} accent={accent} />
-            <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={10} initialCount={4} />
-          </section>
-        )}
-
-        {/* Hours */}
-        {business.show_hours !== false && business.business_hours && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title={t.hours.title} accent={accent} />
-            <SectionHours hours={business.business_hours} darkColor={P.text} accentColor={accent} dayLabels={t.days} closedLabel={t.hours.closed} />
-          </section>
-        )}
-
-        {/* Location */}
-        {business.show_location !== false && business.address && (
-          <section style={{ paddingTop: 56 }}>
-            <SectionTitle title={t.location.title} accent={accent} />
-            <SectionLocation address={business.address} darkColor={P.text} accentColor={accent} directionsLabel={t.location.directions} />
-          </section>
-        )}
+                </section>
+              ) : null;
+            case "about":
+              return business.show_about !== false && displayAbout ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.about.title} accent={accent} />
+                  {business.hero_image_url && (
+                    <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
+                      <img src={business.hero_image_url} alt={displayName} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${P.border}`, flexShrink: 0 }} />
+                      <span style={{ fontSize: 14, fontWeight: 700, color: P.text }}>{displayName}</span>
+                    </div>
+                  )}
+                  <p style={{ fontSize: 16, lineHeight: 1.85, color: P.muted }}>{displayAbout}</p>
+                </section>
+              ) : null;
+            case "gallery":
+              return business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.gallery.title} accent={accent} />
+                  <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={10} initialCount={4} />
+                </section>
+              ) : null;
+            case "hours":
+              return business.show_hours !== false && business.business_hours ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.hours.title} accent={accent} />
+                  <SectionHours hours={business.business_hours} darkColor={P.text} accentColor={accent} dayLabels={t.days} closedLabel={t.hours.closed} />
+                </section>
+              ) : null;
+            case "location":
+              return business.show_location !== false && business.address ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.location.title} accent={accent} />
+                  <SectionLocation address={business.address} darkColor={P.text} accentColor={accent} directionsLabel={t.location.directions} />
+                </section>
+              ) : null;
+            default:
+              return null;
+          }
+        })}
 
         {/* Footer */}
         <footer style={{ marginTop: 64, paddingTop: 32, borderTop: `1px solid ${P.border}`, textAlign: "center" }}>

@@ -11,6 +11,7 @@ import { translations, type Lang } from "../../translations";
 import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../../utils/openStatus";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=1200&q=80";
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location"];
 
 const D = {
   bg:      "#0D0D0D",
@@ -337,116 +338,107 @@ export function DarkPage({ business, services }: Props) {
       {/* Main content */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px", position: "relative", zIndex: 1 }}>
 
-        {/* Services */}
-        {business.show_services !== false && (<>
-        <GoldDivider accent={accent} />
-        <section ref={servicesRef} style={{ paddingTop: 0 }}>
-          <DarkSectionTitle title={t.services.title} accent={accent} isRtl={isRtl} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {services.map((s, i) => {
-              const hovered = hoveredCard === s.id;
-              const fromInlineStart = i % 2 === 0;
-              const sName = (isRtl && s.name_he) ? s.name_he : s.name;
-              const sDesc = (isRtl && s.description_he) ? s.description_he : s.description;
-              return (
-                <div key={s.id} onMouseEnter={() => setHoveredCard(s.id)} onMouseLeave={() => setHoveredCard(null)}
-                  style={{
-                    background: hovered ? D.raised : D.surface,
-                    border: `1px solid ${hovered ? accent + "55" : D.border}`,
-                    borderInlineStart: `3px solid ${hovered ? accent : "transparent"}`,
-                    borderRadius: 2,
-                    padding: "18px 20px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    opacity: servicesVisible ? 1 : 0,
-                    transform: servicesVisible
-                      ? "translateX(0)"
-                      : fromInlineStart ? "translateX(-36px)" : "translateX(36px)",
-                    transition: [
-                      `opacity 0.55s ease ${i * 75}ms`,
-                      `transform 0.55s cubic-bezier(0.4,0,0.2,1) ${i * 75}ms`,
-                      "background 0.2s",
-                      "border-color 0.2s",
-                    ].join(", "),
-                    boxShadow: hovered ? `0 4px 24px ${accent}18` : "none",
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: D.text, marginBottom: 3 }}>{sName}</div>
-                    {sDesc && <div style={{ fontSize: 13, color: D.muted, marginBottom: 5, lineHeight: 1.4 }}>{sDesc}</div>}
-                    <div style={{ fontSize: 12, color: D.muted }}>{s.duration} {t.min}</div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0, marginInlineStart: 14 }}>
-                    <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 20, fontWeight: 700, color: accent }}>₪{s.price}</span>
-                    <button onClick={() => openFromService(s)}
-                      style={{ fontFamily: "'Oswald', sans-serif", background: hovered ? accent : "transparent", color: hovered ? D.bg : accent, border: `1.5px solid ${accent}`, borderRadius: 2, padding: "8px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase", transition: "background 0.2s, color 0.2s, transform 0.15s", whiteSpace: "nowrap" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = D.bg; e.currentTarget.style.transform = "scale(1.04)"; }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = hovered ? accent : "transparent";
-                        e.currentTarget.style.color = hovered ? D.bg : accent;
-                        e.currentTarget.style.transform = "scale(1)";
-                      }}
-                    >
-                      {t.services.book}
-                    </button>
+        {/* Sections — ordered by business.section_order */}
+        {(business.section_order || DEFAULT_SECTION_ORDER).map(key => {
+          switch (key) {
+            case "services":
+              return business.show_services !== false ? (
+                <div key={key}>
+                  <GoldDivider accent={accent} />
+                  <section ref={servicesRef} style={{ paddingTop: 0 }}>
+                    <DarkSectionTitle title={t.services.title} accent={accent} isRtl={isRtl} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {services.map((s, i) => {
+                        const hovered = hoveredCard === s.id;
+                        const fromInlineStart = i % 2 === 0;
+                        const sName = (isRtl && s.name_he) ? s.name_he : s.name;
+                        const sDesc = (isRtl && s.description_he) ? s.description_he : s.description;
+                        return (
+                          <div key={s.id} onMouseEnter={() => setHoveredCard(s.id)} onMouseLeave={() => setHoveredCard(null)}
+                            style={{
+                              background: hovered ? D.raised : D.surface,
+                              border: `1px solid ${hovered ? accent + "55" : D.border}`,
+                              borderInlineStart: `3px solid ${hovered ? accent : "transparent"}`,
+                              borderRadius: 2, padding: "18px 20px", display: "flex",
+                              justifyContent: "space-between", alignItems: "center",
+                              opacity: servicesVisible ? 1 : 0,
+                              transform: servicesVisible ? "translateX(0)" : fromInlineStart ? "translateX(-36px)" : "translateX(36px)",
+                              transition: [`opacity 0.55s ease ${i * 75}ms`, `transform 0.55s cubic-bezier(0.4,0,0.2,1) ${i * 75}ms`, "background 0.2s", "border-color 0.2s"].join(", "),
+                              boxShadow: hovered ? `0 4px 24px ${accent}18` : "none",
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 15, fontWeight: 600, color: D.text, marginBottom: 3 }}>{sName}</div>
+                              {sDesc && <div style={{ fontSize: 13, color: D.muted, marginBottom: 5, lineHeight: 1.4 }}>{sDesc}</div>}
+                              <div style={{ fontSize: 12, color: D.muted }}>{s.duration} {t.min}</div>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0, marginInlineStart: 14 }}>
+                              <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 20, fontWeight: 700, color: accent }}>₪{s.price}</span>
+                              <button onClick={() => openFromService(s)}
+                                style={{ fontFamily: "'Oswald', sans-serif", background: hovered ? accent : "transparent", color: hovered ? D.bg : accent, border: `1.5px solid ${accent}`, borderRadius: 2, padding: "8px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase", transition: "background 0.2s, color 0.2s, transform 0.15s", whiteSpace: "nowrap" }}
+                                onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = D.bg; e.currentTarget.style.transform = "scale(1.04)"; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = hovered ? accent : "transparent"; e.currentTarget.style.color = hovered ? D.bg : accent; e.currentTarget.style.transform = "scale(1)"; }}
+                              >
+                                {t.services.book}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                </div>
+              ) : null;
+            case "about":
+              return business.show_about !== false && displayAbout ? (
+                <div key={key}>
+                  <GoldDivider accent={accent} />
+                  <DarkSectionTitle title={t.about.title} accent={accent} isRtl={isRtl} />
+                  <div style={{ background: D.surface, borderRadius: 2, padding: "24px 22px", border: `1px solid ${D.border}`, borderInlineStart: `3px solid ${accent}60` }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 16 }}>
+                      {business.hero_image_url && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                          <img src={business.hero_image_url} alt={displayName} style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}`, flexShrink: 0 }} />
+                          <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 13, color: accent, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>{displayName}</span>
+                        </div>
+                      )}
+                      <p style={{ fontSize: 15, lineHeight: 1.85, color: D.muted, margin: 0 }}>{displayAbout}</p>
+                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </section>
-        </>)}
-
-        {/* About */}
-        {business.show_about !== false && displayAbout && (
-          <>
-            <GoldDivider accent={accent} />
-            <DarkSectionTitle title={t.about.title} accent={accent} isRtl={isRtl} />
-            <div style={{ background: D.surface, borderRadius: 2, padding: "24px 22px", border: `1px solid ${D.border}`, borderInlineStart: `3px solid ${accent}60` }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 16 }}>
-                {business.hero_image_url && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <img src={business.hero_image_url} alt={displayName} style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}`, flexShrink: 0 }} />
-                    <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 13, color: accent, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>{displayName}</span>
+              ) : null;
+            case "gallery":
+              return business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 ? (
+                <div key={key}>
+                  <GoldDivider accent={accent} />
+                  <DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} />
+                  <SectionGallery photos={business.gallery_images} layout="grid" borderRadius={2} initialCount={4} />
+                </div>
+              ) : null;
+            case "hours":
+              return business.show_hours !== false && business.business_hours ? (
+                <div key={key}>
+                  <GoldDivider accent={accent} />
+                  <DarkSectionTitle title={t.hours.title} accent={accent} isRtl={isRtl} />
+                  <div style={{ background: D.surface, borderRadius: 2, padding: "8px 4px", border: `1px solid ${D.border}` }}>
+                    <SectionHours hours={business.business_hours} darkColor={D.text} accentColor={accent} dayLabels={t.days} closedLabel={t.hours.closed} />
                   </div>
-                )}
-                <p style={{ fontSize: 15, lineHeight: 1.85, color: D.muted, margin: 0 }}>{displayAbout}</p>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Gallery */}
-        {business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 && (
-          <>
-            <GoldDivider accent={accent} />
-            <DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} />
-            <SectionGallery photos={business.gallery_images} layout="grid" borderRadius={2} initialCount={4} />
-          </>
-        )}
-
-        {/* Hours */}
-        {business.show_hours !== false && business.business_hours && (
-          <>
-            <GoldDivider accent={accent} />
-            <DarkSectionTitle title={t.hours.title} accent={accent} isRtl={isRtl} />
-            <div style={{ background: D.surface, borderRadius: 2, padding: "8px 4px", border: `1px solid ${D.border}` }}>
-              <SectionHours hours={business.business_hours} darkColor={D.text} accentColor={accent} dayLabels={t.days} closedLabel={t.hours.closed} />
-            </div>
-          </>
-        )}
-
-        {/* Location */}
-        {business.show_location !== false && business.address && (
-          <>
-            <GoldDivider accent={accent} />
-            <DarkSectionTitle title={t.location.title} accent={accent} isRtl={isRtl} />
-            <div style={{ background: D.surface, borderRadius: 2, padding: "20px", border: `1px solid ${D.border}` }}>
-              <SectionLocation address={business.address} darkColor={D.text} accentColor={accent} directionsLabel={t.location.directions} />
-            </div>
-          </>
-        )}
+                </div>
+              ) : null;
+            case "location":
+              return business.show_location !== false && business.address ? (
+                <div key={key}>
+                  <GoldDivider accent={accent} />
+                  <DarkSectionTitle title={t.location.title} accent={accent} isRtl={isRtl} />
+                  <div style={{ background: D.surface, borderRadius: 2, padding: "20px", border: `1px solid ${D.border}` }}>
+                    <SectionLocation address={business.address} darkColor={D.text} accentColor={accent} directionsLabel={t.location.directions} />
+                  </div>
+                </div>
+              ) : null;
+            default:
+              return null;
+          }
+        })}
 
         {/* Footer */}
         <footer style={{ marginTop: 64, paddingTop: 32, borderTop: `1px solid ${D.border}`, textAlign: "center" }}>
