@@ -37,13 +37,14 @@ function MailIcon() {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [tab,         setTab]         = useState<"login" | "signup">("login");
-  const [email,       setEmail]       = useState("");
-  const [password,    setPassword]    = useState("");
-  const [name,        setName]        = useState("");
-  const [error,       setError]       = useState("");
-  const [loading,     setLoading]     = useState(false);
-  const [signupDone,  setSignupDone]  = useState(false);
+  const [tab,          setTab]          = useState<"login" | "signup" | "forgot">("login");
+  const [email,        setEmail]        = useState("");
+  const [password,     setPassword]     = useState("");
+  const [name,         setName]         = useState("");
+  const [error,        setError]        = useState("");
+  const [loading,      setLoading]      = useState(false);
+  const [signupDone,   setSignupDone]   = useState(false);
+  const [resetSent,    setResetSent]    = useState(false);
 
   const supabase = createClient();
 
@@ -74,10 +75,24 @@ export default function LoginPage() {
     setLoading(false);
   }
 
-  function switchTab(t: "login" | "signup") {
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) { setError("Enter your email address first."); return; }
+    setError("");
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/profile`,
+    });
+    setLoading(false);
+    if (error) { setError(error.message); }
+    else        { setResetSent(true); }
+  }
+
+  function switchTab(t: "login" | "signup" | "forgot") {
     setTab(t);
     setError("");
     setSignupDone(false);
+    setResetSent(false);
   }
 
   const inputStyle: React.CSSProperties = {
@@ -135,7 +150,46 @@ export default function LoginPage() {
         </div>
 
         <div style={{ padding: "24px 24px 28px" }}>
-          {signupDone ? (
+          {tab === "forgot" ? (
+            resetSent ? (
+              <div style={{ textAlign: "center", padding: "16px 0" }}>
+                <div style={{ width: 56, height: 56, borderRadius: 16, background: "var(--amber-soft)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                  <MailIcon />
+                </div>
+                <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", marginBottom: 6 }}>Check your email</p>
+                <p style={{ fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5, marginBottom: 20 }}>
+                  Password reset link sent to <strong style={{ color: "var(--color-dark)" }}>{email}</strong>
+                </p>
+                <button type="button" onClick={() => switchTab("login")} style={{ fontSize: 13, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer" }}>
+                  Back to log in
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgot} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <p style={{ fontSize: 14, color: "var(--color-muted)", margin: "0 0 4px", lineHeight: 1.5 }}>Enter your email and we'll send a reset link.</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="you@example.com"
+                    style={{ ...inputStyle, ...(error ? { borderColor: "#EF4444" } : {}) }}
+                    onFocus={(e) => { if (!error) e.currentTarget.style.borderColor = "var(--color-amber)"; }}
+                    onBlur={(e)  => { if (!error) e.currentTarget.style.borderColor = "var(--color-cream-2)"; }}
+                  />
+                </div>
+                {error && <p style={{ fontSize: 12, color: "#EF4444", marginTop: -4 }}>{error}</p>}
+                <button type="submit" disabled={loading} style={{ width: "100%", height: 46, borderRadius: 12, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, boxShadow: "0 4px 14px rgba(232,146,10,0.30)" }}>
+                  {loading ? "…" : "Send reset link"}
+                </button>
+                <button type="button" onClick={() => switchTab("login")} style={{ fontSize: 13, fontWeight: 600, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer" }}>
+                  Back to log in
+                </button>
+              </form>
+            )
+          ) : signupDone ? (
             <div style={{ textAlign: "center", padding: "16px 0" }}>
               <div style={{ width: 56, height: 56, borderRadius: 16, background: "var(--amber-soft)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                 <MailIcon />
@@ -179,7 +233,18 @@ export default function LoginPage() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Password</label>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Password</label>
+                  {tab === "login" && (
+                    <button
+                      type="button"
+                      onClick={() => switchTab("forgot")}
+                      style={{ fontSize: 12, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
                 <input
                   type="password"
                   value={password}
