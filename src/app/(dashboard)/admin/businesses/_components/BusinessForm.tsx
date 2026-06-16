@@ -29,9 +29,11 @@ const PLAN_ADDONS = [
 
 interface FormData {
   name:               string;
+  name_he:            string;
   slug:               string;
   template_style:     string;
   tagline:            string;
+  tagline_he:         string;
   phone:              string;
   address:            string;
   email:              string;
@@ -42,6 +44,7 @@ interface FormData {
   google_maps_url:    string;
   waze_url:           string;
   about_text:         string;
+  about_text_he:      string;
   accent_color:       string;
   show_gallery:       boolean;
   show_about:         boolean;
@@ -73,11 +76,11 @@ interface Stats {
 type Tab = "profile" | "gallery" | "services" | "plan";
 
 const EMPTY_FORM: FormData = {
-  name: "", slug: "", template_style: "classic",
-  tagline: "", phone: "", address: "", email: "",
+  name: "", name_he: "", slug: "", template_style: "classic",
+  tagline: "", tagline_he: "", phone: "", address: "", email: "",
   instagram_url: "", facebook_url: "", whatsapp_number: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
-  about_text: "", accent_color: "",
+  about_text: "", about_text_he: "", accent_color: "",
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
   status: "draft",
   plan_tier: "", plan_price: "", plan_addons: [],
@@ -115,9 +118,11 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       if (b) {
         setForm({
           name:               b.name               || "",
+          name_he:            b.name_he            || "",
           slug:               b.slug               || "",
           template_style:     b.template_style      || "classic",
           tagline:            b.tagline             || "",
+          tagline_he:         b.tagline_he          || "",
           phone:              b.phone               || "",
           address:            b.address             || "",
           email:              b.email               || "",
@@ -128,6 +133,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           google_maps_url:    b.google_maps_url     || "",
           waze_url:           b.waze_url            || "",
           about_text:         b.about_text          || "",
+          about_text_he:      b.about_text_he       || "",
           accent_color:       b.accent_color        || "",
           show_gallery:       b.show_gallery        ?? true,
           show_about:         b.show_about          ?? true,
@@ -216,9 +222,11 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
     const payload = {
       name:               form.name.trim(),
+      name_he:            form.name_he            || null,
       slug:               form.slug.trim(),
       template_style:     form.template_style,
       tagline:            form.tagline            || null,
+      tagline_he:         form.tagline_he         || null,
       phone:              form.phone              || null,
       address:            form.address            || null,
       email:              form.email              || null,
@@ -229,6 +237,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       google_maps_url:    form.google_maps_url    || null,
       waze_url:           form.waze_url           || null,
       about_text:         form.about_text         || null,
+      about_text_he:      form.about_text_he      || null,
       accent_color:       form.accent_color       || null,
       show_gallery:       form.show_gallery,
       show_about:         form.show_about,
@@ -420,11 +429,19 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   </Field>
                 </Row>
                 <Row>
-                  <Field label="Tagline">
+                  <Field label="Tagline (EN)">
                     <input value={form.tagline} onChange={e => set("tagline", e.target.value)} placeholder="Precision cuts. No waiting." style={inputStyle} />
                   </Field>
+                  <Field label="Tagline (HE) — תגית">
+                    <input value={form.tagline_he} onChange={e => set("tagline_he", e.target.value)} placeholder="תספורת מדויקת. ללא המתנה." style={{ ...inputStyle, direction:"rtl" }} />
+                  </Field>
+                </Row>
+                <Row>
                   <Field label="Phone">
                     <input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+972-50-0000000" style={inputStyle} />
+                  </Field>
+                  <Field label="Business Name (HE) — שם בעברית">
+                    <input value={form.name_he} onChange={e => set("name_he", e.target.value)} placeholder="סטודיו אבי" style={{ ...inputStyle, direction:"rtl" }} />
                   </Field>
                 </Row>
                 <Row>
@@ -465,11 +482,18 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
               </SectionCard>
 
               <SectionCard title="About Text">
-                <Field label="Short paragraph shown in About section">
+                <Field label="About (EN)">
                   <textarea value={form.about_text} onChange={e => set("about_text", e.target.value)}
                     placeholder="Studio Avi has been serving Tel Aviv since 2018…"
                     rows={4}
                     style={{ ...inputStyle, height:"auto", resize:"vertical", padding:"10px 13px", lineHeight:1.6 }}
+                  />
+                </Field>
+                <Field label="About (HE) — טקסט אודות">
+                  <textarea value={form.about_text_he} onChange={e => set("about_text_he", e.target.value)}
+                    placeholder="סטודיו אבי משרת את תל אביב מאז 2018…"
+                    rows={4}
+                    style={{ ...inputStyle, height:"auto", resize:"vertical", padding:"10px 13px", lineHeight:1.6, direction:"rtl" }}
                   />
                 </Field>
               </SectionCard>
@@ -892,7 +916,7 @@ function ServicesPanel({ businessId, services, setServices }: {
   }
 
   function startAdd()             { setEditing(null); setName(""); setPrice(""); setDuration(""); setDesc(""); setAdding(true); }
-  function startEdit(s: Service)  { setEditing(s); setName(s.name); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(""); setAdding(true); }
+  function startEdit(s: Service)  { setEditing(s); setName(s.name); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(s.description || ""); setAdding(true); }
   function cancelAdd()            { setAdding(false); setEditing(null); }
 
   async function saveService() {
