@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceClient();
 
-  const { data: business } = await supabase
+  const { data: business, error: bizError } = await supabase
     .from("businesses")
     .select("business_hours")
     .eq("id", businessId)
@@ -76,6 +76,7 @@ export async function GET(req: NextRequest) {
     slots,
     _debug: {
       businessFound: !!business,
+      bizError: bizError ? { code: bizError.code, message: bizError.message } : null,
       dayKey,
       dayHours: bh?.[dayKey as keyof BusinessHours] ?? null,
       duration,
