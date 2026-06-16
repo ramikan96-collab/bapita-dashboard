@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, PaymentStatus } from "@/types";
@@ -289,8 +289,6 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
 
-  const [notes, setNotes] = useState(current.notes ?? "");
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [prevBooking, setPrevBooking] = useState<PrevBooking | null | "loading">(
     current.customer_id ? "loading" : null
@@ -304,13 +302,6 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-
-  // Cleanup saveTimer on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-  }, []);
 
   // Load previous booking on mount
   useEffect(() => {
@@ -335,16 +326,6 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
         }
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Notes auto-save ────────────────────────────────────────────────────────
-
-  function handleNotesChange(val: string) {
-    setNotes(val);
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      supabase.from("bookings").update({ notes: val }).eq("id", current.id);
-    }, 800);
-  }
 
   // ── Status update ──────────────────────────────────────────────────────────
 
@@ -664,24 +645,20 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
 
   function renderNotes() {
     return (
-      <textarea
-        value={notes}
-        onChange={(e) => handleNotesChange(e.target.value)}
-        rows={4}
-        placeholder="Add a note about this appointment…"
-        className="w-full rounded-2xl border outline-none resize-none"
+      <div
+        className="w-full rounded-2xl"
         style={{
           fontSize: 15,
           padding: "16px 20px",
           lineHeight: 1.6,
-          borderColor: "var(--color-cream-2)",
+          border: "1px solid var(--color-cream-2)",
           background: "var(--color-surface)",
-          color: "var(--color-dark)",
-          fontFamily: "inherit",
+          color: current.notes ? "var(--color-dark)" : "var(--color-muted)",
+          minHeight: 80,
         }}
-        onFocus={(e) => (e.target.style.borderColor = "var(--color-amber)")}
-        onBlur={(e) => (e.target.style.borderColor = "var(--color-cream-2)")}
-      />
+      >
+        {current.notes || "No notes — tap Edit to add."}
+      </div>
     );
   }
 
