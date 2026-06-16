@@ -11,6 +11,23 @@ export async function POST() {
   }
 
   const admin = createServiceClient();
+
+  // Fetch all businesses owned by this user
+  const { data: businesses } = await admin
+    .from("businesses")
+    .select("id")
+    .eq("user_id", user.id);
+
+  if (businesses && businesses.length > 0) {
+    const businessIds = businesses.map((b) => b.id);
+
+    // Delete bookings → customers → services → business rows
+    await admin.from("bookings").delete().in("business_id", businessIds);
+    await admin.from("customers").delete().in("business_id", businessIds);
+    await admin.from("services").delete().in("business_id", businessIds);
+    await admin.from("businesses").delete().in("id", businessIds);
+  }
+
   const { error } = await admin.auth.admin.deleteUser(user.id);
 
   if (error) {
