@@ -88,6 +88,7 @@ interface FormData {
 }
 
 interface GalleryItem { url: string; uploading?: boolean; }
+interface Variant     { slug: string; template: string; }
 
 interface Stats {
   total:          number;
@@ -129,6 +130,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
   const [gallery,      setGallery]      = useState<GalleryItem[]>([]);
   const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
   const [hours,        setHours]        = useState<BusinessHours>(DEFAULT_HOURS);
+  const [variants,     setVariants]     = useState<Variant[]>([{ slug: "", template: "classic" }]);
   const [stats,        setStats]        = useState<Stats>({ total: 0, thisMonth: 0, lastBooking: null, activeServices: 0 });
   const [tab,          setTab]          = useState<Tab>("profile");
   const [saving,       setSaving]       = useState(false);
@@ -239,6 +241,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       const slug = (value as string).toLowerCase().trim()
         .replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
       setForm(f => ({ ...f, name: value as string, slug }));
+      setVariants(vs => vs.map((v, i) => i === 0 ? { ...v, slug } : v));
     }
   }
 
@@ -253,18 +256,15 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
   async function handleSave() {
     if (!form.name.trim()) { setError("Name is required"); return; }
-    if (!form.slug.trim()) { setError("Slug is required"); return; }
     setSaving(true); setError("");
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setError("Not logged in"); setSaving(false); return; }
 
     const urls = gallery.filter(g => !g.uploading && g.url).map(g => g.url);
 
-    const payload = {
+    const basePayload = {
       name:               form.name.trim(),
       name_he:            form.name_he            || null,
-      slug:               form.slug.trim(),
-      template_style:     form.template_style,
       default_lang:       form.default_lang       || "he",
       tagline:            form.tagline            || null,
       tagline_he:         form.tagline_he         || null,
@@ -304,17 +304,35 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     };
 
     if (mode === "new") {
-      const { error: e } = await supabase.from("businesses")
-        .insert({ ...payload, owner_id: user.id });
-      if (e) { setError(e.message); setSaving(false); return; }
+      // Validate variants
+      const slugs = variants.map(v => v.slug.trim());
+      if (slugs.some(s => !s)) { setError("All slugs are required"); setSaving(false); return; }
+      const unique = new Set(slugs);
+      if (unique.size !== slugs.length) { setError("Slugs must be unique"); setSaving(false); return; }
+
+      // Insert one business row per variant
+      const firstSlug = slugs[0];
+      for (const v of variants) {
+        const { error: e } = await supabase.from("businesses").insert({
+          ...basePayload,
+          slug:           v.slug.trim(),
+          template_style: v.template,
+          owner_id:       user.id,
+        });
+        if (e) { setError(`Slug "${v.slug}": ${e.message}`); setSaving(false); return; }
+      }
+      setSaving(false); setSaved(true); setDirty(false);
+      setTimeout(() => setSaved(false), 2000);
+      onSaved(firstSlug);
     } else {
+      if (!form.slug.trim()) { setError("Slug is required"); setSaving(false); return; }
+      const payload = { ...basePayload, slug: form.slug.trim(), template_style: form.template_style };
       const { error: e } = await supabase.from("businesses").update(payload).eq("id", businessId!);
       if (e) { setError(e.message); setSaving(false); return; }
+      setSaving(false); setSaved(true); setDirty(false);
+      setTimeout(() => setSaved(false), 2000);
+      onSaved(form.slug);
     }
-
-    setSaving(false); setSaved(true); setDirty(false);
-    setTimeout(() => setSaved(false), 2000);
-    onSaved(form.slug);
   }
 
   if (loading) {
@@ -325,7 +343,9 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     );
   }
 
-  const title      = mode === "new" ? "New Business" : (form.name || "Business");
+  const title      = mode === "new"
+    ? (variants.length > 1 ? `New Business × ${variants.length}` : "New Business")
+    : (form.name || "Business");
   const previewUrl = form.slug ? `https://book.bapita.com/${form.slug}` : null;
 
   const TABS: { id: Tab; label: string }[] = [
@@ -444,27 +464,31 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   <Field label="Business Name *">
                     <input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Studio Avi" style={inputStyle} />
                   </Field>
-                  <Field label="URL Slug *">
-                    <input
-                      value={form.slug}
-                      onChange={e => set("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                      placeholder="studio-avi" style={inputStyle}
-                    />
-                    {form.slug && (
-                      <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
-                        book.bapita.com/<strong style={{ color:"var(--color-amber)" }}>{form.slug}</strong>
-                      </div>
-                    )}
-                  </Field>
+                  {mode === "edit" && (
+                    <Field label="URL Slug *">
+                      <input
+                        value={form.slug}
+                        onChange={e => set("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                        placeholder="studio-avi" style={inputStyle}
+                      />
+                      {form.slug && (
+                        <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
+                          book.bapita.com/<strong style={{ color:"var(--color-amber)" }}>{form.slug}</strong>
+                        </div>
+                      )}
+                    </Field>
+                  )}
                 </Row>
                 <Row>
-                  <Field label="Template">
-                    <select value={form.template_style} onChange={e => set("template_style", e.target.value)} style={inputStyle}>
-                      <option value="classic">Classic (cream/gold)</option>
-                      <option value="clean">Clean (white/black)</option>
-                      <option value="dark">Dark (dark/gold)</option>
-                    </select>
-                  </Field>
+                  {mode === "edit" && (
+                    <Field label="Template">
+                      <select value={form.template_style} onChange={e => set("template_style", e.target.value)} style={inputStyle}>
+                        <option value="classic">Classic (cream/gold)</option>
+                        <option value="clean">Clean (white/black)</option>
+                        <option value="dark">Dark (dark/gold)</option>
+                      </select>
+                    </Field>
+                  )}
                   <Field label="Default Language">
                     <select value={form.default_lang} onChange={e => set("default_lang", e.target.value)} style={inputStyle}>
                       <option value="he">Hebrew (עברית)</option>
@@ -472,6 +496,85 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     </select>
                   </Field>
                 </Row>
+
+                {/* Batch variants — new mode only */}
+                {mode === "new" && (
+                  <div style={{ marginTop:8 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:"var(--color-muted)", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>
+                      Templates & URLs
+                    </div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      {variants.map((v, i) => (
+                        <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
+                          {/* Slug */}
+                          <div style={{ flex:1 }}>
+                            <input
+                              value={v.slug}
+                              onChange={e => {
+                                const slug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
+                                setDirty(true);
+                                setVariants(vs => vs.map((x, j) => j === i ? { ...x, slug } : x));
+                              }}
+                              placeholder={`studio-avi${i > 0 ? `-${["clean","dark","v2"][i-1]}` : ""}`}
+                              style={inputStyle}
+                            />
+                            {v.slug && (
+                              <div style={{ fontSize:10, color:"var(--color-muted)", marginTop:3 }}>
+                                book.bapita.com/<strong style={{ color:"var(--color-amber)" }}>{v.slug}</strong>
+                              </div>
+                            )}
+                          </div>
+                          {/* Template */}
+                          <div style={{ flexShrink:0, width:160 }}>
+                            <select
+                              value={v.template}
+                              onChange={e => {
+                                setDirty(true);
+                                setVariants(vs => vs.map((x, j) => j === i ? { ...x, template: e.target.value } : x));
+                              }}
+                              style={inputStyle}
+                            >
+                              <option value="classic">Classic</option>
+                              <option value="clean">Clean</option>
+                              <option value="dark">Dark</option>
+                            </select>
+                          </div>
+                          {/* Remove */}
+                          {variants.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setVariants(vs => vs.filter((_, j) => j !== i))}
+                              style={{ height:42, width:36, borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"transparent", color:"var(--color-muted)", cursor:"pointer", fontSize:16, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}
+                              title="Remove"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {variants.length < 4 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDirty(true);
+                          const tmpl = ["classic","clean","dark","classic"].find(t => !variants.some(v => v.template === t)) || "classic";
+                          setVariants(vs => [...vs, { slug: "", template: tmpl }]);
+                        }}
+                        style={{ marginTop:10, height:34, padding:"0 14px", borderRadius:9, border:"1.5px dashed var(--color-cream-2)", background:"transparent", color:"var(--color-muted)", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"border-color 0.15s, color 0.15s" }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor="var(--color-amber)"; e.currentTarget.style.color="var(--color-amber)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor="var(--color-cream-2)"; e.currentTarget.style.color="var(--color-muted)"; }}
+                      >
+                        + Add template
+                      </button>
+                    )}
+                    {variants.length > 1 && (
+                      <p style={{ fontSize:11, color:"var(--color-muted)", marginTop:8, marginBottom:0 }}>
+                        Creates {variants.length} separate business pages with shared data.
+                      </p>
+                    )}
+                  </div>
+                )}
                 <Row>
                   <Field label="Accent Color">
                     <div style={{ display:"flex", gap:8, alignItems:"center" }}>
