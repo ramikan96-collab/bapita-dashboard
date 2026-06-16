@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
-  format, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
+  format, startOfMonth, endOfMonth,
   isSameDay, parseISO, addDays, addMonths,
 } from "date-fns";
 
@@ -29,7 +29,7 @@ function applyPatch(bookings: Booking[], id: string, patch: Partial<Booking>): B
 function rangeFor(view: CalView, date: Date): [Date, Date] {
   if (view === "day") return [date, date];
   if (view === "week") {
-    return [startOfWeek(date, { weekStartsOn: 1 }), endOfWeek(date, { weekStartsOn: 1 })];
+    return [date, addDays(date, 6)];
   }
   if (view === "agenda") return [date, addDays(date, 90)];
   return [startOfMonth(date), endOfMonth(date)];
@@ -114,9 +114,7 @@ export default function CalendarPage() {
     const apptStr = `${n} appointment${n !== 1 ? "s" : ""}`;
     if (view === "day") return `${format(date, "EEE, MMM d")} · ${apptStr}`;
     if (view === "week") {
-      const ws = startOfWeek(date, { weekStartsOn: 1 });
-      const we = endOfWeek(date, { weekStartsOn: 1 });
-      return `${format(ws, "MMM d")}–${format(we, "MMM d")} · ${apptStr}`;
+      return `${format(date, "MMM d")}–${format(addDays(date, 6), "MMM d")} · ${apptStr}`;
     }
     if (view === "agenda") return `Upcoming · ${apptStr}`;
     return `${format(date, "MMMM yyyy")} · ${apptStr}`;

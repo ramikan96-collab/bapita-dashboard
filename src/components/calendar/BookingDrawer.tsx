@@ -91,24 +91,24 @@ function AccordionSection({
       style={{ borderColor: "var(--color-cream-2)" }}
     >
       <button
-        className="w-full flex items-center justify-between py-3 text-left"
+        className="w-full flex items-center justify-between px-4 py-4 text-left"
         onClick={() => onToggle(id)}
       >
-        <span className="text-sm font-bold" style={{ color: "var(--color-dark)" }}>
+        <span className="text-[14px] font-bold" style={{ color: "var(--color-dark)" }}>
           {title}
         </span>
         <span
-          className="text-lg leading-none transition-transform"
+          className="text-base leading-none transition-transform"
           style={{
             color: "var(--color-muted)",
             display: "inline-block",
-            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transform: open ? "rotate(90deg)" : "rotate(0deg)",
           }}
         >
           ›
         </span>
       </button>
-      {open && <div className="pb-4">{children}</div>}
+      {open && <div className="px-4 pb-4">{children}</div>}
     </div>
   );
 }
@@ -582,26 +582,25 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
     return (
       <button
         onClick={() => setShowLabelPicker(true)}
-        className="flex items-center gap-2 w-full text-start"
+        className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-start"
+        style={{ background: "var(--color-cream)" }}
       >
         {label ? (
           <>
             <span
               className="w-4 h-4 rounded-full shrink-0"
-              style={{
-                background: label.color,
-                border: label.color === "#FFFFFF" ? "1px solid var(--color-cream-2)" : "none",
-              }}
+              style={{ background: label.color, border: label.color === "#FFFFFF" ? "1px solid var(--color-cream-2)" : "none" }}
             />
-            <span className="flex-1 text-sm font-semibold" style={{ color: "var(--color-dark)" }}>
+            <span className="flex-1 text-[14px] font-semibold" style={{ color: "var(--color-dark)" }}>
               {label.name}
             </span>
-            <span className="text-xs" style={{ color: "var(--color-muted)" }}>Change</span>
+            <span className="text-[12px]" style={{ color: "var(--color-muted)" }}>Change</span>
           </>
         ) : (
-          <span className="text-sm font-semibold" style={{ color: "var(--color-amber)" }}>
-            + Add label
-          </span>
+          <>
+            <span className="w-4 h-4 rounded-full border-2 border-dashed shrink-0" style={{ borderColor: "var(--color-amber)" }} />
+            <span className="text-[14px] font-semibold" style={{ color: "var(--color-amber)" }}>+ Add label</span>
+          </>
         )}
       </button>
     );
@@ -613,26 +612,32 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
         {current.customer_phone ? (
           <a
             href={`tel:${current.customer_phone}`}
-            className="flex items-center gap-2 text-sm font-semibold"
-            style={{ color: "var(--color-amber)" }}
+            className="flex items-center gap-3 px-4 py-3.5 rounded-xl"
+            style={{ background: "var(--color-cream)", color: "var(--color-dark)", textDecoration: "none" }}
           >
-            <span style={{ color: "var(--color-muted)" }}>📞</span>
-            {current.customer_phone}
+            <span className="text-base shrink-0">📞</span>
+            <span className="text-[14px] font-semibold">{current.customer_phone}</span>
           </a>
         ) : (
-          <p className="text-sm" style={{ color: "var(--color-muted)" }}>No phone</p>
+          <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl" style={{ background: "var(--color-cream)" }}>
+            <span className="text-base shrink-0 opacity-40">📞</span>
+            <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>No phone</span>
+          </div>
         )}
         {current.customer_email ? (
           <a
             href={`mailto:${current.customer_email}`}
-            className="flex items-center gap-2 text-sm font-semibold"
-            style={{ color: "var(--color-amber)" }}
+            className="flex items-center gap-3 px-4 py-3.5 rounded-xl"
+            style={{ background: "var(--color-cream)", color: "var(--color-dark)", textDecoration: "none" }}
           >
-            <span style={{ color: "var(--color-muted)" }}>✉️</span>
-            {current.customer_email}
+            <span className="text-base shrink-0">✉️</span>
+            <span className="text-[14px] font-semibold truncate">{current.customer_email}</span>
           </a>
         ) : (
-          <p className="text-sm" style={{ color: "var(--color-muted)" }}>No email</p>
+          <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl" style={{ background: "var(--color-cream)" }}>
+            <span className="text-base shrink-0 opacity-40">✉️</span>
+            <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>No email</span>
+          </div>
         )}
       </div>
     );
@@ -650,31 +655,24 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
     };
 
     return (
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm" style={{ color: "var(--color-muted)" }}>
-            Service price
-          </span>
-          <span className="text-sm font-bold" style={{ color: "var(--color-dark)" }}>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between px-4 py-3.5 rounded-xl" style={{ background: "var(--color-cream)" }}>
+          <span className="text-[13px]" style={{ color: "var(--color-muted)" }}>Service price</span>
+          <span className="text-[14px] font-bold" style={{ color: "var(--color-dark)" }}>
             {price != null ? `₪${price}` : "—"}
           </span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm" style={{ color: "var(--color-muted)" }}>
-            Payment
-          </span>
-          <span
-            className="text-sm font-bold"
-            style={{ color: ps === "none" ? "#EF4444" : STATUS_COLOR.completed }}
-          >
+        <div className="flex items-center justify-between px-4 py-3.5 rounded-xl" style={{ background: "var(--color-cream)" }}>
+          <span className="text-[13px]" style={{ color: "var(--color-muted)" }}>Payment</span>
+          <span className="text-[14px] font-bold" style={{ color: ps === "none" ? "#EF4444" : STATUS_COLOR.completed }}>
             {paymentLabel[ps]}
           </span>
         </div>
         {ps === "none" && (
           <button
             onClick={() => setShowCheckout(true)}
-            className="text-sm font-bold text-start"
-            style={{ color: "var(--color-amber)" }}
+            className="w-full py-3.5 rounded-xl text-[14px] font-bold"
+            style={{ background: "var(--wash-amber)", color: "var(--color-amber)" }}
           >
             Mark as paid →
           </button>
@@ -690,30 +688,26 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
           value={notes}
           onChange={(e) => handleNotesChange(e.target.value)}
           rows={3}
-          placeholder="Add a note…"
-          className="w-full rounded-xl px-3.5 py-2.5 text-sm border outline-none resize-none"
+          placeholder="Add a note about this appointment…"
+          className="w-full rounded-xl border outline-none resize-none"
           style={{
+            fontSize: 16,
+            padding: "14px 16px",
+            lineHeight: 1.5,
             borderColor: "var(--color-cream-2)",
             background: "var(--color-cream)",
             color: "var(--color-dark)",
+            fontFamily: "inherit",
           }}
           onFocus={(e) => (e.target.style.borderColor = "var(--color-amber)")}
-          onBlur={(e) =>
-            (e.target.style.borderColor = "var(--color-cream-2)")
-          }
+          onBlur={(e) => (e.target.style.borderColor = "var(--color-cream-2)")}
         />
         {current.customer_id && clientNotes !== null && (
-          <div
-            className="rounded-xl p-3"
-            style={{ background: "var(--color-cream)" }}
-          >
-            <p
-              className="text-[10px] font-bold uppercase tracking-wide mb-1"
-              style={{ color: "var(--color-muted)" }}
-            >
+          <div className="rounded-xl p-4" style={{ background: "var(--color-cream)" }}>
+            <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "var(--color-muted)" }}>
               Client notes
             </p>
-            <p className="text-sm" style={{ color: "var(--color-dark)" }}>
+            <p className="text-[14px] leading-relaxed" style={{ color: clientNotes ? "var(--color-dark)" : "var(--color-muted)" }}>
               {clientNotes || "No client notes"}
             </p>
           </div>
@@ -746,24 +740,20 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
     }
 
     return (
-      <div
-        className="rounded-xl p-3 flex flex-col gap-1"
-        style={{ background: "var(--color-cream)" }}
-      >
-        <p className="text-sm font-bold" style={{ color: "var(--color-dark)" }}>
-          {format(parseISO(prevBooking.appointment_date), "d MMM yyyy")}
-          {prevBooking.service?.name && ` · ${prevBooking.service.name}`}
-        </p>
-        <p
-          className="text-xs font-semibold"
-          style={{ color: STATUS_COLOR[prevBooking.status] }}
-        >
-          {STATUS_LABEL[prevBooking.status]}
-        </p>
+      <div className="flex flex-col gap-2">
+        <div className="rounded-xl px-4 py-3.5 flex flex-col gap-1" style={{ background: "var(--color-cream)" }}>
+          <p className="text-[14px] font-bold" style={{ color: "var(--color-dark)" }}>
+            {format(parseISO(prevBooking.appointment_date), "d MMM yyyy")}
+            {prevBooking.service?.name && <span className="font-normal" style={{ color: "var(--color-muted)" }}> · {prevBooking.service.name}</span>}
+          </p>
+          <p className="text-[12px] font-semibold" style={{ color: STATUS_COLOR[prevBooking.status] }}>
+            {STATUS_LABEL[prevBooking.status]}
+          </p>
+        </div>
         <a
           href={`/clients/${current.customer_id}`}
-          className="text-xs font-bold mt-1"
-          style={{ color: "var(--color-amber)" }}
+          className="flex items-center justify-center py-3.5 rounded-xl text-[14px] font-bold"
+          style={{ background: "var(--color-cream)", color: "var(--color-amber)" }}
         >
           View client profile →
         </a>
@@ -788,7 +778,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Scrollable area */}
-        <div className="overflow-y-auto flex-1 px-5 pb-2">
+        <div className="overflow-y-auto flex-1 px-4 pb-6">
           {/* Drag handle — mobile only */}
           <div
             className="w-10 h-1 rounded-full mx-auto mt-3 mb-2 shrink-0 md:hidden"
@@ -810,26 +800,24 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
 
           {/* Header card */}
           <div
-            className="mt-4 mb-3 rounded-2xl p-4"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "var(--shadow-sm)" }}
+            className="mt-5 mb-4 rounded-2xl"
+            style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "0 1px 4px rgba(30,26,20,0.06)" }}
           >
-            <div className="flex items-center gap-3 mb-3">
-              {/* Avatar */}
+            {/* Top: avatar + name + status */}
+            <div className="flex items-center gap-4 px-5 pt-5 pb-4">
               <div
-                className="w-11 h-11 rounded-full flex items-center justify-center text-base font-black shrink-0"
+                className="w-14 h-14 rounded-full flex items-center justify-center text-[18px] font-black shrink-0"
                 style={{ background: "var(--color-amber)", color: "#fff" }}
               >
                 {initials(current.customer_name)}
               </div>
               <div className="flex-1 min-w-0">
-                {/* Name */}
-                <p className="font-black truncate" style={{ fontSize: 17, color: "var(--color-dark)" }}>
+                <p className="font-black leading-tight truncate" style={{ fontSize: 20, color: "var(--color-dark)" }}>
                   {current.customer_name}
                 </p>
-                {/* Status badge — tappable */}
                 <button
                   onClick={() => setShowStatusSheet(true)}
-                  className="mt-0.5 px-2 py-0.5 rounded-full text-xs font-bold"
+                  className="mt-1.5 px-3 py-1 rounded-full text-[12px] font-bold"
                   style={{ background: statusBg, color }}
                   title="Tap to change status"
                 >
@@ -837,28 +825,29 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
                 </button>
               </div>
             </div>
+            {/* Divider */}
+            <div style={{ borderTop: "1px solid var(--color-cream-2)" }} />
             {/* Date · time · service */}
-            <div
-              className="rounded-xl px-3 py-2.5 flex flex-col gap-1"
-              style={{ background: "var(--color-cream)" }}
-            >
-              <p className="text-xs font-semibold" style={{ color: "var(--color-muted)" }}>
+            <div className="px-5 py-4 flex flex-col gap-1">
+              <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
                 {format(date, "EEEE, d MMM yyyy")}
               </p>
-              <p className="text-sm font-bold" style={{ color: "var(--color-dark)" }}>
-                {timeStart}–{timeEnd} · {duration} min
-                {current.service?.name && <span style={{ color: "var(--color-muted)", fontWeight: 500 }}> · {current.service.name}</span>}
+              <p className="text-[16px] font-bold" style={{ color: "var(--color-dark)" }}>
+                {timeStart}–{timeEnd}
+                <span className="text-[14px] font-normal" style={{ color: "var(--color-muted)" }}>
+                  {" · "}{duration} min{current.service?.name && ` · ${current.service.name}`}
+                </span>
               </p>
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="mb-3">{renderActions()}</div>
+          <div className="mb-4">{renderActions()}</div>
 
           {/* Accordion sections */}
           <div
-            className="rounded-2xl border mb-4 px-1 overflow-hidden"
-            style={{ borderColor: "var(--color-cream-2)", background: "var(--color-surface)" }}
+            className="rounded-2xl overflow-hidden mb-4"
+            style={{ border: "1px solid var(--color-cream-2)", background: "var(--color-surface)" }}
           >
             <AccordionSection
               id="label"

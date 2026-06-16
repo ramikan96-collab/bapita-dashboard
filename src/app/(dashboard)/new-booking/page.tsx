@@ -27,7 +27,7 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 11,
   border: "1.5px solid var(--color-cream-2)",
   background: "var(--color-cream)",
-  fontSize: 14,
+  fontSize: 16, // must be >=16 to prevent iOS Safari auto-zoom
   color: "var(--color-dark)",
   outline: "none",
   fontFamily: "inherit",

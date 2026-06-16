@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useEffect, useCallback } from "react";
 import {
-  startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, format,
+  addDays, eachDayOfInterval, isSameDay, format,
 } from "date-fns";
 import type { Booking, BlockedTime } from "@/types";
 import { STATUS_COLOR } from "@/types";
@@ -30,8 +30,8 @@ export default function WeekView({
   onSelectBooking, onCreateAt, onLongPressAt, onBlockClick, onSelectDay, onPrev, onNext,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const weekStart = startOfWeek(date, { weekStartsOn: 1 });
-  const weekEnd   = endOfWeek(date, { weekStartsOn: 1 });
+  const weekStart = date;
+  const weekEnd   = addDays(date, 6);
   const days      = eachDayOfInterval({ start: weekStart, end: weekEnd });
   const today     = new Date();
   const nowMins   = today.getHours() * 60 + today.getMinutes();
