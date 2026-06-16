@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Service } from "@/types";
+import type { Service, BusinessHours, DayKey } from "@/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -14,6 +14,26 @@ const SECTION_LABELS: Record<string, string> = {
   location: "Location",
 };
 const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location"];
+
+const DAYS: { key: DayKey; label: string }[] = [
+  { key: "sunday",    label: "Sunday"    },
+  { key: "monday",    label: "Monday"    },
+  { key: "tuesday",   label: "Tuesday"   },
+  { key: "wednesday", label: "Wednesday" },
+  { key: "thursday",  label: "Thursday"  },
+  { key: "friday",    label: "Friday"    },
+  { key: "saturday",  label: "Saturday"  },
+];
+
+const DEFAULT_HOURS: BusinessHours = {
+  sunday:    { open: true,  start: "09:00", end: "17:00" },
+  monday:    { open: true,  start: "09:00", end: "19:00" },
+  tuesday:   { open: true,  start: "09:00", end: "19:00" },
+  wednesday: { open: true,  start: "09:00", end: "19:00" },
+  thursday:  { open: true,  start: "09:00", end: "19:00" },
+  friday:    { open: true,  start: "09:00", end: "16:00" },
+  saturday:  { open: false, start: "09:00", end: "14:00" },
+};
 
 const PLAN_TIERS = ["Starter", "Pro", "Custom"];
 const PLAN_ADDONS = [
@@ -74,7 +94,7 @@ interface Stats {
   activeServices: number;
 }
 
-type Tab = "profile" | "gallery" | "services" | "plan";
+type Tab = "profile" | "gallery" | "services" | "plan" | "hours";
 
 const EMPTY_FORM: FormData = {
   name: "", name_he: "", slug: "", template_style: "classic", default_lang: "he",
@@ -105,6 +125,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
   const [services,     setServices]     = useState<Service[]>([]);
   const [gallery,      setGallery]      = useState<GalleryItem[]>([]);
   const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
+  const [hours,        setHours]        = useState<BusinessHours>(DEFAULT_HOURS);
   const [stats,        setStats]        = useState<Stats>({ total: 0, thisMonth: 0, lastBooking: null, activeServices: 0 });
   const [tab,          setTab]          = useState<Tab>("profile");
   const [saving,       setSaving]       = useState(false);
@@ -164,6 +185,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         if (Array.isArray(b.section_order) && b.section_order.length > 0) {
           setSectionOrder(b.section_order);
         }
+        // Hours
+        if (b.business_hours) setHours(b.business_hours as BusinessHours);
       }
 
       // Load services
@@ -270,6 +293,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       stat_years:         form.stat_years   ? Number(form.stat_years)   : null,
       stat_clients:       form.stat_clients ? Number(form.stat_clients) : null,
       stat_rating:        form.stat_rating          || null,
+      business_hours:     hours,
     };
 
     if (mode === "new") {
@@ -302,6 +326,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     { id: "gallery", label: `Gallery${gallery.filter(g => !g.uploading).length > 0 ? ` (${gallery.filter(g => !g.uploading).length})` : ""}` },
     ...(mode === "edit" ? [
       { id: "services" as Tab, label: `Services (${services.length})` },
+      { id: "hours"    as Tab, label: "Hours"                         },
       { id: "plan"     as Tab, label: "Plan & Stats"                  },
     ] : []),
   ];
@@ -332,23 +357,23 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
             {form.status === "live" ? "● LIVE" : "○ DRAFT"}
           </button>
 
-          {/* Preview */}
+          {/* Save & Preview */}
           {previewUrl && (
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={async () => { await handleSave(); window.open(previewUrl, "_blank"); }}
+              disabled={saving}
               style={{
                 height:32, padding:"0 12px", borderRadius:9, border:"1.5px solid var(--color-cream-2)",
                 background:"var(--color-cream)", color:"var(--color-dark)",
-                fontSize:12, fontWeight:700, textDecoration:"none", flexShrink:0,
+                fontSize:12, fontWeight:700, flexShrink:0, cursor: saving ? "not-allowed" : "pointer",
                 display:"flex", alignItems:"center", gap:5, transition:"border-color 0.15s",
+                fontFamily:"inherit", opacity: saving ? 0.6 : 1,
               }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-amber)"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-cream-2)"; }}
             >
-              Preview ↗
-            </a>
+              Save & Preview ↗
+            </button>
           )}
 
           {/* Dirty indicator */}
@@ -586,6 +611,98 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           {/* ── SERVICES ── */}
           {tab === "services" && mode === "edit" && businessId && (
             <ServicesPanel businessId={businessId} services={services} setServices={setServices} />
+          )}
+
+          {/* ── HOURS ── */}
+          {tab === "hours" && mode === "edit" && (
+            <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+              <SectionCard title="Working days">
+                <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                  {DAYS.map(({ key, label }) => {
+                    const on = hours[key].open;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setHours(h => ({ ...h, [key]: { ...h[key], open: !on } }))}
+                        style={{
+                          padding:"8px 16px", borderRadius:12, border:"none", cursor:"pointer",
+                          fontSize:14, fontWeight:600, fontFamily:"inherit", transition:"all 0.15s",
+                          background: on ? "var(--color-amber)" : "var(--color-cream-2)",
+                          color:      on ? "#fff"               : "var(--color-muted)",
+                        }}
+                      >
+                        {label.slice(0, 3)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p style={{ fontSize:12, color:"var(--color-muted)", margin:0 }}>Tap a day to toggle it on or off</p>
+              </SectionCard>
+
+              {(() => {
+                const openDays = DAYS.filter(d => hours[d.key].open);
+                if (openDays.length === 0) return (
+                  <div style={{ background:"var(--color-surface)", borderRadius:16, padding:"28px 20px", textAlign:"center", boxShadow:"var(--shadow-sm)", border:"1px solid var(--color-cream-2)" }}>
+                    <p style={{ fontSize:13, color:"var(--color-muted)", margin:0 }}>No working days selected — enable at least one day above</p>
+                  </div>
+                );
+                return (
+                  <SectionCard title="Hours">
+                    <div>
+                      {openDays.map(({ key, label }, idx) => (
+                        <div
+                          key={key}
+                          style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 0",
+                            borderBottom: idx < openDays.length - 1 ? "1px solid var(--color-cream-2)" : "none" }}
+                        >
+                          <span style={{ width:90, fontSize:14, fontWeight:600, color:"var(--color-dark)", flexShrink:0 }}>{label}</span>
+                          <div style={{ display:"flex", alignItems:"center", gap:8, flex:1 }}>
+                            <input
+                              type="time"
+                              value={hours[key].start}
+                              onChange={e => setHours(h => ({ ...h, [key]: { ...h[key], start: e.target.value } }))}
+                              style={{ height:38, padding:"0 10px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", fontSize:13, color:"var(--color-dark)", outline:"none", background:"var(--color-cream)", fontFamily:"inherit" }}
+                              onFocus={e => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                              onBlur={e  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+                            />
+                            <span style={{ fontSize:13, color:"var(--color-muted)" }}>–</span>
+                            <input
+                              type="time"
+                              value={hours[key].end}
+                              onChange={e => setHours(h => ({ ...h, [key]: { ...h[key], end: e.target.value } }))}
+                              style={{ height:38, padding:"0 10px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", fontSize:13, color:"var(--color-dark)", outline:"none", background:"var(--color-cream)", fontFamily:"inherit" }}
+                              onFocus={e => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                              onBlur={e  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {openDays.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const first = DAYS.find(d => hours[d.key].open);
+                          if (!first) return;
+                          const { start, end } = hours[first.key];
+                          setHours(h => {
+                            const next = { ...h };
+                            DAYS.forEach(({ key }) => { if (next[key].open) next[key] = { ...next[key], start, end }; });
+                            return next;
+                          });
+                        }}
+                        style={{ width:"100%", height:38, borderRadius:10, fontSize:13, fontWeight:500, color:"var(--color-muted)", border:"1.5px solid var(--color-cream-2)", background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"border-color 0.15s, color 0.15s", fontFamily:"inherit" }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-muted)"; }}
+                      >
+                        Apply first day's hours to all open days
+                      </button>
+                    )}
+                  </SectionCard>
+                );
+              })()}
+            </div>
           )}
 
           {/* ── PLAN & STATS ── */}
