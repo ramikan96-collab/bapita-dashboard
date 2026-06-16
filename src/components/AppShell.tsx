@@ -838,29 +838,31 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto py-2">
-          {/* Primary nav — Calendar, Clients, Insights (mobile bottom nav equivalents) */}
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            return (
-              <button
-                key={item.path}
-                onClick={() => go(item.path)}
-                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
-                style={{
-                  height: 48,
-                  background: active ? "rgba(232,146,10,0.05)" : "transparent",
-                  borderInlineStart: active ? "3px solid var(--color-amber)" : "3px solid transparent",
-                }}
-              >
-                <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
-                  <Icon />
-                </span>
-                {item.label}
-              </button>
-            );
-          })}
-          <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
+          {/* Primary nav — Calendar, Clients, Insights (desktop only; mobile uses bottom nav) */}
+          <div className="hidden md:block">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => go(item.path)}
+                  className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
+                  style={{
+                    height: 48,
+                    background: active ? "rgba(232,146,10,0.05)" : "transparent",
+                    borderInlineStart: active ? "3px solid var(--color-amber)" : "3px solid transparent",
+                  }}
+                >
+                  <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
+                    <Icon />
+                  </span>
+                  {item.label}
+                </button>
+              );
+            })}
+            <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
+          </div>
           {drawerItemsTop.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
