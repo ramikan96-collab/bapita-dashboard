@@ -96,7 +96,6 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
       service_id: serviceId,
       appointment_date: dateStr,
       appointment_time: time,
-      appointment_datetime: new Date(`${dateStr}T${time}`).toISOString(),
       notes: notes.trim() || null,
       payment_status: paymentStatus,
     };
