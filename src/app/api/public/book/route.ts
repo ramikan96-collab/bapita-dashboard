@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 function esc(s: unknown): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 export async function POST(req: NextRequest) {
   const {
@@ -62,14 +72,14 @@ export async function POST(req: NextRequest) {
         .select("notification_email")
         .eq("id", businessId)
         .single();
-      const bccEmail = bizData?.notification_email || "info.bapita@gmail.com";
+      const bccEmail = bizData?.notification_email || process.env.GMAIL_USER || "info.bapita@gmail.com";
 
-      const resend = new Resend(process.env.RESEND_API_KEY);
       const formattedDate = new Date(date + "T00:00:00").toLocaleDateString("he-IL", {
         weekday: "long", year: "numeric", month: "long", day: "numeric",
       });
-      await resend.emails.send({
-        from: "Bapita <noreply@bapita.com>",
+
+      await transporter.sendMail({
+        from: `Bapita <${process.env.GMAIL_USER}>`,
         to: customerEmail,
         bcc: bccEmail,
         subject: `Booking confirmed — ${esc(businessName)}`,
