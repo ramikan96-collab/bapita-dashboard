@@ -5,6 +5,7 @@ export const he = {
   about: { title: "אודות" },
   hours: { title: "שעות פעילות", closed: "סגור" },
   location: { title: "מיקום", directions: "← נווט" },
+  reviews: { title: "מה הלקוחות אומרים", leaveReview: "השאר ביקורת בגוגל" },
   footer: { poweredBy: "מופעל על ידי", brand: "Bapita" },
   social: { happyClients: "4.9 · 340 לקוחות מרוצים" },
   min: "דק׳",

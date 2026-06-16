@@ -99,6 +99,16 @@ export interface Business {
   stat_rating?:        string | null;
   show_stats?:         boolean | null;
   show_services?:      boolean | null;
+  google_reviews?:     GoogleReview[] | null;
+  show_reviews?:       boolean | null;
+}
+
+export interface GoogleReview {
+  id:     string;
+  author: string;
+  rating: number; // 1–5
+  text:   string;
+  date:   string; // display string e.g. "June 2025"
 }
 
 export interface BlockedTime {

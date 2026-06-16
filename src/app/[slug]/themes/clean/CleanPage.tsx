@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import type { Business, Service } from "@/types";
 import { FloatingCTA }    from "../../components/FloatingCTA";
-import { SectionGallery } from "../../components/SectionGallery";
-import { SectionHours }   from "../../components/SectionHours";
+import { SectionGallery }  from "../../components/SectionGallery";
+import { SectionHours }    from "../../components/SectionHours";
 import { SectionLocation } from "../../components/SectionLocation";
+import { SectionReviews }  from "../../components/SectionReviews";
 import { BookingOverlay }  from "../../booking/BookingOverlay";
 import { translations, type Lang } from "../../translations";
 import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../../utils/openStatus";
@@ -13,7 +14,7 @@ import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../../uti
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&q=80";
 
 const P = { bg: "#FFFFFF", text: "#111111", muted: "#6B7280", surface: "#F9F9F9", border: "#E5E5E5", panel: "#141414" };
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "reviews", "hours", "location"];
 
 function useFadeInOnEnter(threshold = 0.12) {
   const ref = useRef<HTMLDivElement>(null);
@@ -300,6 +301,23 @@ export function CleanPage({ business, services }: Props) {
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.gallery.title} accent={accent} />
                   <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={10} initialCount={4} />
+                </section>
+              ) : null;
+            case "reviews":
+              return business.show_reviews !== false && business.google_reviews && business.google_reviews.length > 0 ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.reviews.title} accent={accent} />
+                  <div style={{ marginTop: 20 }}>
+                    <SectionReviews
+                      reviews={business.google_reviews}
+                      accentColor={accent}
+                      darkColor={P.text}
+                      bgColor={P.surface}
+                      borderColor={P.border}
+                      reviewLink={business.google_review_link}
+                      leaveReviewLabel={t.reviews.leaveReview}
+                    />
+                  </div>
                 </section>
               ) : null;
             case "hours":

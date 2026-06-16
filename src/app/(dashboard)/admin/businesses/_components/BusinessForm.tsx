@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Service, BusinessHours, DayKey } from "@/types";
+import type { Service, BusinessHours, DayKey, GoogleReview } from "@/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -73,6 +73,7 @@ interface FormData {
   show_location:      boolean;
   show_stats:         boolean;
   show_services:      boolean;
+  show_reviews:       boolean;
   status:             "draft" | "live";
   // plan
   plan_tier:          string;
@@ -97,7 +98,7 @@ interface Stats {
   activeServices: number;
 }
 
-type Tab = "profile" | "gallery" | "services" | "plan" | "hours";
+type Tab = "profile" | "gallery" | "services" | "plan" | "hours" | "reviews";
 
 const EMPTY_FORM: FormData = {
   name: "", name_he: "", slug: "", template_style: "classic", default_lang: "he",
@@ -106,7 +107,7 @@ const EMPTY_FORM: FormData = {
   google_review_link: "", google_maps_url: "", waze_url: "",
   about_text: "", about_text_he: "", accent_color: "",
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
-  show_stats: true, show_services: true,
+  show_stats: true, show_services: true, show_reviews: true,
   status: "draft",
   plan_tier: "", plan_price: "", plan_addons: [],
   plan_booking_limit: "", plan_start_date: "", plan_renewal_date: "", plan_notes: "",
@@ -126,8 +127,9 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
   const supabase = createClient();
 
   const [form,         setForm]         = useState<FormData>(EMPTY_FORM);
-  const [services,     setServices]     = useState<Service[]>([]);
-  const [gallery,      setGallery]      = useState<GalleryItem[]>([]);
+  const [services,      setServices]     = useState<Service[]>([]);
+  const [gallery,       setGallery]      = useState<GalleryItem[]>([]);
+  const [adminReviews,  setAdminReviews] = useState<GoogleReview[]>([]);
   const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
   const [hours,        setHours]        = useState<BusinessHours>(DEFAULT_HOURS);
   const [variants,     setVariants]     = useState<Variant[]>([{ slug: "", template: "classic" }]);
@@ -171,6 +173,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           show_location:      b.show_location       ?? true,
           show_stats:         b.show_stats          ?? true,
           show_services:      b.show_services       ?? true,
+          show_reviews:       b.show_reviews        ?? true,
           status:             b.status              || "draft",
           plan_tier:          b.plan_tier           || "",
           plan_price:         b.plan_price != null   ? String(b.plan_price) : "",
@@ -194,6 +197,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         }
         // Hours
         if (b.business_hours) setHours(b.business_hours as BusinessHours);
+        // Reviews
+        if (Array.isArray(b.google_reviews)) setAdminReviews(b.google_reviews as GoogleReview[]);
       }
 
       // Load services
@@ -286,6 +291,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_location:      form.show_location,
       show_stats:         form.show_stats,
       show_services:      form.show_services,
+      show_reviews:       form.show_reviews,
       status:             form.status,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
@@ -352,9 +358,10 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     { id: "profile", label: "Profile" },
     { id: "gallery", label: `Gallery${gallery.filter(g => !g.uploading).length > 0 ? ` (${gallery.filter(g => !g.uploading).length})` : ""}` },
     ...(mode === "edit" ? [
-      { id: "services" as Tab, label: `Services (${services.length})` },
-      { id: "hours"    as Tab, label: "Hours"                         },
-      { id: "plan"     as Tab, label: "Plan & Stats"                  },
+      { id: "services" as Tab, label: `Services (${services.length})`                        },
+      { id: "hours"    as Tab, label: "Hours"                                                },
+      { id: "reviews"  as Tab, label: `Reviews (${adminReviews.length})`                    },
+      { id: "plan"     as Tab, label: "Plan & Stats"                                        },
     ] : []),
   ];
 
@@ -817,6 +824,18 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
             </div>
           )}
 
+          {/* ── REVIEWS ── */}
+          {tab === "reviews" && mode === "edit" && businessId && (
+            <AdminReviewsPanel
+              businessId={businessId}
+              supabase={supabase}
+              reviews={adminReviews}
+              showReviews={form.show_reviews}
+              onReviewsChange={setAdminReviews}
+              onToggleShow={() => set("show_reviews", !form.show_reviews)}
+            />
+          )}
+
           {/* ── PLAN & STATS ── */}
           {tab === "plan" && mode === "edit" && (
             <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
@@ -913,6 +932,131 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Admin Reviews Panel ──────────────────────────────────────────────────────
+
+function AdminReviewsPanel({
+  businessId,
+  supabase,
+  reviews,
+  showReviews,
+  onReviewsChange,
+  onToggleShow,
+}: {
+  businessId: string;
+  supabase: ReturnType<typeof createClient>;
+  reviews: GoogleReview[];
+  showReviews: boolean;
+  onReviewsChange: (r: GoogleReview[]) => void;
+  onToggleShow: () => void;
+}) {
+  const [showForm, setShowForm]   = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [author, setAuthor]       = useState("");
+  const [rating, setRating]       = useState(5);
+  const [text, setText]           = useState("");
+  const [date, setDate]           = useState("");
+  const [saving, setSaving]       = useState(false);
+  const [err, setErr]             = useState("");
+
+  function resetForm() { setShowForm(false); setEditingId(null); setAuthor(""); setRating(5); setText(""); setDate(""); setErr(""); }
+
+  function startEdit(r: GoogleReview) { setEditingId(r.id); setAuthor(r.author); setRating(r.rating); setText(r.text); setDate(r.date || ""); setShowForm(true); }
+
+  async function saveReview() {
+    if (!author.trim() || !text.trim()) { setErr("Author and text required"); return; }
+    setSaving(true);
+    const updated = editingId
+      ? reviews.map(r => r.id === editingId ? { ...r, author: author.trim(), rating, text: text.trim(), date: date.trim() } : r)
+      : [...reviews, { id: crypto.randomUUID(), author: author.trim(), rating, text: text.trim(), date: date.trim() }];
+    const { error } = await supabase.from("businesses").update({ google_reviews: updated }).eq("id", businessId);
+    setSaving(false);
+    if (error) { setErr(error.message); return; }
+    onReviewsChange(updated);
+    resetForm();
+  }
+
+  async function deleteReview(id: string) {
+    const updated = reviews.filter(r => r.id !== id);
+    await supabase.from("businesses").update({ google_reviews: updated }).eq("id", businessId);
+    onReviewsChange(updated);
+  }
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+      <SectionCard title="Display">
+        <label style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer" }}>
+          <div>
+            <div style={{ fontSize:14, fontWeight:600, color:"var(--color-dark)" }}>Show reviews section</div>
+            <div style={{ fontSize:12, color:"var(--color-muted)", marginTop:2 }}>Visible on booking page</div>
+          </div>
+          <input type="checkbox" checked={showReviews} onChange={onToggleShow} style={{ width:16, height:16, accentColor:"var(--color-amber)", cursor:"pointer" }} />
+        </label>
+      </SectionCard>
+
+      <SectionCard title={`Reviews (${reviews.length})`}>
+        {reviews.length === 0 && !showForm && (
+          <p style={{ fontSize:13, color:"var(--color-muted)", margin:0 }}>No reviews yet.</p>
+        )}
+        {reviews.map(r => (
+          <div key={r.id} style={{ border:"1px solid var(--color-cream-2)", borderRadius:10, padding:"12px 14px", display:"flex", flexDirection:"column", gap:6 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:13, fontWeight:700, color:"var(--color-dark)" }}>{r.author}</span>
+                <span style={{ fontSize:12, color:"#F59E0B" }}>{"★".repeat(r.rating)}</span>
+                {r.date && <span style={{ fontSize:11, color:"var(--color-muted)" }}>{r.date}</span>}
+              </div>
+              <div style={{ display:"flex", gap:6 }}>
+                <button onClick={() => startEdit(r)} style={{ fontSize:12, fontWeight:600, color:"var(--color-amber)", background:"none", border:"none", cursor:"pointer" }}>Edit</button>
+                <button onClick={() => deleteReview(r.id)} style={{ fontSize:12, fontWeight:600, color:"#EF4444", background:"none", border:"none", cursor:"pointer" }}>Delete</button>
+              </div>
+            </div>
+            <p style={{ fontSize:13, color:"var(--color-dark)", opacity:0.75, margin:0, lineHeight:1.5 }}>{r.text}</p>
+          </div>
+        ))}
+
+        {showForm && (
+          <div style={{ border:"1.5px solid var(--color-amber)", borderRadius:11, padding:"14px", display:"flex", flexDirection:"column", gap:12 }}>
+            {err && <p style={{ fontSize:12, color:"#EF4444", margin:0 }}>{err}</p>}
+            <Field label="Client name">
+              <input value={author} onChange={e => setAuthor(e.target.value)} placeholder="e.g. David Cohen" style={inputStyle} />
+            </Field>
+            <Field label="Rating">
+              <div style={{ display:"flex", gap:6 }}>
+                {[1,2,3,4,5].map(n => (
+                  <button key={n} onClick={() => setRating(n)} style={{ width:36, height:36, borderRadius:8, border:"1.5px solid", borderColor: n <= rating ? "#F59E0B" : "var(--color-cream-2)", background: n <= rating ? "#FEF3C7" : "transparent", fontSize:16, cursor:"pointer" }}>★</button>
+                ))}
+              </div>
+            </Field>
+            <Field label="Review text">
+              <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Paste the review here…" rows={3} style={{ ...inputStyle, height:"auto", resize:"vertical", padding:"10px 13px", lineHeight:1.5 }} />
+            </Field>
+            <Field label="Date (optional)">
+              <input value={date} onChange={e => setDate(e.target.value)} placeholder="e.g. June 2025" style={inputStyle} />
+            </Field>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={saveReview} disabled={saving} style={{ flex:1, height:36, borderRadius:9, border:"none", background:"var(--color-amber)", color:"#fff", fontSize:13, fontWeight:700, cursor:saving?"not-allowed":"pointer", opacity:saving?0.6:1, fontFamily:"inherit" }}>
+                {saving ? "Saving…" : editingId ? "Update" : "Add review"}
+              </button>
+              <button onClick={resetForm} style={{ height:36, padding:"0 14px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"transparent", fontSize:13, fontWeight:600, color:"var(--color-muted)", cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {!showForm && (
+          <button
+            onClick={() => { resetForm(); setShowForm(true); }}
+            style={{ width:"100%", height:38, borderRadius:9, border:"1.5px dashed var(--color-cream-2)", background:"transparent", fontSize:13, fontWeight:600, color:"var(--color-muted)", cursor:"pointer", fontFamily:"inherit", transition:"border-color 0.15s, color 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor="var(--color-amber)"; e.currentTarget.style.color="var(--color-amber)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor="var(--color-cream-2)"; e.currentTarget.style.color="var(--color-muted)"; }}
+          >
+            + Add review
+          </button>
+        )}
+      </SectionCard>
     </div>
   );
 }

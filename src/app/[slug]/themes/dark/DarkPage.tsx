@@ -3,15 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import type { Business, Service } from "@/types";
 import { FloatingCTA }    from "../../components/FloatingCTA";
-import { SectionGallery } from "../../components/SectionGallery";
-import { SectionHours }   from "../../components/SectionHours";
+import { SectionGallery }  from "../../components/SectionGallery";
+import { SectionHours }    from "../../components/SectionHours";
 import { SectionLocation } from "../../components/SectionLocation";
+import { SectionReviews }  from "../../components/SectionReviews";
 import { BookingOverlay }  from "../../booking/BookingOverlay";
 import { translations, type Lang } from "../../translations";
 import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../../utils/openStatus";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=1200&q=80";
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "reviews", "hours", "location"];
 
 const D = {
   bg:      "#0D0D0D",
@@ -413,6 +414,22 @@ export function DarkPage({ business, services }: Props) {
                   <GoldDivider accent={accent} />
                   <DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} />
                   <SectionGallery photos={business.gallery_images} layout="grid" borderRadius={2} initialCount={4} />
+                </div>
+              ) : null;
+            case "reviews":
+              return business.show_reviews !== false && business.google_reviews && business.google_reviews.length > 0 ? (
+                <div key={key}>
+                  <GoldDivider accent={accent} />
+                  <DarkSectionTitle title={t.reviews.title} accent={accent} isRtl={isRtl} />
+                  <SectionReviews
+                    reviews={business.google_reviews}
+                    accentColor={accent}
+                    darkColor={D.text}
+                    bgColor={D.surface}
+                    borderColor={D.border}
+                    reviewLink={business.google_review_link}
+                    leaveReviewLabel={t.reviews.leaveReview}
+                  />
                 </div>
               ) : null;
             case "hours":

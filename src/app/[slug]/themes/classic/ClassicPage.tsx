@@ -3,15 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import type { Business, Service } from "@/types";
 import { FloatingCTA }    from "../../components/FloatingCTA";
-import { SectionGallery } from "../../components/SectionGallery";
-import { SectionHours }   from "../../components/SectionHours";
+import { SectionGallery }  from "../../components/SectionGallery";
+import { SectionHours }    from "../../components/SectionHours";
 import { SectionLocation } from "../../components/SectionLocation";
+import { SectionReviews }  from "../../components/SectionReviews";
 import { BookingOverlay }  from "../../booking/BookingOverlay";
 import { translations, type Lang } from "../../translations";
 import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../../utils/openStatus";
 
 const C = { bg: "#F8F2E8", dark: "#221510", gold: "#B8862A", cream2: "#F0E8D8" };
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "reviews", "hours", "location"];
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=1200&q=80";
 
 function useFadeInOnEnter() {
@@ -268,6 +269,23 @@ export function ClassicPage({ business, services }: Props) {
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} />
                   <div style={{ marginTop: 28 }}><SectionGallery photos={business.gallery_images} initialCount={4} /></div>
+                </section>
+              ) : null;
+            case "reviews":
+              return business.show_reviews !== false && business.google_reviews && business.google_reviews.length > 0 ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.reviews.title} accentColor={accent} darkColor={C.dark} />
+                  <div style={{ marginTop: 20 }}>
+                    <SectionReviews
+                      reviews={business.google_reviews}
+                      accentColor={accent}
+                      darkColor={C.dark}
+                      bgColor="#fff"
+                      borderColor={`${accent}22`}
+                      reviewLink={business.google_review_link}
+                      leaveReviewLabel={t.reviews.leaveReview}
+                    />
+                  </div>
                 </section>
               ) : null;
             case "hours":

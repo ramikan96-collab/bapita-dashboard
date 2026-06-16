@@ -4,11 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/components/Toast";
-import type { Service, BusinessHours, DayKey } from "@/types";
+import type { Service, BusinessHours, DayKey, GoogleReview } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Section = "business" | "services" | "hours";
+type Section = "business" | "services" | "hours" | "reviews";
 
 interface BookingSettings {
   buffer_minutes: number;
@@ -66,6 +66,7 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: "business", label: "Business Info" },
   { id: "services", label: "Services" },
   { id: "hours",    label: "Working Hours" },
+  { id: "reviews",  label: "Reviews" },
 ];
 
 // ─── Shared UI primitives ─────────────────────────────────────────────────────
@@ -861,6 +862,152 @@ function HoursSection({
   );
 }
 
+// ─── Reviews section ──────────────────────────────────────────────────────────
+
+function ReviewsSection({
+  business,
+  supabase,
+  refresh,
+}: {
+  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
+  supabase: ReturnType<typeof createClient>;
+  refresh: () => Promise<void>;
+}) {
+  const { showToast } = useToast();
+  const [reviews, setReviews]       = useState<GoogleReview[]>((business.google_reviews as GoogleReview[]) || []);
+  const [showReviews, setShowReviews] = useState(business.show_reviews !== false);
+  const [showForm, setShowForm]     = useState(false);
+  const [editingId, setEditingId]   = useState<string | null>(null);
+  const [author, setAuthor]         = useState("");
+  const [rating, setRating]         = useState(5);
+  const [text, setText]             = useState("");
+  const [date, setDate]             = useState("");
+  const [saving, setSaving]         = useState(false);
+
+  function resetForm() {
+    setShowForm(false); setEditingId(null);
+    setAuthor(""); setRating(5); setText(""); setDate("");
+  }
+
+  function startEdit(r: GoogleReview) {
+    setEditingId(r.id);
+    setAuthor(r.author); setRating(r.rating); setText(r.text); setDate(r.date || "");
+    setShowForm(true);
+  }
+
+  async function saveReview() {
+    if (!author.trim() || !text.trim()) { showToast("Author and review text required", "error"); return; }
+    setSaving(true);
+    const updated = editingId
+      ? reviews.map(r => r.id === editingId ? { ...r, author: author.trim(), rating, text: text.trim(), date: date.trim() } : r)
+      : [...reviews, { id: crypto.randomUUID(), author: author.trim(), rating, text: text.trim(), date: date.trim() }];
+    const { error } = await supabase.from("businesses").update({ google_reviews: updated }).eq("id", business.id);
+    setSaving(false);
+    if (error) { showToast("Failed to save", "error"); return; }
+    setReviews(updated);
+    resetForm();
+    await refresh();
+    showToast(editingId ? "Review updated" : "Review added", "success");
+  }
+
+  async function deleteReview(id: string) {
+    const updated = reviews.filter(r => r.id !== id);
+    const { error } = await supabase.from("businesses").update({ google_reviews: updated }).eq("id", business.id);
+    if (error) { showToast("Failed to delete", "error"); return; }
+    setReviews(updated);
+    await refresh();
+    showToast("Review deleted", "success");
+  }
+
+  async function toggleShowReviews() {
+    const next = !showReviews;
+    const { error } = await supabase.from("businesses").update({ show_reviews: next }).eq("id", business.id);
+    if (error) { showToast("Failed to update", "error"); return; }
+    setShowReviews(next);
+    await refresh();
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <SectionCard title="Display settings">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>Show reviews section</div>
+            <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Visible on booking page when reviews exist</div>
+          </div>
+          <Toggle on={showReviews} onChange={toggleShowReviews} />
+        </div>
+      </SectionCard>
+
+      <SectionCard title={`Reviews (${reviews.length})`}>
+        {reviews.length === 0 && !showForm && (
+          <p style={{ fontSize: 13, color: "var(--color-muted)", margin: 0 }}>No reviews yet. Add your best Google reviews below.</p>
+        )}
+
+        {reviews.map(r => (
+          <div key={r.id} style={{ border: "1px solid var(--color-cream-2)", borderRadius: 11, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)" }}>{r.author}</span>
+                <span style={{ fontSize: 12, color: "#F59E0B", letterSpacing: 1 }}>{"★".repeat(r.rating)}</span>
+                {r.date && <span style={{ fontSize: 11, color: "var(--color-muted)" }}>{r.date}</span>}
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button onClick={() => startEdit(r)} style={{ fontSize: 12, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>Edit</button>
+                <button onClick={() => deleteReview(r.id)} style={{ fontSize: 12, fontWeight: 600, color: "#EF4444", background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>Delete</button>
+              </div>
+            </div>
+            <p style={{ fontSize: 13, color: "var(--color-dark)", opacity: 0.75, margin: 0, lineHeight: 1.5 }}>{r.text}</p>
+          </div>
+        ))}
+
+        {showForm && (
+          <div style={{ border: "1.5px solid var(--color-amber)", borderRadius: 12, padding: "14px", display: "flex", flexDirection: "column", gap: 12 }}>
+            <InputField label="Client name" value={author} onChange={setAuthor} placeholder="e.g. David Cohen" />
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: "var(--color-dark)" }}>Rating</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[1,2,3,4,5].map(n => (
+                  <button key={n} onClick={() => setRating(n)} style={{ width: 36, height: 36, borderRadius: 8, border: "1.5px solid", borderColor: n <= rating ? "#F59E0B" : "var(--color-cream-2)", background: n <= rating ? "#FEF3C7" : "transparent", fontSize: 16, cursor: "pointer", transition: "all 0.12s" }}>★</button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: "var(--color-dark)" }}>Review text</label>
+              <textarea
+                value={text} onChange={e => setText(e.target.value)}
+                placeholder="Paste the review here…"
+                rows={4}
+                style={{ width: "100%", padding: "10px 13px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", resize: "vertical", boxSizing: "border-box", transition: "border-color 0.15s" }}
+                onFocus={e => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                onBlur={e  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+              />
+            </div>
+            <InputField label="Date (optional)" value={date} onChange={setDate} placeholder="e.g. June 2025" />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveReview} disabled={saving} style={{ flex: 1, height: 40, borderRadius: 11, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>
+                {saving ? "Saving…" : editingId ? "Update review" : "Add review"}
+              </button>
+              <button onClick={resetForm} style={{ height: 40, padding: "0 16px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "transparent", fontSize: 13, fontWeight: 600, color: "var(--color-muted)", cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {!showForm && (
+          <button
+            onClick={() => { resetForm(); setShowForm(true); }}
+            style={{ width: "100%", height: 40, borderRadius: 11, border: "1.5px dashed var(--color-cream-2)", background: "transparent", fontSize: 13, fontWeight: 600, color: "var(--color-muted)", cursor: "pointer", transition: "border-color 0.15s, color 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-muted)"; }}
+          >
+            + Add review
+          </button>
+        )}
+      </SectionCard>
+    </div>
+  );
+}
+
 // ─── [Removed: Booking Rules + Notifications — not in v1 scope] ───────────────
 
 function _BookingSection({
@@ -1182,6 +1329,7 @@ export default function SettingsPage() {
       case "business": return <BusinessSection business={business!} supabase={supabase} refresh={refresh} />;
       case "services": return <ServicesSection business={business!} supabase={supabase} />;
       case "hours":    return <HoursSection business={business!} supabase={supabase} refresh={refresh} />;
+      case "reviews":  return <ReviewsSection business={business!} supabase={supabase} refresh={refresh} />;
     }
   }
 
