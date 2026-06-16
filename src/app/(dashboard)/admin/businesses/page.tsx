@@ -59,6 +59,8 @@ export default function AdminBusinessesPage() {
 
   async function handleDelete(id: string) {
     setDeleting(id);
+    await supabase.from("bookings").delete().eq("business_id", id);
+    await supabase.from("customers").delete().eq("business_id", id);
     await supabase.from("services").delete().eq("business_id", id);
     await supabase.from("businesses").delete().eq("id", id);
     setDeleting(null);

@@ -32,6 +32,7 @@ interface FormData {
   name_he:            string;
   slug:               string;
   template_style:     string;
+  default_lang:       string;
   tagline:            string;
   tagline_he:         string;
   phone:              string;
@@ -76,7 +77,7 @@ interface Stats {
 type Tab = "profile" | "gallery" | "services" | "plan";
 
 const EMPTY_FORM: FormData = {
-  name: "", name_he: "", slug: "", template_style: "classic",
+  name: "", name_he: "", slug: "", template_style: "classic", default_lang: "he",
   tagline: "", tagline_he: "", phone: "", address: "", email: "",
   instagram_url: "", facebook_url: "", whatsapp_number: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
@@ -109,7 +110,9 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
   const [saving,       setSaving]       = useState(false);
   const [error,        setError]        = useState("");
   const [saved,        setSaved]        = useState(false);
+  const [dirty,        setDirty]        = useState(false);
   const [loading,      setLoading]      = useState(mode === "edit");
+  const stableId = useRef<string>(businessId || crypto.randomUUID());
 
   useEffect(() => {
     if (mode !== "edit" || !businessId) return;
@@ -121,6 +124,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           name_he:            b.name_he            || "",
           slug:               b.slug               || "",
           template_style:     b.template_style      || "classic",
+          default_lang:       b.default_lang        || "he",
           tagline:            b.tagline             || "",
           tagline_he:         b.tagline_he          || "",
           phone:              b.phone               || "",
@@ -193,7 +197,15 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     })();
   }, [businessId, mode]);
 
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
+    setDirty(true);
     setForm(f => ({ ...f, [key]: value }));
     if (key === "name" && mode === "new") {
       const slug = (value as string).toLowerCase().trim()
@@ -225,6 +237,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       name_he:            form.name_he            || null,
       slug:               form.slug.trim(),
       template_style:     form.template_style,
+      default_lang:       form.default_lang       || "he",
       tagline:            form.tagline            || null,
       tagline_he:         form.tagline_he         || null,
       phone:              form.phone              || null,
@@ -268,7 +281,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       if (e) { setError(e.message); setSaving(false); return; }
     }
 
-    setSaving(false); setSaved(true);
+    setSaving(false); setSaved(true); setDirty(false);
     setTimeout(() => setSaved(false), 2000);
     onSaved(form.slug);
   }
@@ -336,6 +349,11 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
             >
               Preview ↗
             </a>
+          )}
+
+          {/* Dirty indicator */}
+          {dirty && !saving && !saved && (
+            <span style={{ width:7, height:7, borderRadius:"50%", background:"var(--color-amber)", flexShrink:0 }} />
           )}
 
           {/* Save */}
@@ -415,6 +433,14 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                       <option value="dark">Dark (dark/gold)</option>
                     </select>
                   </Field>
+                  <Field label="Default Language">
+                    <select value={form.default_lang} onChange={e => set("default_lang", e.target.value)} style={inputStyle}>
+                      <option value="he">Hebrew (עברית)</option>
+                      <option value="en">English</option>
+                    </select>
+                  </Field>
+                </Row>
+                <Row>
                   <Field label="Accent Color">
                     <div style={{ display:"flex", gap:8, alignItems:"center" }}>
                       <input
@@ -554,7 +580,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
           {/* ── GALLERY ── */}
           {tab === "gallery" && (
-            <GalleryManager gallery={gallery} setGallery={setGallery} businessId={businessId} />
+            <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} />
           )}
 
           {/* ── SERVICES ── */}
@@ -665,7 +691,9 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 // ─── Section Reorder ──────────────────────────────────────────────────────────
 
 function SectionReorder({ order, setOrder }: { order: string[]; setOrder: (o: string[]) => void }) {
-  const dragIdx = useRef<number | null>(null);
+  const dragIdx      = useRef<number | null>(null);
+  const touchStartY  = useRef<number>(0);
+  const itemHeight   = useRef<number>(46); // approx row height + gap
   const [dragOver, setDragOver] = useState<number | null>(null);
 
   function onDragStart(i: number) { dragIdx.current = i; }
@@ -683,6 +711,32 @@ function SectionReorder({ order, setOrder }: { order: string[]; setOrder: (o: st
     setDragOver(null);
   }
 
+  function onTouchStart(e: React.TouchEvent, i: number) {
+    dragIdx.current = i;
+    touchStartY.current = e.touches[0].clientY;
+    const el = e.currentTarget as HTMLElement;
+    itemHeight.current = el.offsetHeight + 6;
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    e.preventDefault();
+    if (dragIdx.current === null) return;
+    const deltaY  = e.touches[0].clientY - touchStartY.current;
+    const target  = Math.round(dragIdx.current + deltaY / itemHeight.current);
+    setDragOver(Math.max(0, Math.min(order.length - 1, target)));
+  }
+
+  function onTouchEnd() {
+    if (dragIdx.current !== null && dragOver !== null && dragOver !== dragIdx.current) {
+      const next = [...order];
+      const [moved] = next.splice(dragIdx.current, 1);
+      next.splice(dragOver, 0, moved);
+      setOrder(next);
+    }
+    dragIdx.current = null;
+    setDragOver(null);
+  }
+
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
       {order.map((key, i) => (
@@ -694,12 +748,16 @@ function SectionReorder({ order, setOrder }: { order: string[]; setOrder: (o: st
           onDragEnd={onDragEnd}
           onDrop={e => { e.preventDefault(); onDrop(i); }}
           onDragOver={e => e.preventDefault()}
+          onTouchStart={e => onTouchStart(e, i)}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
           style={{
             display:"flex", alignItems:"center", gap:10, padding:"10px 12px",
             background:"var(--color-cream)", borderRadius:9,
             border: `1.5px solid ${dragOver === i ? "var(--color-amber)" : "var(--color-cream-2)"}`,
             cursor:"grab", transition:"border-color 0.15s",
             opacity: dragOver === i ? 0.7 : 1,
+            touchAction: "none",
           }}
         >
           <span style={{ color:"var(--color-muted)", fontSize:14, userSelect:"none" }}>⠿</span>

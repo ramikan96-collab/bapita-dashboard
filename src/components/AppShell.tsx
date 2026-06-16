@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ToastProvider, useToast } from "@/components/Toast";
@@ -157,6 +157,14 @@ function IconLogout({ size = 20 }: IconProps) {
   );
 }
 
+function IconAdmin({ size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+    </svg>
+  );
+}
+
 function IconExtras({ size = 20 }: IconProps) {
   // sparkles — "the store of upgrades"
   return (
@@ -229,6 +237,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isAdmin,    setIsAdmin]    = useState(false);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const [viewSectionOpen, setViewSectionOpen] = useState(false);
   const [calendarsSectionOpen, setCalendarsSectionOpen] = useState(false);
@@ -239,6 +248,12 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
 
   const onCalendar = pathname === "/calendar";
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAdmin(user?.email === "ramikan96@gmail.com");
+    });
+  }, []);
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/");
 
@@ -889,6 +904,25 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               </button>
             );
           })}
+          {isAdmin && (
+            <>
+              <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
+              <button
+                onClick={() => go("/admin/businesses")}
+                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
+                style={{
+                  height: 48,
+                  background: isActive("/admin") ? "rgba(232,146,10,0.05)" : "transparent",
+                  borderInlineStart: isActive("/admin") ? "3px solid var(--color-amber)" : "3px solid transparent",
+                }}
+              >
+                <span style={{ color: isActive("/admin") ? "var(--color-amber)" : "var(--color-muted)" }}>
+                  <IconAdmin />
+                </span>
+                Admin
+              </button>
+            </>
+          )}
         </nav>
 
         {/* Business name + sign out — bottom */}
