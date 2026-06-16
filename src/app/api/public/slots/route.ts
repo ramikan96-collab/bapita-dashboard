@@ -67,12 +67,20 @@ export async function GET(req: NextRequest) {
     duration: Array.isArray(b.service) ? (b.service[0]?.duration || 30) : (b.service?.duration || 30),
   }));
 
-  const slots = getSlots(
-    new Date(date + "T00:00:00"),
-    duration,
-    business?.business_hours as BusinessHours | null,
-    booked
-  );
+  const dateObj = new Date(date + "T00:00:00");
+  const dayKey = DAY_NAMES[dateObj.getDay()];
+  const bh = business?.business_hours as BusinessHours | null;
+  const slots = getSlots(dateObj, duration, bh, booked);
 
-  return NextResponse.json({ slots });
+  return NextResponse.json({
+    slots,
+    _debug: {
+      businessFound: !!business,
+      dayKey,
+      dayHours: bh?.[dayKey as keyof BusinessHours] ?? null,
+      duration,
+      date,
+      bookedCount: booked.length,
+    },
+  });
 }
