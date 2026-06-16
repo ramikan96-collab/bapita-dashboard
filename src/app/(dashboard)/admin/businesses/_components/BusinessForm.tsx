@@ -705,7 +705,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                         onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-muted)"; }}
                       >
-                        Apply first day's hours to all open days
+                        Apply first day&apos;s hours to all open days
                       </button>
                     )}
                   </SectionCard>
