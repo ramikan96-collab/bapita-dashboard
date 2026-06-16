@@ -259,6 +259,7 @@ function BusinessSection({
   const [taglineHe, setTaglineHe] = useState(business.tagline_he || "");
   const [aboutHe, setAboutHe] = useState(business.about_text_he || "");
   const [defaultLang, setDefaultLang] = useState<"en" | "he">((business.default_lang as "en" | "he") || "en");
+  const [notificationEmail, setNotificationEmail] = useState(business.notification_email || "");
   const [saving, setSaving] = useState(false);
 
   const original = {
@@ -267,8 +268,9 @@ function BusinessSection({
     tagline: business.tagline || "", about: business.about_text || "",
     taglineHe: business.tagline_he || "", aboutHe: business.about_text_he || "",
     defaultLang: (business.default_lang as "en" | "he") || "en",
+    notificationEmail: business.notification_email || "",
   };
-  const dirty = name !== original.name || nameHe !== original.nameHe || phone !== original.phone || address !== original.address || slug !== original.slug || defaultLang !== original.defaultLang || tagline !== original.tagline || about !== original.about || taglineHe !== original.taglineHe || aboutHe !== original.aboutHe;
+  const dirty = name !== original.name || nameHe !== original.nameHe || phone !== original.phone || address !== original.address || slug !== original.slug || defaultLang !== original.defaultLang || tagline !== original.tagline || about !== original.about || taglineHe !== original.taglineHe || aboutHe !== original.aboutHe || notificationEmail !== original.notificationEmail;
 
   const bookingUrl = `book.bapita.com/${slug || "your-slug"}`;
 
@@ -291,6 +293,7 @@ function BusinessSection({
       default_lang: defaultLang,
       tagline: tagline || null, about_text: about || null,
       tagline_he: taglineHe || null, about_text_he: aboutHe || null,
+      notification_email: notificationEmail.trim() || null,
     }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast("Failed to save", "error"); return; }
@@ -303,6 +306,7 @@ function BusinessSection({
       <SectionCard title="Details">
         <InputField label="Business name" value={name} onChange={setName} placeholder="e.g. Studio Avi" />
         <InputField label="Phone" type="tel" value={phone} onChange={setPhone} placeholder="050-000-0000" />
+        <InputField label="Notification email" type="email" value={notificationEmail} onChange={setNotificationEmail} placeholder="you@example.com" hint="Booking alerts are sent to this address" />
         <InputField label="Address" value={address} onChange={setAddress} placeholder="Street, city" />
         <InputField label="Tagline" value={tagline} onChange={setTagline} placeholder="e.g. Premium cuts since 2010" />
         <div className="flex flex-col gap-1.5">

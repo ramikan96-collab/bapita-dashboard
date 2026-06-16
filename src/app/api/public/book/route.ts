@@ -57,6 +57,13 @@ export async function POST(req: NextRequest) {
   // Send confirmation email (fire and forget)
   if (customerEmail) {
     try {
+      const { data: bizData } = await supabase
+        .from("businesses")
+        .select("notification_email")
+        .eq("id", businessId)
+        .single();
+      const bccEmail = bizData?.notification_email || "info.bapita@gmail.com";
+
       const resend = new Resend(process.env.RESEND_API_KEY);
       const formattedDate = new Date(date + "T00:00:00").toLocaleDateString("he-IL", {
         weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -64,7 +71,7 @@ export async function POST(req: NextRequest) {
       await resend.emails.send({
         from: "Bapita <noreply@bapita.com>",
         to: customerEmail,
-        bcc: "info.bapita@gmail.com",
+        bcc: bccEmail,
         subject: `Booking confirmed — ${esc(businessName)}`,
         html: `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">

@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const { customerName, customerEmail, businessName, serviceName, date, time } = await req.json();
+  const { customerName, customerEmail, businessName, serviceName, date, time, notificationEmail } = await req.json();
 
   if (!customerEmail) {
     return NextResponse.json({ ok: true });
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const { error } = await resend.emails.send({
     from: "Bapita <noreply@bapita.com>",
     to: customerEmail,
-    bcc: "info.bapita@gmail.com",
+    bcc: notificationEmail || "info.bapita@gmail.com",
     subject: `Booking confirmed - ${esc(businessName)}`,
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">

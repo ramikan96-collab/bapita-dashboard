@@ -92,6 +92,7 @@ export interface Business {
   plan_renewal_date?:  string | null;
   plan_notes?:         string | null;
   default_lang?:       string | null;
+  notification_email?: string | null;
   // booking page display stats (editable by admin)
   stat_years?:         number | null;
   stat_clients?:       number | null;
