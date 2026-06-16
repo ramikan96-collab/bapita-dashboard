@@ -52,7 +52,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
     (async () => {
       const { data } = await supabase
         .from("services")
-        .select("id, name, duration:duration_minutes, price:price_nis, active, display_order, business_id")
+        .select("id, name, duration, price, active, display_order, business_id")
         .eq("business_id", business.id)
         .eq("active", true)
         .order("display_order");
@@ -70,7 +70,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
       setLoadingSlots(true);
       const { data: existing } = await supabase
         .from("bookings")
-        .select("appointment_time, service:services(duration:duration_minutes)")
+        .select("appointment_time, service:services(duration)")
         .eq("business_id", business.id)
         .eq("appointment_date", format(date, "yyyy-MM-dd"))
         .not("status", "eq", "cancelled");

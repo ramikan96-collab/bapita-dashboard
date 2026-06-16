@@ -149,7 +149,7 @@ export default function InsightsPage() {
     const [{ data: current }, { data: previous }] = await Promise.all([
       supabase
         .from("bookings")
-        .select("id, status, appointment_date, appointment_time, customer_name, payment_status, service:services(name, price, duration_minutes)")
+        .select("id, status, appointment_date, appointment_time, customer_name, payment_status, service:services(name, price, duration)")
         .eq("business_id", business.id)
         .gte("appointment_date", fmt(start))
         .lte("appointment_date", fmt(end))

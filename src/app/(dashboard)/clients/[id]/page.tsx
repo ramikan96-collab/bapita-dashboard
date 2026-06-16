@@ -256,11 +256,9 @@ export default function ClientProfilePage() {
       setNotes(clientData?.notes || "");
       setSavedNotes(clientData?.notes || "");
 
-      // Alias price:price_nis + duration:duration_minutes — the real column
-      // names. Without the alias the embed returns null and prices render blank.
       const { data: bookingsData } = await supabase
         .from("bookings")
-        .select("*, service:services(name, duration:duration_minutes, price:price_nis)")
+        .select("*, service:services(name, duration, price)")
         .eq("customer_id", clientId)
         .eq("business_id", business.id)
         .order("appointment_date", { ascending: false })

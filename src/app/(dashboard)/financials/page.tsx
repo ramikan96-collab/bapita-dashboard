@@ -951,7 +951,7 @@ export default function FinancialsPage() {
     (async () => {
       const { data } = await supabase
         .from("bookings")
-        .select("id, customer_name, appointment_date, status, payment_status, service:services(name, price:price_nis)")
+        .select("id, customer_name, appointment_date, status, payment_status, service:services(name, price)")
         .eq("business_id", business.id)
         .eq("payment_status", "stripe")
         .gte("appointment_date", format(startOfMonth(currentMonth), "yyyy-MM-dd"))

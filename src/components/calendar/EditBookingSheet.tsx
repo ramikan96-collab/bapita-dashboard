@@ -47,7 +47,7 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
     (async () => {
       const { data } = await supabase
         .from("services")
-        .select("id, name, duration:duration_minutes, price:price_nis, active, display_order, business_id")
+        .select("id, name, duration, price, active, display_order, business_id")
         .eq("business_id", business.id)
         .eq("active", true)
         .order("display_order");
@@ -68,7 +68,7 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
       const dateStr = format(date, "yyyy-MM-dd");
       const { data: existing } = await supabase
         .from("bookings")
-        .select("appointment_time, service:services(duration:duration_minutes)")
+        .select("appointment_time, service:services(duration)")
         .eq("business_id", business.id)
         .eq("appointment_date", dateStr)
         .neq("id", booking.id)

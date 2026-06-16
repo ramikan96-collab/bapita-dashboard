@@ -42,7 +42,7 @@ export default function RescheduleSheet({ booking, onRescheduled, onClose }: Pro
       const dateStr = format(date, "yyyy-MM-dd");
       const { data: existing } = await supabase
         .from("bookings")
-        .select("appointment_time, service:services(duration:duration_minutes)")
+        .select("appointment_time, service:services(duration)")
         .eq("business_id", business.id)
         .eq("appointment_date", dateStr)
         .neq("id", booking.id)

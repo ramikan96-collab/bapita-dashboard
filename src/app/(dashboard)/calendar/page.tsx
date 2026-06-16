@@ -60,7 +60,7 @@ export default function CalendarPage() {
 
     const { data } = await supabase
       .from("bookings")
-      .select("*, service:services(name, duration:duration_minutes, price:price_nis), label:labels(id,name,color)")
+      .select("*, service:services(name, duration, price), label:labels(id,name,color)")
       .eq("business_id", business.id)
       .gte("appointment_date", format(s, "yyyy-MM-dd"))
       .lte("appointment_date", format(e, "yyyy-MM-dd"))
@@ -154,7 +154,7 @@ export default function CalendarPage() {
     const timer = setTimeout(async () => {
       const { data } = await supabase
         .from("bookings")
-        .select("*, service:services(name, duration:duration_minutes, price:price_nis), label:labels(id,name,color)")
+        .select("*, service:services(name, duration, price), label:labels(id,name,color)")
         .eq("business_id", business.id)
         .ilike("customer_name", `%${q}%`)
         .order("appointment_date", { ascending: false })
