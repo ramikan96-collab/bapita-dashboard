@@ -284,7 +284,7 @@ export default function ClientProfilePage() {
     setSavingNotes(false);
 
     if (error) {
-      showToast("Couldn't save notes", "error");
+      showToast(`Couldn't save notes: ${error.message}`, "error");
       return;
     }
 
@@ -544,15 +544,13 @@ export default function ClientProfilePage() {
                   <span style={{ color: "var(--color-muted)", display: "flex" }}><IconNote /></span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Notes</span>
                 </div>
-                {notesDirty && (
-                  <button
-                    onClick={saveNotes}
-                    disabled={savingNotes}
-                    style={{ height: 28, padding: "0 12px", borderRadius: 7, background: "var(--color-amber)", color: "white", fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", opacity: savingNotes ? 0.6 : 1, transition: "opacity 0.15s" }}
-                  >
-                    {savingNotes ? "Saving…" : "Save"}
-                  </button>
-                )}
+                <button
+                  onClick={saveNotes}
+                  disabled={savingNotes || !notesDirty}
+                  style={{ height: 28, padding: "0 12px", borderRadius: 7, background: notesDirty ? "var(--color-amber)" : "var(--color-cream-2)", color: notesDirty ? "white" : "var(--color-muted)", fontSize: 12, fontWeight: 700, border: "none", cursor: notesDirty ? "pointer" : "default", opacity: savingNotes ? 0.6 : 1, transition: "all 0.15s" }}
+                >
+                  {savingNotes ? "Saving…" : "Save"}
+                </button>
               </div>
               <div style={{ padding: "10px 16px 16px" }}>
                 <textarea

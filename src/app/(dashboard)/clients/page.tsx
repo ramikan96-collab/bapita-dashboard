@@ -330,7 +330,7 @@ export default function ClientsPage() {
 
   // Build column grid template: avatar + visible cols + arrow
   const orderedCols: ColumnKey[] = ALL_COLUMNS.map((c) => c.key).filter((k) => visibleColumns.has(k));
-  const gridCols = ["34px", ...orderedCols.map(() => "1fr"), "20px"].join(" ");
+  const gridCols = ["34px", ...orderedCols.map(() => "1fr"), "80px"].join(" ");
 
   function toggleColumn(key: ColumnKey) {
     setVisibleColumns((prev) => {

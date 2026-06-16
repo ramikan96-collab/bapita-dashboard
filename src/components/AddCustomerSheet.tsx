@@ -33,6 +33,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
   const [name, setName] = useState(clientToEdit?.name ?? "");
   const [phone, setPhone] = useState(clientToEdit?.phone ?? "");
   const [email, setEmail] = useState((clientToEdit as any)?.email ?? "");
+  const [notes, setNotes] = useState(clientToEdit?.notes ?? "");
   const [lastVisit, setLastVisit] = useState(
     clientToEdit?.last_visit_at ? format(parseISO(clientToEdit.last_visit_at), "yyyy-MM-dd") : ""
   );
@@ -110,6 +111,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
           name: name.trim(),
           phone: phone.trim(),
           email: email.trim() || null,
+          notes: notes.trim() || null,
           last_visit_at: lastVisit ? new Date(lastVisit).toISOString() : clientToEdit.last_visit_at,
         })
         .eq("id", clientToEdit.id)
@@ -130,6 +132,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim() || null,
+        notes: notes.trim() || null,
         total_visits: 0,
         last_visit_at: lastVisit ? new Date(lastVisit).toISOString() : null,
       })
@@ -143,14 +146,15 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
     }
 
     if (attach && service && time) {
-      const appointmentDateTime = parseISO(`${format(date, "yyyy-MM-dd")}T${time}`);
       const { error: bookErr } = await supabase.from("bookings").insert({
         business_id: business.id,
         customer_id: customer.id,
         service_id: service.id,
+        customer_name: customer.name,
+        customer_phone: customer.phone || null,
+        customer_email: customer.email || null,
         appointment_date: format(date, "yyyy-MM-dd"),
         appointment_time: time,
-        appointment_datetime: appointmentDateTime.toISOString(),
         status: "confirmed",
         payment_status: "none",
       });
@@ -253,6 +257,20 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
               style={{ height: 44, padding: "0 14px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", transition: "border-color 0.15s", boxSizing: "border-box" as const, width: "100%" }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+            />
+          </div>
+
+          {/* Notes */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--color-muted)" }}>Notes (optional)</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Preferences, allergies, usual style…"
+              style={{ padding: "10px 14px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", transition: "border-color 0.15s", boxSizing: "border-box" as const, width: "100%", resize: "vertical", minHeight: 72, lineHeight: 1.5 }}
               onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
               onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
             />
