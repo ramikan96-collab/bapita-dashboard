@@ -307,7 +307,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
   const [showReschedule, setShowReschedule] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
+
   const [notes, setNotes] = useState(current.notes ?? "");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -361,17 +361,17 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
   // ── Status update ──────────────────────────────────────────────────────────
 
   async function updateStatus(status: BookingStatus) {
-    setActionLoading(true);
+    const prev = current;
+    setCurrent({ ...current, status });
+    onUpdated({ status });
     const { error } = await supabase
       .from("bookings")
       .update({ status })
       .eq("id", current.id);
-    if (!error) {
-      const updated = { ...current, status };
-      setCurrent(updated);
-      onUpdated({ status });
+    if (error) {
+      setCurrent(prev);
+      onUpdated({ status: prev.status });
     }
-    setActionLoading(false);
   }
 
   // ── Checkout done ──────────────────────────────────────────────────────────
@@ -475,20 +475,20 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
             label="Confirm"
             color={AMBER}
             onClick={() => updateStatus("confirmed")}
-            loading={actionLoading}
+            loading={false}
             primary
           />
           <ActionBtn
             label="Complete"
             color={GREEN}
             onClick={() => setShowCheckout(true)}
-            loading={actionLoading}
+            loading={false}
           />
           <ActionBtn
             label="Cancel"
             color={RED}
             onClick={() => updateStatus("cancelled")}
-            loading={actionLoading}
+            loading={false}
           />
         </div>
       );
@@ -500,20 +500,20 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
             label="Complete"
             color={GREEN}
             onClick={() => setShowCheckout(true)}
-            loading={actionLoading}
+            loading={false}
             primary
           />
           <ActionBtn
             label="Reschedule"
             color={SLATE}
             onClick={() => setShowReschedule(true)}
-            loading={actionLoading}
+            loading={false}
           />
           <ActionBtn
             label="Cancel"
             color={RED}
             onClick={() => updateStatus("cancelled")}
-            loading={actionLoading}
+            loading={false}
           />
         </div>
       );
@@ -525,13 +525,13 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
             label="Reschedule"
             color={SLATE}
             onClick={() => setShowReschedule(true)}
-            loading={actionLoading}
+            loading={false}
           />
           <ActionBtn
             label="Reopen"
             color={AMBER}
             onClick={() => updateStatus("confirmed")}
-            loading={actionLoading}
+            loading={false}
           />
         </div>
       );
@@ -543,13 +543,13 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
             label="Reschedule"
             color={SLATE}
             onClick={() => setShowReschedule(true)}
-            loading={actionLoading}
+            loading={false}
           />
           <ActionBtn
             label="Reopen"
             color={AMBER}
             onClick={() => updateStatus("confirmed")}
-            loading={actionLoading}
+            loading={false}
           />
         </div>
       );

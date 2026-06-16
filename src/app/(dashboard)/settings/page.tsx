@@ -484,8 +484,11 @@ function ServicesSection({
   }
 
   async function toggleActive(id: string, current: boolean) {
-    await supabase.from("services").update({ active: !current }).eq("id", id);
     setServices((prev) => prev.map((s) => s.id === id ? { ...s, active: !current } : s));
+    const { error } = await supabase.from("services").update({ active: !current }).eq("id", id);
+    if (error) {
+      setServices((prev) => prev.map((s) => s.id === id ? { ...s, active: current } : s));
+    }
   }
 
   async function deleteService(id: string) {
