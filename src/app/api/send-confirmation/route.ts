@@ -19,11 +19,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const { customerName, customerEmail, businessName, serviceName, date, time, notificationEmail } = await req.json();
+  const { customerName, customerEmail, businessName, serviceName, date, time } = await req.json();
 
   if (!customerEmail) {
     return NextResponse.json({ ok: true });
   }
+
+  // Resolve notification_email server-side from the authenticated user's business
+  const { data: biz } = await supabase
+    .from("businesses")
+    .select("notification_email")
+    .eq("owner_id", user.id)
+    .single();
+  const bccEmail = biz?.notification_email || "info.bapita@gmail.com";
 
   const formattedDate = new Date(date + "T00:00:00").toLocaleDateString("he-IL", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -32,7 +40,7 @@ export async function POST(req: NextRequest) {
   const { error } = await resend.emails.send({
     from: "Bapita <noreply@bapita.com>",
     to: customerEmail,
-    bcc: notificationEmail || "info.bapita@gmail.com",
+    bcc: bccEmail,
     subject: `Booking confirmed - ${esc(businessName)}`,
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
