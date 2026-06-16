@@ -390,6 +390,15 @@ function NewBookingInner() {
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {!showNewClient ? (
                 <>
+                  <button
+                    onClick={() => setShowNewClient(true)}
+                    style={{ width: "100%", height: 44, borderRadius: 11, border: "1.5px dashed var(--color-cream-2)", background: "transparent", color: "var(--color-dark)", fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "border-color 0.15s, background 0.15s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.background = "var(--amber-soft)"; e.currentTarget.style.color = "var(--color-amber)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-dark)"; }}
+                  >
+                    + New client
+                  </button>
+
                   <div>
                     <label style={labelStyle}>Search client</label>
                     <input
@@ -476,14 +485,6 @@ function NewBookingInner() {
                     </div>
                   )}
 
-                  <button
-                    onClick={() => setShowNewClient(true)}
-                    style={{ width: "100%", height: 44, borderRadius: 11, border: "1.5px dashed var(--color-cream-2)", background: "transparent", color: "var(--color-dark)", fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "border-color 0.15s, background 0.15s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.background = "var(--amber-soft)"; e.currentTarget.style.color = "var(--color-amber)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-dark)"; }}
-                  >
-                    + New client
-                  </button>
                 </>
               ) : (
                 <>
