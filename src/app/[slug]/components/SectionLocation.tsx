@@ -1,3 +1,11 @@
+function isSafeUrl(u?: string | null): u is string {
+  if (!u) return false;
+  try {
+    const p = new URL(u);
+    return p.protocol === "https:" || p.protocol === "http:";
+  } catch { return false; }
+}
+
 interface Props {
   address: string;
   darkColor: string;
@@ -9,7 +17,7 @@ interface Props {
 
 export function SectionLocation({ address, darkColor, accentColor, directionsLabel = "Get Directions →", googleMapsUrl, wazeUrl }: Props) {
   const fallbackMapsUrl = `https://maps.google.com/?q=${encodeURIComponent(address)}`;
-  const mapsUrl = googleMapsUrl || fallbackMapsUrl;
+  const mapsUrl = isSafeUrl(googleMapsUrl) ? googleMapsUrl : fallbackMapsUrl;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -31,10 +39,10 @@ export function SectionLocation({ address, darkColor, accentColor, directionsLab
           {directionsLabel}
         </a>
 
-        {/* Waze button — only if wazeUrl is set */}
-        {wazeUrl && (
+        {/* Waze button — only if wazeUrl is a safe http(s) URL */}
+        {isSafeUrl(wazeUrl) && (
           <a
-            href={wazeUrl}
+            href={wazeUrl!}
             target="_blank"
             rel="noopener noreferrer"
             style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 38, padding: "0 14px", borderRadius: 9999, border: `1.5px solid ${accentColor}44`, color: accentColor, textDecoration: "none", fontSize: 13, fontWeight: 700, transition: "background 0.15s, border-color 0.15s" }}
