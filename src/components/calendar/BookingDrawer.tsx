@@ -41,7 +41,6 @@ interface PrevBooking {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-// ActionBtn
 function ActionBtn({
   label,
   color,
@@ -59,7 +58,7 @@ function ActionBtn({
     <button
       onClick={onClick}
       disabled={loading}
-      className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-opacity disabled:opacity-50"
+      className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold transition-opacity disabled:opacity-50"
       style={{
         background: primary ? color : `${color}18`,
         color: primary ? "#fff" : color,
@@ -71,44 +70,23 @@ function ActionBtn({
   );
 }
 
-// AccordionSection
-function AccordionSection({
-  id,
-  title,
-  open,
-  onToggle,
+// Flat section with all-caps label — no accordion, always visible
+function Section({
+  label,
   children,
 }: {
-  id: string;
-  title: string;
-  open: boolean;
-  onToggle: (id: string) => void;
+  label: string;
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className="border-b last:border-b-0"
-      style={{ borderColor: "var(--color-cream-2)" }}
-    >
-      <button
-        className="w-full flex items-center justify-between px-4 py-4 text-left"
-        onClick={() => onToggle(id)}
+    <div className="mb-6">
+      <p
+        className="text-[11px] font-bold uppercase tracking-widest mb-2.5 px-1"
+        style={{ color: "var(--color-muted)" }}
       >
-        <span className="text-[14px] font-bold" style={{ color: "var(--color-dark)" }}>
-          {title}
-        </span>
-        <span
-          className="text-base leading-none transition-transform"
-          style={{
-            color: "var(--color-muted)",
-            display: "inline-block",
-            transform: open ? "rotate(90deg)" : "rotate(0deg)",
-          }}
-        >
-          ›
-        </span>
-      </button>
-      {open && <div className="px-4 pb-4">{children}</div>}
+        {label}
+      </p>
+      {children}
     </div>
   );
 }
@@ -299,9 +277,7 @@ interface Props {
 export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
   const supabase = createClient();
 
-  // Core state
   const [current, setCurrent] = useState<Booking>(booking);
-  const [openSections, setOpenSections] = useState<string[]>(["notes"]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
@@ -311,14 +287,9 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
   const [notes, setNotes] = useState(current.notes ?? "");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Lazy accordion data
-  const [clientNotes, setClientNotes] = useState<string | null>(null);
   const [prevBooking, setPrevBooking] = useState<PrevBooking | null | "loading">(
-    null
+    current.customer_id ? "loading" : null
   );
-
-  // Track which sections have been lazily loaded
-  const lazyLoadedRef = useRef<Set<string>>(new Set());
 
   // ESC to close
   useEffect(() => {
@@ -336,16 +307,28 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
     };
   }, []);
 
-  // Load client notes on mount (notes section defaults open)
+  // Load previous booking on mount
   useEffect(() => {
     if (!current.customer_id) return;
-    lazyLoadedRef.current.add("notes");
     supabase
-      .from("customers")
-      .select("notes")
-      .eq("id", current.customer_id)
-      .single()
-      .then(({ data }) => setClientNotes(data?.notes ?? ""));
+      .from("bookings")
+      .select("appointment_date, service:services(name), status")
+      .eq("customer_id", current.customer_id)
+      .neq("id", current.id)
+      .order("appointment_date", { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        const row = data?.[0];
+        if (row) {
+          setPrevBooking({
+            appointment_date: row.appointment_date as string,
+            service: row.service as unknown as { name: string } | null,
+            status: row.status as BookingStatus,
+          });
+        } else {
+          setPrevBooking(null);
+        }
+      });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Notes auto-save ────────────────────────────────────────────────────────
@@ -395,67 +378,12 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
     }
   }
 
-  // ── Accordion toggle + lazy loading ───────────────────────────────────────
-
-  function toggleSection(id: string) {
-    setOpenSections((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
-
-    // Lazy load notes section
-    if (
-      id === "notes" &&
-      !lazyLoadedRef.current.has("notes") &&
-      current.customer_id
-    ) {
-      lazyLoadedRef.current.add("notes");
-      supabase
-        .from("customers")
-        .select("notes")
-        .eq("id", current.customer_id)
-        .single()
-        .then(({ data }) => {
-          setClientNotes(data?.notes ?? null);
-        });
-    }
-
-    // Lazy load history section
-    if (
-      id === "history" &&
-      !lazyLoadedRef.current.has("history") &&
-      current.customer_id
-    ) {
-      lazyLoadedRef.current.add("history");
-      setPrevBooking("loading");
-      supabase
-        .from("bookings")
-        .select("appointment_date, service:services(name), status")
-        .eq("customer_id", current.customer_id)
-        .neq("id", current.id)
-        .order("appointment_date", { ascending: false })
-        .limit(1)
-        .then(({ data }) => {
-          const row = data?.[0];
-          if (row) {
-            setPrevBooking({
-              appointment_date: row.appointment_date as string,
-              service: row.service as unknown as { name: string } | null,
-              status: row.status as BookingStatus,
-            });
-          } else {
-            setPrevBooking(null);
-          }
-        });
-    }
-  }
-
   // ── Derived values ─────────────────────────────────────────────────────────
 
   const duration = current.service?.duration ?? 30;
   const color = STATUS_COLOR[current.status];
   const statusBg = STATUS_BG[current.status];
   const date = parseISO(current.appointment_date);
-
   const timeStart = formatTime(current.appointment_time);
   const timeEnd = formatEndTime(current.appointment_time, duration);
 
@@ -470,136 +398,96 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
 
     if (s === "pending") {
       return (
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <ActionBtn
-              label="Confirm"
-              color={AMBER}
-              onClick={() => updateStatus("confirmed")}
-              loading={false}
-              primary
-            />
-            <ActionBtn
-              label="Complete"
-              color={GREEN}
-              onClick={() => setShowCheckout(true)}
-              loading={false}
-            />
+        <div className="flex flex-col gap-2.5">
+          <div className="flex gap-2.5">
+            <ActionBtn label="Confirm" color={AMBER} onClick={() => updateStatus("confirmed")} loading={false} primary />
+            <ActionBtn label="Complete" color={GREEN} onClick={() => setShowCheckout(true)} loading={false} />
           </div>
-          <div className="flex gap-2">
-            <ActionBtn
-              label="No-show"
-              color={RED}
-              onClick={() => updateStatus("no_show")}
-              loading={false}
-            />
-            <ActionBtn
-              label="Cancel"
-              color={RED}
-              onClick={() => updateStatus("cancelled")}
-              loading={false}
-            />
+          <div className="flex gap-2.5">
+            <ActionBtn label="No-show" color={RED} onClick={() => updateStatus("no_show")} loading={false} />
+            <ActionBtn label="Cancel" color={RED} onClick={() => updateStatus("cancelled")} loading={false} />
           </div>
         </div>
       );
     }
     if (s === "confirmed") {
       return (
-        <div className="flex flex-col gap-2">
-          <ActionBtn
-            label="Complete"
-            color={GREEN}
-            onClick={() => setShowCheckout(true)}
-            loading={false}
-            primary
-          />
-          <div className="flex gap-2">
-            <ActionBtn
-              label="No-show"
-              color={RED}
-              onClick={() => updateStatus("no_show")}
-              loading={false}
-            />
-            <ActionBtn
-              label="Reschedule"
-              color={SLATE}
-              onClick={() => setShowReschedule(true)}
-              loading={false}
-            />
-            <ActionBtn
-              label="Cancel"
-              color={RED}
-              onClick={() => updateStatus("cancelled")}
-              loading={false}
-            />
+        <div className="flex flex-col gap-2.5">
+          <ActionBtn label="Complete" color={GREEN} onClick={() => setShowCheckout(true)} loading={false} primary />
+          <div className="flex gap-2.5">
+            <ActionBtn label="No-show" color={RED} onClick={() => updateStatus("no_show")} loading={false} />
+            <ActionBtn label="Reschedule" color={SLATE} onClick={() => setShowReschedule(true)} loading={false} />
+            <ActionBtn label="Cancel" color={RED} onClick={() => updateStatus("cancelled")} loading={false} />
           </div>
         </div>
       );
     }
     if (s === "completed") {
       return (
-        <div className="flex gap-2">
-          <ActionBtn
-            label="Reschedule"
-            color={SLATE}
-            onClick={() => setShowReschedule(true)}
-            loading={false}
-          />
-          <ActionBtn
-            label="Reopen"
-            color={AMBER}
-            onClick={() => updateStatus("confirmed")}
-            loading={false}
-          />
+        <div className="flex gap-2.5">
+          <ActionBtn label="Reschedule" color={SLATE} onClick={() => setShowReschedule(true)} loading={false} />
+          <ActionBtn label="Reopen" color={AMBER} onClick={() => updateStatus("confirmed")} loading={false} />
         </div>
       );
     }
     if (s === "cancelled" || s === "no_show") {
       return (
-        <div className="flex gap-2">
-          <ActionBtn
-            label="Reschedule"
-            color={SLATE}
-            onClick={() => setShowReschedule(true)}
-            loading={false}
-          />
-          <ActionBtn
-            label="Reopen"
-            color={AMBER}
-            onClick={() => updateStatus("confirmed")}
-            loading={false}
-          />
+        <div className="flex gap-2.5">
+          <ActionBtn label="Reschedule" color={SLATE} onClick={() => setShowReschedule(true)} loading={false} />
+          <ActionBtn label="Reopen" color={AMBER} onClick={() => updateStatus("confirmed")} loading={false} />
         </div>
       );
     }
     return null;
   }
 
-  // ── Accordion section bodies ───────────────────────────────────────────────
+  // ── Section bodies ─────────────────────────────────────────────────────────
 
   function renderLabel() {
     const label = current.label;
     return (
       <button
         onClick={() => setShowLabelPicker(true)}
-        className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-start"
-        style={{ background: "var(--color-cream)" }}
+        className="flex items-center gap-3 w-full px-5 py-4 rounded-2xl text-start"
+        style={{
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-cream-2)",
+        }}
       >
         {label ? (
           <>
             <span
               className="w-4 h-4 rounded-full shrink-0"
-              style={{ background: label.color, border: label.color === "#FFFFFF" ? "1px solid var(--color-cream-2)" : "none" }}
+              style={{
+                background: label.color,
+                border:
+                  label.color === "#FFFFFF"
+                    ? "1px solid var(--color-cream-2)"
+                    : "none",
+              }}
             />
-            <span className="flex-1 text-[14px] font-semibold" style={{ color: "var(--color-dark)" }}>
+            <span
+              className="flex-1 text-[15px] font-semibold"
+              style={{ color: "var(--color-dark)" }}
+            >
               {label.name}
             </span>
-            <span className="text-[12px]" style={{ color: "var(--color-muted)" }}>Change</span>
+            <span className="text-[13px]" style={{ color: "var(--color-muted)" }}>
+              Change
+            </span>
           </>
         ) : (
           <>
-            <span className="w-4 h-4 rounded-full border-2 border-dashed shrink-0" style={{ borderColor: "var(--color-amber)" }} />
-            <span className="text-[14px] font-semibold" style={{ color: "var(--color-amber)" }}>+ Add label</span>
+            <span
+              className="w-4 h-4 rounded-full border-2 border-dashed shrink-0"
+              style={{ borderColor: "var(--color-amber)" }}
+            />
+            <span
+              className="text-[15px] font-semibold"
+              style={{ color: "var(--color-amber)" }}
+            >
+              + Add label
+            </span>
           </>
         )}
       </button>
@@ -608,35 +496,60 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
 
   function renderContact() {
     return (
-      <div className="flex flex-col gap-2">
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-cream-2)",
+        }}
+      >
         {current.customer_phone ? (
           <a
             href={`tel:${current.customer_phone}`}
-            className="flex items-center gap-3 px-4 py-3.5 rounded-xl"
-            style={{ background: "var(--color-cream)", color: "var(--color-dark)", textDecoration: "none" }}
+            className="flex items-center gap-4 px-5 py-4"
+            style={{
+              color: "var(--color-dark)",
+              textDecoration: "none",
+              borderBottom: current.customer_email
+                ? "1px solid var(--color-cream-2)"
+                : "none",
+            }}
           >
-            <span className="text-base shrink-0">📞</span>
-            <span className="text-[14px] font-semibold">{current.customer_phone}</span>
+            <span className="text-[18px] shrink-0">📞</span>
+            <span className="text-[15px] font-semibold">{current.customer_phone}</span>
           </a>
         ) : (
-          <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl" style={{ background: "var(--color-cream)" }}>
-            <span className="text-base shrink-0 opacity-40">📞</span>
-            <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>No phone</span>
+          <div
+            className="flex items-center gap-4 px-5 py-4"
+            style={{
+              borderBottom: current.customer_email
+                ? "1px solid var(--color-cream-2)"
+                : "none",
+            }}
+          >
+            <span className="text-[18px] shrink-0 opacity-30">📞</span>
+            <span className="text-[15px]" style={{ color: "var(--color-muted)" }}>
+              No phone
+            </span>
           </div>
         )}
         {current.customer_email ? (
           <a
             href={`mailto:${current.customer_email}`}
-            className="flex items-center gap-3 px-4 py-3.5 rounded-xl"
-            style={{ background: "var(--color-cream)", color: "var(--color-dark)", textDecoration: "none" }}
+            className="flex items-center gap-4 px-5 py-4"
+            style={{ color: "var(--color-dark)", textDecoration: "none" }}
           >
-            <span className="text-base shrink-0">✉️</span>
-            <span className="text-[14px] font-semibold truncate">{current.customer_email}</span>
+            <span className="text-[18px] shrink-0">✉️</span>
+            <span className="text-[15px] font-semibold truncate">
+              {current.customer_email}
+            </span>
           </a>
         ) : (
-          <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl" style={{ background: "var(--color-cream)" }}>
-            <span className="text-base shrink-0 opacity-40">✉️</span>
-            <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>No email</span>
+          <div className="flex items-center gap-4 px-5 py-4">
+            <span className="text-[18px] shrink-0 opacity-30">✉️</span>
+            <span className="text-[15px]" style={{ color: "var(--color-muted)" }}>
+              No email
+            </span>
           </div>
         )}
       </div>
@@ -655,23 +568,47 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
     };
 
     return (
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between px-4 py-3.5 rounded-xl" style={{ background: "var(--color-cream)" }}>
-          <span className="text-[13px]" style={{ color: "var(--color-muted)" }}>Service price</span>
-          <span className="text-[14px] font-bold" style={{ color: "var(--color-dark)" }}>
-            {price != null ? `₪${price}` : "—"}
-          </span>
-        </div>
-        <div className="flex items-center justify-between px-4 py-3.5 rounded-xl" style={{ background: "var(--color-cream)" }}>
-          <span className="text-[13px]" style={{ color: "var(--color-muted)" }}>Payment</span>
-          <span className="text-[14px] font-bold" style={{ color: ps === "none" ? "#EF4444" : STATUS_COLOR.completed }}>
-            {paymentLabel[ps]}
-          </span>
+      <div className="flex flex-col gap-3">
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-cream-2)",
+          }}
+        >
+          <div
+            className="flex items-center justify-between px-5 py-4"
+            style={{ borderBottom: "1px solid var(--color-cream-2)" }}
+          >
+            <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>
+              Service price
+            </span>
+            <span
+              className="text-[15px] font-bold"
+              style={{ color: "var(--color-dark)" }}
+            >
+              {price != null ? `₪${price}` : "—"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between px-5 py-4">
+            <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>
+              Payment
+            </span>
+            <span
+              className="text-[15px] font-bold"
+              style={{
+                color:
+                  ps === "none" ? "#EF4444" : STATUS_COLOR.completed,
+              }}
+            >
+              {paymentLabel[ps]}
+            </span>
+          </div>
         </div>
         {ps === "none" && (
           <button
             onClick={() => setShowCheckout(true)}
-            className="w-full py-3.5 rounded-xl text-[14px] font-bold"
+            className="w-full py-4 rounded-2xl text-[15px] font-bold"
             style={{ background: "var(--wash-amber)", color: "var(--color-amber)" }}
           >
             Mark as paid →
@@ -683,77 +620,86 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
 
   function renderNotes() {
     return (
-      <div className="flex flex-col gap-3">
-        <textarea
-          value={notes}
-          onChange={(e) => handleNotesChange(e.target.value)}
-          rows={3}
-          placeholder="Add a note about this appointment…"
-          className="w-full rounded-xl border outline-none resize-none"
-          style={{
-            fontSize: 16,
-            padding: "14px 16px",
-            lineHeight: 1.5,
-            borderColor: "var(--color-cream-2)",
-            background: "var(--color-cream)",
-            color: "var(--color-dark)",
-            fontFamily: "inherit",
-          }}
-          onFocus={(e) => (e.target.style.borderColor = "var(--color-amber)")}
-          onBlur={(e) => (e.target.style.borderColor = "var(--color-cream-2)")}
-        />
-        {current.customer_id && clientNotes !== null && (
-          <div className="rounded-xl p-4" style={{ background: "var(--color-cream)" }}>
-            <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "var(--color-muted)" }}>
-              Client notes
-            </p>
-            <p className="text-[14px] leading-relaxed" style={{ color: clientNotes ? "var(--color-dark)" : "var(--color-muted)" }}>
-              {clientNotes || "No client notes"}
-            </p>
-          </div>
-        )}
-      </div>
+      <textarea
+        value={notes}
+        onChange={(e) => handleNotesChange(e.target.value)}
+        rows={4}
+        placeholder="Add a note about this appointment…"
+        className="w-full rounded-2xl border outline-none resize-none"
+        style={{
+          fontSize: 15,
+          padding: "16px 20px",
+          lineHeight: 1.6,
+          borderColor: "var(--color-cream-2)",
+          background: "var(--color-surface)",
+          color: "var(--color-dark)",
+          fontFamily: "inherit",
+        }}
+        onFocus={(e) => (e.target.style.borderColor = "var(--color-amber)")}
+        onBlur={(e) => (e.target.style.borderColor = "var(--color-cream-2)")}
+      />
     );
   }
 
   function renderHistory() {
     if (!current.customer_id) {
       return (
-        <p className="text-sm" style={{ color: "var(--color-muted)" }}>
+        <p className="text-[14px] px-1" style={{ color: "var(--color-muted)" }}>
           No client profile linked.
         </p>
       );
     }
     if (prevBooking === "loading") {
       return (
-        <p className="text-sm" style={{ color: "var(--color-muted)" }}>
+        <p className="text-[14px] px-1" style={{ color: "var(--color-muted)" }}>
           Loading…
         </p>
       );
     }
     if (prevBooking === null) {
       return (
-        <p className="text-sm" style={{ color: "var(--color-muted)" }}>
+        <p className="text-[14px] px-1" style={{ color: "var(--color-muted)" }}>
           No previous bookings.
         </p>
       );
     }
 
     return (
-      <div className="flex flex-col gap-2">
-        <div className="rounded-xl px-4 py-3.5 flex flex-col gap-1" style={{ background: "var(--color-cream)" }}>
-          <p className="text-[14px] font-bold" style={{ color: "var(--color-dark)" }}>
+      <div className="flex flex-col gap-3">
+        <div
+          className="rounded-2xl px-5 py-4 flex flex-col gap-1"
+          style={{
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-cream-2)",
+          }}
+        >
+          <p className="text-[15px] font-bold" style={{ color: "var(--color-dark)" }}>
             {format(parseISO(prevBooking.appointment_date), "d MMM yyyy")}
-            {prevBooking.service?.name && <span className="font-normal" style={{ color: "var(--color-muted)" }}> · {prevBooking.service.name}</span>}
+            {prevBooking.service?.name && (
+              <span
+                className="font-normal"
+                style={{ color: "var(--color-muted)" }}
+              >
+                {" "}
+                · {prevBooking.service.name}
+              </span>
+            )}
           </p>
-          <p className="text-[12px] font-semibold" style={{ color: STATUS_COLOR[prevBooking.status] }}>
+          <p
+            className="text-[13px] font-semibold"
+            style={{ color: STATUS_COLOR[prevBooking.status] }}
+          >
             {STATUS_LABEL[prevBooking.status]}
           </p>
         </div>
         <a
           href={`/clients/${current.customer_id}`}
-          className="flex items-center justify-center py-3.5 rounded-xl text-[14px] font-bold"
-          style={{ background: "var(--color-cream)", color: "var(--color-amber)" }}
+          className="flex items-center justify-center py-4 rounded-2xl text-[14px] font-bold"
+          style={{
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-cream-2)",
+            color: "var(--color-amber)",
+          }}
         >
           View client profile →
         </a>
@@ -770,54 +716,55 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
 
       {/* Drawer — mobile bottom sheet, desktop right panel */}
       <div
-        className="fixed bottom-0 inset-x-0 z-50 rounded-t-[20px] max-h-[85vh] flex flex-col md:inset-y-0 md:left-auto md:end-0 md:w-96 md:rounded-none md:max-h-none"
+        className="fixed bottom-0 inset-x-0 z-50 rounded-t-[24px] max-h-[90vh] flex flex-col md:inset-y-0 md:left-auto md:end-0 md:w-[400px] md:rounded-none md:max-h-none"
         style={{
           background: "var(--color-cream)",
-          boxShadow: "0 -4px 24px rgba(30,26,20,0.12)",
+          boxShadow: "0 -8px 40px rgba(30,26,20,0.16)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Scrollable area */}
-        <div className="overflow-y-auto flex-1 px-4 pb-6">
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-5 pb-8">
           {/* Drag handle — mobile only */}
           <div
-            className="w-10 h-1 rounded-full mx-auto mt-3 mb-2 shrink-0 md:hidden"
+            className="w-10 h-1 rounded-full mx-auto mt-3 mb-1 md:hidden"
             style={{ background: "var(--color-cream-2)" }}
           />
 
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 end-4 w-7 h-7 flex items-center justify-center rounded-full"
+            className="absolute top-4 end-4 w-8 h-8 flex items-center justify-center rounded-full"
             style={{
               background: "var(--color-cream-2)",
               color: "var(--color-muted)",
-              fontSize: 16,
+              fontSize: 14,
+              fontWeight: 700,
             }}
           >
             ✕
           </button>
 
-          {/* Header card */}
-          <div
-            className="mt-5 mb-4 rounded-2xl"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "0 1px 4px rgba(30,26,20,0.06)" }}
-          >
-            {/* Top: avatar + name + status */}
-            <div className="flex items-center gap-4 px-5 pt-5 pb-4">
+          {/* ── HEADER ─────────────────────────────────────────────────── */}
+          <div className="pt-8 pb-5 md:pt-6">
+            {/* Avatar + name + status */}
+            <div className="flex items-start gap-4 mb-4">
               <div
                 className="w-14 h-14 rounded-full flex items-center justify-center text-[18px] font-black shrink-0"
                 style={{ background: "var(--color-amber)", color: "#fff" }}
               >
                 {initials(current.customer_name)}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-black leading-tight truncate" style={{ fontSize: 20, color: "var(--color-dark)" }}>
+              <div className="flex-1 min-w-0 pt-1">
+                <p
+                  className="font-black leading-tight truncate"
+                  style={{ fontSize: 22, color: "var(--color-dark)" }}
+                >
                   {current.customer_name}
                 </p>
                 <button
                   onClick={() => setShowStatusSheet(true)}
-                  className="mt-1.5 px-3 py-1 rounded-full text-[12px] font-bold"
+                  className="mt-2 px-3 py-1 rounded-full text-[12px] font-bold"
                   style={{ background: statusBg, color }}
                   title="Tap to change status"
                 >
@@ -825,95 +772,83 @@ export default function BookingDrawer({ booking, onClose, onUpdated }: Props) {
                 </button>
               </div>
             </div>
-            {/* Divider */}
-            <div style={{ borderTop: "1px solid var(--color-cream-2)" }} />
-            {/* Date · time · service */}
-            <div className="px-5 py-4 flex flex-col gap-1">
-              <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
+
+            {/* Date + time card */}
+            <div
+              className="rounded-2xl px-5 py-4"
+              style={{
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-cream-2)",
+              }}
+            >
+              <p
+                className="text-[13px] font-medium mb-1"
+                style={{ color: "var(--color-muted)" }}
+              >
                 {format(date, "EEEE, d MMM yyyy")}
               </p>
-              <p className="text-[16px] font-bold" style={{ color: "var(--color-dark)" }}>
+              <p
+                className="text-[18px] font-black"
+                style={{ color: "var(--color-dark)" }}
+              >
                 {timeStart}–{timeEnd}
-                <span className="text-[14px] font-normal" style={{ color: "var(--color-muted)" }}>
-                  {" · "}{duration} min{current.service?.name && ` · ${current.service.name}`}
+                <span
+                  className="text-[14px] font-normal"
+                  style={{ color: "var(--color-muted)" }}
+                >
+                  {" "}
+                  · {duration} min
                 </span>
               </p>
+              {current.service?.name && (
+                <p
+                  className="mt-1 text-[14px]"
+                  style={{ color: "var(--color-muted)" }}
+                >
+                  {current.service.name}
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="mb-4">{renderActions()}</div>
+          {/* ── ACTIONS ────────────────────────────────────────────────── */}
+          <div className="mb-7">{renderActions()}</div>
 
-          {/* Accordion sections */}
-          <div
-            className="rounded-2xl overflow-hidden mb-4"
-            style={{ border: "1px solid var(--color-cream-2)", background: "var(--color-surface)" }}
-          >
-            <AccordionSection
-              id="label"
-              title="Label"
-              open={openSections.includes("label")}
-              onToggle={toggleSection}
-            >
-              {renderLabel()}
-            </AccordionSection>
-            <AccordionSection
-              id="contact"
-              title="Contact"
-              open={openSections.includes("contact")}
-              onToggle={toggleSection}
-            >
-              {renderContact()}
-            </AccordionSection>
-            <AccordionSection
-              id="payment"
-              title="Payment"
-              open={openSections.includes("payment")}
-              onToggle={toggleSection}
-            >
-              {renderPayment()}
-            </AccordionSection>
-            <AccordionSection
-              id="notes"
-              title="Notes"
-              open={openSections.includes("notes")}
-              onToggle={toggleSection}
-            >
-              {renderNotes()}
-            </AccordionSection>
-            <AccordionSection
-              id="history"
-              title="History"
-              open={openSections.includes("history")}
-              onToggle={toggleSection}
-            >
-              {renderHistory()}
-            </AccordionSection>
-          </div>
+          {/* ── LABEL ──────────────────────────────────────────────────── */}
+          <Section label="Label">{renderLabel()}</Section>
+
+          {/* ── CONTACT ────────────────────────────────────────────────── */}
+          <Section label="Contact">{renderContact()}</Section>
+
+          {/* ── PAYMENT ────────────────────────────────────────────────── */}
+          <Section label="Payment">{renderPayment()}</Section>
+
+          {/* ── NOTES ──────────────────────────────────────────────────── */}
+          <Section label="Notes">{renderNotes()}</Section>
+
+          {/* ── HISTORY ────────────────────────────────────────────────── */}
+          <Section label="History">{renderHistory()}</Section>
         </div>
 
-        {/* Sticky footer — outside scroll */}
+        {/* Sticky footer */}
         <div
           className="shrink-0 px-5 py-4 flex gap-3 border-t"
-          style={{ borderColor: "var(--color-cream-2)", background: "var(--color-surface)" }}
+          style={{
+            borderColor: "var(--color-cream-2)",
+            background: "var(--color-surface)",
+          }}
         >
           <button
             onClick={() => setShowEdit(true)}
-            className="flex-1 py-3 rounded-xl text-sm font-bold"
-            style={{
-              background: "var(--wash-amber)",
-              color: "var(--color-amber)",
-            }}
+            className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold"
+            style={{ background: "var(--wash-amber)", color: "var(--color-amber)" }}
           >
             Edit appointment
           </button>
           <button
             onClick={() => window.print()}
-            className="flex-1 py-3 rounded-xl text-sm font-bold"
-            style={{
-              background: "var(--color-cream-2)",
-              color: "var(--color-muted)",
-            }}
+            className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold"
+            style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}
           >
             Print
           </button>
