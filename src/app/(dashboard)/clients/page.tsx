@@ -510,11 +510,11 @@ export default function ClientsPage() {
         /* ── Toolbar ───────────────────────────────────────────────────────── */
         .toolbar-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .toolbar-search { position: relative; flex: 1 1 200px; min-width: 120px; }
-        .toolbar-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .toolbar-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: nowrap; }
         /* ── Mobile ────────────────────────────────────────────────────────── */
         @media (max-width: 639px) {
           .toolbar-search { flex-basis: 100%; order: -1; }
-          .toolbar-btns { flex-shrink: 0; }
+          .toolbar-btns { flex-shrink: 1; flex-wrap: wrap; gap: 6px; }
           .print-btn-wrap { display: none; }
           .client-header-row { display: none !important; }
           .client-row { display: flex !important; align-items: center; gap: 10px; padding: 12px 14px; }
@@ -591,7 +591,7 @@ export default function ClientsPage() {
                   </button>
 
                   {showFilterDropdown && (
-                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 170, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
+                    <div style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", width: 170, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
                       {SHOW_OPTIONS.filter((o) => o.value !== "custom").map((option) => (
                         <button
                           key={option.value}
@@ -646,7 +646,7 @@ export default function ClientsPage() {
                   </button>
 
                   {showLabelDropdown && (
-                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 190, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
+                    <div style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", width: 190, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
                       <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)", padding: "4px 12px 8px" }}>
                         Filter by label
                       </p>
@@ -695,7 +695,7 @@ export default function ClientsPage() {
                   </button>
 
                   {showSortDropdown && (
-                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 160, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
+                    <div style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", width: 160, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
                       {SORT_OPTIONS.map((option) => (
                         <button
                           key={option.value}
@@ -722,7 +722,7 @@ export default function ClientsPage() {
                   </button>
 
                   {showColumnsDropdown && (
-                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 180, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
+                    <div style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", width: 180, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
                       <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)", padding: "4px 12px 8px" }}>
                         Visible columns
                       </p>
