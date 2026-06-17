@@ -34,7 +34,6 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
   const [phone, setPhone] = useState(clientToEdit?.phone ?? "");
   const [email, setEmail] = useState((clientToEdit as any)?.email ?? "");
   const [notes, setNotes] = useState(clientToEdit?.notes ?? "");
-  const [label, setLabel] = useState<string>(clientToEdit?.label ?? "");
   const [lastVisit, setLastVisit] = useState(
     clientToEdit?.last_visit_at ? format(parseISO(clientToEdit.last_visit_at), "yyyy-MM-dd") : ""
   );
@@ -114,7 +113,6 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
           email: email.trim() || null,
           notes: notes.trim() || null,
           last_visit_at: lastVisit ? new Date(lastVisit).toISOString() : clientToEdit.last_visit_at,
-          label: label || null,
         })
         .eq("id", clientToEdit.id)
         .eq("business_id", business.id);
@@ -135,7 +133,6 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
         phone: phone.trim(),
         email: email.trim() || null,
         notes: notes.trim() || null,
-        label: label || null,
         total_visits: 0,
         last_visit_at: lastVisit ? new Date(lastVisit).toISOString() : null,
       })
@@ -277,43 +274,6 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
               onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
               onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
             />
-          </div>
-
-          {/* Label */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <label style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--color-muted)" }}>Label (optional)</label>
-            <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
-              {(["", "completed", "no_show", "canceled"] as const).map((val) => {
-                const config: Record<string, { text: string; bg: string; color: string }> = {
-                  "": { text: "None", bg: "var(--color-cream)", color: "var(--color-muted)" },
-                  completed: { text: "Completed", bg: "#F0FDF4", color: "#16A34A" },
-                  no_show: { text: "No show", bg: "#FFF7ED", color: "#EA580C" },
-                  canceled: { text: "Canceled", bg: "#FEF2F2", color: "#DC2626" },
-                };
-                const c = config[val];
-                const active = label === val;
-                return (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => setLabel(val)}
-                    style={{
-                      padding: "5px 12px",
-                      borderRadius: 20,
-                      border: `1.5px solid ${active ? c.color : "var(--color-cream-2)"}`,
-                      background: active ? c.bg : "white",
-                      color: active ? c.color : "var(--color-muted)",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      transition: "all 0.12s",
-                    }}
-                  >
-                    {c.text}
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
           {/* Last visit */}
