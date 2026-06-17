@@ -5,7 +5,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user || user.email !== "ramikan96@gmail.com") {
+  const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
+  if (!user || !ADMIN_EMAILS.includes(user.email ?? "")) {
     redirect("/calendar");
   }
 

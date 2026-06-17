@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { name, business_name, phone, email, city, message } = body;
+  const { name, business_name, phone, email, city, message, lang } = body;
 
   if (!name?.trim() || !email?.trim()) {
     return NextResponse.json({ error: "Name and email are required." }, { status: 400 });
@@ -57,14 +57,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to save request." }, { status: 500 });
   }
 
+  // Notify Bapita
   try {
     await transporter.sendMail({
       from: `Bapita <${process.env.GMAIL_USER}>`,
-      to: "ramikan96@gmail.com",
+      to: "info.bapita@gmail.com",
       subject: `New lead: ${esc(name)}${business_name ? ` — ${esc(business_name)}` : ""}`,
       html: `
         <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;">
-          <h2 style="margin:0 0 20px;color:#1C1814;">New Bapita Lead 🎯</h2>
+          <h2 style="margin:0 0 20px;color:#1C1814;">New lead from bapita.com</h2>
           <table style="width:100%;border-collapse:collapse;font-size:14px;">
             <tr><td style="padding:8px 0;color:#888;width:120px;">Name</td><td style="padding:8px 0;font-weight:600;color:#1C1814;">${esc(name)}</td></tr>
             ${business_name ? `<tr><td style="padding:8px 0;color:#888;">Business</td><td style="padding:8px 0;font-weight:600;color:#1C1814;">${esc(business_name)}</td></tr>` : ""}
@@ -79,7 +80,31 @@ export async function POST(req: NextRequest) {
     });
   } catch (e) {
     console.error("Lead notification email failed:", e);
-    // Don't fail the request — lead is already saved to DB
+  }
+
+  // Auto-reply to customer
+  const isHe = (lang === "he") || /[֐-׿]/.test(name + (business_name ?? ""));
+  try {
+    await transporter.sendMail({
+      from: `Bapita <${process.env.GMAIL_USER}>`,
+      to: email.trim().toLowerCase(),
+      subject: isHe ? "קיבלנו את הפרטים שלך — Bapita" : "We got your details — Bapita",
+      html: isHe ? `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;direction:rtl;text-align:right;">
+          <h2 style="margin:0 0 12px;color:#1C1814;">תודה, ${esc(name)}!</h2>
+          <p style="color:#555;line-height:1.6;margin:0 0 20px;">קיבלנו את הפרטים שלך. ניצור איתך קשר בקרוב.</p>
+          <p style="color:#999;font-size:12px;margin:0;">שלחת בקשה דרך bapita.com</p>
+        </div>
+      ` : `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
+          <h2 style="margin:0 0 12px;color:#1C1814;">Thanks, ${esc(name)}!</h2>
+          <p style="color:#555;line-height:1.6;margin:0 0 20px;">We received your details and will be in touch soon.</p>
+          <p style="color:#999;font-size:12px;margin:0;">You submitted a request via bapita.com</p>
+        </div>
+      `,
+    });
+  } catch (e) {
+    console.error("Customer confirmation email failed:", e);
   }
 
   return NextResponse.json({ ok: true });

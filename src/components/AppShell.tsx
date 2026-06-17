@@ -251,7 +251,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsAdmin(user?.email === "ramikan96@gmail.com");
+      const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
+      setIsAdmin(ADMIN_EMAILS.includes(user?.email ?? ""));
     });
   }, []);
 
