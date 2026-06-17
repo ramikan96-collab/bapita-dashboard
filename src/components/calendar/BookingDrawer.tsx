@@ -746,15 +746,16 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
 
       {/* Drawer — mobile bottom sheet, desktop right panel */}
       <div
-        className="fixed bottom-0 inset-x-0 z-50 rounded-t-[24px] max-h-[90vh] flex flex-col md:inset-y-0 md:left-auto md:end-0 md:w-[400px] md:rounded-none md:max-h-none"
+        className="fixed bottom-0 inset-x-0 z-50 rounded-t-[24px] max-h-[90vh] flex flex-col md:inset-y-0 md:left-auto md:end-0 md:w-[440px] md:rounded-none md:max-h-none"
         style={{
           background: "var(--color-cream)",
           boxShadow: "0 -8px 40px rgba(30,26,20,0.16)",
+          animation: "drawerSlideIn 200ms cubic-bezier(0.16,1,0.3,1) both",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-5 pb-8">
+        <div className="overflow-y-auto flex-1 px-6 pb-8">
           {/* Drag handle — mobile only */}
           <div
             className="w-10 h-1 rounded-full mx-auto mt-3 mb-1 md:hidden"

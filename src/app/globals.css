@@ -52,6 +52,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+@keyframes drawerSlideIn {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 @media print {
   nav,
   aside,
