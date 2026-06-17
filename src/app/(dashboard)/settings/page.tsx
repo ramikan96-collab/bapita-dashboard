@@ -1148,52 +1148,37 @@ function WebsiteSection({
 }) {
   const { showToast } = useToast();
 
-  // ── Booking link + language (has Save button) ──────────────────────────────
-  const [slug, setSlug] = useState(business.slug || "");
+  // ── All editable state ─────────────────────────────────────────────────────
+  const [slug, setSlug]               = useState(business.slug || "");
   const [defaultLang, setDefaultLang] = useState<"en" | "he">((business.default_lang as "en" | "he") || "en");
-  const [savingLink, setSavingLink] = useState(false);
-
-  const origSlug = business.slug || "";
-  const origLang = (business.default_lang as "en" | "he") || "en";
-  const linkDirty = slug !== origSlug || defaultLang !== origLang;
-
-  // ── Gallery (immediate saves) ──────────────────────────────────────────────
-  const [images, setImages] = useState<string[]>(business.gallery_images || []);
+  const [images, setImages]           = useState<string[]>(business.gallery_images || []);
   const [showGallery, setShowGallery] = useState(business.show_gallery !== false);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading]     = useState(false);
+  const [saving, setSaving]           = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // ── Dirty detection (all fields together) ─────────────────────────────────
+  const origSlug        = business.slug || "";
+  const origLang        = (business.default_lang as "en" | "he") || "en";
+  const origImages      = JSON.stringify(business.gallery_images || []);
+  const origShowGallery = business.show_gallery !== false;
+  const dirty = slug !== origSlug || defaultLang !== origLang ||
+                JSON.stringify(images) !== origImages || showGallery !== origShowGallery;
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { onDirtyChange?.(linkDirty); }, [linkDirty]);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty]);
 
   useEffect(() => {
-    if (!linkDirty) return;
+    if (!dirty) return;
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [linkDirty]);
+  }, [dirty]);
 
+  // ── Actions ────────────────────────────────────────────────────────────────
   function copyLink() {
     navigator.clipboard.writeText(`https://book.bapita.com/${slug || "your-slug"}`);
     showToast("Booking link copied", "success");
-  }
-
-  async function saveLink() {
-    setSavingLink(true);
-    let finalSlug = slug;
-    if (!finalSlug.trim()) {
-      const base = business.name.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-      finalSlug = `${base}-${Math.random().toString(36).substring(2, 7)}`;
-      setSlug(finalSlug);
-    }
-    const { error } = await supabase.from("businesses").update({
-      slug: finalSlug,
-      default_lang: defaultLang,
-    }).eq("id", business.id);
-    setSavingLink(false);
-    if (error) { showToast(getErrorMessage(error), "error"); return; }
-    await refresh();
-    showToast("Website settings saved", "success");
   }
 
   async function uploadFiles(files: File[]) {
@@ -1208,37 +1193,35 @@ function WebsiteSection({
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       urls.push(data.publicUrl);
     }
-    if (urls.length === 0) { setUploading(false); return; }
-    const next = [...images, ...urls];
-    const { error } = await supabase.from("businesses").update({
-      gallery_images: next,
-      hero_image_url: next[0] || null,
-    }).eq("id", business.id);
-    if (error) { showToast("Upload failed", "error"); setUploading(false); return; }
-    setImages(next);
-    await refresh();
-    showToast(`${urls.length} photo${urls.length > 1 ? "s" : ""} added`, "success");
     setUploading(false);
+    if (urls.length === 0) return;
+    setImages(prev => [...prev, ...urls]);
+    showToast(`${urls.length} photo${urls.length > 1 ? "s" : ""} added — save to publish`, "success");
   }
 
-  async function removeImage(url: string) {
-    const next = images.filter(u => u !== url);
+  function removeImage(url: string) {
+    setImages(prev => prev.filter(u => u !== url));
+  }
+
+  async function save() {
+    setSaving(true);
+    let finalSlug = slug;
+    if (!finalSlug.trim()) {
+      const base = business.name.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+      finalSlug = `${base}-${Math.random().toString(36).substring(2, 7)}`;
+      setSlug(finalSlug);
+    }
     const { error } = await supabase.from("businesses").update({
-      gallery_images: next,
-      hero_image_url: next[0] || null,
+      slug:            finalSlug,
+      default_lang:    defaultLang,
+      gallery_images:  images,
+      hero_image_url:  images[0] || null,
+      show_gallery:    showGallery,
     }).eq("id", business.id);
-    if (error) { showToast("Remove failed", "error"); return; }
-    setImages(next);
+    setSaving(false);
+    if (error) { showToast(getErrorMessage(error), "error"); return; }
     await refresh();
-    showToast("Photo removed", "success");
-  }
-
-  async function toggleShowGallery() {
-    const next = !showGallery;
-    const { error } = await supabase.from("businesses").update({ show_gallery: next }).eq("id", business.id);
-    if (error) { showToast("Failed to update", "error"); return; }
-    setShowGallery(next);
-    await refresh();
+    showToast("Website settings saved", "success");
   }
 
   const bookingUrl = `book.bapita.com/${slug || "your-slug"}`;
@@ -1317,8 +1300,6 @@ function WebsiteSection({
         </div>
       </SectionCard>
 
-      <SaveButton onClick={saveLink} saving={savingLink} dirty={linkDirty} />
-
       {/* Gallery */}
       <SectionCard title="Gallery">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1326,7 +1307,7 @@ function WebsiteSection({
             <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>Show gallery on booking page</div>
             <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Visible when at least one photo is added</div>
           </div>
-          <Toggle on={showGallery} onChange={toggleShowGallery} />
+          <Toggle on={showGallery} onChange={() => setShowGallery(g => !g)} />
         </div>
       </SectionCard>
 
@@ -1386,7 +1367,10 @@ function WebsiteSection({
         )}
       </SectionCard>
 
-      {/* Reviews */}
+      {/* Single Save button covers slug + language + gallery */}
+      <SaveButton onClick={save} saving={saving} dirty={dirty} />
+
+      {/* Reviews — individual adds/edits/deletes, own save per item */}
       <ReviewsSection business={business} supabase={supabase} refresh={refresh} />
     </div>
   );
