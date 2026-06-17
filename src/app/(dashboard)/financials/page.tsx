@@ -7,8 +7,6 @@ import { useBusiness } from "@/hooks/useBusiness";
 import { FinancialsSkeleton } from "@/components/LoadingSkeleton";
 import { STATUS_COLOR, type BookingStatus } from "@/types";
 
-const WA_NUMBER = "972534379176";
-
 interface Transaction {
   id: string;
   date: string;
@@ -116,6 +114,167 @@ function IconReceipt() {
   );
 }
 
+// ── Modal helpers (mirrors extras page pattern) ────────────────────────────────
+
+function CloseBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "var(--color-cream-2)", color: "var(--color-muted)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, marginLeft: 8 }}
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    </button>
+  );
+}
+
+function ModalShell({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <>
+      <style>{`
+        .fin-backdrop { display:flex; align-items:flex-end; justify-content:center; }
+        .fin-modal-inner { border-radius: 20px 20px 0 0; width:100%; }
+        @media(min-width:640px){
+          .fin-backdrop { align-items:center; }
+          .fin-modal-inner { border-radius: 20px !important; max-width: 440px; }
+        }
+      `}</style>
+      <div
+        className="fin-backdrop"
+        style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(30,26,20,0.48)", backdropFilter: "saturate(140%) blur(4px)" }}
+        onClick={onClose}
+      >
+        <div
+          className="fin-modal-inner"
+          style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "0 8px 48px rgba(30,26,20,0.16)", padding: "24px 24px 28px" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {children}
+        </div>
+      </div>
+    </>
+  );
+}
+
+type ContactMethod = "whatsapp" | "email" | "phone";
+interface RequestFormState { name: string; phone: string; email: string; preferredContact: ContactMethod; notes: string; }
+
+function RequestForm({ state, onChange, submitting, onSubmit }: {
+  state: RequestFormState;
+  onChange: (patch: Partial<RequestFormState>) => void;
+  submitting: boolean;
+  onSubmit: () => void;
+}) {
+  const inputStyle: React.CSSProperties = {
+    width: "100%", height: 42, padding: "0 13px", borderRadius: 11,
+    border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)",
+    fontSize: 13, color: "var(--color-dark)", outline: "none", fontFamily: "inherit",
+    transition: "border-color 0.15s", boxSizing: "border-box" as const,
+  };
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const,
+    letterSpacing: "0.05em", color: "var(--color-muted)", display: "block", marginBottom: 6,
+  };
+  const canSubmit = !!state.name.trim() && (!!state.phone.trim() || !!state.email.trim()) && !submitting;
+  const CONTACT_OPTIONS: { value: ContactMethod; label: string }[] = [
+    { value: "whatsapp", label: "WhatsApp" },
+    { value: "email",    label: "Email"     },
+    { value: "phone",    label: "Phone"     },
+  ];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div>
+        <label style={labelStyle}>Your name *</label>
+        <input type="text" value={state.name} placeholder="e.g. Avi Cohen" onChange={(e) => onChange({ name: e.target.value })} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")} onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")} />
+      </div>
+      <div>
+        <label style={labelStyle}>Phone (at least one contact required)</label>
+        <input type="tel" value={state.phone} placeholder="05X XXX XXXX" onChange={(e) => onChange({ phone: e.target.value })} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")} onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")} />
+      </div>
+      <div>
+        <label style={labelStyle}>Email</label>
+        <input type="email" value={state.email} placeholder="name@example.com" onChange={(e) => onChange({ email: e.target.value })} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")} onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")} />
+      </div>
+      <div>
+        <label style={labelStyle}>Preferred contact method</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          {CONTACT_OPTIONS.map((opt) => (
+            <button key={opt.value} onClick={() => onChange({ preferredContact: opt.value })} style={{ flex: 1, height: 34, borderRadius: 9, border: `1.5px solid ${state.preferredContact === opt.value ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: state.preferredContact === opt.value ? "var(--amber-soft)" : "var(--color-cream)", color: state.preferredContact === opt.value ? "var(--color-amber)" : "var(--color-muted)", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.12s" }}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <label style={labelStyle}>Notes (optional)</label>
+        <textarea value={state.notes} placeholder="Any questions or details…" rows={2} onChange={(e) => onChange({ notes: e.target.value })} style={{ ...inputStyle, height: "auto", padding: "10px 13px", resize: "none" as const, lineHeight: 1.5 }} onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")} onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")} />
+      </div>
+      <button onClick={onSubmit} disabled={!canSubmit} style={{ width: "100%", height: 46, borderRadius: 14, border: "none", background: canSubmit ? "var(--wash-amber)" : "var(--color-cream-2)", color: canSubmit ? "#fff" : "var(--color-muted)", fontSize: 14, fontWeight: 700, cursor: canSubmit ? "pointer" : "not-allowed", boxShadow: canSubmit ? "0 6px 18px rgba(232,146,10,0.28)" : "none", transition: "all 0.15s", marginTop: 2 }}>
+        {submitting ? "Sending…" : "Send request"}
+      </button>
+    </div>
+  );
+}
+
+function SuccessView({ onClose }: { onClose: () => void }) {
+  return (
+    <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(34,197,94,0.12)", color: "#16A34A", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24 }}>✓</div>
+      <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", margin: "0 0 6px" }}>Request received!</p>
+      <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>We&apos;ll reach out via your preferred contact method soon.</p>
+      <button onClick={onClose} style={{ height: 42, padding: "0 24px", borderRadius: 12, border: "none", background: "var(--color-amber)", color: "white", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)" }}>Done</button>
+    </div>
+  );
+}
+
+function ProcessorModal({ name, color, icon, addonType, businessId, onClose }: {
+  name: string; color: string; icon: React.ReactNode; addonType: string; businessId: string; onClose: () => void;
+}) {
+  const supabase = createClient();
+  const [form, setForm] = useState<RequestFormState>({ name: "", phone: "", email: "", preferredContact: "whatsapp", notes: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    await supabase.from("addon_requests").insert({
+      business_id: businessId,
+      addon_type: addonType,
+      name: form.name.trim(),
+      phone: form.phone.trim() || null,
+      email: form.email.trim() || null,
+      preferred_contact: form.preferredContact,
+      notes: form.notes.trim() || null,
+    });
+    setSubmitting(false);
+    setDone(true);
+  }
+
+  return (
+    <ModalShell onClose={onClose}>
+      {done ? (
+        <SuccessView onClose={onClose} />
+      ) : (
+        <>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: `${color}18`, color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{icon}</div>
+              <div>
+                <p style={{ fontSize: 16, fontWeight: 800, color: "var(--color-dark)", lineHeight: 1.2, margin: 0 }}>Connect {name}</p>
+                <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Fill in your details and we&apos;ll set you up.</p>
+              </div>
+            </div>
+            <CloseBtn onClick={onClose} />
+          </div>
+          <div style={{ height: 1, background: "var(--color-cream-2)", marginBottom: 16 }} />
+          <RequestForm state={form} onChange={(patch) => setForm((f) => ({ ...f, ...patch }))} submitting={submitting} onSubmit={submit} />
+        </>
+      )}
+    </ModalShell>
+  );
+}
+
 // ── Processor Card ────────────────────────────────────────────────────────────
 
 function ProcessorCard({
@@ -123,13 +282,13 @@ function ProcessorCard({
   icon,
   description,
   color,
-  waMsg,
+  onConnect,
 }: {
   name: string;
   icon: React.ReactNode;
   description: string;
   color: string;
-  waMsg: string;
+  onConnect: () => void;
 }) {
   return (
     <div
@@ -163,9 +322,7 @@ function ProcessorCard({
         <div style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 2, lineHeight: 1.45 }}>{description}</div>
       </div>
       <button
-        onClick={() =>
-          window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(waMsg)}`, "_blank")
-        }
+        onClick={onConnect}
         style={{
           height: 34,
           padding: "0 14px",
@@ -307,23 +464,27 @@ function LockedInvoicesPreview() {
 
 // ── Not Connected View ────────────────────────────────────────────────────────
 
-function NotConnectedView() {
-  const processors = [
+type ProcEntry = { name: string; icon: React.ReactNode; description: string; color: string; addonType: string; };
+
+function NotConnectedView({ businessId }: { businessId: string }) {
+  const processors: ProcEntry[] = [
     {
       name: "Stripe",
       icon: <IconStripe />,
       description: "Card payments, Apple Pay, Google Pay — collect deposits at booking.",
       color: "#635BFF",
-      waMsg: "Hi, I want to set up Stripe payments on Bapita",
+      addonType: "stripe",
     },
     {
       name: "PayPal",
       icon: <IconPayPal />,
       description: "Accept PayPal and major card payments from clients worldwide.",
       color: "#003087",
-      waMsg: "Hi, I want to set up PayPal payments on Bapita",
+      addonType: "paypal",
     },
   ];
+
+  const [activeProc, setActiveProc] = useState<ProcEntry | null>(null);
 
   const sectionLabel: React.CSSProperties = {
     fontSize: 11,
@@ -356,7 +517,7 @@ function NotConnectedView() {
             <div style={sectionLabel}>Payment Processors</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {processors.map((p) => (
-                <ProcessorCard key={p.name} {...p} />
+                <ProcessorCard key={p.name} name={p.name} icon={p.icon} description={p.description} color={p.color} onConnect={() => setActiveProc(p)} />
               ))}
             </div>
           </div>
@@ -367,6 +528,17 @@ function NotConnectedView() {
           </div>
         </div>
       </div>
+
+      {activeProc && (
+        <ProcessorModal
+          name={activeProc.name}
+          color={activeProc.color}
+          icon={activeProc.icon}
+          addonType={activeProc.addonType}
+          businessId={businessId}
+          onClose={() => setActiveProc(null)}
+        />
+      )}
     </div>
   );
 }
@@ -973,7 +1145,7 @@ export default function FinancialsPage() {
   }, [business?.id, stripeActive, currentMonth.getFullYear(), currentMonth.getMonth()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (bizLoading || loading) return <FinancialsSkeleton />;
-  if (!stripeActive) return <NotConnectedView />;
+  if (!stripeActive) return <NotConnectedView businessId={business?.id ?? ""} />;
 
   return (
     <ConnectedView
