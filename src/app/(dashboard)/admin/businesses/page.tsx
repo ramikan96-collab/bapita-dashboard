@@ -85,8 +85,13 @@ export default function AdminPage() {
   const [leadsLoading,   setLeadsLoading]   = useState(false);
   const [leadsLoaded,    setLeadsLoaded]    = useState(false);
   const [updatingLead,   setUpdatingLead]   = useState<string | null>(null);
-  const [filterStatus,   setFilterStatus]   = useState<Lead["status"] | "all">("all");
-  const [justConverted,  setJustConverted]  = useState(false);
+  const [filterStatus,        setFilterStatus]        = useState<Lead["status"] | "all">("all");
+  const [justConverted,       setJustConverted]       = useState(false);
+  const [editingLeadId,       setEditingLeadId]       = useState<string | null>(null);
+  const [editDraft,           setEditDraft]           = useState<Partial<Lead>>({});
+  const [savingLead,          setSavingLead]          = useState(false);
+  const [confirmDeleteLeadId, setConfirmDeleteLeadId] = useState<string | null>(null);
+  const [deletingLeadId,      setDeletingLeadId]      = useState<string | null>(null);
 
   const loadLeads = useCallback(async () => {
     setLeadsLoading(true);
@@ -102,6 +107,23 @@ export default function AdminPage() {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
     if (status === "converted") setJustConverted(true);
     setUpdatingLead(null);
+  }
+
+  async function handleLeadSave(id: string) {
+    setSavingLead(true);
+    await supabase.from("leads").update(editDraft).eq("id", id);
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, ...editDraft } : l));
+    setEditingLeadId(null);
+    setEditDraft({});
+    setSavingLead(false);
+  }
+
+  async function handleLeadDelete(id: string) {
+    setDeletingLeadId(id);
+    await supabase.from("leads").delete().eq("id", id);
+    setLeads(prev => prev.filter(l => l.id !== id));
+    setDeletingLeadId(null);
+    setConfirmDeleteLeadId(null);
   }
 
   function downloadLeadsCSV() {
@@ -306,10 +328,15 @@ export default function AdminPage() {
                 </div>
               )}
               {filteredLeads.map(lead => {
-                const sc   = LEAD_STATUS[lead.status];
-                const busy = updatingLead === lead.id;
+                const sc        = LEAD_STATUS[lead.status];
+                const busy      = updatingLead === lead.id;
+                const isEditing = editingLeadId === lead.id;
+                const isDeleting = deletingLeadId === lead.id;
+                const confirmDelete = confirmDeleteLeadId === lead.id;
+                const inp: React.CSSProperties = { height: 32, padding: "0 10px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 13, color: "var(--color-dark)", fontFamily: "inherit", width: "100%", boxSizing: "border-box" };
                 return (
                   <div key={lead.id} style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+                    {/* Row 1: name + controls */}
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                       <div>
                         <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "var(--color-dark)" }}>{lead.name}</p>
@@ -318,38 +345,66 @@ export default function AdminPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                         <span style={{ fontSize: 11, color: "var(--color-muted)" }}>{timeAgo(lead.created_at)}</span>
                         <span style={{ background: sc.bg, color: sc.text, fontSize: 11, fontWeight: 700, borderRadius: 99, padding: "3px 9px" }}>{sc.label}</span>
+                        {!isEditing && (
+                          <button
+                            onClick={() => { setEditingLeadId(lead.id); setEditDraft({ name: lead.name, business_name: lead.business_name, phone: lead.phone, email: lead.email, city: lead.city, message: lead.message }); }}
+                            style={{ height: 28, padding: "0 10px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                          >Edit</button>
+                        )}
+                        {!isEditing && (confirmDelete ? (
+                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                            <span style={{ fontSize: 11, color: "var(--color-muted)" }}>Delete?</span>
+                            <button onClick={() => handleLeadDelete(lead.id)} disabled={isDeleting} style={{ height: 26, padding: "0 9px", borderRadius: 6, border: "none", background: "#EF4444", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{isDeleting ? "…" : "Yes"}</button>
+                            <button onClick={() => setConfirmDeleteLeadId(null)} style={{ height: 26, padding: "0 9px", borderRadius: 6, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>No</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDeleteLeadId(lead.id)} style={{ height: 28, padding: "0 10px", borderRadius: 7, border: "1.5px solid transparent", background: "transparent", color: "#EF4444", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Delete</button>
+                        ))}
                       </div>
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px" }}>
-                      <a href={`mailto:${lead.email}`} style={{ fontSize: 13, color: "var(--color-amber)", textDecoration: "none", fontWeight: 600 }}>{lead.email}</a>
-                      {lead.phone && <a href={`tel:${lead.phone}`} style={{ fontSize: 13, color: "var(--color-dark)", textDecoration: "none" }}>{lead.phone}</a>}
-                      {lead.city && <span style={{ fontSize: 13, color: "var(--color-muted)" }}>{lead.city}</span>}
-                    </div>
-                    {lead.message && (
-                      <p style={{ margin: 0, fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5, background: "var(--color-cream)", borderRadius: 8, padding: "8px 12px" }}>{lead.message}</p>
+
+                    {/* Edit form */}
+                    {isEditing ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <div><label style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: 3 }}>Name</label><input style={inp} value={editDraft.name ?? ""} onChange={e => setEditDraft(d => ({ ...d, name: e.target.value }))} /></div>
+                          <div><label style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: 3 }}>Business name</label><input style={inp} value={editDraft.business_name ?? ""} onChange={e => setEditDraft(d => ({ ...d, business_name: e.target.value || null }))} /></div>
+                          <div><label style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: 3 }}>Phone</label><input style={inp} value={editDraft.phone ?? ""} onChange={e => setEditDraft(d => ({ ...d, phone: e.target.value || null }))} /></div>
+                          <div><label style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: 3 }}>Email</label><input style={inp} value={editDraft.email ?? ""} onChange={e => setEditDraft(d => ({ ...d, email: e.target.value }))} /></div>
+                          <div><label style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: 3 }}>City</label><input style={inp} value={editDraft.city ?? ""} onChange={e => setEditDraft(d => ({ ...d, city: e.target.value || null }))} /></div>
+                        </div>
+                        <div><label style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: 3 }}>Message</label><textarea style={{ ...inp, height: 64, padding: "8px 10px", resize: "vertical" }} value={editDraft.message ?? ""} onChange={e => setEditDraft(d => ({ ...d, message: e.target.value || null }))} /></div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button onClick={() => handleLeadSave(lead.id)} disabled={savingLead} style={{ height: 30, padding: "0 14px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: savingLead ? "not-allowed" : "pointer", opacity: savingLead ? 0.6 : 1, fontFamily: "inherit" }}>{savingLead ? "Saving…" : "Save"}</button>
+                          <button onClick={() => { setEditingLeadId(null); setEditDraft({}); }} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px" }}>
+                          <a href={`mailto:${lead.email}`} style={{ fontSize: 13, color: "var(--color-amber)", textDecoration: "none", fontWeight: 600 }}>{lead.email}</a>
+                          {lead.phone && <a href={`tel:${lead.phone}`} style={{ fontSize: 13, color: "var(--color-dark)", textDecoration: "none" }}>{lead.phone}</a>}
+                          {lead.city && <span style={{ fontSize: 13, color: "var(--color-muted)" }}>{lead.city}</span>}
+                        </div>
+                        {lead.message && (
+                          <p style={{ margin: 0, fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5, background: "var(--color-cream)", borderRadius: 8, padding: "8px 12px" }}>{lead.message}</p>
+                        )}
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 2, alignItems: "center" }}>
+                          {lead.status === "pending" && (
+                            <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "contacted")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 12, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>Mark contacted</button>
+                          )}
+                          {lead.status !== "converted" && (
+                            <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "converted")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>Convert → client</button>
+                          )}
+                          {lead.status !== "rejected" && (
+                            <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "rejected")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 12, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>Reject</button>
+                          )}
+                          {lead.status !== "pending" && (
+                            <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "pending")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 11, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>↺ Reset</button>
+                          )}
+                        </div>
+                      </>
                     )}
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 2, alignItems: "center" }}>
-                      {lead.status === "pending" && (
-                        <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "contacted")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 12, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>
-                          Mark contacted
-                        </button>
-                      )}
-                      {lead.status !== "converted" && (
-                        <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "converted")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>
-                          Convert → client
-                        </button>
-                      )}
-                      {lead.status !== "rejected" && (
-                        <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "rejected")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 12, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>
-                          Reject
-                        </button>
-                      )}
-                      {lead.status !== "pending" && (
-                        <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "pending")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 11, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>
-                          ↺ Reset
-                        </button>
-                      )}
-                    </div>
                   </div>
                 );
               })}
