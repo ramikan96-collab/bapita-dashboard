@@ -133,6 +133,7 @@ export interface Customer {
   total_visits: number;
   last_visit_at: string | null;
   created_at: string;
+  label?: string | null;
 }
 
 export interface Service {

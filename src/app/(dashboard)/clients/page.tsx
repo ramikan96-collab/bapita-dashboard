@@ -14,7 +14,7 @@ import type { Customer } from "@/types";
 
 type SortBy = "recent" | "name" | "visits";
 type ShowFilter = "all" | "30d" | "3m" | "1y" | "custom";
-type ColumnKey = "firstName" | "lastName" | "phone" | "email" | "visits" | "lastVisit";
+type ColumnKey = "firstName" | "lastName" | "phone" | "email" | "visits" | "lastVisit" | "label";
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "recent", label: "Recent" },
@@ -35,12 +35,54 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "lastName", label: "Last name" },
   { key: "phone", label: "Phone" },
   { key: "email", label: "Email" },
+  { key: "label", label: "Label" },
   { key: "visits", label: "Visits" },
   { key: "lastVisit", label: "Last visit" },
 ];
 
-// These columns are always visible (not toggleable off individually but included by default)
-const DEFAULT_COLUMNS: ColumnKey[] = ["firstName", "lastName", "phone", "email"];
+const DEFAULT_COLUMNS: ColumnKey[] = ["firstName", "lastName", "phone", "email", "label"];
+
+// Per-column grid width
+function getColWidth(key: ColumnKey): string {
+  switch (key) {
+    case "firstName": return "minmax(70px, 1fr)";
+    case "lastName":  return "minmax(70px, 1fr)";
+    case "phone":     return "minmax(100px, 1fr)";
+    case "email":     return "minmax(120px, 1.5fr)";
+    case "label":     return "minmax(80px, 0.8fr)";
+    case "visits":    return "minmax(55px, 0.6fr)";
+    case "lastVisit": return "minmax(80px, 0.9fr)";
+    default:          return "minmax(80px, 1fr)";
+  }
+}
+
+// Minimum px contribution per column for table-min-width calculation
+const COL_MIN_PX: Record<ColumnKey, number> = {
+  firstName: 70, lastName: 70, phone: 100, email: 120,
+  label: 80, visits: 55, lastVisit: 80,
+};
+
+// ─── Label config ─────────────────────────────────────────────────────────────
+
+type LabelValue = "completed" | "no_show" | "canceled";
+
+const LABEL_CONFIG: Record<LabelValue, { text: string; bg: string; color: string }> = {
+  completed: { text: "Completed", bg: "#F0FDF4", color: "#16A34A" },
+  no_show:   { text: "No show",   bg: "#FFF7ED", color: "#EA580C" },
+  canceled:  { text: "Canceled",  bg: "#FEF2F2", color: "#DC2626" },
+};
+
+const NEW_CHIP = { text: "New", bg: "#EFF6FF", color: "#2563EB" };
+
+function getEffectiveLabel(client: Customer): { text: string; bg: string; color: string } | null {
+  if (client.label && client.label in LABEL_CONFIG) {
+    return LABEL_CONFIG[client.label as LabelValue];
+  }
+  if (!client.label && (!client.total_visits || client.total_visits === 0)) {
+    return NEW_CHIP;
+  }
+  return null;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -65,6 +107,35 @@ function getFilterDate(filter: ShowFilter): Date | null {
   if (filter === "3m") return subMonths(now, 3);
   if (filter === "1y") return subYears(now, 1);
   return null;
+}
+
+function downloadCSV(clients: Customer[], orderedCols: ColumnKey[]) {
+  const headers = orderedCols.map((k) => ALL_COLUMNS.find((c) => c.key === k)?.label ?? k);
+  const rows = clients.map((client) => {
+    const { firstName, lastName } = parseName(client.name);
+    return orderedCols.map((key) => {
+      switch (key) {
+        case "firstName": return firstName;
+        case "lastName":  return lastName;
+        case "phone":     return client.phone || "";
+        case "email":     return client.email || "";
+        case "visits":    return String(client.total_visits ?? 0);
+        case "lastVisit": return client.last_visit_at ? format(parseISO(client.last_visit_at), "MMM d, yyyy") : "";
+        case "label":     return getEffectiveLabel(client)?.text ?? "";
+        default:          return "";
+      }
+    });
+  });
+  const csv = [headers, ...rows]
+    .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "clients.csv";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -136,6 +207,16 @@ function IconPrint() {
       <polyline points="6 9 6 2 18 2 18 9" />
       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
       <rect x="6" y="14" width="12" height="8" />
+    </svg>
+  );
+}
+
+function IconDownload() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   );
 }
@@ -245,6 +326,7 @@ export default function ClientsPage() {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [showColumnsDropdown, setShowColumnsDropdown] = useState(false);
+  const [showPrintDropdown, setShowPrintDropdown] = useState(false);
 
   // visible columns (multi-select)
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_COLUMNS));
@@ -266,6 +348,7 @@ export default function ClientsPage() {
       if (!t.closest(".dd-sort")) setShowSortDropdown(false);
       if (!t.closest(".dd-filter")) setShowFilterDropdown(false);
       if (!t.closest(".dd-columns")) setShowColumnsDropdown(false);
+      if (!t.closest(".dd-print")) setShowPrintDropdown(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -328,14 +411,15 @@ export default function ClientsPage() {
   const isFilterActive = showFilter !== "all";
   const isSortActive = sortBy !== "recent";
 
-  // Build column grid template: avatar + visible cols + arrow
+  // Build column grid template
   const orderedCols: ColumnKey[] = ALL_COLUMNS.map((c) => c.key).filter((k) => visibleColumns.has(k));
-  const gridCols = ["34px", ...orderedCols.map(() => "1fr"), "80px"].join(" ");
+  const gridCols = ["34px", ...orderedCols.map(getColWidth), "80px"].join(" ");
+  // Ensure the table is wide enough that minmax columns don't collapse
+  const tableMinWidth = Math.max(560, 34 + orderedCols.reduce((s, k) => s + COL_MIN_PX[k], 0) + 80 + (orderedCols.length + 1) * 14);
 
   function toggleColumn(key: ColumnKey) {
     setVisibleColumns((prev) => {
       const next = new Set(prev);
-      // Keep at least 1 column
       if (next.has(key) && next.size === 1) return prev;
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -350,7 +434,6 @@ export default function ClientsPage() {
         .client-row {
           width: 100%;
           display: grid;
-          grid-template-columns: ${gridCols};
           gap: 0 14px;
           align-items: center;
           padding: 11px 14px;
@@ -380,26 +463,30 @@ export default function ClientsPage() {
         .dd-menu-item:hover { background: var(--color-cream); }
         .dd-menu-item.selected { font-weight: 700; color: var(--color-amber); }
         .dd-menu-item.selected-bg { background: var(--amber-soft); }
-        .print-btn-wrap { display: flex; }
-        .table-scroll { overflow-x: auto; }
-        .table-min { min-width: 560px; }
+        /* Table scroll */
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         /* Desktop: hide mobile card elements */
         .row-mobile { display: none; }
         .row-desktop { display: contents; }
-        /* ── Mobile card row ───────────────────────────────────────────────── */
+        /* ── Toolbar ───────────────────────────────────────────────────────── */
+        .toolbar-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .toolbar-search { position: relative; flex: 1 1 200px; min-width: 120px; }
+        .toolbar-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        /* ── Mobile ────────────────────────────────────────────────────────── */
         @media (max-width: 639px) {
+          .toolbar-search { flex-basis: 100%; order: -1; }
+          .toolbar-btns { flex-shrink: 0; }
           .print-btn-wrap { display: none; }
-          .table-scroll { overflow-x: visible; }
-          .table-min { min-width: unset; }
-          .client-header-row { display: none; }
-          .client-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
-          .row-desktop { display: none; }
-          .row-mobile { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; }
+          .client-header-row { display: none !important; }
+          .client-row { display: flex !important; align-items: center; gap: 10px; padding: 12px 14px; }
+          .row-desktop { display: none !important; }
+          .row-mobile { display: flex !important; flex: 1; align-items: center; gap: 10px; min-width: 0; }
           .row-mobile-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
           .row-mobile-name { font-size: 14px; font-weight: 700; color: var(--color-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .row-mobile-sub { font-size: 12px; color: var(--color-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          .row-actions { opacity: 1; }
-          .row-arrow { display: none; }
+          .row-actions { opacity: 1 !important; }
+          .row-arrow { display: none !important; }
+          .table-scroll { overflow-x: auto; }
         }
       `}</style>
 
@@ -432,10 +519,10 @@ export default function ClientsPage() {
               </button>
             </div>
 
-            {/* Search + Show + Sort + Columns + Print */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Toolbar */}
+            <div className="toolbar-row">
               {/* Search */}
-              <div style={{ position: "relative", flex: 1 }}>
+              <div className="toolbar-search">
                 <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--color-muted)", display: "flex", pointerEvents: "none" }}>
                   <IconSearch />
                 </span>
@@ -444,142 +531,164 @@ export default function ClientsPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by name, phone or email…"
-                  style={{ width: "100%", height: 34, paddingLeft: 32, paddingRight: 10, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", fontSize: 13, color: "var(--color-dark)", outline: "none", transition: "border-color 0.15s" }}
+                  style={{ width: "100%", height: 34, paddingLeft: 32, paddingRight: 10, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", fontSize: 13, color: "var(--color-dark)", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
                 />
               </div>
 
-              {/* Show dropdown */}
-              <div className="dd-filter" style={{ position: "relative" }}>
-                <button
-                  onClick={() => { setShowFilterDropdown(!showFilterDropdown); setShowSortDropdown(false); setShowColumnsDropdown(false); }}
-                  style={dropdownBtnStyle(isFilterActive)}
-                >
-                  <span style={{ color: "var(--color-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Show</span>
-                  <span>{currentShowLabel}</span>
-                  <span style={{ color: "inherit", opacity: 0.6, display: "flex" }}><IconChevronDown /></span>
-                </button>
+              {/* Button group */}
+              <div className="toolbar-btns">
+                {/* Show dropdown */}
+                <div className="dd-filter" style={{ position: "relative" }}>
+                  <button
+                    onClick={() => { setShowFilterDropdown(!showFilterDropdown); setShowSortDropdown(false); setShowColumnsDropdown(false); setShowPrintDropdown(false); }}
+                    style={dropdownBtnStyle(isFilterActive)}
+                  >
+                    <span style={{ color: "var(--color-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Show</span>
+                    <span>{currentShowLabel}</span>
+                    <span style={{ color: "inherit", opacity: 0.6, display: "flex" }}><IconChevronDown /></span>
+                  </button>
 
-                {showFilterDropdown && (
-                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 170, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
-                    {SHOW_OPTIONS.filter((o) => o.value !== "custom").map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => { setShowFilter(option.value); setShowFilterDropdown(false); }}
-                        className={`dd-menu-item${showFilter === option.value ? " selected selected-bg" : ""}`}
-                      >
-                        {option.label}
-                        {showFilter === option.value && <span style={{ marginLeft: "auto", color: "var(--color-amber)" }}><IconCheck /></span>}
-                      </button>
-                    ))}
-                    {/* Custom range */}
-                    <div style={{ borderTop: "1px solid var(--color-cream-2)", padding: "10px 12px" }}>
-                      <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-muted)", marginBottom: 8 }}>Custom range</p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        <input
-                          type="date"
-                          value={customFrom}
-                          onChange={(e) => { setCustomFrom(e.target.value); setShowFilter("custom"); }}
-                          style={{ width: "100%", height: 30, padding: "0 8px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 12, color: "var(--color-dark)", outline: "none" }}
-                          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-                          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-                        />
-                        <input
-                          type="date"
-                          value={customTo}
-                          onChange={(e) => { setCustomTo(e.target.value); setShowFilter("custom"); }}
-                          style={{ width: "100%", height: 30, padding: "0 8px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 12, color: "var(--color-dark)", outline: "none" }}
-                          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-                          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-                        />
+                  {showFilterDropdown && (
+                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 170, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
+                      {SHOW_OPTIONS.filter((o) => o.value !== "custom").map((option) => (
                         <button
-                          onClick={() => setShowFilterDropdown(false)}
-                          style={{ height: 28, borderRadius: 7, background: "var(--color-amber)", color: "white", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                          key={option.value}
+                          onClick={() => { setShowFilter(option.value); setShowFilterDropdown(false); }}
+                          className={`dd-menu-item${showFilter === option.value ? " selected selected-bg" : ""}`}
                         >
-                          Apply
+                          {option.label}
+                          {showFilter === option.value && <span style={{ marginLeft: "auto", color: "var(--color-amber)" }}><IconCheck /></span>}
                         </button>
+                      ))}
+                      {/* Custom range */}
+                      <div style={{ borderTop: "1px solid var(--color-cream-2)", padding: "10px 12px" }}>
+                        <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-muted)", marginBottom: 8 }}>Custom range</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          <input
+                            type="date"
+                            value={customFrom}
+                            onChange={(e) => { setCustomFrom(e.target.value); setShowFilter("custom"); }}
+                            style={{ width: "100%", height: 30, padding: "0 8px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 12, color: "var(--color-dark)", outline: "none" }}
+                            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+                          />
+                          <input
+                            type="date"
+                            value={customTo}
+                            onChange={(e) => { setCustomTo(e.target.value); setShowFilter("custom"); }}
+                            style={{ width: "100%", height: 30, padding: "0 8px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 12, color: "var(--color-dark)", outline: "none" }}
+                            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+                          />
+                          <button
+                            onClick={() => setShowFilterDropdown(false)}
+                            style={{ height: 28, borderRadius: 7, background: "var(--color-amber)", color: "white", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                          >
+                            Apply
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              {/* Sort dropdown */}
-              <div className="dd-sort" style={{ position: "relative" }}>
-                <button
-                  onClick={() => { setShowSortDropdown(!showSortDropdown); setShowFilterDropdown(false); setShowColumnsDropdown(false); }}
-                  style={dropdownBtnStyle(isSortActive)}
-                >
-                  <span style={{ color: "var(--color-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Sort</span>
-                  <span>{currentSortLabel}</span>
-                  <span style={{ color: "inherit", opacity: 0.6, display: "flex" }}><IconChevronDown /></span>
-                </button>
+                {/* Sort dropdown */}
+                <div className="dd-sort" style={{ position: "relative" }}>
+                  <button
+                    onClick={() => { setShowSortDropdown(!showSortDropdown); setShowFilterDropdown(false); setShowColumnsDropdown(false); setShowPrintDropdown(false); }}
+                    style={dropdownBtnStyle(isSortActive)}
+                  >
+                    <span style={{ color: "var(--color-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Sort</span>
+                    <span>{currentSortLabel}</span>
+                    <span style={{ color: "inherit", opacity: 0.6, display: "flex" }}><IconChevronDown /></span>
+                  </button>
 
-                {showSortDropdown && (
-                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 160, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
-                    {SORT_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => { setSortBy(option.value); setShowSortDropdown(false); }}
-                        className={`dd-menu-item${sortBy === option.value ? " selected selected-bg" : ""}`}
-                      >
-                        {option.label}
-                        {sortBy === option.value && <span style={{ marginLeft: "auto", color: "var(--color-amber)" }}><IconCheck /></span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Columns picker */}
-              <div className="dd-columns" style={{ position: "relative" }}>
-                <button
-                  onClick={() => { setShowColumnsDropdown(!showColumnsDropdown); setShowSortDropdown(false); setShowFilterDropdown(false); }}
-                  title="Choose columns"
-                  style={{ height: 34, padding: "0 10px", borderRadius: 9, border: `1.5px solid ${showColumnsDropdown ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showColumnsDropdown ? "var(--amber-soft)" : "white", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: showColumnsDropdown ? "var(--color-amber)" : "var(--color-muted)", cursor: "pointer", transition: "all 0.15s" }}
-                >
-                  <IconColumns />
-                  Columns
-                </button>
-
-                {showColumnsDropdown && (
-                  <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 180, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)", padding: "4px 12px 8px" }}>
-                      Visible columns
-                    </p>
-                    {ALL_COLUMNS.map((col) => {
-                      const on = visibleColumns.has(col.key);
-                      return (
+                  {showSortDropdown && (
+                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 160, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
+                      {SORT_OPTIONS.map((option) => (
                         <button
-                          key={col.key}
-                          onClick={() => toggleColumn(col.key)}
-                          style={{ width: "100%", padding: "7px 12px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: on ? 600 : 400, color: "var(--color-dark)", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
-                          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)")}
-                          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
+                          key={option.value}
+                          onClick={() => { setSortBy(option.value); setShowSortDropdown(false); }}
+                          className={`dd-menu-item${sortBy === option.value ? " selected selected-bg" : ""}`}
                         >
-                          <span className={`col-check${on ? " checked" : ""}`}>
-                            {on && <IconCheck />}
-                          </span>
-                          {col.label}
+                          {option.label}
+                          {sortBy === option.value && <span style={{ marginLeft: "auto", color: "var(--color-amber)" }}><IconCheck /></span>}
                         </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-              {/* Print — desktop only */}
-              <div className="print-btn-wrap">
-                <button
-                  onClick={() => window.print()}
-                  title="Print / Download"
-                  style={{ height: 34, width: 34, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-muted)", cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s, color 0.15s" }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-amber)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-muted)"; }}
-                >
-                  <IconPrint />
-                </button>
+                {/* Columns picker */}
+                <div className="dd-columns" style={{ position: "relative" }}>
+                  <button
+                    onClick={() => { setShowColumnsDropdown(!showColumnsDropdown); setShowSortDropdown(false); setShowFilterDropdown(false); setShowPrintDropdown(false); }}
+                    title="Choose columns"
+                    style={{ height: 34, padding: "0 10px", borderRadius: 9, border: `1.5px solid ${showColumnsDropdown ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showColumnsDropdown ? "var(--amber-soft)" : "white", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: showColumnsDropdown ? "var(--color-amber)" : "var(--color-muted)", cursor: "pointer", transition: "all 0.15s" }}
+                  >
+                    <IconColumns />
+                    Columns
+                  </button>
+
+                  {showColumnsDropdown && (
+                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 180, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)", padding: "4px 12px 8px" }}>
+                        Visible columns
+                      </p>
+                      {ALL_COLUMNS.map((col) => {
+                        const on = visibleColumns.has(col.key);
+                        return (
+                          <button
+                            key={col.key}
+                            onClick={() => toggleColumn(col.key)}
+                            style={{ width: "100%", padding: "7px 12px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: on ? 600 : 400, color: "var(--color-dark)", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
+                            onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)")}
+                            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
+                          >
+                            <span className={`col-check${on ? " checked" : ""}`}>
+                              {on && <IconCheck />}
+                            </span>
+                            {col.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Print / CSV — desktop only */}
+                <div className="dd-print print-btn-wrap" style={{ position: "relative" }}>
+                  <button
+                    onClick={() => { setShowPrintDropdown(!showPrintDropdown); setShowSortDropdown(false); setShowFilterDropdown(false); setShowColumnsDropdown(false); }}
+                    title="Print / Export"
+                    style={{ height: 34, width: 34, borderRadius: 9, border: `1.5px solid ${showPrintDropdown ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showPrintDropdown ? "var(--amber-soft)" : "white", display: "flex", alignItems: "center", justifyContent: "center", color: showPrintDropdown ? "var(--color-amber)" : "var(--color-muted)", cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s, color 0.15s, background 0.15s" }}
+                    onMouseEnter={(e) => { if (!showPrintDropdown) { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-amber)"; } }}
+                    onMouseLeave={(e) => { if (!showPrintDropdown) { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-muted)"; } }}
+                  >
+                    <IconPrint />
+                  </button>
+
+                  {showPrintDropdown && (
+                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 160, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
+                      <button
+                        onClick={() => { window.print(); setShowPrintDropdown(false); }}
+                        className="dd-menu-item"
+                      >
+                        <IconPrint />
+                        Print
+                      </button>
+                      <button
+                        onClick={() => { downloadCSV(clients, orderedCols); setShowPrintDropdown(false); }}
+                        className="dd-menu-item"
+                      >
+                        <IconDownload />
+                        Download CSV
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -615,12 +724,15 @@ export default function ClientsPage() {
               </div>
             ) : (
               <div className="table-scroll">
-                <div className="table-min">
-                  {/* Column header row — exact same grid as rows */}
-                  <div className="client-header-row" style={{ display: "grid", gridTemplateColumns: gridCols, gap: "0 14px", padding: "0 14px 8px", alignItems: "center" }}>
+                <div style={{ minWidth: tableMinWidth }}>
+                  {/* Column header row */}
+                  <div
+                    className="client-header-row"
+                    style={{ display: "grid", gridTemplateColumns: gridCols, gap: "0 14px", padding: "0 14px 8px", alignItems: "center" }}
+                  >
                     <div />
                     {orderedCols.map((key) => (
-                      <span key={key} style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--color-muted)" }}>
+                      <span key={key} style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--color-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {ALL_COLUMNS.find((c) => c.key === key)?.label}
                       </span>
                     ))}
@@ -725,25 +837,23 @@ function ClientRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const isNew = !client.total_visits || client.total_visits === 0;
-
   function renderCell(key: ColumnKey) {
     switch (key) {
       case "firstName":
         return (
-          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
             {firstName || "—"}
           </span>
         );
       case "lastName":
         return (
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--color-dark)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {lastName || <span style={{ color: "var(--color-muted)" }}>—</span>}
+          <span style={{ fontSize: 13, fontWeight: 500, color: lastName ? "var(--color-dark)" : "var(--color-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
+            {lastName || "—"}
           </span>
         );
       case "phone":
         return (
-          <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, overflow: "hidden" }}>
             <span style={{ color: "var(--color-muted)", display: "flex", flexShrink: 0 }}><IconPhone /></span>
             <span style={{ fontSize: 13, color: client.phone ? "var(--color-dark)" : "var(--color-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {formatPhone(client.phone)}
@@ -752,37 +862,45 @@ function ClientRow({
         );
       case "email":
         return (
-          <span style={{ fontSize: 13, color: (client as any).email ? "var(--color-dark)" : "var(--color-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {(client as any).email || "—"}
+          <span style={{ fontSize: 13, color: client.email ? "var(--color-dark)" : "var(--color-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
+            {client.email || "—"}
           </span>
         );
       case "visits":
-        return isNew ? (
-          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "#E8F0FE", color: "#1A73E8", display: "inline-flex" }}>New</span>
-        ) : (
-          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)" }}>
-            {client.total_visits} visit{client.total_visits !== 1 ? "s" : ""}
+        return (
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)", whiteSpace: "nowrap" }}>
+            {client.total_visits ?? 0}
           </span>
         );
       case "lastVisit":
         return (
-          <span style={{ fontSize: 12, color: "var(--color-muted)", fontWeight: 500 }}>
+          <span style={{ fontSize: 12, color: "var(--color-muted)", fontWeight: 500, whiteSpace: "nowrap" }}>
             {client.last_visit_at ? format(parseISO(client.last_visit_at), "MMM d, yyyy") : "—"}
           </span>
         );
+      case "label": {
+        const chip = getEffectiveLabel(client);
+        if (!chip) return <span style={{ color: "var(--color-cream-2)", fontSize: 12 }}>—</span>;
+        return (
+          <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: chip.bg, color: chip.color, whiteSpace: "nowrap", display: "inline-block", lineHeight: 1.4 }}>
+            {chip.text}
+          </span>
+        );
+      }
       default:
         return null;
     }
   }
 
   const mobilePhone = client.phone ? formatPhone(client.phone) : null;
-  const mobileEmail = (client as any).email as string | null | undefined;
+  const mobileEmail = client.email;
   const mobileSub = [mobilePhone, mobileEmail].filter(Boolean).join(" · ") || "—";
+  const mobileChip = getEffectiveLabel(client);
 
   return (
     <div
       className="client-row"
-      style={{ gridTemplateColumns: gridCols, cursor: "pointer" } as React.CSSProperties}
+      style={{ gridTemplateColumns: gridCols } as React.CSSProperties}
       onClick={onClick}
     >
       {/* Avatar — shown in both layouts */}
@@ -791,7 +909,14 @@ function ClientRow({
       {/* Mobile card layout */}
       <div className="row-mobile">
         <div className="row-mobile-text">
-          <span className="row-mobile-name">{client.name || "—"}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="row-mobile-name">{client.name || "—"}</span>
+            {mobileChip && (
+              <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 20, background: mobileChip.bg, color: mobileChip.color, whiteSpace: "nowrap", flexShrink: 0 }}>
+                {mobileChip.text}
+              </span>
+            )}
+          </div>
           <span className="row-mobile-sub">{mobileSub}</span>
         </div>
         <div className="row-actions" onClick={(e) => e.stopPropagation()}>
@@ -803,7 +928,7 @@ function ClientRow({
       {/* Desktop table layout */}
       <div className="row-desktop">
         {visibleColumns.map((key) => (
-          <div key={key} style={{ minWidth: 0 }}>
+          <div key={key} style={{ minWidth: 0, overflow: "hidden" }}>
             {renderCell(key)}
           </div>
         ))}
