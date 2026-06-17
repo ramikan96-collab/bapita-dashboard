@@ -81,10 +81,12 @@ export default function AdminPage() {
   }
 
   // ── Leads state ───────────────────────────────────────────────────────────
-  const [leads,        setLeads]        = useState<Lead[]>([]);
-  const [leadsLoading, setLeadsLoading] = useState(false);
-  const [leadsLoaded,  setLeadsLoaded]  = useState(false);
-  const [updatingLead, setUpdatingLead] = useState<string | null>(null);
+  const [leads,          setLeads]          = useState<Lead[]>([]);
+  const [leadsLoading,   setLeadsLoading]   = useState(false);
+  const [leadsLoaded,    setLeadsLoaded]    = useState(false);
+  const [updatingLead,   setUpdatingLead]   = useState<string | null>(null);
+  const [filterStatus,   setFilterStatus]   = useState<Lead["status"] | "all">("all");
+  const [justConverted,  setJustConverted]  = useState(false);
 
   const loadLeads = useCallback(async () => {
     setLeadsLoading(true);
@@ -98,14 +100,34 @@ export default function AdminPage() {
     setUpdatingLead(id);
     await supabase.from("leads").update({ status }).eq("id", id);
     setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+    if (status === "converted") setJustConverted(true);
     setUpdatingLead(null);
+  }
+
+  function downloadLeadsCSV() {
+    const rows = leads.map(l => ({
+      Name: l.name, Business: l.business_name ?? "", Phone: l.phone ?? "",
+      Email: l.email, City: l.city ?? "", Status: l.status,
+      Message: l.message ?? "", Date: new Date(l.created_at).toLocaleDateString(),
+    }));
+    csvDownload(rows, "bapita-leads.csv");
+  }
+
+  function downloadBusinessesCSV() {
+    const rows = businesses.map(b => ({
+      Name: b.name, Slug: b.slug ?? "", Template: b.template_style ?? "",
+      Status: (b as any).status ?? "", Phone: b.phone ?? "", Address: b.address ?? "",
+    }));
+    csvDownload(rows, "bapita-businesses.csv");
   }
 
   // ── Load on mount / tab switch ────────────────────────────────────────────
   useEffect(() => { loadBusinesses(); }, [loadBusinesses]);
   useEffect(() => { if (tab === "leads" && !leadsLoaded) loadLeads(); }, [tab, leadsLoaded, loadLeads]);
 
-  const pendingCount = leads.filter(l => l.status === "pending").length;
+  const pendingCount    = leads.filter(l => l.status === "pending").length;
+  const filteredLeads   = filterStatus === "all" ? leads : leads.filter(l => l.status === filterStatus);
+  const statusCounts    = leads.reduce((acc, l) => { acc[l.status] = (acc[l.status] || 0) + 1; return acc; }, {} as Record<string, number>);
 
   // ── Tab bar ────────────────────────────────────────────────────────────────
   const TABS: { key: Tab; label: string; badge?: number }[] = [
@@ -128,19 +150,37 @@ export default function AdminPage() {
             </p>
           </div>
           {tab === "businesses" && (
-            <button
-              onClick={() => router.push("/admin/businesses/new")}
-              style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)", transition: "transform 0.15s, box-shadow 0.15s", fontFamily: "inherit", marginTop: 4 }}
-              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,146,10,0.36)"; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(232,146,10,0.28)"; }}
-            >
-              + Add Business
-            </button>
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <button
+                onClick={downloadBusinessesCSV}
+                disabled={businesses.length === 0}
+                style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-muted)", fontSize: 13, fontWeight: 600, cursor: businesses.length === 0 ? "default" : "pointer", opacity: businesses.length === 0 ? 0.4 : 1, fontFamily: "inherit" }}
+              >
+                ↓ CSV
+              </button>
+              <button
+                onClick={() => router.push("/admin/businesses/new")}
+                style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)", transition: "transform 0.15s, box-shadow 0.15s", fontFamily: "inherit" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,146,10,0.36)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(232,146,10,0.28)"; }}
+              >
+                + Add Business
+              </button>
+            </div>
           )}
           {tab === "leads" && (
-            <button onClick={loadLeads} style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-muted)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", marginTop: 4 }}>
-              Refresh
-            </button>
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <button
+                onClick={downloadLeadsCSV}
+                disabled={leads.length === 0}
+                style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-muted)", fontSize: 13, fontWeight: 600, cursor: leads.length === 0 ? "default" : "pointer", opacity: leads.length === 0 ? 0.4 : 1, fontFamily: "inherit" }}
+              >
+                ↓ CSV
+              </button>
+              <button onClick={loadLeads} style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-muted)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                Refresh
+              </button>
+            </div>
           )}
         </div>
 
@@ -203,6 +243,56 @@ export default function AdminPage() {
           {/* ── LEADS TAB ── */}
           {tab === "leads" && (
             <>
+              {/* Filter bar */}
+              {!leadsLoading && leads.length > 0 && (
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+                  {(["all", "pending", "contacted", "converted", "rejected"] as const).map(s => {
+                    const count = s === "all" ? leads.length : (statusCounts[s] || 0);
+                    const active = filterStatus === s;
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => setFilterStatus(s)}
+                        style={{
+                          height: 28, padding: "0 12px", borderRadius: 20,
+                          border: active ? "none" : "1.5px solid var(--color-cream-2)",
+                          background: active ? "var(--color-amber)" : "var(--color-surface)",
+                          color: active ? "#fff" : "var(--color-muted)",
+                          fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                          display: "flex", alignItems: "center", gap: 5,
+                        }}
+                      >
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                        {count > 0 && <span style={{ background: active ? "rgba(255,255,255,0.3)" : "var(--color-cream-2)", borderRadius: 99, padding: "0 5px", fontSize: 10 }}>{count}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Converted banner */}
+              {justConverted && (
+                <div style={{ background: "#D1FAE5", border: "1px solid #A7F3D0", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#065F46" }}>
+                    Lead converted! Remember to create the business record.
+                  </span>
+                  <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                    <button
+                      onClick={() => router.push("/admin/businesses/new")}
+                      style={{ height: 28, padding: "0 12px", borderRadius: 7, border: "none", background: "#065F46", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      + Create business →
+                    </button>
+                    <button
+                      onClick={() => setJustConverted(false)}
+                      style={{ height: 28, padding: "0 10px", borderRadius: 7, border: "1px solid #A7F3D0", background: "transparent", color: "#065F46", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {leadsLoading && <div style={{ textAlign: "center", padding: "60px 0", color: "var(--color-muted)", fontSize: 14 }}>Loading…</div>}
               {!leadsLoading && leads.length === 0 && (
                 <div style={{ textAlign: "center", padding: "60px 0" }}>
@@ -210,7 +300,12 @@ export default function AdminPage() {
                   <p style={{ fontSize: 13, color: "var(--color-muted)" }}>Requests submitted on bapita.com will appear here.</p>
                 </div>
               )}
-              {leads.map(lead => {
+              {!leadsLoading && leads.length > 0 && filteredLeads.length === 0 && (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "var(--color-muted)", fontSize: 13 }}>
+                  No {filterStatus} leads.
+                </div>
+              )}
+              {filteredLeads.map(lead => {
                 const sc   = LEAD_STATUS[lead.status];
                 const busy = updatingLead === lead.id;
                 return (
@@ -233,21 +328,28 @@ export default function AdminPage() {
                     {lead.message && (
                       <p style={{ margin: 0, fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5, background: "var(--color-cream)", borderRadius: 8, padding: "8px 12px" }}>{lead.message}</p>
                     )}
-                    {lead.status !== "converted" && lead.status !== "rejected" && (
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
-                        {lead.status === "pending" && (
-                          <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "contacted")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 12, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>
-                            Mark contacted
-                          </button>
-                        )}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 2, alignItems: "center" }}>
+                      {lead.status === "pending" && (
+                        <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "contacted")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 12, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>
+                          Mark contacted
+                        </button>
+                      )}
+                      {lead.status !== "converted" && (
                         <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "converted")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>
                           Convert → client
                         </button>
+                      )}
+                      {lead.status !== "rejected" && (
                         <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "rejected")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 12, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>
                           Reject
                         </button>
-                      </div>
-                    )}
+                      )}
+                      {lead.status !== "pending" && (
+                        <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "pending")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 11, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>
+                          ↺ Reset
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -258,6 +360,20 @@ export default function AdminPage() {
       </div>
     </div>
   );
+}
+
+function csvDownload(rows: Record<string, unknown>[], filename: string) {
+  if (!rows.length) return;
+  const keys = Object.keys(rows[0]);
+  const csv = [
+    keys.join(","),
+    ...rows.map(r => keys.map(k => `"${String(r[k] ?? "").replace(/"/g, '""')}"`).join(",")),
+  ].join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
 }
 
 function BusinessRow({ business: b, serviceCount, deleting, confirmDelete, onEdit, onDeleteRequest, onDeleteConfirm, onDeleteCancel }: {
