@@ -667,9 +667,9 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
   function renderHistory() {
     if (!current.customer_id) {
       return (
-        <p className="text-[14px] px-1" style={{ color: "var(--color-muted)" }}>
-          No client profile linked.
-        </p>
+        <div className="rounded-2xl px-5 py-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)" }}>
+          <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>No client profile linked.</p>
+        </div>
       );
     }
     if (prevBooking === "loading") {
@@ -686,9 +686,9 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
     }
     if (prevBooking === null) {
       return (
-        <p className="text-[14px] px-1" style={{ color: "var(--color-muted)" }}>
-          No previous bookings.
-        </p>
+        <div className="rounded-2xl px-5 py-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)" }}>
+          <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>No previous bookings.</p>
+        </div>
       );
     }
 
@@ -864,7 +864,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
 
         {/* Sticky footer */}
         <div
-          className="shrink-0 px-5 py-4 border-t"
+          className="shrink-0 px-6 py-4 border-t"
           style={{ borderColor: "var(--color-cream-2)", background: "var(--color-surface)" }}
         >
           {showDeleteConfirm ? (
@@ -902,7 +902,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="py-3.5 px-5 rounded-2xl text-[14px] font-bold"
+                className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold"
                 style={{ background: "#FEE2E2", color: "#EF4444" }}
               >
                 Delete

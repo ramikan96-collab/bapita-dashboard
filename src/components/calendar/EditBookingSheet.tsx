@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
+import { ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/components/Toast";
@@ -32,7 +33,6 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
   const [date, setDate] = useState<Date>(parseISO(booking.appointment_date));
   const [time, setTime] = useState<string | null>(booking.appointment_time.slice(0, 5));
   const [notes, setNotes] = useState<string>(booking.notes ?? "");
-  const [markPaid, setMarkPaid] = useState<boolean>(booking.payment_status !== "none");
 
   const [services, setServices] = useState<Service[]>([]);
   const [slots, setSlots] = useState<{ time: string; available: boolean }[]>([]);
@@ -91,13 +91,11 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
     if (!time) return;
     setSaving(true);
     const dateStr = format(date, "yyyy-MM-dd");
-    const paymentStatus = markPaid ? (booking.payment_status !== "none" ? booking.payment_status : "cash") : "none";
     const patch = {
       service_id: serviceId,
       appointment_date: dateStr,
       appointment_time: time,
       notes: notes.trim() || null,
-      payment_status: paymentStatus,
     };
     const { error } = await supabase
       .from("bookings")
@@ -113,7 +111,6 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
       appointment_date: dateStr,
       appointment_time: time,
       notes: notes.trim() || null,
-      payment_status: paymentStatus as Booking["payment_status"],
       ...(selectedService
         ? {
             service: {
@@ -128,14 +125,14 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-end justify-center md:items-center md:px-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="relative w-full max-w-md rounded-t-2xl flex flex-col"
+        className="relative w-full max-w-md rounded-t-2xl md:rounded-2xl flex flex-col"
         style={{ background: "#fff", maxHeight: "92vh", boxShadow: "0 -4px 24px rgba(30,26,20,0.12)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-1 shrink-0" style={{ background: "var(--color-cream-2)" }} />
+        <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-1 shrink-0 md:hidden" style={{ background: "var(--color-cream-2)" }} />
         <div className="overflow-y-auto px-5 pb-4">
           <p className="text-center font-black text-lg mt-3 mb-5" style={{ color: "var(--color-dark)" }}>
             Edit Booking
@@ -146,13 +143,14 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
             <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: "var(--color-muted)" }}>
               Service
             </label>
+            <div className="relative">
             <select
               value={serviceId}
               onChange={(e) => {
                 setServiceId(e.target.value);
                 setTime(null);
               }}
-              className="w-full h-12 px-4 rounded-xl border text-base outline-none"
+              className="w-full h-12 px-4 pr-10 rounded-xl border text-base outline-none appearance-none"
               style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)" }}
               onFocus={(e) => (e.target.style.borderColor = "var(--color-amber)")}
               onBlur={(e) => (e.target.style.borderColor = "var(--color-cream-2)")}
@@ -166,6 +164,8 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
                 </option>
               ))}
             </select>
+            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-muted)" }} />
+            </div>
           </div>
 
           {/* Date */}
@@ -199,13 +199,13 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
             ) : slots.length === 0 ? (
               <p className="text-sm text-center py-4" style={{ color: "var(--color-muted)" }}>No available times this day.</p>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2.5">
                 {slots.map((slot) => (
                   <button
                     key={slot.time}
                     disabled={!slot.available}
                     onClick={() => slot.available && setTime(slot.time)}
-                    className="py-2.5 rounded-xl text-sm font-semibold border transition-colors"
+                    className="py-3 rounded-xl text-sm font-semibold border transition-colors"
                     style={
                       time === slot.time
                         ? { background: "var(--color-amber)", color: "#fff", borderColor: "var(--color-amber)" }
@@ -244,34 +244,16 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
             />
           </div>
 
-          {/* Mark as paid */}
-          <div className="mb-6 flex items-center justify-between">
-            <span className="text-sm font-semibold" style={{ color: "var(--color-dark)" }}>
-              Mark as paid
-            </span>
-            <button
-              onClick={() => setMarkPaid((prev) => !prev)}
-              className="relative w-12 h-6 rounded-full transition-colors"
-              style={{ background: markPaid ? "var(--color-amber)" : "var(--color-cream-2)" }}
-              aria-checked={markPaid}
-              role="switch"
-            >
-              <span
-                className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"
-                style={{ transform: markPaid ? "translateX(24px)" : "translateX(0)" }}
-              />
-            </button>
-          </div>
         </div>
 
         {/* Footer buttons */}
         <div
-          className="shrink-0 px-5 pb-8 pt-3 flex gap-3 border-t"
+          className="shrink-0 px-5 pb-8 md:pb-6 pt-3 flex gap-3 border-t"
           style={{ borderColor: "var(--color-cream-2)" }}
         >
           <button
             onClick={onClose}
-            className="flex-1 py-3.5 rounded-xl text-sm font-semibold border"
+            className="flex-1 py-3.5 rounded-2xl text-sm font-semibold border"
             style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)" }}
           >
             Cancel
@@ -279,7 +261,7 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
           <button
             disabled={!time || saving}
             onClick={handleSave}
-            className="flex-1 py-3.5 rounded-xl text-sm font-bold disabled:opacity-50"
+            className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50"
             style={{ background: "var(--color-amber)", color: "#fff" }}
           >
             {saving ? "Saving…" : "Confirm"}
