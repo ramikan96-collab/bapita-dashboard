@@ -82,6 +82,7 @@ const ALL_LABEL_OPTIONS = [
 ] as const;
 
 function getEffectiveLabel(client: Customer): { text: string; bg: string; color: string } | null {
+  if (client.label === "new") return NEW_CHIP;
   if (client.label && client.label in LABEL_CONFIG) {
     return LABEL_CONFIG[client.label as LabelValue];
   }
@@ -502,6 +503,7 @@ export default function ClientsPage() {
         .dd-menu-item.selected-bg { background: var(--amber-soft); }
         /* Table scroll */
         .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .table-min { min-width: ${tableMinWidth}px; }
         /* Desktop: hide mobile card elements */
         .row-mobile { display: none; }
         .row-desktop { display: contents; }
@@ -524,6 +526,7 @@ export default function ClientsPage() {
           .row-actions { opacity: 1 !important; }
           .row-arrow { display: none !important; }
           .table-scroll { overflow-x: auto; }
+          .table-min { min-width: 0; }
         }
       `}</style>
 
@@ -810,7 +813,7 @@ export default function ClientsPage() {
               </div>
             ) : (
               <div className="table-scroll">
-                <div style={{ minWidth: tableMinWidth }}>
+                <div className="table-min">
                   {/* Column header row */}
                   <div
                     className="client-header-row"

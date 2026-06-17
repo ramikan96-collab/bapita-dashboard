@@ -288,6 +288,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
               <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
                 {([
                   { value: "",          text: "None",      bg: "var(--color-cream)",  color: "var(--color-muted)" },
+                  { value: "new",       text: "New",       bg: "#EFF6FF",             color: "#2563EB" },
                   { value: "completed", text: "Completed", bg: "#F0FDF4",             color: "#16A34A" },
                   { value: "no_show",   text: "No show",   bg: "#FFF7ED",             color: "#EA580C" },
                   { value: "canceled",  text: "Canceled",  bg: "#FEF2F2",             color: "#DC2626" },
