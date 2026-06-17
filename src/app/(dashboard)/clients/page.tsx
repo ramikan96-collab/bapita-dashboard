@@ -561,6 +561,7 @@ export default function ClientsPage() {
           /* Mobile: don't trap scroll in inner div — let AppShell main scroll */
           .clients-shell { height: auto; }
           .clients-body { flex: none; overflow-y: visible; }
+          .table-scroll { overflow: visible; }
         }
       `}</style>
 
@@ -1177,7 +1178,9 @@ function ClientRow({
   const mobilePhone = client.phone ? formatPhone(client.phone) : null;
   const mobileEmail = client.email;
   const mobileVisits = client.total_visits > 0 ? `${client.total_visits} visit${client.total_visits === 1 ? "" : "s"}` : null;
-  const mobileSub = [mobilePhone, mobileEmail, mobileVisits].filter(Boolean).join(" · ") || "—";
+  const mobileLastVisit = client.last_visit_at ? `Last ${format(parseISO(client.last_visit_at), "MMM d, yyyy")}` : null;
+  const mobileSub1 = [mobilePhone, mobileEmail].filter(Boolean).join(" · ") || "—";
+  const mobileSub2 = [mobileVisits, mobileLastVisit].filter(Boolean).join(" · ");
   const mobileChip = getEffectiveLabel(client);
 
   return (
@@ -1200,7 +1203,8 @@ function ClientRow({
               </span>
             )}
           </div>
-          <span className="row-mobile-sub">{mobileSub}</span>
+          <span className="row-mobile-sub">{mobileSub1}</span>
+          {mobileSub2 && <span className="row-mobile-sub" style={{ fontSize: 11 }}>{mobileSub2}</span>}
         </div>
         <div className="row-actions" onClick={(e) => e.stopPropagation()}>
           <button className="row-action-btn" title="Edit" onClick={onEdit}><IconEdit /></button>
