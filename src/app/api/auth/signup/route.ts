@@ -24,32 +24,27 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceClient();
 
-  // Create user via admin — Supabase does NOT send its own email this way
-  const { error: createError } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: false,
-    user_metadata: { full_name: name ?? "" },
-  });
-
-  if (createError) {
-    const msg = createError.message.toLowerCase();
-    if (msg.includes("already") || msg.includes("exists")) {
-      return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
-    }
-    return NextResponse.json({ error: createError.message }, { status: 400 });
-  }
-
-  // Generate a confirmation link to send ourselves
-  const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+  // generateLink creates the user + confirmation token in one call
+  const { data: linkData, error } = await supabase.auth.admin.generateLink({
     type: "signup",
     email,
-    options: { redirectTo: "https://dashboard.bapita.com/auth/callback" },
+    password,
+    options: {
+      data: { full_name: name ?? "" },
+      redirectTo: "https://dashboard.bapita.com/auth/callback",
+    },
   });
 
-  if (linkError || !linkData?.properties?.action_link) {
-    // User created but link gen failed — they can try logging in once confirmed manually
-    return NextResponse.json({ ok: true });
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("already") || msg.includes("exists") || msg.includes("registered")) {
+      return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+    }
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  if (!linkData?.properties?.action_link) {
+    return NextResponse.json({ error: "Could not generate confirmation link." }, { status: 500 });
   }
 
   try {

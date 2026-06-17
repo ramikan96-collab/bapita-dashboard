@@ -464,9 +464,11 @@ function BusinessSection({
 function ServicesSection({
   business,
   supabase,
+  refresh,
 }: {
   business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
   supabase: ReturnType<typeof createClient>;
+  refresh: () => Promise<void>;
 }) {
   const { showToast } = useToast();
   const [services, setServices] = useState<Service[]>([]);
@@ -523,6 +525,7 @@ function ServicesSection({
       });
     }
     await loadServices();
+    await refresh();
     resetForm();
     setSaving(false);
     showToast(editingId ? "Service updated" : "Service added", "success");
@@ -533,6 +536,8 @@ function ServicesSection({
     const { error } = await supabase.from("services").update({ active: !current }).eq("id", id);
     if (error) {
       setServices((prev) => prev.map((s) => s.id === id ? { ...s, active: current } : s));
+    } else {
+      await refresh();
     }
   }
 
@@ -1206,50 +1211,214 @@ function ReviewsSection({
 function OnboardingChecklist({
   business,
   supabase,
+  onNavigate,
 }: {
   business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
   supabase: ReturnType<typeof createClient>;
+  onNavigate: (section: Section) => void;
 }) {
-  const [serviceCount, setServiceCount] = useState<number | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [serviceCount, setServiceCount] = useState(0);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("bapita_onboarding") !== "1";
+  });
+  const [allDoneVisible, setAllDoneVisible] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("bapita_onboarding") !== "1") {
-      setDismissed(true);
-      return;
-    }
+    if (dismissed) return;
     supabase
       .from("services")
       .select("*", { count: "exact", head: true })
       .eq("business_id", business.id)
       .eq("active", true)
       .then(({ count }) => setServiceCount(count ?? 0));
-  }, [business.id, supabase]);
+  // business as dep — re-runs whenever parent calls refresh(), keeping count in sync
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dismissed, business, supabase]);
 
-  if (dismissed || serviceCount === null) return null;
-
-  const hasService = serviceCount > 0;
-  const hasHours = business.business_hours !== null;
-  const allDone = hasService && hasHours;
-
-  if (allDone) {
+  function dismiss() {
     if (typeof window !== "undefined") localStorage.removeItem("bapita_onboarding");
-    return null;
+    setDismissed(true);
   }
 
+  if (dismissed) return null;
+
+  const steps: { key: Section; label: string; hint: string; done: boolean; required: boolean }[] = [
+    {
+      key: "business",
+      label: "Business info",
+      hint: "Add your tagline, phone, or address",
+      done: !!(business.tagline || business.phone || business.address),
+      required: true,
+    },
+    {
+      key: "services",
+      label: "Services",
+      hint: "Add at least one service you offer",
+      done: serviceCount > 0,
+      required: true,
+    },
+    {
+      key: "hours",
+      label: "Working hours",
+      hint: "Set your weekly availability",
+      done: business.business_hours !== null,
+      required: true,
+    },
+    {
+      key: "reviews",
+      label: "Reviews",
+      hint: "Add your best client reviews",
+      done: Array.isArray(business.google_reviews) && (business.google_reviews as GoogleReview[]).length > 0,
+      required: false,
+    },
+  ];
+
+  const doneCount = steps.filter(s => s.done).length;
+  const requiredDone = steps.filter(s => s.required && s.done).length;
+  const requiredTotal = steps.filter(s => s.required).length;
+  const allRequiredDone = requiredDone === requiredTotal;
+  const pct = Math.round((doneCount / steps.length) * 100);
+
+  useEffect(() => {
+    if (!allRequiredDone) { setAllDoneVisible(false); return; }
+    setAllDoneVisible(true);
+    const t = setTimeout(() => dismiss(), 2200);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allRequiredDone]);
+
   return (
-    <div style={{ background: "var(--wash-amber)", color: "#fff", padding: "12px 16px", borderRadius: 12, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-      <div>
-        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Almost live — finish setup:</div>
-        <div style={{ fontSize: 12, opacity: 0.9 }}>
-          {hasService ? "✅" : "○"} Add a service &nbsp;·&nbsp; {hasHours ? "✅" : "○"} Set working hours
+    <div style={{
+      background: "var(--color-surface)",
+      borderRadius: 16,
+      border: "1px solid var(--color-cream-2)",
+      boxShadow: "var(--shadow-sm)",
+      overflow: "hidden",
+      marginBottom: 20,
+    }}>
+      {/* Header */}
+      <div style={{ padding: "14px 16px 10px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)", marginBottom: 2 }}>
+            {allDoneVisible ? "🎉 You're all set!" : "Finish setting up your page"}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--color-muted)" }}>
+            {allDoneVisible
+              ? "Your booking page is ready to share."
+              : `${doneCount} of ${steps.length} complete · ${steps.length - doneCount} remaining`}
+          </div>
         </div>
+        <button
+          onClick={dismiss}
+          aria-label="Dismiss setup checklist"
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-muted)", lineHeight: 1, padding: "2px 0", fontSize: 18, flexShrink: 0, marginTop: -1 }}
+          onMouseEnter={e => (e.currentTarget.style.color = "var(--color-dark)")}
+          onMouseLeave={e => (e.currentTarget.style.color = "var(--color-muted)")}
+        >
+          ×
+        </button>
       </div>
-      <button
-        onClick={() => { setDismissed(true); if (typeof window !== "undefined") localStorage.removeItem("bapita_onboarding"); }}
-        style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", fontSize: 18, lineHeight: 1, flexShrink: 0 }}
-        aria-label="Dismiss"
-      >×</button>
+
+      {/* Progress bar */}
+      <div style={{ height: 3, background: "var(--color-cream-2)", margin: "0 16px 2px" }}>
+        <div style={{
+          height: "100%",
+          width: `${pct}%`,
+          background: allRequiredDone ? "#16A34A" : "var(--color-amber)",
+          borderRadius: 9999,
+          transition: "width 0.4s ease, background 0.3s ease",
+        }} />
+      </div>
+
+      {/* Steps */}
+      <div style={{ padding: "6px 0 4px" }}>
+        {steps.map((step, idx) => (
+          <button
+            key={step.key}
+            onClick={() => !step.done && onNavigate(step.key)}
+            disabled={step.done}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              width: "100%",
+              padding: "9px 16px",
+              background: "none",
+              border: "none",
+              borderBottom: idx < steps.length - 1 ? "1px solid var(--color-cream-2)" : "none",
+              cursor: step.done ? "default" : "pointer",
+              textAlign: "left",
+              fontFamily: "inherit",
+              transition: "background 0.12s",
+            }}
+            onMouseEnter={e => { if (!step.done) e.currentTarget.style.background = "var(--color-cream)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+          >
+            {/* Status circle */}
+            <div style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: step.done ? "rgba(34,197,94,0.12)" : "var(--color-cream)",
+              border: step.done ? "1.5px solid rgba(34,197,94,0.3)" : "1.5px solid var(--color-cream-2)",
+              transition: "all 0.2s",
+            }}>
+              {step.done ? (
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                  <polyline points="2,6 5,9 10,3" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : (
+                <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-cream-2)" }} />
+              )}
+            </div>
+
+            {/* Text */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: step.done ? "var(--color-muted)" : "var(--color-dark)",
+                  opacity: step.done ? 0.65 : 1,
+                }}>
+                  {step.label}
+                </span>
+                {!step.required && (
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: "var(--color-muted)",
+                    background: "var(--color-cream-2)",
+                    padding: "1px 6px",
+                    borderRadius: 9999,
+                    letterSpacing: "0.03em",
+                    textTransform: "uppercase",
+                  }}>
+                    optional
+                  </span>
+                )}
+              </div>
+              {!step.done && (
+                <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 1, lineHeight: 1.4 }}>
+                  {step.hint}
+                </div>
+              )}
+            </div>
+
+            {/* Arrow */}
+            {!step.done && (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.5 }}>
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1276,7 +1445,7 @@ export default function SettingsPage() {
   function renderSection() {
     switch (activeSection) {
       case "business": return <BusinessSection business={business!} supabase={supabase} refresh={refresh} />;
-      case "services": return <ServicesSection business={business!} supabase={supabase} />;
+      case "services": return <ServicesSection business={business!} supabase={supabase} refresh={refresh} />;
       case "hours":    return <HoursSection business={business!} supabase={supabase} refresh={refresh} />;
       case "reviews":  return <ReviewsSection business={business!} supabase={supabase} refresh={refresh} />;
     }
@@ -1319,7 +1488,11 @@ export default function SettingsPage() {
       {/* Content */}
       <div style={{ flex: 1, overflowY: "auto" }}>
         <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 20px 64px" }}>
-          <OnboardingChecklist business={business} supabase={supabase} />
+          <OnboardingChecklist
+            business={business}
+            supabase={supabase}
+            onNavigate={(section) => setActiveSection(section)}
+          />
           {renderSection()}
         </div>
       </div>
