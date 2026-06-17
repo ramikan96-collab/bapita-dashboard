@@ -6,6 +6,22 @@ function esc(s: unknown): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+// ─── Rate limiting ────────────────────────────────────────────────────────────
+// IP-based: 10 bookings per 60s per IP (module-level; resets on cold start)
+const ipCounts = new Map<string, { count: number; resetAt: number }>();
+
+function checkIpLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = ipCounts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    ipCounts.set(ip, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 10) return false;
+  entry.count++;
+  return true;
+}
+
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 465,
@@ -28,7 +44,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing required fields" }, { status: 400 });
   }
 
+  // IP rate limit
+  const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+  if (!checkIpLimit(ip)) {
+    return NextResponse.json({ error: "Too many requests. Please try again in a minute." }, { status: 429 });
+  }
+
   const supabase = createServiceClient();
+
+  // Phone rate limit: max 2 bookings per phone per business in last 2 hours
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const { count: recentCount } = await supabase
+    .from("bookings")
+    .select("*", { count: "exact", head: true })
+    .eq("business_id", businessId)
+    .eq("customer_phone", customerPhone)
+    .gte("created_at", twoHoursAgo);
+  if ((recentCount ?? 0) >= 2) {
+    return NextResponse.json(
+      { error: "You already have a booking. Contact the business to make changes." },
+      { status: 429 }
+    );
+  }
 
   // Conflict check — prevent double-booking race conditions
   const { data: existingBookings } = await supabase
@@ -87,7 +124,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Send confirmation email (fire and forget)
-  if (customerEmail) {
+  const emailValid = typeof customerEmail === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail);
+  if (customerEmail && emailValid) {
     try {
       const { data: bizData } = await supabase
         .from("businesses")

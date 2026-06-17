@@ -16,7 +16,7 @@ export async function POST() {
   const { data: businesses } = await admin
     .from("businesses")
     .select("id")
-    .eq("user_id", user.id);
+    .eq("owner_id", user.id);
 
   if (businesses && businesses.length > 0) {
     const businessIds = businesses.map((b) => b.id);
