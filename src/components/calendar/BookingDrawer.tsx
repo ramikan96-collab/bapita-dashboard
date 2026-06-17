@@ -60,7 +60,8 @@ function ActionBtn({
       disabled={loading}
       className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold transition-opacity disabled:opacity-50"
       style={{
-        background: primary ? color : `${color}18`,
+        background: primary ? color : `${color}22`,
+        border: primary ? "none" : `1.5px solid ${color}40`,
         color: primary ? "#fff" : color,
         minWidth: 0,
       }}
@@ -79,9 +80,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-6">
+    <div className="mb-8">
       <p
-        className="text-[11px] font-bold uppercase tracking-widest mb-2.5 px-1"
+        className="text-[10px] font-bold uppercase tracking-wider mb-3 px-1"
         style={{ color: "var(--color-muted)" }}
       >
         {label}
@@ -634,7 +635,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
           <button
             onClick={() => setShowCheckout(true)}
             className="w-full py-4 rounded-2xl text-[15px] font-bold"
-            style={{ background: "var(--wash-amber)", color: "var(--color-amber)" }}
+            style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)" }}
           >
             Mark as paid →
           </button>
@@ -769,7 +770,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
           </button>
 
           {/* ── HEADER ─────────────────────────────────────────────────── */}
-          <div className="pt-8 pb-5 md:pt-6">
+          <div className="pt-8 pb-7 md:pt-6">
             {/* Avatar + name + status */}
             <div className="flex items-start gap-4 mb-4">
               <div
@@ -835,7 +836,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
           </div>
 
           {/* ── ACTIONS ────────────────────────────────────────────────── */}
-          <div className="mb-7">{renderActions()}</div>
+          <div className="mb-9">{renderActions()}</div>
 
           {/* ── LABEL ──────────────────────────────────────────────────── */}
           <Section label="Label">{renderLabel()}</Section>
@@ -887,7 +888,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
               <button
                 onClick={() => setShowEdit(true)}
                 className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold"
-                style={{ background: "var(--wash-amber)", color: "var(--color-amber)" }}
+                style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)" }}
               >
                 Edit
               </button>

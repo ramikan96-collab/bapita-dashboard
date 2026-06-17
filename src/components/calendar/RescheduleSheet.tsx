@@ -83,21 +83,21 @@ export default function RescheduleSheet({ booking, onRescheduled, onClose }: Pro
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-end justify-center md:items-center md:px-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="relative w-full max-w-md rounded-t-2xl flex flex-col"
+        className="relative w-full max-w-md rounded-t-2xl md:rounded-2xl flex flex-col"
         style={{ background: "#fff", maxHeight: "90vh", boxShadow: "0 -4px 24px rgba(30,26,20,0.12)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-1 shrink-0" style={{ background: "var(--color-cream-2)" }} />
+        <div className="w-10 h-1 rounded-full mx-auto mt-3 mb-1 shrink-0 md:hidden" style={{ background: "var(--color-cream-2)" }} />
         <div className="overflow-y-auto px-5 pb-4">
           <p className="text-center font-black text-lg mt-3 mb-5" style={{ color: "var(--color-dark)" }}>
             Reschedule
           </p>
 
           <div className="mb-5">
-            <label className="block text-xs font-bold mb-1.5 uppercase tracking-wide" style={{ color: "var(--color-muted)" }}>
+            <label className="block text-xs font-bold mb-2.5 uppercase tracking-wide" style={{ color: "var(--color-muted)" }}>
               Date
             </label>
             <input
@@ -114,7 +114,7 @@ export default function RescheduleSheet({ booking, onRescheduled, onClose }: Pro
           </div>
 
           <div className="mb-6">
-            <label className="block text-xs font-bold mb-2 uppercase tracking-wide" style={{ color: "var(--color-muted)" }}>
+            <label className="block text-xs font-bold mb-3 uppercase tracking-wide" style={{ color: "var(--color-muted)" }}>
               Time · {booking.service?.duration ?? 30} min
             </label>
             {loadingSlots ? (
@@ -122,13 +122,13 @@ export default function RescheduleSheet({ booking, onRescheduled, onClose }: Pro
             ) : slots.length === 0 ? (
               <p className="text-sm text-center py-4" style={{ color: "var(--color-muted)" }}>No available times this day.</p>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2.5">
                 {slots.map((slot) => (
                   <button
                     key={slot.time}
                     disabled={!slot.available}
                     onClick={() => slot.available && setTime(slot.time)}
-                    className="py-2.5 rounded-xl text-sm font-semibold border transition-colors"
+                    className="py-3 rounded-xl text-sm font-semibold border transition-colors"
                     style={
                       time === slot.time
                         ? { background: "var(--color-amber)", color: "#fff", borderColor: "var(--color-amber)" }
@@ -152,12 +152,12 @@ export default function RescheduleSheet({ booking, onRescheduled, onClose }: Pro
         </div>
 
         <div
-          className="shrink-0 px-5 pb-8 pt-3 flex gap-3 border-t"
+          className="shrink-0 px-5 pb-8 md:pb-6 pt-3 flex gap-3 border-t"
           style={{ borderColor: "var(--color-cream-2)" }}
         >
           <button
             onClick={onClose}
-            className="flex-1 py-3.5 rounded-xl text-sm font-semibold border"
+            className="flex-1 py-3.5 rounded-2xl text-sm font-semibold border"
             style={{ borderColor: "var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)" }}
           >
             Cancel
@@ -165,7 +165,7 @@ export default function RescheduleSheet({ booking, onRescheduled, onClose }: Pro
           <button
             disabled={!time || saving}
             onClick={handleSave}
-            className="flex-1 py-3.5 rounded-xl text-sm font-bold disabled:opacity-50"
+            className="flex-1 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50"
             style={{ background: "var(--color-amber)", color: "#fff" }}
           >
             {saving ? "Saving…" : "Confirm"}
