@@ -28,7 +28,8 @@ export function useBusiness() {
   }, [supabase]);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
+    // No setLoading(true) here — that unmounts child components mid-operation.
+    // fetchBusiness() will call setLoading(false) when done; loading stays false throughout.
     await fetchBusiness();
   }, [fetchBusiness]);
 

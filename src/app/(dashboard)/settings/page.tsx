@@ -1218,11 +1218,14 @@ function OnboardingChecklist({
   onNavigate: (section: Section) => void;
 }) {
   const [serviceCount, setServiceCount] = useState(0);
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("bapita_onboarding") !== "1";
-  });
+  // Start hidden — reveal only on client once we confirm the onboarding flag exists.
+  // Avoids server/client hydration mismatch from reading localStorage during SSR.
+  const [dismissed, setDismissed] = useState(true);
   const [allDoneVisible, setAllDoneVisible] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem("bapita_onboarding") === "1") setDismissed(false);
+  }, []);
 
   useEffect(() => {
     if (dismissed) return;
