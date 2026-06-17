@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import nodemailer from "nodemailer";
 
+const CORS = {
+  "Access-Control-Allow-Origin": "https://bapita.com",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
+
 function esc(s: unknown): string {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -26,18 +36,18 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400, headers: CORS });
   }
 
   const { name, business_name, phone, email, city, message, lang } = body;
 
   if (!name?.trim() || !email?.trim()) {
-    return NextResponse.json({ error: "Name and email are required." }, { status: 400 });
+    return NextResponse.json({ error: "Name and email are required." }, { status: 400, headers: CORS });
   }
 
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRe.test(email)) {
-    return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+    return NextResponse.json({ error: "Invalid email address." }, { status: 400, headers: CORS });
   }
 
   const supabase = createServiceClient();
@@ -54,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   if (dbError) {
     console.error("leads insert error:", dbError);
-    return NextResponse.json({ error: "Failed to save request." }, { status: 500 });
+    return NextResponse.json({ error: "Failed to save request." }, { status: 500, headers: CORS });
   }
 
   // Notify Bapita
@@ -107,5 +117,5 @@ export async function POST(req: NextRequest) {
     console.error("Customer confirmation email failed:", e);
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true }, { headers: CORS });
 }
