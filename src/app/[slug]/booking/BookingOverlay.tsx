@@ -108,6 +108,11 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
           {state.step === "service" && (
             <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
               <div style={{ fontSize:15, fontWeight:700, color:darkColor }}>{t.steps.service.title}</div>
+              {services.length === 0 && (
+                <div style={{ textAlign:"center", padding:"40px 0", fontSize:14, color:darkColor, opacity:0.45 }}>
+                  {lang === "he" ? "אין שירותים זמינים כרגע" : "No services available at the moment"}
+                </div>
+              )}
               {services.map(s => (
                 <button key={s.id} onClick={() => setService(s)} style={{
                   width:"100%", padding:"14px 16px", borderRadius:12,

@@ -44,6 +44,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing required fields" }, { status: 400 });
   }
 
+  if (typeof customerPhone !== "string" || customerPhone.trim().length < 7) {
+    return NextResponse.json({ error: "Please enter a valid phone number." }, { status: 400 });
+  }
+
   // IP rate limit
   const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
   if (!checkIpLimit(ip)) {

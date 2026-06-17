@@ -32,7 +32,7 @@ interface Props {
 }
 
 export function ContactStep({ service, date, time, contact, onChange, onSubmit, submitting, error, accentColor, darkColor, bgColor, t }: Props) {
-  const canSubmit  = !!contact.name.trim() && !!contact.phone.trim() && !submitting;
+  const canSubmit  = !!contact.name.trim() && contact.phone.trim().length >= 7 && !submitting;
   const isDark     = /^#[01]/.test(bgColor);
   const borderClr  = isDark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.12)";
   const disabledBg = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.1)";
