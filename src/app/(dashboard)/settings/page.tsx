@@ -1218,34 +1218,12 @@ function OnboardingChecklist({
   onNavigate: (section: Section) => void;
 }) {
   const [serviceCount, setServiceCount] = useState(0);
-  // Start hidden — reveal only on client once we confirm the onboarding flag exists.
+  // Start hidden — revealed on client once onboarding localStorage flag is confirmed.
   // Avoids server/client hydration mismatch from reading localStorage during SSR.
   const [dismissed, setDismissed] = useState(true);
   const [allDoneVisible, setAllDoneVisible] = useState(false);
 
-  useEffect(() => {
-    if (localStorage.getItem("bapita_onboarding") === "1") setDismissed(false);
-  }, []);
-
-  useEffect(() => {
-    if (dismissed) return;
-    supabase
-      .from("services")
-      .select("*", { count: "exact", head: true })
-      .eq("business_id", business.id)
-      .eq("active", true)
-      .then(({ count }) => setServiceCount(count ?? 0));
-  // business as dep — re-runs whenever parent calls refresh(), keeping count in sync
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dismissed, business, supabase]);
-
-  function dismiss() {
-    if (typeof window !== "undefined") localStorage.removeItem("bapita_onboarding");
-    setDismissed(true);
-  }
-
-  if (dismissed) return null;
-
+  // Derive steps + completion here (before hooks) so the allRequiredDone effect can use them
   const steps: { key: Section; label: string; hint: string; done: boolean; required: boolean }[] = [
     {
       key: "business",
@@ -1276,20 +1254,48 @@ function OnboardingChecklist({
       required: false,
     },
   ];
+  const doneCount      = steps.filter(s => s.done).length;
+  const allRequiredDone = steps.filter(s => s.required).every(s => s.done);
+  const pct            = Math.round((doneCount / steps.length) * 100);
 
-  const doneCount = steps.filter(s => s.done).length;
-  const requiredDone = steps.filter(s => s.required && s.done).length;
-  const requiredTotal = steps.filter(s => s.required).length;
-  const allRequiredDone = requiredDone === requiredTotal;
-  const pct = Math.round((doneCount / steps.length) * 100);
+  // ── ALL hooks before any early return (Rules of Hooks) ──────────────────────
 
+  // Reveal checklist on client if the onboarding flag is present
+  useEffect(() => {
+    if (localStorage.getItem("bapita_onboarding") === "1") setDismissed(false);
+  }, []);
+
+  // Re-fetch service count whenever business updates (triggered by refresh())
+  useEffect(() => {
+    if (dismissed) return;
+    supabase
+      .from("services")
+      .select("*", { count: "exact", head: true })
+      .eq("business_id", business.id)
+      .eq("active", true)
+      .then(({ count }) => setServiceCount(count ?? 0));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dismissed, business, supabase]);
+
+  // Auto-dismiss with celebration when all required steps done
   useEffect(() => {
     if (!allRequiredDone) { setAllDoneVisible(false); return; }
     setAllDoneVisible(true);
-    const t = setTimeout(() => dismiss(), 2200);
+    const t = setTimeout(() => {
+      localStorage.removeItem("bapita_onboarding");
+      setDismissed(true);
+    }, 2200);
     return () => clearTimeout(t);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allRequiredDone]);
+
+  // ── Early return after all hooks ────────────────────────────────────────────
+
+  function dismiss() {
+    localStorage.removeItem("bapita_onboarding");
+    setDismissed(true);
+  }
+
+  if (dismissed) return null;
 
   return (
     <div style={{
