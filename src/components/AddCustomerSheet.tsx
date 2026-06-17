@@ -34,6 +34,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
   const [phone, setPhone] = useState(clientToEdit?.phone ?? "");
   const [email, setEmail] = useState((clientToEdit as any)?.email ?? "");
   const [notes, setNotes] = useState(clientToEdit?.notes ?? "");
+  const [label, setLabel] = useState<string>(clientToEdit?.label ?? "");
   const [lastVisit, setLastVisit] = useState(
     clientToEdit?.last_visit_at ? format(parseISO(clientToEdit.last_visit_at), "yyyy-MM-dd") : ""
   );
@@ -113,6 +114,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
           email: email.trim() || null,
           notes: notes.trim() || null,
           last_visit_at: lastVisit ? new Date(lastVisit).toISOString() : clientToEdit.last_visit_at,
+          label: label || null,
         })
         .eq("id", clientToEdit.id)
         .eq("business_id", business.id);
@@ -275,6 +277,46 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
               onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
             />
           </div>
+
+          {/* Label — edit mode only; auto-derived from bookings, can be overridden */}
+          {isEdit && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.05em", color: "var(--color-muted)" }}>Label</label>
+                <span style={{ fontSize: 11, color: "var(--color-muted)" }}>Auto-updated from bookings</span>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
+                {([
+                  { value: "",          text: "None",      bg: "var(--color-cream)",  color: "var(--color-muted)" },
+                  { value: "completed", text: "Completed", bg: "#F0FDF4",             color: "#16A34A" },
+                  { value: "no_show",   text: "No show",   bg: "#FFF7ED",             color: "#EA580C" },
+                  { value: "canceled",  text: "Canceled",  bg: "#FEF2F2",             color: "#DC2626" },
+                ] as const).map(({ value, text, bg, color }) => {
+                  const active = label === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setLabel(value)}
+                      style={{
+                        padding: "5px 13px",
+                        borderRadius: 20,
+                        border: `1.5px solid ${active ? color : "var(--color-cream-2)"}`,
+                        background: active ? bg : "white",
+                        color: active ? color : "var(--color-muted)",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        transition: "all 0.12s",
+                      }}
+                    >
+                      {text}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Last visit */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
