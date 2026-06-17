@@ -40,7 +40,7 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "lastVisit", label: "Last visit" },
 ];
 
-const DEFAULT_COLUMNS: ColumnKey[] = ["firstName", "lastName", "phone", "email", "label"];
+const DEFAULT_COLUMNS: ColumnKey[] = ["firstName", "lastName", "phone", "email", "label", "visits", "lastVisit"];
 
 // Per-column grid width
 function getColWidth(key: ColumnKey): string {
@@ -523,6 +523,10 @@ export default function ClientsPage() {
         .dd-menu-item:hover { background: var(--color-cream); }
         .dd-menu-item.selected { font-weight: 700; color: var(--color-amber); }
         .dd-menu-item.selected-bg { background: var(--amber-soft); }
+        /* Page shell — desktop: fixed height with inner scroll; mobile: natural flow */
+        .clients-shell { display: flex; flex-direction: column; height: 100%; background: var(--color-cream); }
+        .clients-header { flex-shrink: 0; background: white; border-bottom: 1px solid var(--color-cream-2); }
+        .clients-body { flex: 1; overflow-y: auto; }
         /* Table scroll */
         .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .table-min { min-width: ${tableMinWidth}px; }
@@ -554,13 +558,16 @@ export default function ClientsPage() {
           .row-arrow { display: none !important; }
           .table-scroll { overflow-x: auto; }
           .table-min { min-width: 0; }
+          /* Mobile: don't trap scroll in inner div — let AppShell main scroll */
+          .clients-shell { height: auto; }
+          .clients-body { flex: none; overflow-y: visible; }
         }
       `}</style>
 
-      <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-cream)" }}>
+      <div className="clients-shell">
 
         {/* ── Header ─────────────────────────────────────────────────────────── */}
-        <div style={{ flexShrink: 0, background: "white", borderBottom: "1px solid var(--color-cream-2)" }}>
+        <div className="clients-header">
           <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", padding: "26px 24px 18px" }}>
 
             {/* Title + Add */}
@@ -825,7 +832,7 @@ export default function ClientsPage() {
         </div>
 
         {/* ── Table ──────────────────────────────────────────────────────────── */}
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div className="clients-body">
           <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", padding: "16px 24px 64px" }}>
             {loading ? (
               <RowSkeleton />
@@ -1169,7 +1176,8 @@ function ClientRow({
 
   const mobilePhone = client.phone ? formatPhone(client.phone) : null;
   const mobileEmail = client.email;
-  const mobileSub = [mobilePhone, mobileEmail].filter(Boolean).join(" · ") || "—";
+  const mobileVisits = client.total_visits > 0 ? `${client.total_visits} visit${client.total_visits === 1 ? "" : "s"}` : null;
+  const mobileSub = [mobilePhone, mobileEmail, mobileVisits].filter(Boolean).join(" · ") || "—";
   const mobileChip = getEffectiveLabel(client);
 
   return (
