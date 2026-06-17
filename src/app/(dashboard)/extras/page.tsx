@@ -22,8 +22,8 @@ const ALL_TYPES: AddonType[] = [...MONTHLY, ...ONETIME];
 type ChannelUsage = { used: number; total: number; label: string };
 
 const CHANNEL_USAGE: Record<string, ChannelUsage> = {
-  WhatsApp: { used: 1247, total: 2500, label: "WhatsApp messages" },
-  SMS:      { used: 342,  total: 1000, label: "SMS messages"      },
+  WhatsApp: { used: 0, total: 2500, label: "WhatsApp messages" },
+  SMS:      { used: 0, total: 1000, label: "SMS messages"      },
 };
 
 const EMAIL_USAGE = { used: 0, total: 500, label: "emails sent" };
