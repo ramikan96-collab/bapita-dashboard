@@ -66,9 +66,14 @@ export default function LoginPage() {
       if (error) { setError(error.message); }
       else        { window.location.href = "/calendar"; }
     } else {
-      const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
-      if (error) { setError(error.message); }
-      else        { setSignupDone(true); }
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setError(json.error ?? "Something went wrong."); }
+      else          { setSignupDone(true); }
     }
     setLoading(false);
   }
@@ -78,12 +83,14 @@ export default function LoginPage() {
     if (!email) { setError("Enter your email address first."); return; }
     setError("");
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/profile`,
+    const res = await fetch("/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
     });
     setLoading(false);
-    if (error) { setError(error.message); }
-    else        { setResetSent(true); }
+    if (!res.ok) { setError("Something went wrong. Try again."); }
+    else          { setResetSent(true); }
   }
 
   function switchTab(t: "login" | "signup" | "forgot") {
