@@ -16,8 +16,9 @@ function buildEmailHtml(params: {
   formattedDate: string;
   time: string;
   servicePrice: number;
+  cancelUrl?: string | null;
 }): { subject: string; html: string } {
-  const { lang: l, customerName, businessName, serviceName, formattedDate, time, servicePrice } = params;
+  const { lang: l, customerName, businessName, serviceName, formattedDate, time, servicePrice, cancelUrl } = params;
   if (l === "he") {
     return {
       subject: `ההזמנה שלך אושרה — ${esc(businessName)}`,
@@ -32,7 +33,7 @@ function buildEmailHtml(params: {
             <div style="margin-bottom:8px;"><strong>שעה:</strong> ${esc(time.slice(0, 5))}</div>
             <div><strong>מחיר:</strong> ₪${servicePrice || 0}</div>
           </div>
-          <p style="color:#888;font-size:13px;">לביטול או שינוי תור, צרו קשר עם העסק ישירות.</p>
+          ${cancelUrl ? `<p style="color:#888;font-size:13px;"><a href="${cancelUrl}" style="color:#888;">ביטול תור</a></p>` : `<p style="color:#888;font-size:13px;">לביטול או שינוי תור, צרו קשר עם העסק ישירות.</p>`}
         </div>
       `,
     };
@@ -50,7 +51,7 @@ function buildEmailHtml(params: {
           <div style="margin-bottom:8px;"><strong>Time:</strong> ${esc(time.slice(0, 5))}</div>
           <div><strong>Price:</strong> ₪${servicePrice || 0}</div>
         </div>
-        <p style="color:#888;font-size:13px;">To cancel or reschedule, contact the business directly.</p>
+        ${cancelUrl ? `<p style="color:#888;font-size:13px;"><a href="${cancelUrl}" style="color:#888;">Cancel this appointment</a></p>` : `<p style="color:#888;font-size:13px;">To cancel or reschedule, contact the business directly.</p>`}
       </div>
     `,
   };
@@ -186,6 +187,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: errStatus });
   }
 
+  // Fetch cancel token for the newly inserted booking
+  const { data: newBooking } = await supabase
+    .from("bookings")
+    .select("cancel_token")
+    .eq("business_id", businessId)
+    .eq("appointment_date", date)
+    .eq("appointment_time", time)
+    .eq("customer_phone", customerPhone)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+  const cancelToken = newBooking?.cancel_token as string | null;
+  const cancelUrl = cancelToken ? `https://book.bapita.com/cancel/${cancelToken}` : null;
+
   // Defer all email sends after response is returned
   after(async () => {
     const { data: bizData } = await supabase
@@ -207,6 +222,7 @@ export async function POST(req: NextRequest) {
           lang: lang === "he" ? "he" : "en",
           customerName, businessName, serviceName, formattedDate, time,
           servicePrice: servicePrice || 0,
+          cancelUrl,
         });
         await transporter.sendMail({
           from: `Bapita <${process.env.GMAIL_USER}>`,
