@@ -479,6 +479,7 @@ function AddonRequestModal({
   addonColor,
   addonIcon,
   businessId,
+  businessName,
   onClose,
 }: {
   addonType: string;
@@ -486,6 +487,7 @@ function AddonRequestModal({
   addonColor: string;
   addonIcon: React.ReactNode;
   businessId: string;
+  businessName: string;
   onClose: () => void;
 }) {
   const supabase = createClient();
@@ -503,6 +505,11 @@ function AddonRequestModal({
       email: form.email.trim() || null,
       preferred_contact: form.preferredContact,
       notes: form.notes.trim() || null,
+    });
+    await fetch("/api/notify-addon-request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ addonType, addonName, businessName, name: form.name.trim(), phone: form.phone.trim() || null, email: form.email.trim() || null, preferredContact: form.preferredContact, notes: form.notes.trim() || null }),
     });
     setSubmitting(false);
     setDone(true);
@@ -864,6 +871,7 @@ export default function ExtrasPage() {
           addonColor={CATALOG[requesting].color}
           addonIcon={CATALOG[requesting].icon}
           businessId={business.id}
+          businessName={business.name}
           onClose={() => setRequesting(null)}
         />
       )}

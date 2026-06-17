@@ -228,8 +228,8 @@ function SuccessView({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ProcessorModal({ name, color, icon, addonType, businessId, onClose }: {
-  name: string; color: string; icon: React.ReactNode; addonType: string; businessId: string; onClose: () => void;
+function ProcessorModal({ name, color, icon, addonType, businessId, businessName, onClose }: {
+  name: string; color: string; icon: React.ReactNode; addonType: string; businessId: string; businessName: string; onClose: () => void;
 }) {
   const supabase = createClient();
   const [form, setForm] = useState<RequestFormState>({ name: "", phone: "", email: "", preferredContact: "whatsapp", notes: "" });
@@ -246,6 +246,11 @@ function ProcessorModal({ name, color, icon, addonType, businessId, onClose }: {
       email: form.email.trim() || null,
       preferred_contact: form.preferredContact,
       notes: form.notes.trim() || null,
+    });
+    await fetch("/api/notify-addon-request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ addonType, addonName: name, businessName, name: form.name.trim(), phone: form.phone.trim() || null, email: form.email.trim() || null, preferredContact: form.preferredContact, notes: form.notes.trim() || null }),
     });
     setSubmitting(false);
     setDone(true);
@@ -466,7 +471,7 @@ function LockedInvoicesPreview() {
 
 type ProcEntry = { name: string; icon: React.ReactNode; description: string; color: string; addonType: string; };
 
-function NotConnectedView({ businessId }: { businessId: string }) {
+function NotConnectedView({ businessId, businessName }: { businessId: string; businessName: string }) {
   const processors: ProcEntry[] = [
     {
       name: "Stripe",
@@ -536,6 +541,7 @@ function NotConnectedView({ businessId }: { businessId: string }) {
           icon={activeProc.icon}
           addonType={activeProc.addonType}
           businessId={businessId}
+          businessName={businessName}
           onClose={() => setActiveProc(null)}
         />
       )}
@@ -1145,7 +1151,7 @@ export default function FinancialsPage() {
   }, [business?.id, stripeActive, currentMonth.getFullYear(), currentMonth.getMonth()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (bizLoading || loading) return <FinancialsSkeleton />;
-  if (!stripeActive) return <NotConnectedView businessId={business?.id ?? ""} />;
+  if (!stripeActive) return <NotConnectedView businessId={business?.id ?? ""} businessName={business?.name ?? ""} />;
 
   return (
     <ConnectedView
