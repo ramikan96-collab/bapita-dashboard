@@ -7,7 +7,7 @@ import { useBusiness } from "@/hooks/useBusiness";
 import { FinancialsSkeleton } from "@/components/LoadingSkeleton";
 import { STATUS_COLOR, type BookingStatus } from "@/types";
 
-const WA_NUMBER = "972501234567";
+const WA_NUMBER = "972501234567"; // TODO: replace with your real WhatsApp number (972 + number without leading 0)
 
 interface Transaction {
   id: string;

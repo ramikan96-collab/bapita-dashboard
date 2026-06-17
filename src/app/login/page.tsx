@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 function GoogleIcon() {
@@ -36,7 +35,6 @@ function MailIcon() {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
   const [tab,          setTab]          = useState<"login" | "signup" | "forgot">("login");
   const [email,        setEmail]        = useState("");
   const [password,     setPassword]     = useState("");
@@ -66,7 +64,7 @@ export default function LoginPage() {
     if (tab === "login") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { setError(error.message); }
-      else        { router.push("/calendar"); router.refresh(); }
+      else        { window.location.href = "/calendar"; }
     } else {
       const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
       if (error) { setError(error.message); }
