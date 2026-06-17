@@ -8,7 +8,7 @@ import type { Service, BusinessHours, DayKey, GoogleReview } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Section = "business" | "services" | "hours" | "reviews";
+type Section = "business" | "services" | "hours" | "website";
 
 interface BookingSettings {
   buffer_minutes: number;
@@ -66,7 +66,7 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: "business", label: "Business" },
   { id: "services", label: "Services" },
   { id: "hours",    label: "Hours" },
-  { id: "reviews",  label: "Reviews" },
+  { id: "website",  label: "Website" },
 ];
 
 function getErrorMessage(error: { code?: string; message?: string }): string {
@@ -283,54 +283,49 @@ function BusinessSection({
   business,
   supabase,
   refresh,
+  onDirtyChange,
 }: {
   business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
   supabase: ReturnType<typeof createClient>;
   refresh: () => Promise<void>;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { showToast } = useToast();
   const [name, setName] = useState(business.name || "");
   const [nameHe, setNameHe] = useState(business.name_he || "");
   const [phone, setPhone] = useState(business.phone || "");
   const [address, setAddress] = useState(business.address || "");
-  const [slug, setSlug] = useState(business.slug || "");
   const [tagline, setTagline] = useState(business.tagline || "");
   const [about, setAbout] = useState(business.about_text || "");
   const [taglineHe, setTaglineHe] = useState(business.tagline_he || "");
   const [aboutHe, setAboutHe] = useState(business.about_text_he || "");
-  const [defaultLang, setDefaultLang] = useState<"en" | "he">((business.default_lang as "en" | "he") || "en");
   const [notificationEmail, setNotificationEmail] = useState(business.notification_email || "");
   const [saving, setSaving] = useState(false);
 
   const original = {
     name: business.name || "", nameHe: business.name_he || "",
-    phone: business.phone || "", address: business.address || "", slug: business.slug || "",
+    phone: business.phone || "", address: business.address || "",
     tagline: business.tagline || "", about: business.about_text || "",
     taglineHe: business.tagline_he || "", aboutHe: business.about_text_he || "",
-    defaultLang: (business.default_lang as "en" | "he") || "en",
     notificationEmail: business.notification_email || "",
   };
-  const dirty = name !== original.name || nameHe !== original.nameHe || phone !== original.phone || address !== original.address || slug !== original.slug || defaultLang !== original.defaultLang || tagline !== original.tagline || about !== original.about || taglineHe !== original.taglineHe || aboutHe !== original.aboutHe || notificationEmail !== original.notificationEmail;
+  const dirty = name !== original.name || nameHe !== original.nameHe || phone !== original.phone || address !== original.address || tagline !== original.tagline || about !== original.about || taglineHe !== original.taglineHe || aboutHe !== original.aboutHe || notificationEmail !== original.notificationEmail;
 
-  const bookingUrl = `book.bapita.com/${slug || "your-slug"}`;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty]);
 
-  function copyLink() {
-    navigator.clipboard.writeText(`https://${bookingUrl}`);
-    showToast("Booking link copied", "success");
-  }
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
   async function save() {
     setSaving(true);
-    let finalSlug = slug;
-    if (!finalSlug.trim()) {
-      const base = name.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-      finalSlug = `${base}-${Math.random().toString(36).substring(2, 7)}`;
-      setSlug(finalSlug);
-    }
     const { error } = await supabase.from("businesses").update({
       name, name_he: nameHe || null,
-      phone: phone || null, address: address || null, slug: finalSlug,
-      default_lang: defaultLang,
+      phone: phone || null, address: address || null,
       tagline: tagline || null, about_text: about || null,
       tagline_he: taglineHe || null, about_text_he: aboutHe || null,
       notification_email: notificationEmail.trim() || null,
@@ -379,78 +374,6 @@ function BusinessSection({
             onFocus={e => (e.currentTarget.style.borderColor = "var(--color-amber)")}
             onBlur={e  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
           />
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Booking page">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[13px] font-medium text-dark">Your booking link</label>
-          <div
-            style={{ display: "flex", alignItems: "center", height: 44, borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", overflow: "hidden", transition: "border-color 0.15s" }}
-            onFocusCapture={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-            onBlurCapture={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-          >
-            <span style={{ padding: "0 12px", fontSize: 13, fontWeight: 500, color: "var(--color-muted)", background: "var(--color-cream-2)", borderInlineEnd: "1px solid var(--color-cream-2)", height: "100%", display: "flex", alignItems: "center", flexShrink: 0, userSelect: "none" }}>
-              book.bapita.com/
-            </span>
-            <input
-              type="text"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-              placeholder="your-slug"
-              style={{ flex: 1, height: "100%", padding: "0 12px", fontSize: 14, color: "var(--color-dark)", background: "transparent", outline: "none", fontFamily: "inherit" }}
-            />
-          </div>
-          <p className="text-[12px] text-muted">Only lowercase letters, numbers, and hyphens</p>
-        </div>
-
-        {/* Booking link actions */}
-        <div className="flex gap-2 mt-1">
-          <button
-            onClick={copyLink}
-            style={{ flex: 1, height: 38, borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", transition: "border-color 0.15s, color 0.15s" }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-dark)"; }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            Copy link
-          </button>
-          <a
-            href={`https://${bookingUrl}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ flex: 1, height: 38, borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, textDecoration: "none", transition: "border-color 0.15s, color 0.15s" }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLElement).style.color = "var(--color-amber)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLElement).style.color = "var(--color-dark)"; }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-            Preview
-          </a>
-        </div>
-      </SectionCard>
-
-      {/* Language */}
-      <SectionCard title="Booking page language">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>Default language</div>
-            <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Clients land on this language — they can still switch</div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", borderRadius: 9999, padding: "3px", gap: 2, background: "var(--color-cream-2)", flexShrink: 0 }}>
-            {(["en", "he"] as const).map((l) => (
-              <button
-                key={l}
-                onClick={() => setDefaultLang(l)}
-                style={{ padding: "6px 16px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: defaultLang === l ? "var(--color-amber)" : "transparent", color: defaultLang === l ? "#fff" : "var(--color-muted)" }}
-              >
-                {l === "en" ? "EN" : "עב"}
-              </button>
-            ))}
-          </div>
         </div>
       </SectionCard>
 
@@ -718,15 +641,7 @@ function ServicesSection({
                   {/* Actions */}
                   <div className="flex items-center gap-1 shrink-0">
                     {/* Active toggle */}
-                    <button
-                      onClick={() => toggleActive(service.id, service.active)}
-                      className="px-2.5 py-1 rounded-full text-[12px] font-medium transition-colors"
-                      style={service.active
-                        ? { background: "rgba(34,197,94,0.12)", color: "#16A34A" }
-                        : { background: "var(--color-cream-2)", color: "var(--color-muted)" }}
-                    >
-                      {service.active ? "Active" : "Off"}
-                    </button>
+                    <Toggle on={service.active} onChange={() => toggleActive(service.id, service.active)} />
                     {/* Edit */}
                     <button
                       onClick={() => startEdit(service)}
@@ -797,10 +712,12 @@ function HoursSection({
   business,
   supabase,
   refresh,
+  onDirtyChange,
 }: {
   business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
   supabase: ReturnType<typeof createClient>;
   refresh: () => Promise<void>;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { showToast } = useToast();
   const [hours, setHours] = useState<BusinessHours>(
@@ -817,6 +734,16 @@ function HoursSection({
 
   const original = JSON.stringify(business.business_hours ?? DEFAULT_HOURS);
   const dirty = JSON.stringify(hours) !== original || bufferMinutes !== origBufferMinutes || advanceDays !== origAdvanceDays;
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
   async function toggleBlockedDate(dateStr: string) {
     const isBlocked = blockedDates.includes(dateStr);
@@ -1206,6 +1133,265 @@ function ReviewsSection({
 }
 
 
+// ─── Website section (booking link + language + gallery + reviews) ────────────
+
+function WebsiteSection({
+  business,
+  supabase,
+  refresh,
+  onDirtyChange,
+}: {
+  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
+  supabase: ReturnType<typeof createClient>;
+  refresh: () => Promise<void>;
+  onDirtyChange?: (dirty: boolean) => void;
+}) {
+  const { showToast } = useToast();
+
+  // ── Booking link + language (has Save button) ──────────────────────────────
+  const [slug, setSlug] = useState(business.slug || "");
+  const [defaultLang, setDefaultLang] = useState<"en" | "he">((business.default_lang as "en" | "he") || "en");
+  const [savingLink, setSavingLink] = useState(false);
+
+  const origSlug = business.slug || "";
+  const origLang = (business.default_lang as "en" | "he") || "en";
+  const linkDirty = slug !== origSlug || defaultLang !== origLang;
+
+  // ── Gallery (immediate saves) ──────────────────────────────────────────────
+  const [images, setImages] = useState<string[]>(business.gallery_images || []);
+  const [showGallery, setShowGallery] = useState(business.show_gallery !== false);
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { onDirtyChange?.(linkDirty); }, [linkDirty]);
+
+  useEffect(() => {
+    if (!linkDirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [linkDirty]);
+
+  function copyLink() {
+    navigator.clipboard.writeText(`https://book.bapita.com/${slug || "your-slug"}`);
+    showToast("Booking link copied", "success");
+  }
+
+  async function saveLink() {
+    setSavingLink(true);
+    let finalSlug = slug;
+    if (!finalSlug.trim()) {
+      const base = business.name.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+      finalSlug = `${base}-${Math.random().toString(36).substring(2, 7)}`;
+      setSlug(finalSlug);
+    }
+    const { error } = await supabase.from("businesses").update({
+      slug: finalSlug,
+      default_lang: defaultLang,
+    }).eq("id", business.id);
+    setSavingLink(false);
+    if (error) { showToast(getErrorMessage(error), "error"); return; }
+    await refresh();
+    showToast("Website settings saved", "success");
+  }
+
+  async function uploadFiles(files: File[]) {
+    setUploading(true);
+    const urls: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const ext = file.name.split(".").pop();
+      const path = `galleries/${business.id}/${Date.now()}-${i}.${ext}`;
+      const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true });
+      if (error) { showToast(`Failed to upload ${file.name}`, "error"); continue; }
+      const { data } = supabase.storage.from("business-images").getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }
+    if (urls.length === 0) { setUploading(false); return; }
+    const next = [...images, ...urls];
+    const { error } = await supabase.from("businesses").update({
+      gallery_images: next,
+      hero_image_url: next[0] || null,
+    }).eq("id", business.id);
+    if (error) { showToast("Upload failed", "error"); setUploading(false); return; }
+    setImages(next);
+    await refresh();
+    showToast(`${urls.length} photo${urls.length > 1 ? "s" : ""} added`, "success");
+    setUploading(false);
+  }
+
+  async function removeImage(url: string) {
+    const next = images.filter(u => u !== url);
+    const { error } = await supabase.from("businesses").update({
+      gallery_images: next,
+      hero_image_url: next[0] || null,
+    }).eq("id", business.id);
+    if (error) { showToast("Remove failed", "error"); return; }
+    setImages(next);
+    await refresh();
+    showToast("Photo removed", "success");
+  }
+
+  async function toggleShowGallery() {
+    const next = !showGallery;
+    const { error } = await supabase.from("businesses").update({ show_gallery: next }).eq("id", business.id);
+    if (error) { showToast("Failed to update", "error"); return; }
+    setShowGallery(next);
+    await refresh();
+  }
+
+  const bookingUrl = `book.bapita.com/${slug || "your-slug"}`;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+      {/* Booking link */}
+      <SectionCard title="Booking page">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-dark">Your booking link</label>
+          <div
+            style={{ display: "flex", alignItems: "center", height: 44, borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", overflow: "hidden", transition: "border-color 0.15s" }}
+            onFocusCapture={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+            onBlurCapture={(e)  => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+          >
+            <span style={{ padding: "0 12px", fontSize: 13, fontWeight: 500, color: "var(--color-muted)", background: "var(--color-cream-2)", borderInlineEnd: "1px solid var(--color-cream-2)", height: "100%", display: "flex", alignItems: "center", flexShrink: 0, userSelect: "none" }}>
+              book.bapita.com/
+            </span>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+              placeholder="your-slug"
+              style={{ flex: 1, height: "100%", padding: "0 12px", fontSize: 14, color: "var(--color-dark)", background: "transparent", outline: "none", fontFamily: "inherit" }}
+            />
+          </div>
+          <p className="text-[12px] text-muted">Only lowercase letters, numbers, and hyphens</p>
+        </div>
+        <div className="flex gap-2 mt-1">
+          <button
+            onClick={copyLink}
+            style={{ flex: 1, height: 38, borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", transition: "border-color 0.15s, color 0.15s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-dark)"; }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy link
+          </button>
+          <a
+            href={`https://${bookingUrl}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ flex: 1, height: 38, borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, textDecoration: "none", transition: "border-color 0.15s, color 0.15s" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLElement).style.color = "var(--color-amber)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLElement).style.color = "var(--color-dark)"; }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            Preview
+          </a>
+        </div>
+      </SectionCard>
+
+      {/* Language */}
+      <SectionCard title="Default language">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>Booking page language</div>
+            <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Clients land on this language — they can still switch</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", borderRadius: 9999, padding: "3px", gap: 2, background: "var(--color-cream-2)", flexShrink: 0 }}>
+            {(["en", "he"] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => setDefaultLang(l)}
+                style={{ padding: "6px 16px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: defaultLang === l ? "var(--color-amber)" : "transparent", color: defaultLang === l ? "#fff" : "var(--color-muted)" }}
+              >
+                {l === "en" ? "EN" : "עב"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </SectionCard>
+
+      <SaveButton onClick={saveLink} saving={savingLink} dirty={linkDirty} />
+
+      {/* Gallery */}
+      <SectionCard title="Gallery">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>Show gallery on booking page</div>
+            <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Visible when at least one photo is added</div>
+          </div>
+          <Toggle on={showGallery} onChange={toggleShowGallery} />
+        </div>
+      </SectionCard>
+
+      <SectionCard title={`Photos (${images.length})`}>
+        {images.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+            {images.map((url, i) => (
+              <div key={url} style={{ position: "relative", borderRadius: 10, overflow: "hidden", aspectRatio: "1" }}>
+                <img src={url} alt={`Gallery ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                {i === 0 && (
+                  <div style={{ position: "absolute", top: 4, left: 4, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Cover</div>
+                )}
+                <button
+                  onClick={() => removeImage(url)}
+                  style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: 6, background: "rgba(239,68,68,0.85)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {images.length === 0 && !uploading && (
+          <p style={{ fontSize: 13, color: "var(--color-muted)", margin: 0 }}>No photos yet. Upload photos to show a gallery on your booking page.</p>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          style={{ display: "none" }}
+          onChange={(e) => { const files = Array.from(e.target.files || []); if (files.length) uploadFiles(files); e.target.value = ""; }}
+        />
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          style={{ width: "100%", height: 46, borderRadius: 12, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "var(--color-surface)", border: "1.5px dashed var(--color-cream-2)", color: uploading ? "var(--color-muted)" : "var(--color-dark)", cursor: uploading ? "not-allowed" : "pointer", transition: "border-color 0.15s, color 0.15s, background 0.15s", boxShadow: "var(--shadow-sm)" }}
+          onMouseEnter={(e) => { if (!uploading) { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; e.currentTarget.style.background = "var(--amber-soft)"; }}}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-dark)"; e.currentTarget.style.background = "var(--color-surface)"; }}
+        >
+          {uploading ? (
+            <>
+              <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
+              Uploading…
+            </>
+          ) : (
+            <>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add photos
+            </>
+          )}
+        </button>
+        {images.length > 0 && (
+          <p style={{ fontSize: 12, color: "var(--color-muted)", margin: 0 }}>First photo is used as the cover image</p>
+        )}
+      </SectionCard>
+
+      {/* Reviews */}
+      <ReviewsSection business={business} supabase={supabase} refresh={refresh} />
+    </div>
+  );
+}
+
 // ─── Onboarding checklist ─────────────────────────────────────────────────────
 
 function OnboardingChecklist({
@@ -1247,7 +1433,7 @@ function OnboardingChecklist({
       required: true,
     },
     {
-      key: "reviews",
+      key: "website",
       label: "Reviews",
       hint: "Add your best client reviews",
       done: Array.isArray(business.google_reviews) && (business.google_reviews as GoogleReview[]).length > 0,
@@ -1438,6 +1624,7 @@ export default function SettingsPage() {
   const { business, loading: bizLoading, refresh } = useBusiness();
   const supabase = createClient();
   const [activeSection, setActiveSection] = useState<Section>("business");
+  const dirtyRef = useRef(false);
 
   if (bizLoading) {
     return (
@@ -1451,12 +1638,21 @@ export default function SettingsPage() {
     return <SetupForm supabase={supabase} onCreated={refresh} />;
   }
 
+  function handleSectionChange(id: Section) {
+    if (dirtyRef.current) {
+      if (!window.confirm("You have unsaved changes. Leave without saving?")) return;
+      dirtyRef.current = false;
+    }
+    setActiveSection(id);
+  }
+
   function renderSection() {
+    const onDirtyChange = (d: boolean) => { dirtyRef.current = d; };
     switch (activeSection) {
-      case "business": return <BusinessSection business={business!} supabase={supabase} refresh={refresh} />;
+      case "business": return <BusinessSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} />;
       case "services": return <ServicesSection business={business!} supabase={supabase} refresh={refresh} />;
-      case "hours":    return <HoursSection business={business!} supabase={supabase} refresh={refresh} />;
-      case "reviews":  return <ReviewsSection business={business!} supabase={supabase} refresh={refresh} />;
+      case "hours":    return <HoursSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} />;
+      case "website":  return <WebsiteSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} />;
     }
   }
 
@@ -1473,7 +1669,7 @@ export default function SettingsPage() {
             return (
               <button
                 key={s.id}
-                onClick={() => setActiveSection(s.id)}
+                onClick={() => handleSectionChange(s.id)}
                 style={{
                   padding: "8px 18px",
                   borderRadius: 9999,
@@ -1500,7 +1696,7 @@ export default function SettingsPage() {
           <OnboardingChecklist
             business={business}
             supabase={supabase}
-            onNavigate={(section) => setActiveSection(section)}
+            onNavigate={(section) => handleSectionChange(section as Section)}
           />
           {renderSection()}
         </div>
