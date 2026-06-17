@@ -914,14 +914,28 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
                 style={{
                   height: 48,
-                  background: isActive("/admin") ? "rgba(232,146,10,0.05)" : "transparent",
-                  borderInlineStart: isActive("/admin") ? "3px solid var(--color-amber)" : "3px solid transparent",
+                  background: isActive("/admin/businesses") ? "rgba(232,146,10,0.05)" : "transparent",
+                  borderInlineStart: isActive("/admin/businesses") ? "3px solid var(--color-amber)" : "3px solid transparent",
                 }}
               >
-                <span style={{ color: isActive("/admin") ? "var(--color-amber)" : "var(--color-muted)" }}>
+                <span style={{ color: isActive("/admin/businesses") ? "var(--color-amber)" : "var(--color-muted)" }}>
                   <IconAdmin />
                 </span>
                 Admin
+              </button>
+              <button
+                onClick={() => go("/admin/leads")}
+                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
+                style={{
+                  height: 48,
+                  background: isActive("/admin/leads") ? "rgba(232,146,10,0.05)" : "transparent",
+                  borderInlineStart: isActive("/admin/leads") ? "3px solid var(--color-amber)" : "3px solid transparent",
+                }}
+              >
+                <span style={{ color: isActive("/admin/leads") ? "var(--color-amber)" : "var(--color-muted)" }}>
+                  <IconAdmin />
+                </span>
+                Leads
               </button>
             </>
           )}
