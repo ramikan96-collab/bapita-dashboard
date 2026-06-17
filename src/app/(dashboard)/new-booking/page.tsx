@@ -181,6 +181,7 @@ function NewBookingInner() {
 
   const [notes,      setNotes]      = useState("");
   const [markAsPaid, setMarkAsPaid] = useState(false);
+  const [sendEmail,  setSendEmail]  = useState(true);
 
   // ─── Preselect client ───────────────────────────────────────────────────
   useEffect(() => {
@@ -296,7 +297,7 @@ function NewBookingInner() {
 
     const { error } = await supabase.from("bookings").insert({ business_id: business.id, customer_id: selectedClient.id, service_id: selectedService.id, customer_name: selectedClient.name, customer_phone: selectedClient.phone || null, customer_email: selectedClient.email || null, appointment_date: format(selectedDate, "yyyy-MM-dd"), appointment_time: selectedTime, status: "confirmed", payment_status: markAsPaid ? "cash" : "none", notes: notes.trim() || null });
     if (error) { showToast("Couldn't create the booking. Please try again.", "error"); setSubmitting(false); return; }
-    if (selectedClient.email) {
+    if (selectedClient.email && sendEmail) {
       fetch("/api/send-confirmation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ customerName: selectedClient.name, customerEmail: selectedClient.email, businessName: business.name || "", serviceName: selectedService.name || "", date: format(selectedDate, "yyyy-MM-dd"), time: selectedTime }) }).catch(console.error);
     }
     setSubmitting(false);
@@ -309,6 +310,7 @@ function NewBookingInner() {
     setSelectedTime(timeParam ?? null);
     setSelectedDate(dateParam ? parseISO(dateParam) : new Date());
     setNotes("");
+    setSendEmail(true);
     setSlots([]);
     if (selectedClient && clientIdParam) {
       setStep("service");
@@ -679,6 +681,55 @@ function NewBookingInner() {
                   onBlur={onBlurCream}
                 />
               </div>
+
+              {/* Send confirmation email */}
+              {(() => {
+                const hasEmail = !!selectedClient.email;
+                return (
+                  <div
+                    style={{ ...cardStyle, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, opacity: hasEmail ? 1 : 0.5 }}
+                    title={hasEmail ? undefined : "No email on file for this client"}
+                  >
+                    <div>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)" }}>Send confirmation email</p>
+                      <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>
+                        {hasEmail ? `Send booking details to ${selectedClient.email}` : "No email on file"}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => hasEmail && setSendEmail((v) => !v)}
+                      aria-label="Send confirmation email"
+                      disabled={!hasEmail}
+                      style={{
+                        width: 44,
+                        height: 26,
+                        borderRadius: 99,
+                        border: "none",
+                        background: hasEmail && sendEmail ? "var(--color-amber)" : "var(--color-cream-2)",
+                        position: "relative",
+                        cursor: hasEmail ? "pointer" : "not-allowed",
+                        flexShrink: 0,
+                        transition: "background 0.2s",
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 4,
+                          left: 4,
+                          width: 18,
+                          height: 18,
+                          borderRadius: "50%",
+                          background: "#fff",
+                          boxShadow: "0 1px 3px rgba(30,26,20,0.2)",
+                          transition: "transform 0.18s",
+                          transform: hasEmail && sendEmail ? "translateX(18px)" : "translateX(0)",
+                        }}
+                      />
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* Mark as paid */}
               <div style={{ ...cardStyle, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
