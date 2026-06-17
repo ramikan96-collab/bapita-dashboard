@@ -74,6 +74,13 @@ const LABEL_CONFIG: Record<LabelValue, { text: string; bg: string; color: string
 
 const NEW_CHIP = { text: "New", bg: "#EFF6FF", color: "#2563EB" };
 
+const ALL_LABEL_OPTIONS = [
+  { value: "new",       text: "New",       bg: "#EFF6FF", color: "#2563EB" },
+  { value: "completed", text: "Completed", bg: "#F0FDF4", color: "#16A34A" },
+  { value: "no_show",   text: "No show",   bg: "#FFF7ED", color: "#EA580C" },
+  { value: "canceled",  text: "Canceled",  bg: "#FEF2F2", color: "#DC2626" },
+] as const;
+
 function getEffectiveLabel(client: Customer): { text: string; bg: string; color: string } | null {
   if (client.label && client.label in LABEL_CONFIG) {
     return LABEL_CONFIG[client.label as LabelValue];
@@ -327,6 +334,10 @@ export default function ClientsPage() {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [showColumnsDropdown, setShowColumnsDropdown] = useState(false);
   const [showPrintDropdown, setShowPrintDropdown] = useState(false);
+  const [showLabelDropdown, setShowLabelDropdown] = useState(false);
+
+  // label filter (multi-select, empty = all)
+  const [labelFilter, setLabelFilter] = useState<Set<string>>(new Set());
 
   // visible columns (multi-select)
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_COLUMNS));
@@ -349,6 +360,7 @@ export default function ClientsPage() {
       if (!t.closest(".dd-filter")) setShowFilterDropdown(false);
       if (!t.closest(".dd-columns")) setShowColumnsDropdown(false);
       if (!t.closest(".dd-print")) setShowPrintDropdown(false);
+      if (!t.closest(".dd-label")) setShowLabelDropdown(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -367,6 +379,16 @@ export default function ClientsPage() {
 
       if (debouncedSearch) {
         query = query.or(`name.ilike.%${debouncedSearch}%,phone.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%`);
+      }
+
+      // Label filter (multi-select OR — "new" is derived from label IS NULL + total_visits = 0)
+      if (labelFilter.size > 0) {
+        const parts: string[] = [];
+        if (labelFilter.has("new"))       parts.push("and(label.is.null,total_visits.eq.0)");
+        if (labelFilter.has("completed")) parts.push("label.eq.completed");
+        if (labelFilter.has("no_show"))   parts.push("label.eq.no_show");
+        if (labelFilter.has("canceled"))  parts.push("label.eq.canceled");
+        if (parts.length > 0) query = query.or(parts.join(","));
       }
 
       // Date filter
@@ -392,7 +414,7 @@ export default function ClientsPage() {
       setLoading(false);
     }
     fetchClients();
-  }, [business, debouncedSearch, sortBy, showFilter, customFrom, customTo, supabase, refreshKey]);
+  }, [business, debouncedSearch, sortBy, showFilter, customFrom, customTo, labelFilter, supabase, refreshKey]);
 
   async function deleteClient(client: Customer) {
     setDeleting(true);
@@ -410,6 +432,21 @@ export default function ClientsPage() {
   const currentShowLabel = SHOW_OPTIONS.find((o) => o.value === showFilter)?.label ?? "All";
   const isFilterActive = showFilter !== "all";
   const isSortActive = sortBy !== "recent";
+  const isLabelFilterActive = labelFilter.size > 0;
+  const labelFilterBtnText = labelFilter.size === 0
+    ? "Label"
+    : labelFilter.size === 1
+      ? ALL_LABEL_OPTIONS.find((o) => labelFilter.has(o.value))?.text ?? "Label"
+      : `${labelFilter.size} labels`;
+
+  function toggleLabelFilter(value: string) {
+    setLabelFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  }
 
   // Build column grid template
   const orderedCols: ColumnKey[] = ALL_COLUMNS.map((c) => c.key).filter((k) => visibleColumns.has(k));
@@ -590,6 +627,55 @@ export default function ClientsPage() {
                           </button>
                         </div>
                       </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Label filter dropdown */}
+                <div className="dd-label" style={{ position: "relative" }}>
+                  <button
+                    onClick={() => { setShowLabelDropdown(!showLabelDropdown); setShowFilterDropdown(false); setShowSortDropdown(false); setShowColumnsDropdown(false); setShowPrintDropdown(false); }}
+                    style={dropdownBtnStyle(isLabelFilterActive)}
+                  >
+                    <span style={{ color: "var(--color-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Label</span>
+                    {isLabelFilterActive && <span>{labelFilterBtnText}</span>}
+                    <span style={{ color: "inherit", opacity: 0.6, display: "flex" }}><IconChevronDown /></span>
+                  </button>
+
+                  {showLabelDropdown && (
+                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 190, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)", padding: "4px 12px 8px" }}>
+                        Filter by label
+                      </p>
+                      {ALL_LABEL_OPTIONS.map((opt) => {
+                        const on = labelFilter.has(opt.value);
+                        return (
+                          <button
+                            key={opt.value}
+                            onClick={() => toggleLabelFilter(opt.value)}
+                            style={{ width: "100%", padding: "7px 12px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: on ? 600 : 400, color: "var(--color-dark)", background: on ? "var(--color-cream)" : "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
+                            onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)")}
+                            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = on ? "var(--color-cream)" : "transparent")}
+                          >
+                            <span style={{ width: 16, height: 16, borderRadius: 5, border: `1.5px solid ${on ? opt.color : "var(--color-cream-2)"}`, background: on ? opt.bg : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.12s" }}>
+                              {on && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={opt.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                            </span>
+                            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: opt.bg, color: opt.color }}>
+                              {opt.text}
+                            </span>
+                          </button>
+                        );
+                      })}
+                      {isLabelFilterActive && (
+                        <div style={{ borderTop: "1px solid var(--color-cream-2)", padding: "6px 12px 4px" }}>
+                          <button
+                            onClick={() => { setLabelFilter(new Set()); setShowLabelDropdown(false); }}
+                            style={{ fontSize: 12, fontWeight: 600, color: "var(--color-muted)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+                          >
+                            Clear filter
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
