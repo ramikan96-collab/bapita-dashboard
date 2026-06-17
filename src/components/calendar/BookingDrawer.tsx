@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
+import { Phone, Mail, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/types";
@@ -526,7 +527,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
                 : "none",
             }}
           >
-            <span className="text-[18px] shrink-0">📞</span>
+            <Phone size={16} strokeWidth={2} className="shrink-0" style={{ color: "var(--color-dark)" }} />
             <span className="text-[15px] font-semibold flex-1" style={{ color: "var(--color-dark)" }}>
               {current.customer_phone}
             </span>
@@ -546,7 +547,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
                 : "none",
             }}
           >
-            <span className="text-[18px] shrink-0 opacity-30">📞</span>
+            <Phone size={16} strokeWidth={2} className="shrink-0 opacity-30" style={{ color: "var(--color-muted)" }} />
             <span className="text-[15px]" style={{ color: "var(--color-muted)" }}>
               No phone
             </span>
@@ -558,7 +559,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
             className="flex items-center gap-4 px-5 py-4 w-full text-start"
             style={{ background: "none", border: "none", cursor: "pointer" }}
           >
-            <span className="text-[18px] shrink-0">✉️</span>
+            <Mail size={16} strokeWidth={2} className="shrink-0" style={{ color: "var(--color-dark)" }} />
             <span className="text-[15px] font-semibold flex-1 truncate" style={{ color: "var(--color-dark)" }}>
               {current.customer_email}
             </span>
@@ -571,7 +572,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
           </button>
         ) : (
           <div className="flex items-center gap-4 px-5 py-4">
-            <span className="text-[18px] shrink-0 opacity-30">✉️</span>
+            <Mail size={16} strokeWidth={2} className="shrink-0 opacity-30" style={{ color: "var(--color-muted)" }} />
             <span className="text-[15px]" style={{ color: "var(--color-muted)" }}>
               No email
             </span>
@@ -793,11 +794,12 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
                 </p>
                 <button
                   onClick={() => setShowStatusSheet(true)}
-                  className="mt-2 px-3 py-1 rounded-full text-[12px] font-bold"
+                  className="mt-2 px-3 py-1 rounded-full text-[12px] font-bold inline-flex items-center gap-1"
                   style={{ background: statusBg, color }}
                   title="Tap to change status"
                 >
-                  {STATUS_LABEL[current.status]} ▾
+                  {STATUS_LABEL[current.status]}
+                  <ChevronDown size={10} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
