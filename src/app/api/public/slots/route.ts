@@ -52,9 +52,15 @@ export async function GET(req: NextRequest) {
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("business_hours, buffer_minutes, advance_days")
+    .select("business_hours, buffer_minutes, advance_days, blocked_dates")
     .eq("id", businessId)
     .single();
+
+  // Blocked dates check
+  const blocked = (business?.blocked_dates as string[] | null) || [];
+  if (blocked.includes(date)) {
+    return NextResponse.json({ slots: [] });
+  }
 
   // Enforce advance booking window
   const advanceDays = (business?.advance_days as number | null) ?? 30;

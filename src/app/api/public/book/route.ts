@@ -6,6 +6,56 @@ function esc(s: unknown): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+// ─── Email templates ──────────────────────────────────────────────────────────
+
+function buildEmailHtml(params: {
+  lang: string;
+  customerName: string;
+  businessName: string;
+  serviceName: string;
+  formattedDate: string;
+  time: string;
+  servicePrice: number;
+}): { subject: string; html: string } {
+  const { lang: l, customerName, businessName, serviceName, formattedDate, time, servicePrice } = params;
+  if (l === "he") {
+    return {
+      subject: `ההזמנה שלך אושרה — ${esc(businessName)}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;direction:rtl;text-align:right;">
+          <h2 style="margin:0 0 8px;">הזמנה אושרה</h2>
+          <p style="color:#555;margin:0 0 24px;">שלום ${esc(customerName)}, התור שלך נקבע.</p>
+          <div style="background:#FAF5EC;border-radius:12px;padding:20px;margin-bottom:24px;">
+            <div style="margin-bottom:8px;"><strong>עסק:</strong> ${esc(businessName)}</div>
+            <div style="margin-bottom:8px;"><strong>שירות:</strong> ${esc(serviceName)}</div>
+            <div style="margin-bottom:8px;"><strong>תאריך:</strong> ${esc(formattedDate)}</div>
+            <div style="margin-bottom:8px;"><strong>שעה:</strong> ${esc(time.slice(0, 5))}</div>
+            <div><strong>מחיר:</strong> ₪${servicePrice || 0}</div>
+          </div>
+          <p style="color:#888;font-size:13px;">לביטול או שינוי תור, צרו קשר עם העסק ישירות.</p>
+        </div>
+      `,
+    };
+  }
+  return {
+    subject: `Booking confirmed — ${esc(businessName)}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+        <h2 style="margin:0 0 8px;">Booking confirmed</h2>
+        <p style="color:#555;margin:0 0 24px;">Hi ${esc(customerName)}, your appointment is set.</p>
+        <div style="background:#FAF5EC;border-radius:12px;padding:20px;margin-bottom:24px;">
+          <div style="margin-bottom:8px;"><strong>Business:</strong> ${esc(businessName)}</div>
+          <div style="margin-bottom:8px;"><strong>Service:</strong> ${esc(serviceName)}</div>
+          <div style="margin-bottom:8px;"><strong>Date:</strong> ${esc(formattedDate)}</div>
+          <div style="margin-bottom:8px;"><strong>Time:</strong> ${esc(time.slice(0, 5))}</div>
+          <div><strong>Price:</strong> ₪${servicePrice || 0}</div>
+        </div>
+        <p style="color:#888;font-size:13px;">To cancel or reschedule, contact the business directly.</p>
+      </div>
+    `,
+  };
+}
+
 // ─── Rate limiting ────────────────────────────────────────────────────────────
 // IP-based: 10 bookings per 60s per IP (module-level; resets on cold start)
 const ipCounts = new Map<string, { count: number; resetAt: number }>();
@@ -38,6 +88,7 @@ export async function POST(req: NextRequest) {
     serviceId, serviceName, serviceDuration, servicePrice,
     date, time,
     customerName, customerPhone, customerEmail,
+    lang,
   } = await req.json();
 
   if (!businessId || !serviceId || !date || !time || !customerName || !customerPhone) {
@@ -152,24 +203,16 @@ export async function POST(req: NextRequest) {
     const emailValid = typeof customerEmail === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail);
     if (customerEmail && emailValid) {
       try {
+        const { subject, html } = buildEmailHtml({
+          lang: lang === "he" ? "he" : "en",
+          customerName, businessName, serviceName, formattedDate, time,
+          servicePrice: servicePrice || 0,
+        });
         await transporter.sendMail({
           from: `Bapita <${process.env.GMAIL_USER}>`,
           to: customerEmail,
-          subject: `Booking confirmed — ${esc(businessName)}`,
-          html: `
-            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-              <h2 style="margin:0 0 8px;">Booking confirmed</h2>
-              <p style="color:#555;margin:0 0 24px;">Hi ${esc(customerName)}, your appointment is set.</p>
-              <div style="background:#FAF5EC;border-radius:12px;padding:20px;margin-bottom:24px;">
-                <div style="margin-bottom:8px;"><strong>Business:</strong> ${esc(businessName)}</div>
-                <div style="margin-bottom:8px;"><strong>Service:</strong> ${esc(serviceName)}</div>
-                <div style="margin-bottom:8px;"><strong>Date:</strong> ${esc(formattedDate)}</div>
-                <div style="margin-bottom:8px;"><strong>Time:</strong> ${esc(time.slice(0, 5))}</div>
-                <div><strong>Price:</strong> ₪${servicePrice || 0}</div>
-              </div>
-              <p style="color:#888;font-size:13px;">To cancel or reschedule, contact the business directly.</p>
-            </div>
-          `,
+          subject,
+          html,
         });
       } catch (e) {
         console.error("Customer email failed:", e);

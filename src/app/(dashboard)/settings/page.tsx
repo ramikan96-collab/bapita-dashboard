@@ -69,6 +69,13 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: "reviews",  label: "Reviews" },
 ];
 
+function getErrorMessage(error: { code?: string; message?: string }): string {
+  if (error.code === "23505") return "This URL is already taken. Choose a different one.";
+  if (error.code === "PGRST116") return "Not found — please reload the page.";
+  if (error.message?.includes("network")) return "Connection issue — please try again.";
+  return "Couldn't save. Please try again.";
+}
+
 // ─── Shared UI primitives ─────────────────────────────────────────────────────
 
 function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
@@ -177,7 +184,7 @@ function SaveButton({ onClick, saving, dirty }: { onClick: () => void; saving: b
         transition: "background 0.15s, box-shadow 0.15s, color 0.15s",
       }}
     >
-      {saving ? "Saving…" : dirty ? "Save changes" : "Saved"}
+      {saving ? "Saving…" : dirty ? "Save changes" : "No changes"}
     </button>
   );
 }
@@ -193,35 +200,67 @@ function SetupForm({
 }) {
   const { showToast } = useToast();
   const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
+
+  function handleNameChange(v: string) {
+    setName(v);
+    const auto = v.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    const prevAuto = name.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    setSlug((prev) => (prev === prevAuto ? auto : prev));
+  }
 
   async function createBusiness() {
     if (!name.trim()) { showToast("Business name is required", "error"); return; }
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { showToast("Not logged in", "error"); setSaving(false); return; }
-    const baseSlug = name.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-    const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`;
+    const base = slug.trim() || name.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    let finalSlug = base;
+    let suffix = 2;
+    while (true) {
+      const { count } = await supabase.from("businesses").select("*", { count: "exact", head: true }).eq("slug", finalSlug);
+      if ((count ?? 0) === 0) break;
+      finalSlug = `${base}-${suffix++}`;
+    }
     const { error } = await supabase.from("businesses").insert({
       owner_id: user.id, name: name.trim(),
-      phone: phone.trim() || null, address: address.trim() || null, slug,
+      phone: phone.trim() || null, address: address.trim() || null, slug: finalSlug,
     });
     if (error) { showToast(error.message, "error"); setSaving(false); return; }
+    localStorage.setItem("bapita_onboarding", "1");
     await onCreated();
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-cream)" }}>
       <div style={{ flexShrink: 0, background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)", padding: "26px 24px 20px" }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: 0 }}>Set up your business</h1>
-        <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 4 }}>Fill in the basics to get started</p>
+        <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: 0 }}>Let&apos;s build your booking page</h1>
+        <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 4 }}>Takes 2 minutes. Your page goes live right after.</p>
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 40px" }}>
         <div style={{ maxWidth: 560, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
           <SectionCard>
-            <InputField label="Business name *" value={name} onChange={setName} placeholder="e.g. Studio Avi" />
+            <InputField label="Business name *" value={name} onChange={handleNameChange} placeholder="e.g. Studio Avi" />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-dark">Your booking URL</label>
+              <div
+                style={{ display: "flex", alignItems: "center", height: 44, borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", overflow: "hidden", transition: "border-color 0.15s" }}
+                onFocusCapture={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+                onBlurCapture={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+              >
+                <span style={{ padding: "0 0 0 13px", fontSize: 14, color: "var(--color-muted)", whiteSpace: "nowrap", userSelect: "none", flexShrink: 0 }}>book.bapita.com/</span>
+                <input
+                  type="text"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                  placeholder="studio-avi"
+                  style={{ flex: 1, height: "100%", border: "none", background: "transparent", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", padding: "0 13px 0 2px" }}
+                />
+              </div>
+            </div>
             <InputField label="Phone" type="tel" value={phone} onChange={setPhone} placeholder="050-000-0000" />
             <InputField label="Address" value={address} onChange={setAddress} placeholder="Street, city" />
           </SectionCard>
@@ -230,7 +269,7 @@ function SetupForm({
             disabled={saving || !name.trim()}
             style={{ width: "100%", height: 48, borderRadius: 14, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: saving || !name.trim() ? "not-allowed" : "pointer", opacity: saving || !name.trim() ? 0.5 : 1, boxShadow: "0 4px 14px rgba(232,146,10,0.26)" }}
           >
-            {saving ? "Creating…" : "Create business"}
+            {saving ? "Creating your page…" : "Create my page"}
           </button>
         </div>
       </div>
@@ -297,7 +336,7 @@ function BusinessSection({
       notification_email: notificationEmail.trim() || null,
     }).eq("id", business.id);
     setSaving(false);
-    if (error) { showToast("Failed to save", "error"); return; }
+    if (error) { showToast(getErrorMessage(error), "error"); return; }
     await refresh();
     showToast("Business info saved", "success");
   }
@@ -433,6 +472,7 @@ function ServicesSection({
   const [services, setServices] = useState<Service[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [newNameHe, setNewNameHe] = useState("");
   const [newDescHe, setNewDescHe] = useState("");
@@ -496,10 +536,16 @@ function ServicesSection({
     }
   }
 
-  async function deleteService(id: string) {
-    await supabase.from("services").delete().eq("id", id);
-    setServices((prev) => prev.filter((s) => s.id !== id));
-    showToast("Service removed", "success");
+  async function requestDelete(id: string) {
+    if (pendingDelete === id) {
+      await supabase.from("services").delete().eq("id", id);
+      setServices((prev) => prev.filter((s) => s.id !== id));
+      setPendingDelete(null);
+      showToast("Service removed", "success");
+    } else {
+      setPendingDelete(id);
+      setTimeout(() => setPendingDelete((cur) => (cur === id ? null : cur)), 2500);
+    }
   }
 
   // Drag handlers
@@ -512,10 +558,15 @@ function ServicesSection({
     const reordered = [...services];
     const [moved] = reordered.splice(dragIndex.current, 1);
     reordered.splice(dragOverIndex.current, 0, moved);
+    const prevServices = services;
     setServices(reordered);
     dragIndex.current = null; dragOverIndex.current = null;
-    // Persist display_order
-    await Promise.all(reordered.map((s, i) => supabase.from("services").update({ display_order: i }).eq("id", s.id)));
+    const updates = reordered.map((s, i) => ({ id: s.id, business_id: business.id, display_order: i }));
+    const { error } = await supabase.from("services").upsert(updates, { onConflict: "id" });
+    if (error) {
+      setServices(prevServices);
+      showToast("Couldn't reorder. Please try again.", "error");
+    }
   }
 
   const svcInput: React.CSSProperties = { height: 44, width: "100%", padding: "0 13px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", transition: "border-color 0.15s", boxSizing: "border-box" };
@@ -683,14 +734,23 @@ function ServicesSection({
                     </button>
                     {/* Delete */}
                     <button
-                      onClick={() => deleteService(service.id)}
-                      className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors hover:bg-red-50"
-                      style={{ color: "#EF4444" }}
-                      aria-label="Remove service"
+                      onClick={() => requestDelete(service.id)}
+                      className="h-8 rounded-xl flex items-center justify-center transition-colors"
+                      style={{
+                        minWidth: 32,
+                        padding: pendingDelete === service.id ? "0 8px" : "0",
+                        color: pendingDelete === service.id ? "#fff" : "#EF4444",
+                        background: pendingDelete === service.id ? "#EF4444" : "transparent",
+                      }}
+                      aria-label={pendingDelete === service.id ? "Tap again to confirm delete" : "Remove service"}
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                      </svg>
+                      {pendingDelete === service.id ? (
+                        <span style={{ fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>✕ confirm</span>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -745,10 +805,45 @@ function HoursSection({
   const origAdvanceDays = business.advance_days ?? 30;
   const [bufferMinutes, setBufferMinutes] = useState(origBufferMinutes);
   const [advanceDays, setAdvanceDays] = useState(origAdvanceDays);
+  const [blockedDates, setBlockedDates] = useState<string[]>((business.blocked_dates as string[] | null) || []);
+  const [calYear, setCalYear] = useState(() => new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
   const [saving, setSaving] = useState(false);
 
   const original = JSON.stringify(business.business_hours ?? DEFAULT_HOURS);
   const dirty = JSON.stringify(hours) !== original || bufferMinutes !== origBufferMinutes || advanceDays !== origAdvanceDays;
+
+  async function toggleBlockedDate(dateStr: string) {
+    const isBlocked = blockedDates.includes(dateStr);
+    const next = isBlocked ? blockedDates.filter((d) => d !== dateStr) : [...blockedDates, dateStr];
+    setBlockedDates(next);
+    const { error } = await supabase.from("businesses").update({ blocked_dates: next }).eq("id", business.id);
+    if (error) { setBlockedDates(blockedDates); showToast("Couldn't update blocked dates", "error"); }
+  }
+
+  function calDays(): (string | null)[] {
+    const days: (string | null)[] = [];
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    const count = new Date(calYear, calMonth + 1, 0).getDate();
+    for (let d = 1; d <= count; d++) {
+      days.push(`${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+    }
+    return days;
+  }
+
+  function prevMonth() {
+    if (calMonth === 0) { setCalYear((y) => y - 1); setCalMonth(11); }
+    else setCalMonth((m) => m - 1);
+  }
+
+  function nextMonth() {
+    if (calMonth === 11) { setCalYear((y) => y + 1); setCalMonth(0); }
+    else setCalMonth((m) => m + 1);
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const upcomingBlocked = blockedDates.filter((d) => d >= today).sort();
 
   function setDay(key: DayKey, patch: Partial<BusinessHours[DayKey]>) {
     setHours((h) => ({ ...h, [key]: { ...h[key], ...patch } }));
@@ -770,7 +865,7 @@ function HoursSection({
     setSaving(true);
     const { error } = await supabase.from("businesses").update({ business_hours: hours, buffer_minutes: bufferMinutes, advance_days: advanceDays }).eq("id", business.id);
     setSaving(false);
-    if (error) { showToast("Failed to save", "error"); return; }
+    if (error) { showToast(getErrorMessage(error), "error"); return; }
     await refresh();
     showToast("Working hours saved", "success");
   }
@@ -899,6 +994,61 @@ function HoursSection({
         </div>
       </SectionCard>
 
+      <SectionCard title="Time off & blocked dates">
+        <p className="text-[12px] text-muted -mt-1">Block a day to prevent new bookings — existing bookings are not affected.</p>
+        <div className="flex items-center justify-between">
+          <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-muted)", fontSize: 18, padding: "0 8px" }}>{"‹"}</button>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)" }}>
+            {new Date(calYear, calMonth).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+          </span>
+          <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-muted)", fontSize: 18, padding: "0 8px" }}>{"›"}</button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
+          {["S","M","T","W","T","F","S"].map((d, i) => (
+            <div key={i} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: "var(--color-muted)", padding: "4px 0" }}>{d}</div>
+          ))}
+          {calDays().map((dateStr, i) => {
+            if (!dateStr) return <div key={i} />;
+            const isPast = dateStr < today;
+            const isBlocked = blockedDates.includes(dateStr);
+            const day = parseInt(dateStr.slice(8));
+            return (
+              <button
+                key={dateStr}
+                onClick={() => !isPast && toggleBlockedDate(dateStr)}
+                disabled={isPast}
+                style={{
+                  height: 34,
+                  borderRadius: 8,
+                  border: "none",
+                  fontSize: 13,
+                  fontWeight: isBlocked ? 700 : 400,
+                  cursor: isPast ? "default" : "pointer",
+                  background: isBlocked ? "#EF4444" : "transparent",
+                  color: isBlocked ? "#fff" : isPast ? "var(--color-cream-2)" : "var(--color-dark)",
+                  transition: "background 0.1s",
+                }}
+              >
+                {day}
+              </button>
+            );
+          })}
+        </div>
+        {upcomingBlocked.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <p className="text-[11px] font-semibold text-muted uppercase tracking-wide">Blocked</p>
+            {upcomingBlocked.map((d) => (
+              <div key={d} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: "rgba(239,68,68,0.08)" }}>
+                <span style={{ fontSize: 13, color: "var(--color-dark)" }}>
+                  {new Date(d + "T12:00:00").toLocaleDateString("en-IL", { weekday: "short", day: "numeric", month: "short" })}
+                </span>
+                <button onClick={() => toggleBlockedDate(d)} style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", fontSize: 13, fontWeight: 600 }}>Remove</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
       <SaveButton onClick={save} saving={saving} dirty={dirty} />
     </div>
   );
@@ -945,7 +1095,7 @@ function ReviewsSection({
       : [...reviews, { id: crypto.randomUUID(), author: author.trim(), rating, text: text.trim(), date: date.trim() }];
     const { error } = await supabase.from("businesses").update({ google_reviews: updated }).eq("id", business.id);
     setSaving(false);
-    if (error) { showToast("Failed to save", "error"); return; }
+    if (error) { showToast(getErrorMessage(error), "error"); return; }
     setReviews(updated);
     resetForm();
     await refresh();
@@ -1051,6 +1201,59 @@ function ReviewsSection({
 }
 
 
+// ─── Onboarding checklist ─────────────────────────────────────────────────────
+
+function OnboardingChecklist({
+  business,
+  supabase,
+}: {
+  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
+  supabase: ReturnType<typeof createClient>;
+}) {
+  const [serviceCount, setServiceCount] = useState<number | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("bapita_onboarding") !== "1") {
+      setDismissed(true);
+      return;
+    }
+    supabase
+      .from("services")
+      .select("*", { count: "exact", head: true })
+      .eq("business_id", business.id)
+      .eq("active", true)
+      .then(({ count }) => setServiceCount(count ?? 0));
+  }, [business.id, supabase]);
+
+  if (dismissed || serviceCount === null) return null;
+
+  const hasService = serviceCount > 0;
+  const hasHours = business.business_hours !== null;
+  const allDone = hasService && hasHours;
+
+  if (allDone) {
+    if (typeof window !== "undefined") localStorage.removeItem("bapita_onboarding");
+    return null;
+  }
+
+  return (
+    <div style={{ background: "var(--wash-amber)", color: "#fff", padding: "12px 16px", borderRadius: 12, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+      <div>
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Almost live — finish setup:</div>
+        <div style={{ fontSize: 12, opacity: 0.9 }}>
+          {hasService ? "✅" : "○"} Add a service &nbsp;·&nbsp; {hasHours ? "✅" : "○"} Set working hours
+        </div>
+      </div>
+      <button
+        onClick={() => { setDismissed(true); if (typeof window !== "undefined") localStorage.removeItem("bapita_onboarding"); }}
+        style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", fontSize: 18, lineHeight: 1, flexShrink: 0 }}
+        aria-label="Dismiss"
+      >×</button>
+    </div>
+  );
+}
+
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -1116,6 +1319,7 @@ export default function SettingsPage() {
       {/* Content */}
       <div style={{ flex: 1, overflowY: "auto" }}>
         <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 20px 64px" }}>
+          <OnboardingChecklist business={business} supabase={supabase} />
           {renderSection()}
         </div>
       </div>

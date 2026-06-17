@@ -161,7 +161,7 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
             <ContactStep
               service={state.service} date={state.date} time={state.time}
               contact={state.contact} onChange={setContact}
-              onSubmit={() => submit(business.id, business.name)}
+              onSubmit={() => submit(business.id, business.name, lang)}
               submitting={state.submitting} error={state.error}
               accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
               t={t.steps.contact}

@@ -63,7 +63,7 @@ export function useBookingFlow(initialService?: Service | null) {
     });
   }, []);
 
-  const submit = useCallback(async (businessId: string, businessName: string) => {
+  const submit = useCallback(async (businessId: string, businessName: string, lang?: string) => {
     const s = stateRef.current;
     if (!s.service || !s.date || !s.time || !s.contact.name || !s.contact.phone) return;
 
@@ -84,6 +84,7 @@ export function useBookingFlow(initialService?: Service | null) {
           customerName: s.contact.name,
           customerPhone: s.contact.phone,
           customerEmail: s.contact.email || null,
+          lang: lang || "en",
         }),
       });
       const data = await res.json();

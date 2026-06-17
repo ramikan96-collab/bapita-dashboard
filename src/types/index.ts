@@ -95,6 +95,7 @@ export interface Business {
   notification_email?: string | null;
   buffer_minutes?: number | null;
   advance_days?: number | null;
+  blocked_dates?: string[] | null;
   // booking page display stats (editable by admin)
   stat_years?:         number | null;
   stat_clients?:       number | null;
