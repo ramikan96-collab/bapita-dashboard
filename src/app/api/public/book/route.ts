@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import nodemailer from "nodemailer";
 
@@ -44,7 +44,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing required fields" }, { status: 400 });
   }
 
-  if (typeof customerPhone !== "string" || customerPhone.trim().length < 7) {
+  if (typeof customerPhone !== "string") {
+    return NextResponse.json({ error: "Please enter a valid phone number." }, { status: 400 });
+  }
+  const phoneDigits = customerPhone.replace(/[\s\-\+\(\)\.]/g, "");
+  if (!/^\d{7,15}$/.test(phoneDigits)) {
     return NextResponse.json({ error: "Please enter a valid phone number." }, { status: 400 });
   }
 
@@ -124,48 +128,77 @@ export async function POST(req: NextRequest) {
 
   if (bookingError) {
     console.error("Booking insert error:", bookingError);
-    return NextResponse.json({ error: "failed to create booking" }, { status: 500 });
+    const msg = bookingError.code === '23505'
+      ? "This time slot was just taken. Please go back and choose another time."
+      : "failed to create booking";
+    const errStatus = bookingError.code === '23505' ? 409 : 500;
+    return NextResponse.json({ error: msg }, { status: errStatus });
   }
 
-  // Send confirmation email (fire and forget)
-  const emailValid = typeof customerEmail === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail);
-  if (customerEmail && emailValid) {
+  // Defer all email sends after response is returned
+  after(async () => {
+    const { data: bizData } = await supabase
+      .from("businesses")
+      .select("notification_email")
+      .eq("id", businessId)
+      .single();
+    const bccEmail = bizData?.notification_email || process.env.GMAIL_USER || "info.bapita@gmail.com";
+
+    const formattedDate = new Date(date + "T12:00:00").toLocaleDateString("he-IL", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+    });
+
+    // Send customer confirmation only if email provided
+    const emailValid = typeof customerEmail === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail);
+    if (customerEmail && emailValid) {
+      try {
+        await transporter.sendMail({
+          from: `Bapita <${process.env.GMAIL_USER}>`,
+          to: customerEmail,
+          subject: `Booking confirmed — ${esc(businessName)}`,
+          html: `
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+              <h2 style="margin:0 0 8px;">Booking confirmed</h2>
+              <p style="color:#555;margin:0 0 24px;">Hi ${esc(customerName)}, your appointment is set.</p>
+              <div style="background:#FAF5EC;border-radius:12px;padding:20px;margin-bottom:24px;">
+                <div style="margin-bottom:8px;"><strong>Business:</strong> ${esc(businessName)}</div>
+                <div style="margin-bottom:8px;"><strong>Service:</strong> ${esc(serviceName)}</div>
+                <div style="margin-bottom:8px;"><strong>Date:</strong> ${esc(formattedDate)}</div>
+                <div style="margin-bottom:8px;"><strong>Time:</strong> ${esc(time.slice(0, 5))}</div>
+                <div><strong>Price:</strong> ₪${servicePrice || 0}</div>
+              </div>
+              <p style="color:#888;font-size:13px;">To cancel or reschedule, contact the business directly.</p>
+            </div>
+          `,
+        });
+      } catch (e) {
+        console.error("Customer email failed:", e);
+      }
+    }
+
+    // Always send barber notification regardless of whether customer has email
     try {
-      const { data: bizData } = await supabase
-        .from("businesses")
-        .select("notification_email")
-        .eq("id", businessId)
-        .single();
-      const bccEmail = bizData?.notification_email || process.env.GMAIL_USER || "info.bapita@gmail.com";
-
-      const formattedDate = new Date(date + "T00:00:00").toLocaleDateString("he-IL", {
-        weekday: "long", year: "numeric", month: "long", day: "numeric",
-      });
-
       await transporter.sendMail({
         from: `Bapita <${process.env.GMAIL_USER}>`,
-        to: customerEmail,
-        bcc: bccEmail,
-        subject: `Booking confirmed — ${esc(businessName)}`,
+        to: bccEmail,
+        subject: `הזמנה חדשה — ${esc(customerName)} | ${esc(serviceName)}`,
         html: `
-          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-            <h2 style="margin:0 0 8px;">Booking confirmed</h2>
-            <p style="color:#555;margin:0 0 24px;">Hi ${esc(customerName)}, your appointment is set.</p>
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;direction:rtl;text-align:right;">
+            <h2 style="margin:0 0 8px;">הזמנה חדשה 📅</h2>
             <div style="background:#FAF5EC;border-radius:12px;padding:20px;margin-bottom:24px;">
-              <div style="margin-bottom:8px;"><strong>Business:</strong> ${esc(businessName)}</div>
-              <div style="margin-bottom:8px;"><strong>Service:</strong> ${esc(serviceName)}</div>
-              <div style="margin-bottom:8px;"><strong>Date:</strong> ${esc(formattedDate)}</div>
-              <div style="margin-bottom:8px;"><strong>Time:</strong> ${esc(time.slice(0, 5))}</div>
-              <div><strong>Price:</strong> ₪${servicePrice || 0}</div>
+              <div style="margin-bottom:8px;"><strong>לקוח:</strong> ${esc(customerName)}</div>
+              <div style="margin-bottom:8px;"><strong>טלפון:</strong> ${esc(customerPhone)}</div>
+              <div style="margin-bottom:8px;"><strong>שירות:</strong> ${esc(serviceName)}</div>
+              <div style="margin-bottom:8px;"><strong>תאריך:</strong> ${esc(formattedDate)}</div>
+              <div><strong>שעה:</strong> ${esc(time.slice(0, 5))}</div>
             </div>
-            <p style="color:#888;font-size:13px;">To cancel or reschedule, contact the business directly.</p>
           </div>
         `,
       });
     } catch (e) {
-      console.error("Email send failed:", e);
+      console.error("Barber notification failed:", e);
     }
-  }
+  });
 
   return NextResponse.json({ ok: true });
 }

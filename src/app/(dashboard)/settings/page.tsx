@@ -63,9 +63,9 @@ const DEFAULT_NOTIFICATIONS: NotificationSettings = {
 };
 
 const SECTIONS: { id: Section; label: string }[] = [
-  { id: "business", label: "Business Info" },
+  { id: "business", label: "Business" },
   { id: "services", label: "Services" },
-  { id: "hours",    label: "Working Hours" },
+  { id: "hours",    label: "Hours" },
   { id: "reviews",  label: "Reviews" },
 ];
 
@@ -741,10 +741,14 @@ function HoursSection({
   const [hours, setHours] = useState<BusinessHours>(
     business.business_hours ?? DEFAULT_HOURS
   );
+  const origBufferMinutes = business.buffer_minutes ?? 0;
+  const origAdvanceDays = business.advance_days ?? 30;
+  const [bufferMinutes, setBufferMinutes] = useState(origBufferMinutes);
+  const [advanceDays, setAdvanceDays] = useState(origAdvanceDays);
   const [saving, setSaving] = useState(false);
 
   const original = JSON.stringify(business.business_hours ?? DEFAULT_HOURS);
-  const dirty = JSON.stringify(hours) !== original;
+  const dirty = JSON.stringify(hours) !== original || bufferMinutes !== origBufferMinutes || advanceDays !== origAdvanceDays;
 
   function setDay(key: DayKey, patch: Partial<BusinessHours[DayKey]>) {
     setHours((h) => ({ ...h, [key]: { ...h[key], ...patch } }));
@@ -764,7 +768,7 @@ function HoursSection({
 
   async function save() {
     setSaving(true);
-    const { error } = await supabase.from("businesses").update({ business_hours: hours }).eq("id", business.id);
+    const { error } = await supabase.from("businesses").update({ business_hours: hours, buffer_minutes: bufferMinutes, advance_days: advanceDays }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast("Failed to save", "error"); return; }
     await refresh();
@@ -856,6 +860,44 @@ function HoursSection({
           <p style={{ fontSize: 13, color: "var(--color-muted)" }}>No working days selected — enable at least one day above</p>
         </div>
       )}
+
+      <SectionCard title="Break between appointments">
+        <p className="text-[12px] text-muted -mt-1">Extra time added after each appointment for cleanup or a breather</p>
+        <div className="flex gap-2 flex-wrap">
+          {[0, 5, 10, 15, 30].map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setBufferMinutes(opt)}
+              className="px-4 py-2 rounded-xl text-[14px] font-semibold transition-all"
+              style={bufferMinutes === opt
+                ? { background: "var(--color-amber)", color: "white" }
+                : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
+              }
+            >
+              {opt === 0 ? "None" : `${opt} min`}
+            </button>
+          ))}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="How far ahead clients can book">
+        <p className="text-[12px] text-muted -mt-1">Clients won't see availability beyond this window</p>
+        <div className="flex gap-2 flex-wrap">
+          {[7, 14, 30, 60, 90].map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setAdvanceDays(opt)}
+              className="px-4 py-2 rounded-xl text-[14px] font-semibold transition-all"
+              style={advanceDays === opt
+                ? { background: "var(--color-amber)", color: "white" }
+                : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
+              }
+            >
+              {opt} days
+            </button>
+          ))}
+        </div>
+      </SectionCard>
 
       <SaveButton onClick={save} saving={saving} dirty={dirty} />
     </div>
@@ -1008,302 +1050,6 @@ function ReviewsSection({
   );
 }
 
-// ─── [Removed: Booking Rules + Notifications — not in v1 scope] ───────────────
-
-function _BookingSection({
-  business,
-  supabase,
-  refresh,
-}: {
-  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
-  supabase: ReturnType<typeof createClient>;
-  refresh: () => Promise<void>;
-}) {
-  const { showToast } = useToast();
-  const initial: BookingSettings = {
-    buffer_minutes: (business as any).buffer_minutes ?? DEFAULT_BOOKING.buffer_minutes,
-    advance_days: (business as any).advance_days ?? DEFAULT_BOOKING.advance_days,
-    cancellation_policy: (business as any).cancellation_policy ?? DEFAULT_BOOKING.cancellation_policy,
-    cancellation_note: (business as any).cancellation_note ?? DEFAULT_BOOKING.cancellation_note,
-  };
-  const [settings, setSettings] = useState<BookingSettings>(initial);
-  const [saving, setSaving] = useState(false);
-  const dirty = JSON.stringify(settings) !== JSON.stringify(initial);
-
-  function set<K extends keyof BookingSettings>(key: K, val: BookingSettings[K]) {
-    setSettings((s) => ({ ...s, [key]: val }));
-  }
-
-  async function save() {
-    setSaving(true);
-    const { error } = await supabase.from("businesses").update({
-      buffer_minutes: settings.buffer_minutes,
-      advance_days: settings.advance_days,
-      cancellation_policy: settings.cancellation_policy,
-      cancellation_note: settings.cancellation_note || null,
-    }).eq("id", business.id);
-    setSaving(false);
-    if (error) { showToast("Failed to save", "error"); return; }
-    await refresh();
-    showToast("Booking rules saved", "success");
-  }
-
-  const bufferOptions = [0, 5, 10, 15, 30];
-  const advanceOptions = [7, 14, 30, 60, 90];
-  const cancelOptions: { value: BookingSettings["cancellation_policy"]; label: string }[] = [
-    { value: "none",   label: "No policy" },
-    { value: "24h",    label: "24 hours notice" },
-    { value: "48h",    label: "48 hours notice" },
-    { value: "custom", label: "Custom" },
-  ];
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <SectionCard title="Timing">
-        {/* Buffer */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[13px] font-medium text-dark">Break between bookings</label>
-          <p className="text-[12px] text-muted -mt-1">Extra time added after each appointment — for cleanup or a breather</p>
-          <div className="flex gap-2 flex-wrap">
-            {bufferOptions.map((opt) => (
-              <button
-                key={opt}
-                onClick={() => set("buffer_minutes", opt)}
-                className="px-4 py-2 rounded-xl text-[14px] font-semibold transition-all"
-                style={settings.buffer_minutes === opt
-                  ? { background: "var(--color-amber)", color: "white" }
-                  : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
-                }
-              >
-                {opt === 0 ? "None" : `${opt} min`}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Advance booking */}
-        <div className="flex flex-col gap-2 pt-2">
-          <label className="text-[13px] font-medium text-dark">How far ahead clients can book</label>
-          <p className="text-[12px] text-muted -mt-1">Clients won't see availability beyond this window</p>
-          <div className="flex gap-2 flex-wrap">
-            {advanceOptions.map((opt) => (
-              <button
-                key={opt}
-                onClick={() => set("advance_days", opt)}
-                className="px-4 py-2 rounded-xl text-[14px] font-semibold transition-all"
-                style={settings.advance_days === opt
-                  ? { background: "var(--color-amber)", color: "white" }
-                  : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
-                }
-              >
-                {opt} days
-              </button>
-            ))}
-          </div>
-        </div>
-      </SectionCard>
-
-      <SectionCard title="Cancellation policy">
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-2">
-            {cancelOptions.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => set("cancellation_policy", value)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl border text-start transition-all"
-                style={settings.cancellation_policy === value
-                  ? { borderColor: "var(--color-amber)", background: "rgba(232,146,10,0.06)" }
-                  : { borderColor: "var(--color-cream-2)", background: "white" }
-                }
-              >
-                <span
-                  className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
-                  style={settings.cancellation_policy === value
-                    ? { borderColor: "var(--color-amber)", background: "var(--color-amber)" }
-                    : { borderColor: "var(--color-cream-2)" }
-                  }
-                >
-                  {settings.cancellation_policy === value && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                  )}
-                </span>
-                <span className="text-[14px] font-medium text-dark">{label}</span>
-              </button>
-            ))}
-          </div>
-
-          {settings.cancellation_policy === "custom" && (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-dark">Your policy</label>
-              <textarea
-                value={settings.cancellation_note}
-                onChange={(e) => set("cancellation_note", e.target.value)}
-                placeholder="e.g. Cancellations must be made at least 12 hours in advance. No-shows may be charged."
-                rows={3}
-                className="px-4 py-3 rounded-[10px] border border-[var(--color-cream-2)] bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors resize-none"
-              />
-              <p className="text-[12px] text-muted">This will appear on your booking page</p>
-            </div>
-          )}
-
-          {settings.cancellation_policy !== "none" && settings.cancellation_policy !== "custom" && (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-dark">Optional note (shown to clients)</label>
-              <textarea
-                value={settings.cancellation_note}
-                onChange={(e) => set("cancellation_note", e.target.value)}
-                placeholder="e.g. No-shows may be charged 50% of the service price."
-                rows={2}
-                className="px-4 py-3 rounded-[10px] border border-[var(--color-cream-2)] bg-white text-[15px] text-dark placeholder:text-muted focus:outline-none focus:border-amber focus:ring-1 focus:ring-amber/30 transition-colors resize-none"
-              />
-            </div>
-          )}
-        </div>
-      </SectionCard>
-
-      <SaveButton onClick={save} saving={saving} dirty={dirty} />
-    </div>
-  );
-}
-
-function _NotificationsSection({
-  business,
-  supabase,
-  refresh,
-}: {
-  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
-  supabase: ReturnType<typeof createClient>;
-  refresh: () => Promise<void>;
-}) {
-  const { showToast } = useToast();
-  const initial: NotificationSettings = {
-    email_new_booking: (business as any).notif_email_new_booking ?? true,
-    email_cancellation: (business as any).notif_email_cancellation ?? true,
-    email_reminder: (business as any).notif_email_reminder ?? true,
-    whatsapp_new_booking: (business as any).notif_wa_new_booking ?? false,
-    whatsapp_reminder: (business as any).notif_wa_reminder ?? false,
-  };
-  const [settings, setSettings] = useState<NotificationSettings>(initial);
-  const [saving, setSaving] = useState(false);
-  const dirty = JSON.stringify(settings) !== JSON.stringify(initial);
-
-  function toggle<K extends keyof NotificationSettings>(key: K) {
-    setSettings((s) => ({ ...s, [key]: !s[key] }));
-  }
-
-  async function save() {
-    setSaving(true);
-    const { error } = await supabase.from("businesses").update({
-      notif_email_new_booking: settings.email_new_booking,
-      notif_email_cancellation: settings.email_cancellation,
-      notif_email_reminder: settings.email_reminder,
-      notif_wa_new_booking: settings.whatsapp_new_booking,
-      notif_wa_reminder: settings.whatsapp_reminder,
-    }).eq("id", business.id);
-    setSaving(false);
-    if (error) { showToast("Failed to save", "error"); return; }
-    await refresh();
-    showToast("Notification settings saved", "success");
-  }
-
-  function NotifRow({ label, hint, value, onToggle, disabled }: { label: string; hint?: string; value: boolean; onToggle: () => void; disabled?: boolean }) {
-    return (
-      <div
-        className="flex items-center gap-4 py-3.5"
-        style={{ opacity: disabled ? 0.5 : 1 }}
-      >
-        <div className="flex-1 min-w-0">
-          <div className="text-[14px] font-medium text-dark">{label}</div>
-          {hint && <div className="text-[12px] text-muted mt-0.5">{hint}</div>}
-        </div>
-        <Toggle on={value} onChange={disabled ? () => {} : onToggle} />
-      </div>
-    );
-  }
-
-  // Check if WhatsApp add-on is active (you can hook this into your addons table)
-  const waActive = (business as any).whatsapp_active ?? false;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {/* Email — free */}
-      <SectionCard title="Email · Free">
-        <div className="space-y-0 divide-y divide-[var(--color-cream-2)]">
-          <NotifRow
-            label="New booking"
-            hint="Get an email when a client books an appointment"
-            value={settings.email_new_booking}
-            onToggle={() => toggle("email_new_booking")}
-          />
-          <NotifRow
-            label="Cancellation"
-            hint="Get an email when a client cancels"
-            value={settings.email_cancellation}
-            onToggle={() => toggle("email_cancellation")}
-          />
-          <NotifRow
-            label="Daily reminder"
-            hint="Morning summary of today's appointments"
-            value={settings.email_reminder}
-            onToggle={() => toggle("email_reminder")}
-          />
-        </div>
-      </SectionCard>
-
-      {/* WhatsApp — paid */}
-      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(30,26,20,0.06),0_2px_8px_rgba(30,26,20,0.05)] overflow-hidden">
-        <div className="px-5 pt-5 pb-3 border-b border-[var(--color-cream-2)] flex items-center justify-between">
-          <h3 className="text-[13px] font-semibold text-muted uppercase tracking-wide">WhatsApp</h3>
-          {waActive ? (
-            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.12)", color: "#16A34A" }}>Active</span>
-          ) : (
-            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: "rgba(232,146,10,0.12)", color: "#B36A00" }}>Paid add-on</span>
-          )}
-        </div>
-
-        {!waActive ? (
-          <div className="p-5">
-            <p className="text-[14px] text-dark font-medium mb-1">Get notified on WhatsApp</p>
-            <p className="text-[13px] text-muted mb-4">
-              Receive instant WhatsApp alerts for new bookings and reminders — right where you already spend your day.
-              This is part of the WhatsApp add-on.
-            </p>
-            <a
-              href="https://wa.me/972"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-semibold text-white transition-colors"
-              style={{ background: "#25D366" }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.117 1.532 5.845L.057 23.6a.5.5 0 0 0 .611.611l5.755-1.475A11.946 11.946 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.807 9.807 0 0 1-5.032-1.39l-.36-.214-3.735.957.974-3.642-.235-.374A9.818 9.818 0 1 1 12 21.818z"/>
-              </svg>
-              Learn about the WhatsApp add-on
-            </a>
-          </div>
-        ) : (
-          <div className="p-5 space-y-0 divide-y divide-[var(--color-cream-2)]">
-            <NotifRow
-              label="New booking"
-              hint="WhatsApp alert when a client books"
-              value={settings.whatsapp_new_booking}
-              onToggle={() => toggle("whatsapp_new_booking")}
-            />
-            <NotifRow
-              label="Daily reminder"
-              hint="Morning summary via WhatsApp"
-              value={settings.whatsapp_reminder}
-              onToggle={() => toggle("whatsapp_reminder")}
-            />
-          </div>
-        )}
-      </div>
-
-      <SaveButton onClick={save} saving={saving} dirty={dirty} />
-    </div>
-  );
-}
 
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 
@@ -1340,7 +1086,7 @@ export default function SettingsPage() {
         <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: "0 0 16px" }}>
           Settings
         </h1>
-        <div style={{ display: "flex", gap: 8, paddingBottom: 18 }}>
+        <div style={{ display: "flex", gap: 8, paddingBottom: 18, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>
           {SECTIONS.map((s) => {
             const active = activeSection === s.id;
             return (

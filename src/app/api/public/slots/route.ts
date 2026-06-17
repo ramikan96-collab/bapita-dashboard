@@ -10,7 +10,8 @@ function getSlots(
   date: Date,
   durationMinutes: number,
   businessHours: BusinessHours | null,
-  booked: { appointment_time: string; duration: number }[]
+  booked: { appointment_time: string; duration: number }[],
+  bufferMinutes: number = 0,
 ): string[] {
   const dayKey = DAY_NAMES[date.getDay()];
   const dayHours = businessHours?.[dayKey];
@@ -24,11 +25,11 @@ function getSlots(
   const bookedRanges = booked.map((b) => {
     const [h, m] = b.appointment_time.split(":").map(Number);
     const start = h * 60 + m;
-    return { start, end: start + (b.duration || 30) };
+    return { start, end: start + (b.duration || 30) + bufferMinutes };
   });
 
   const slots: string[] = [];
-  for (let t = openMinutes; t + durationMinutes <= closeMinutes; t += durationMinutes) {
+  for (let t = openMinutes; t + durationMinutes <= closeMinutes; t += durationMinutes + bufferMinutes) {
     const overlaps = bookedRanges.some((r) => t < r.end && t + durationMinutes > r.start);
     if (!overlaps) {
       slots.push(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
@@ -51,9 +52,18 @@ export async function GET(req: NextRequest) {
 
   const { data: business } = await supabase
     .from("businesses")
-    .select("business_hours")
+    .select("business_hours, buffer_minutes, advance_days")
     .eq("id", businessId)
     .single();
+
+  // Enforce advance booking window
+  const advanceDays = (business?.advance_days as number | null) ?? 30;
+  const requestedDate = new Date(date + "T12:00:00");
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + advanceDays);
+  if (requestedDate > maxDate) {
+    return NextResponse.json({ slots: [] });
+  }
 
   const { data: existingBookings } = await supabase
     .from("bookings")
@@ -67,11 +77,14 @@ export async function GET(req: NextRequest) {
     duration: Array.isArray(b.service) ? (b.service[0]?.duration || 30) : (b.service?.duration || 30),
   }));
 
+  const bufferMinutes = (business?.buffer_minutes as number | null) ?? 0;
+
   const slots = getSlots(
-    new Date(date + "T00:00:00"),
+    new Date(date + "T12:00:00"),
     duration,
     business?.business_hours as BusinessHours | null,
-    booked
+    booked,
+    bufferMinutes,
   );
 
   return NextResponse.json({ slots });
