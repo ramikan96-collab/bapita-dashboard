@@ -257,6 +257,25 @@ function IconTrash() {
   );
 }
 
+function IconSliders() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
+      <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
+      <line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />
+    </svg>
+  );
+}
+
+function IconX() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function RowSkeleton() {
@@ -336,6 +355,7 @@ export default function ClientsPage() {
   const [showColumnsDropdown, setShowColumnsDropdown] = useState(false);
   const [showPrintDropdown, setShowPrintDropdown] = useState(false);
   const [showLabelDropdown, setShowLabelDropdown] = useState(false);
+  const [showFiltersSheet, setShowFiltersSheet] = useState(false);
 
   // label filter (multi-select, empty = all)
   const [labelFilter, setLabelFilter] = useState<Set<string>>(new Set());
@@ -433,7 +453,9 @@ export default function ClientsPage() {
   const currentShowLabel = SHOW_OPTIONS.find((o) => o.value === showFilter)?.label ?? "All";
   const isFilterActive = showFilter !== "all";
   const isSortActive = sortBy !== "recent";
+  const isColumnsChanged = [...visibleColumns].sort().join(",") !== [...new Set(DEFAULT_COLUMNS)].sort().join(",");
   const isLabelFilterActive = labelFilter.size > 0;
+  const activeFilterCount = [isSortActive, isLabelFilterActive, isFilterActive, isColumnsChanged].filter(Boolean).length;
   const labelFilterBtnText = labelFilter.size === 0
     ? "Label"
     : labelFilter.size === 1
@@ -511,10 +533,15 @@ export default function ClientsPage() {
         .toolbar-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .toolbar-search { position: relative; flex: 1 1 200px; min-width: 120px; }
         .toolbar-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: nowrap; }
+        .filters-btn-mobile { display: none; }
+        /* Sticky actions column for desktop horizontal scroll */
+        .sticky-actions-col { position: sticky; right: 0; background: white; z-index: 2; box-shadow: -4px 0 8px rgba(30,26,20,0.04); }
+        .client-row:hover .sticky-actions-col { background: white; }
         /* ── Mobile ────────────────────────────────────────────────────────── */
         @media (max-width: 639px) {
           .toolbar-search { flex-basis: 100%; order: -1; }
-          .toolbar-btns { flex-shrink: 1; flex-wrap: wrap; gap: 6px; }
+          .toolbar-btns { display: none; }
+          .filters-btn-mobile { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 13px; border-radius: 9px; border: 1.5px solid var(--color-cream-2); background: white; font-size: 13px; font-weight: 600; color: var(--color-dark); cursor: pointer; flex-shrink: 0; white-space: nowrap; }
           .print-btn-wrap { display: none; }
           .client-header-row { display: none !important; }
           .client-row { display: flex !important; align-items: center; gap: 10px; padding: 12px 14px; }
@@ -576,6 +603,20 @@ export default function ClientsPage() {
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
                 />
               </div>
+
+              {/* Mobile-only Filters button */}
+              <button
+                className="filters-btn-mobile"
+                onClick={() => setShowFiltersSheet(true)}
+              >
+                <IconSliders />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span style={{ minWidth: 18, height: 18, borderRadius: 99, background: "var(--color-amber)", color: "white", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
 
               {/* Button group */}
               <div className="toolbar-btns">
@@ -825,7 +866,7 @@ export default function ClientsPage() {
                         {ALL_COLUMNS.find((c) => c.key === key)?.label}
                       </span>
                     ))}
-                    <div />
+                    <div className="sticky-actions-col" />
                   </div>
 
                   {/* Rows */}
@@ -899,6 +940,151 @@ export default function ClientsPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ── Mobile Filters sheet ──────────────────────────────────────────── */}
+        {showFiltersSheet && (
+          <>
+            <div
+              style={{ position: "fixed", inset: 0, zIndex: 44, background: "rgba(30,26,20,0.44)", backdropFilter: "blur(3px)" }}
+              onClick={() => setShowFiltersSheet(false)}
+            />
+            <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 45, background: "var(--color-surface)", borderRadius: "20px 20px 0 0", maxHeight: "88dvh", display: "flex", flexDirection: "column", boxShadow: "0 -4px 24px rgba(30,26,20,0.14)" }}>
+              {/* drag handle */}
+              <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
+                <div style={{ width: 36, height: 4, borderRadius: 99, background: "var(--color-cream-2)" }} />
+              </div>
+              {/* header */}
+              <div style={{ padding: "4px 20px 14px", borderBottom: "1px solid var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)" }}>Filters</span>
+                <button
+                  onClick={() => setShowFiltersSheet(false)}
+                  style={{ width: 30, height: 30, borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-muted)", cursor: "pointer" }}
+                >
+                  <IconX />
+                </button>
+              </div>
+
+              {/* scrollable body */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "18px 20px 8px" }}>
+
+                {/* Sort */}
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>Sort by</p>
+                <div style={{ display: "flex", flexDirection: "column" as const, gap: 6, marginBottom: 20 }}>
+                  {SORT_OPTIONS.map((opt) => {
+                    const active = sortBy === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => setSortBy(opt.value)}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: active ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "left" as const }}
+                      >
+                        <span style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {active && <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--color-amber)", display: "block" }} />}
+                        </span>
+                        <span style={{ fontSize: 14, fontWeight: active ? 700 : 400, color: active ? "var(--color-amber)" : "var(--color-dark)" }}>{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ borderTop: "1px solid var(--color-cream-2)", marginBottom: 20 }} />
+
+                {/* Label */}
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>Label</p>
+                <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8, marginBottom: 20 }}>
+                  {ALL_LABEL_OPTIONS.map((opt) => {
+                    const on = labelFilter.has(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => toggleLabelFilter(opt.value)}
+                        style={{ padding: "7px 16px", borderRadius: 20, border: `1.5px solid ${on ? opt.color : "var(--color-cream-2)"}`, background: on ? opt.bg : "white", color: on ? opt.color : "var(--color-muted)", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.12s" }}
+                      >
+                        {opt.text}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ borderTop: "1px solid var(--color-cream-2)", marginBottom: 20 }} />
+
+                {/* Show period */}
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>Show period</p>
+                <div style={{ display: "flex", flexDirection: "column" as const, gap: 6, marginBottom: showFilter === "custom" ? 10 : 20 }}>
+                  {SHOW_OPTIONS.filter((o) => o.value !== "custom").map((opt) => {
+                    const active = showFilter === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => setShowFilter(opt.value)}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: active ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "left" as const }}
+                      >
+                        <span style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {active && <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--color-amber)", display: "block" }} />}
+                        </span>
+                        <span style={{ fontSize: 14, fontWeight: active ? 700 : 400, color: active ? "var(--color-amber)" : "var(--color-dark)" }}>{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Custom date range */}
+                <div style={{ marginBottom: 20, display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                  <button
+                    onClick={() => setShowFilter("custom")}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${showFilter === "custom" ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showFilter === "custom" ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "left" as const }}
+                  >
+                    <span style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${showFilter === "custom" ? "var(--color-amber)" : "var(--color-cream-2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {showFilter === "custom" && <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--color-amber)", display: "block" }} />}
+                    </span>
+                    <span style={{ fontSize: 14, fontWeight: showFilter === "custom" ? 700 : 400, color: showFilter === "custom" ? "var(--color-amber)" : "var(--color-dark)" }}>Custom range</span>
+                  </button>
+                  {showFilter === "custom" && (
+                    <div style={{ display: "flex", gap: 8, paddingLeft: 4 }}>
+                      <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} style={{ flex: 1, height: 40, padding: "0 10px", borderRadius: 10, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 13, color: "var(--color-dark)", outline: "none" }} onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")} onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")} />
+                      <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} style={{ flex: 1, height: 40, padding: "0 10px", borderRadius: 10, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 13, color: "var(--color-dark)", outline: "none" }} onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")} onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")} />
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ borderTop: "1px solid var(--color-cream-2)", marginBottom: 20 }} />
+
+                {/* Columns */}
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>Visible columns</p>
+                <div style={{ display: "flex", flexDirection: "column" as const, gap: 6, marginBottom: 8 }}>
+                  {ALL_COLUMNS.map((col) => {
+                    const on = visibleColumns.has(col.key);
+                    return (
+                      <button
+                        key={col.key}
+                        onClick={() => toggleColumn(col.key)}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${on ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: on ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "left" as const }}
+                      >
+                        <span className={`col-check${on ? " checked" : ""}`}>{on && <IconCheck />}</span>
+                        <span style={{ fontSize: 14, fontWeight: on ? 600 : 400, color: on ? "var(--color-amber)" : "var(--color-dark)" }}>{col.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* footer */}
+              <div style={{ padding: "12px 20px 28px", borderTop: "1px solid var(--color-cream-2)", display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => { setSortBy("recent"); setLabelFilter(new Set()); setShowFilter("all"); setVisibleColumns(new Set(DEFAULT_COLUMNS)); }}
+                  style={{ flex: 1, height: 46, borderRadius: 13, border: "1.5px solid var(--color-cream-2)", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--color-muted)", cursor: "pointer" }}
+                >
+                  Clear all
+                </button>
+                <button
+                  onClick={() => setShowFiltersSheet(false)}
+                  style={{ flex: 2, height: 46, borderRadius: 13, border: "none", background: "var(--color-amber)", color: "white", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)" }}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </>
@@ -1021,7 +1207,7 @@ function ClientRow({
             {renderCell(key)}
           </div>
         ))}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
+        <div className="sticky-actions-col" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
           <div className="row-actions" onClick={(e) => e.stopPropagation()}>
             <button className="row-action-btn" title="Edit" onClick={onEdit}><IconEdit /></button>
             <button className="row-action-btn delete" title="Delete" onClick={onDelete}><IconTrash /></button>
