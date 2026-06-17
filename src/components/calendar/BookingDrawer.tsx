@@ -673,9 +673,14 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
     }
     if (prevBooking === "loading") {
       return (
-        <p className="text-[14px] px-1" style={{ color: "var(--color-muted)" }}>
-          Loading…
-        </p>
+        <div
+          className="animate-pulse rounded-2xl"
+          style={{
+            height: 72,
+            background: "var(--color-cream-2)",
+            border: "1px solid var(--color-cream-2)",
+          }}
+        />
       );
     }
     if (prevBooking === null) {
