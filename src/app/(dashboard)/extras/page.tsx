@@ -230,7 +230,7 @@ function UsageBar({
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <span style={{ fontSize: 12, fontWeight: 500, color: "var(--color-dark)" }}>
-            {emailMode ? `${EMAIL_USAGE.total} emails left` : "100%"}
+            {emailMode ? `${EMAIL_USAGE.total} emails left` : "100% left"}
           </span>
         </div>
       </div>
