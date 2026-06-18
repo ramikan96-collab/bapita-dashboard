@@ -140,6 +140,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
   const [saved,        setSaved]        = useState(false);
   const [dirty,        setDirty]        = useState(false);
   const [loading,      setLoading]      = useState(mode === "edit");
+  const [cloning,      setCloning]      = useState(false);
   const stableId = useRef<string>(businessId || crypto.randomUUID());
 
   useEffect(() => {
@@ -341,6 +342,69 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     }
   }
 
+  async function handleClone() {
+    const slugs = variants.map(v => v.slug.trim());
+    if (slugs.some(s => !s)) { setError("All slugs are required"); return; }
+    const unique = new Set(slugs);
+    if (unique.size !== slugs.length) { setError("Slugs must be unique"); return; }
+    setSaving(true); setError("");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setError("Not logged in"); setSaving(false); return; }
+    const urls = gallery.filter(g => !g.uploading && g.url).map(g => g.url);
+    const basePayload = {
+      name:               form.name.trim(),
+      name_he:            form.name_he            || null,
+      default_lang:       form.default_lang       || "he",
+      tagline:            form.tagline            || null,
+      tagline_he:         form.tagline_he         || null,
+      phone:              form.phone              || null,
+      address:            form.address            || null,
+      email:              form.email              || null,
+      instagram_url:      form.instagram_url      || null,
+      facebook_url:       form.facebook_url       || null,
+      whatsapp_number:    form.whatsapp_number    || null,
+      google_review_link: form.google_review_link || null,
+      google_maps_url:    form.google_maps_url    || null,
+      waze_url:           form.waze_url           || null,
+      about_text:         form.about_text         || null,
+      about_text_he:      form.about_text_he      || null,
+      accent_color:       form.accent_color       || null,
+      show_gallery:       form.show_gallery,
+      show_about:         form.show_about,
+      show_hours:         form.show_hours,
+      show_location:      form.show_location,
+      show_stats:         form.show_stats,
+      show_services:      form.show_services,
+      show_reviews:       form.show_reviews,
+      status:             "draft" as const,
+      gallery_images:     urls,
+      hero_image_url:     urls[0]                 || null,
+      section_order:      sectionOrder,
+      plan_tier:          form.plan_tier           || null,
+      plan_price:         form.plan_price          ? Number(form.plan_price) : null,
+      plan_addons:        form.plan_addons,
+      plan_booking_limit: form.plan_booking_limit  ? Number(form.plan_booking_limit) : null,
+      plan_start_date:    form.plan_start_date     || null,
+      plan_renewal_date:  form.plan_renewal_date   || null,
+      plan_notes:         form.plan_notes          || null,
+      stat_years:         form.stat_years   ? Number(form.stat_years)   : null,
+      stat_clients:       form.stat_clients ? Number(form.stat_clients) : null,
+      stat_rating:        form.stat_rating          || null,
+      business_hours:     hours,
+    };
+    for (const v of variants) {
+      const { error: e } = await supabase.from("businesses").insert({
+        ...basePayload,
+        slug:           v.slug.trim(),
+        template_style: v.template,
+        owner_id:       user.id,
+      });
+      if (e) { setError(`Slug "${v.slug}": ${e.message}`); setSaving(false); return; }
+    }
+    setSaving(false);
+    onSaved(variants[0].slug);
+  }
+
   if (loading) {
     return (
       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", color:"var(--color-muted)", fontSize:14 }}>
@@ -349,9 +413,11 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     );
   }
 
-  const title      = mode === "new"
-    ? (variants.length > 1 ? `New Business × ${variants.length}` : "New Business")
-    : (form.name || "Business");
+  const title      = cloning
+    ? `Clone: ${form.name || "Business"}`
+    : mode === "new"
+      ? (variants.length > 1 ? `New Business × ${variants.length}` : "New Business")
+      : (form.name || "Business");
   const previewUrl = form.slug ? `https://book.bapita.com/${form.slug}` : null;
 
   const TABS: { id: Tab; label: string }[] = [
@@ -377,59 +443,91 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
             {title}
           </h1>
 
-          {/* Status toggle */}
-          <button
-            onClick={() => set("status", form.status === "draft" ? "live" : "draft")}
-            style={{
-              height:28, padding:"0 10px", borderRadius:20, border:"none", cursor:"pointer",
-              fontSize:11, fontWeight:700, letterSpacing:"0.04em", fontFamily:"inherit", flexShrink:0,
-              background: form.status === "live" ? "#D1FAE5" : "var(--color-cream-2)",
-              color:      form.status === "live" ? "#065F46" : "var(--color-muted)",
-              transition:"background 0.2s, color 0.2s",
-            }}
-          >
-            {form.status === "live" ? "● LIVE" : "○ DRAFT"}
-          </button>
+          {cloning ? (
+            <>
+              <button
+                onClick={() => { setCloning(false); setVariants([{ slug: "", template: "classic" }]); setError(""); }}
+                style={{ height:32, padding:"0 12px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"var(--color-cream)", color:"var(--color-muted)", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClone}
+                disabled={saving}
+                style={{ height:32, padding:"0 16px", borderRadius:9, border:"none", flexShrink:0, background:"var(--color-amber)", color:"#fff", fontSize:13, fontWeight:700, cursor:saving?"not-allowed":"pointer", opacity:saving?0.7:1, fontFamily:"inherit", boxShadow:"0 2px 8px rgba(232,146,10,0.25)" }}
+              >
+                {saving ? "Creating…" : `Create ${variants.length > 1 ? `${variants.length} Copies` : "Copy"}`}
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Status toggle */}
+              <button
+                onClick={() => set("status", form.status === "draft" ? "live" : "draft")}
+                style={{
+                  height:28, padding:"0 10px", borderRadius:20, border:"none", cursor:"pointer",
+                  fontSize:11, fontWeight:700, letterSpacing:"0.04em", fontFamily:"inherit", flexShrink:0,
+                  background: form.status === "live" ? "#D1FAE5" : "var(--color-cream-2)",
+                  color:      form.status === "live" ? "#065F46" : "var(--color-muted)",
+                  transition:"background 0.2s, color 0.2s",
+                }}
+              >
+                {form.status === "live" ? "● LIVE" : "○ DRAFT"}
+              </button>
 
-          {/* Save & Preview */}
-          {previewUrl && (
-            <button
-              onClick={async () => { await handleSave(); window.open(previewUrl, "_blank"); }}
-              disabled={saving}
-              style={{
-                height:32, padding:"0 12px", borderRadius:9, border:"1.5px solid var(--color-cream-2)",
-                background:"var(--color-cream)", color:"var(--color-dark)",
-                fontSize:12, fontWeight:700, flexShrink:0, cursor: saving ? "not-allowed" : "pointer",
-                display:"flex", alignItems:"center", gap:5, transition:"border-color 0.15s",
-                fontFamily:"inherit", opacity: saving ? 0.6 : 1,
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-amber)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-cream-2)"; }}
-            >
-              Save & Preview ↗
-            </button>
+              {/* Clone */}
+              {mode === "edit" && (
+                <button
+                  onClick={() => { setCloning(true); setVariants([{ slug: "", template: form.template_style || "classic" }]); setTab("profile"); }}
+                  style={{ height:32, padding:"0 12px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"var(--color-cream)", color:"var(--color-dark)", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", flexShrink:0, transition:"border-color 0.15s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-amber)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-cream-2)"; }}
+                >
+                  Clone
+                </button>
+              )}
+
+              {/* Save & Preview */}
+              {previewUrl && (
+                <button
+                  onClick={async () => { await handleSave(); window.open(previewUrl, "_blank"); }}
+                  disabled={saving}
+                  style={{
+                    height:32, padding:"0 12px", borderRadius:9, border:"1.5px solid var(--color-cream-2)",
+                    background:"var(--color-cream)", color:"var(--color-dark)",
+                    fontSize:12, fontWeight:700, flexShrink:0, cursor: saving ? "not-allowed" : "pointer",
+                    display:"flex", alignItems:"center", gap:5, transition:"border-color 0.15s",
+                    fontFamily:"inherit", opacity: saving ? 0.6 : 1,
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-amber)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-cream-2)"; }}
+                >
+                  Save & Preview ↗
+                </button>
+              )}
+
+              {/* Dirty indicator */}
+              {dirty && !saving && !saved && (
+                <span style={{ width:7, height:7, borderRadius:"50%", background:"var(--color-amber)", flexShrink:0 }} />
+              )}
+
+              {/* Save */}
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                style={{
+                  height:32, padding:"0 16px", borderRadius:9, border:"none", flexShrink:0,
+                  background: saved ? "#16A34A" : "var(--color-amber)",
+                  color:"#fff", fontSize:13, fontWeight:700,
+                  cursor: saving ? "not-allowed" : "pointer",
+                  opacity: saving ? 0.7 : 1, transition:"background 0.3s",
+                  fontFamily:"inherit", boxShadow:"0 2px 8px rgba(232,146,10,0.25)",
+                }}
+              >
+                {saving ? "Saving…" : saved ? "Saved ✓" : "Save"}
+              </button>
+            </>
           )}
-
-          {/* Dirty indicator */}
-          {dirty && !saving && !saved && (
-            <span style={{ width:7, height:7, borderRadius:"50%", background:"var(--color-amber)", flexShrink:0 }} />
-          )}
-
-          {/* Save */}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              height:32, padding:"0 16px", borderRadius:9, border:"none", flexShrink:0,
-              background: saved ? "#16A34A" : "var(--color-amber)",
-              color:"#fff", fontSize:13, fontWeight:700,
-              cursor: saving ? "not-allowed" : "pointer",
-              opacity: saving ? 0.7 : 1, transition:"background 0.3s",
-              fontFamily:"inherit", boxShadow:"0 2px 8px rgba(232,146,10,0.25)",
-            }}
-          >
-            {saving ? "Saving…" : saved ? "Saved ✓" : "Save"}
-          </button>
         </div>
 
         {/* Tabs */}
@@ -504,8 +602,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   </Field>
                 </Row>
 
-                {/* Batch variants — new mode only */}
-                {mode === "new" && (
+                {/* Batch variants — new mode or cloning */}
+                {(mode === "new" || cloning) && (
                   <div style={{ marginTop:8 }}>
                     <div style={{ fontSize:12, fontWeight:700, color:"var(--color-muted)", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>
                       Templates & URLs
