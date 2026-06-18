@@ -141,6 +141,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
   const [dirty,        setDirty]        = useState(false);
   const [loading,      setLoading]      = useState(mode === "edit");
   const [cloning,      setCloning]      = useState(false);
+  const [confirmClone, setConfirmClone] = useState(false);
   const stableId = useRef<string>(businessId || crypto.randomUUID());
 
   useEffect(() => {
@@ -475,18 +476,6 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 {form.status === "live" ? "● LIVE" : "○ DRAFT"}
               </button>
 
-              {/* Clone */}
-              {mode === "edit" && (
-                <button
-                  onClick={() => { setCloning(true); setVariants([{ slug: "", template: form.template_style || "classic" }]); setTab("profile"); }}
-                  style={{ height:32, padding:"0 12px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"var(--color-cream)", color:"var(--color-dark)", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", flexShrink:0, transition:"border-color 0.15s" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-amber)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor="var(--color-cream-2)"; }}
-                >
-                  Clone
-                </button>
-              )}
-
               {/* Save & Preview */}
               {previewUrl && (
                 <button
@@ -584,8 +573,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     </Field>
                   )}
                 </Row>
-                <Row>
-                  {mode === "edit" && (
+                {mode === "edit" && (
+                  <Row>
                     <Field label="Template">
                       <select value={form.template_style} onChange={e => set("template_style", e.target.value)} style={inputStyle}>
                         <option value="classic">Classic (cream/gold)</option>
@@ -593,14 +582,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                         <option value="dark">Dark (dark/gold)</option>
                       </select>
                     </Field>
-                  )}
-                  <Field label="Default Language">
-                    <select value={form.default_lang} onChange={e => set("default_lang", e.target.value)} style={inputStyle}>
-                      <option value="he">Hebrew (עברית)</option>
-                      <option value="en">English</option>
-                    </select>
-                  </Field>
-                </Row>
+                  </Row>
+                )}
 
                 {/* Batch variants — new mode or cloning */}
                 {(mode === "new" || cloning) && (
@@ -680,7 +663,47 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     )}
                   </div>
                 )}
+                {/* Clone button — edit mode only, not while cloning */}
+                {mode === "edit" && !cloning && (
+                  confirmClone ? (
+                    <div style={{ background:"#FEF3C7", borderRadius:11, padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, border:"1px solid #FDE68A" }}>
+                      <span style={{ fontSize:13, color:"#92400E", fontWeight:600 }}>
+                        Duplicate all data to new pages? They start as draft. Original untouched.
+                      </span>
+                      <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+                        <button
+                          onClick={() => { setConfirmClone(false); setCloning(true); setVariants([{ slug: "", template: form.template_style || "classic" }]); }}
+                          style={{ height:30, padding:"0 14px", borderRadius:8, border:"none", background:"var(--color-amber)", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}
+                        >
+                          Yes, Clone
+                        </button>
+                        <button
+                          onClick={() => setConfirmClone(false)}
+                          style={{ height:30, padding:"0 12px", borderRadius:8, border:"1.5px solid #FDE68A", background:"transparent", color:"#92400E", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmClone(true)}
+                      style={{ alignSelf:"flex-start", height:32, padding:"0 14px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"var(--color-cream)", color:"var(--color-muted)", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"border-color 0.15s, color 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor="var(--color-amber)"; e.currentTarget.style.color="var(--color-dark)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor="var(--color-cream-2)"; e.currentTarget.style.color="var(--color-muted)"; }}
+                    >
+                      Clone business
+                    </button>
+                  )
+                )}
+
                 <Row>
+                  <Field label="Default Language">
+                    <select value={form.default_lang} onChange={e => set("default_lang", e.target.value)} style={inputStyle}>
+                      <option value="he">Hebrew (עברית)</option>
+                      <option value="en">English</option>
+                    </select>
+                  </Field>
                   <Field label="Accent Color">
                     <div style={{ display:"flex", gap:8, alignItems:"center" }}>
                       <input
