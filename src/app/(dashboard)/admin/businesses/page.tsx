@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/Toast";
 import type { Business } from "@/types";
 
 const TEMPLATE_LABELS: Record<string, string> = { classic: "Classic", clean: "Clean", dark: "Dark" };
@@ -40,10 +41,12 @@ function timeAgo(iso: string): string {
 }
 
 export default function AdminPage() {
-  const router   = useRouter();
-  const supabase = createClient();
+  const router      = useRouter();
+  const supabase    = createClient();
+  const { showToast } = useToast();
 
   const [tab, setTab] = useState<Tab>("businesses");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // ── Businesses state ──────────────────────────────────────────────────────
   const [businesses,    setBusinesses]    = useState<Business[]>([]);
@@ -71,13 +74,18 @@ export default function AdminPage() {
 
   async function handleDelete(id: string) {
     setDeleting(id);
-    await supabase.from("bookings").delete().eq("business_id", id);
-    await supabase.from("customers").delete().eq("business_id", id);
-    await supabase.from("services").delete().eq("business_id", id);
-    await supabase.from("businesses").delete().eq("id", id);
-    setDeleting(null);
-    setDeleteId(null);
-    loadBusinesses();
+    try {
+      const res = await fetch(`/api/admin/delete-business/${id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Delete failed");
+      showToast("Business deleted", "success");
+      setDeleteId(null);
+      loadBusinesses();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Delete failed", "error");
+    } finally {
+      setDeleting(null);
+    }
   }
 
   // ── Leads state ───────────────────────────────────────────────────────────
@@ -151,6 +159,16 @@ export default function AdminPage() {
   const filteredLeads   = filterStatus === "all" ? leads : leads.filter(l => l.status === filterStatus);
   const statusCounts    = leads.reduce((acc, l) => { acc[l.status] = (acc[l.status] || 0) + 1; return acc; }, {} as Record<string, number>);
 
+  const q = searchQuery.trim().toLowerCase();
+  const filteredBusinesses = q
+    ? businesses.filter(b =>
+        b.name.toLowerCase().includes(q) ||
+        (b.slug ?? "").toLowerCase().includes(q) ||
+        ((b as any).status ?? "draft").toLowerCase().includes(q) ||
+        (b.template_style ?? "").toLowerCase().includes(q)
+      )
+    : businesses;
+
   // ── Tab bar ────────────────────────────────────────────────────────────────
   const TABS: { key: Tab; label: string; badge?: number }[] = [
     { key: "businesses", label: "Businesses" },
@@ -206,6 +224,26 @@ export default function AdminPage() {
           )}
         </div>
 
+        {/* Search — businesses tab only */}
+        {tab === "businesses" && (
+          <div style={{ maxWidth: 760, margin: "0 auto", padding: "12px 24px 0", position: "relative" }}>
+            <span style={{ position: "absolute", left: 36, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "var(--color-muted)", pointerEvents: "none", paddingTop: 12 }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search by name, URL, status, template…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ width: "100%", height: 38, padding: "0 36px 0 34px", borderRadius: 10, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 13, color: "var(--color-dark)", fontFamily: "inherit", boxSizing: "border-box", outline: "none" }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                style={{ position: "absolute", right: 36, top: "50%", transform: "translateY(-50%)", paddingTop: 12, background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "var(--color-muted)", lineHeight: 1 }}
+              >✕</button>
+            )}
+          </div>
+        )}
+
         {/* Tab bar */}
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 24px", display: "flex", gap: 0, marginTop: 16 }}>
           {TABS.map(t => (
@@ -239,6 +277,11 @@ export default function AdminPage() {
           {/* ── BUSINESSES TAB ── */}
           {tab === "businesses" && (
             <>
+              {q && !bizLoading && businesses.length > 0 && (
+                <p style={{ fontSize: 12, color: "var(--color-muted)", margin: "0 0 4px" }}>
+                  {filteredBusinesses.length} of {businesses.length} businesses
+                </p>
+              )}
               {bizLoading && <div style={{ textAlign: "center", padding: "60px 0", color: "var(--color-muted)", fontSize: 14 }}>Loading…</div>}
               {!bizLoading && businesses.length === 0 && (
                 <div style={{ textAlign: "center", padding: "60px 0" }}>
@@ -249,7 +292,13 @@ export default function AdminPage() {
                   </button>
                 </div>
               )}
-              {businesses.map(b => (
+              {!bizLoading && businesses.length > 0 && filteredBusinesses.length === 0 && (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <p style={{ fontSize: 14, color: "var(--color-muted)" }}>No businesses match "{searchQuery}"</p>
+                  <button onClick={() => setSearchQuery("")} style={{ marginTop: 8, height: 30, padding: "0 14px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Clear search</button>
+                </div>
+              )}
+              {filteredBusinesses.map(b => (
                 <BusinessRow
                   key={b.id} business={b} serviceCount={serviceCounts[b.id] || 0}
                   deleting={deleting === b.id} confirmDelete={deleteId === b.id}
