@@ -83,6 +83,27 @@ export async function enablePush(): Promise<EnablePushResult> {
   }
 }
 
+/** Unsubscribe this device. Safe to call from a normal click. */
+export async function disablePush(): Promise<"ok" | "error"> {
+  if (!pushSupported()) return "error";
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = await reg?.pushManager.getSubscription();
+    if (sub) {
+      const endpoint = sub.endpoint;
+      await sub.unsubscribe();
+      await fetch("/api/push/subscribe", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint }),
+      });
+    }
+    return "ok";
+  } catch {
+    return "error";
+  }
+}
+
 /**
  * On load: register the service worker and re-send any existing subscription
  * (handles reloads / re-installs). Does NOT prompt for permission — that now

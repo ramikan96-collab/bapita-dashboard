@@ -13,7 +13,7 @@ import {
 import CalendarSelectorPanel from "@/components/calendar/CalendarSelectorPanel";
 import { STATUS_LABEL, type BookingStatus } from "@/types";
 import { useNotifications } from "@/hooks/useNotifications";
-import { enablePush, usePushStatus } from "@/components/PushInit";
+import { enablePush, disablePush, usePushStatus } from "@/components/PushInit";
 
 // ─── Icons (inline SVG, no dep) ────────────────────────────────────────────
 // stroke-only, 24px, strokeWidth 1.5 per design system
@@ -287,7 +287,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const { notifications, unreadCount, markAllRead, deleteOne, deleteAll } = useNotifications();
+  const [pushHelpOpen, setPushHelpOpen] = useState(false);
+  const { notifications, unreadCount, refetch, markAllRead, deleteOne, deleteAll } = useNotifications();
   const { status: pushStatus, refresh: refreshPushStatus } = usePushStatus();
   const supabase = createClient();
 
@@ -306,6 +307,35 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     }
     refreshPushStatus();
   }
+
+  async function handlePushToggle() {
+    if (pushStatus === "enabled") {
+      const result = await disablePush();
+      showToast(
+        result === "ok" ? "Push notifications turned off" : "Couldn't turn off notifications",
+        result === "ok" ? "info" : "error"
+      );
+      refreshPushStatus();
+    } else {
+      await handleEnablePush();
+    }
+  }
+
+  // Open the notifications modal when arriving via a push click (?notifications=1).
+  // Read from window (not useSearchParams) to avoid a static-prerender bailout.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("notifications") === "1") {
+      setNotificationsOpen(true);
+      router.replace(pathname);
+    }
+  }, [pathname, router]);
+
+  // Always show the freshest list when the modal opens
+  useEffect(() => {
+    if (notificationsOpen) refetch();
+  }, [notificationsOpen, refetch]);
 
   const onCalendar = pathname === "/calendar";
 
@@ -1170,35 +1200,60 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {/* Push opt-in — requires a user tap (iOS rejects auto-prompts) */}
-            {(pushStatus === "disabled" || pushStatus === "needs-install") && (
-              <div style={{ margin: "0 16px 12px" }}>
-                {pushStatus === "needs-install" ? (
-                  <div
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10, padding: "12px 14px",
-                      borderRadius: 12, background: "var(--color-cream)",
-                      border: "1px solid var(--color-cream-2)", fontSize: 13, color: "var(--color-muted)",
-                    }}
-                  >
-                    <IconBell size={18} />
-                    Add Bapita to your home screen to get push notifications.
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleEnablePush}
-                    style={{
-                      width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
-                      gap: 8, height: 44, borderRadius: 12, background: "var(--wash-amber)",
-                      color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer",
-                    }}
-                  >
-                    <IconBell size={18} />
-                    Enable push notifications
-                  </button>
-                )}
+            {/* Push toggle — opt-in is a user gesture (iOS rejects auto-prompts) */}
+            <div
+              style={{
+                margin: "0 16px 12px", padding: "12px 14px", borderRadius: 12,
+                background: "var(--color-cream)", border: "1px solid var(--color-cream-2)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <IconBell size={18} />
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>
+                  Push on this device
+                </span>
+                {/* ? help */}
+                <button
+                  onClick={() => setPushHelpOpen((v) => !v)}
+                  aria-label="About push notifications"
+                  style={{
+                    width: 20, height: 20, borderRadius: 999, flexShrink: 0,
+                    border: "1.5px solid var(--color-muted)", color: "var(--color-muted)",
+                    background: "transparent", fontSize: 12, fontWeight: 700, lineHeight: 1,
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  ?
+                </button>
+                {/* Toggle switch */}
+                <button
+                  role="switch"
+                  aria-checked={pushStatus === "enabled"}
+                  disabled={pushStatus === "unsupported" || pushStatus === "loading"}
+                  onClick={handlePushToggle}
+                  style={{
+                    width: 44, height: 26, borderRadius: 999, border: "none", padding: 3,
+                    flexShrink: 0, display: "flex",
+                    justifyContent: pushStatus === "enabled" ? "flex-end" : "flex-start",
+                    background: pushStatus === "enabled" ? "var(--color-amber)" : "var(--color-cream-2)",
+                    opacity: pushStatus === "needs-install" ? 0.55 : 1,
+                    cursor: pushStatus === "unsupported" || pushStatus === "loading" ? "not-allowed" : "pointer",
+                    transition: "background 0.15s",
+                  }}
+                >
+                  <span style={{ width: 20, height: 20, borderRadius: 999, background: "#fff" }} />
+                </button>
               </div>
-            )}
+              {pushHelpOpen && (
+                <div style={{ marginTop: 10, fontSize: 12.5, lineHeight: 1.45, color: "var(--color-muted)" }}>
+                  {pushStatus === "needs-install"
+                    ? "Add Bapita to your home screen first. Then turn this on to get booking alerts on this device, even when the app is closed."
+                    : pushStatus === "unsupported"
+                      ? "This browser doesn't support push notifications."
+                      : "Turn on to get booking alerts on this device, even when Bapita is closed. Turn off to stop them here. Each device is separate."}
+                </div>
+              )}
+            </div>
 
             {/* List */}
             <div style={{ overflowY: "auto", flex: 1 }}>

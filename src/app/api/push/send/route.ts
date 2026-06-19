@@ -17,7 +17,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
-  await sendPush(business_id, { title, body: notifBody ?? "" });
+  // ?notifications=1 tells AppShell to open the notifications modal on load
+  await sendPush(business_id, {
+    title,
+    body: notifBody ?? "",
+    url: "/calendar?notifications=1",
+  });
 
   return NextResponse.json({ ok: true });
 }

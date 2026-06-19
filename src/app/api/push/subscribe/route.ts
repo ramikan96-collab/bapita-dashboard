@@ -34,3 +34,26 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(req: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const businessId = await getOwnerBusinessId(supabase, user.id);
+  if (!businessId) return NextResponse.json({ ok: true });
+
+  const { endpoint } = await req.json().catch(() => ({ endpoint: undefined }));
+
+  const service = createServiceClient();
+  let query = service
+    .from("push_subscriptions")
+    .delete()
+    .eq("business_id", businessId);
+  if (endpoint) query = query.eq("subscription_json->>endpoint", endpoint);
+  await query;
+
+  return NextResponse.json({ ok: true });
+}
