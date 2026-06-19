@@ -25,7 +25,7 @@ export function SectionLocation({ address, darkColor, accentColor, directionsLab
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ fontSize: 15, color: darkColor, lineHeight: 1.6 }}>{address}</div>
 
-      <div style={{ borderRadius: 12, overflow: "hidden", width: "100%", aspectRatio: "16/9" }}>
+      <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", width: "100%", aspectRatio: "16/9" }}>
         <iframe
           src={embedSrc}
           width="100%"
@@ -34,6 +34,13 @@ export function SectionLocation({ address, darkColor, accentColor, directionsLab
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
           title="Location map"
+        />
+        <a
+          href={mapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ position: "absolute", inset: 0 }}
+          aria-label="Open in Google Maps"
         />
       </div>
 
