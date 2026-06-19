@@ -1,16 +1,31 @@
 import webpush from "web-push";
 import { createServiceClient } from "@/lib/supabase/service";
 
-webpush.setVapidDetails(
-  "mailto:ramikan96@gmail.com",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+let vapidConfigured = false;
+
+// Configure VAPID lazily, at call time rather than module load. Doing it at
+// the top level crashes the build when the keys aren't present in the
+// environment (e.g. Preview deployments), since Next evaluates the module
+// while collecting page data.
+function ensureVapid(): boolean {
+  if (vapidConfigured) return true;
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  if (!publicKey || !privateKey) return false;
+  webpush.setVapidDetails("mailto:ramikan96@gmail.com", publicKey, privateKey);
+  vapidConfigured = true;
+  return true;
+}
 
 export async function sendPush(
   businessId: string,
   payload: { title: string; body: string; url?: string }
 ) {
+  if (!ensureVapid()) {
+    console.warn("sendPush: VAPID keys not configured, skipping push");
+    return;
+  }
+
   const supabase = createServiceClient();
   const { data: subs } = await supabase
     .from("push_subscriptions")
