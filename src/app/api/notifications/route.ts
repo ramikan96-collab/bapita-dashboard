@@ -21,3 +21,19 @@ export async function GET() {
 
   return NextResponse.json({ notifications: notifications ?? [], unreadCount, businessId });
 }
+
+export async function DELETE() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const businessId = await getOwnerBusinessId(supabase, user.id);
+  if (!businessId) return NextResponse.json({ ok: true });
+
+  await supabase
+    .from("notifications")
+    .delete()
+    .eq("business_id", businessId);
+
+  return NextResponse.json({ ok: true });
+}
