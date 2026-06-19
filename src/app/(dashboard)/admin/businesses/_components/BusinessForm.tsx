@@ -60,6 +60,7 @@ interface FormData {
   email:              string;
   instagram_url:      string;
   facebook_url:       string;
+  tiktok_url:         string;
   whatsapp_number:    string;
   google_review_link: string;
   google_maps_url:    string;
@@ -103,7 +104,7 @@ type Tab = "profile" | "gallery" | "services" | "plan" | "hours" | "reviews";
 const EMPTY_FORM: FormData = {
   name: "", name_he: "", slug: "", template_style: "classic", default_lang: "he",
   tagline: "", tagline_he: "", phone: "", address: "", email: "",
-  instagram_url: "", facebook_url: "", whatsapp_number: "",
+  instagram_url: "", facebook_url: "", tiktok_url: "", whatsapp_number: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
   about_text: "", about_text_he: "", accent_color: "",
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
@@ -162,6 +163,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           email:              b.email               || "",
           instagram_url:      b.instagram_url       || "",
           facebook_url:       b.facebook_url        || "",
+          tiktok_url:         (b as unknown as { tiktok_url?: string | null }).tiktok_url || "",
           whatsapp_number:    b.whatsapp_number     || "",
           google_review_link: b.google_review_link  || "",
           google_maps_url:    b.google_maps_url     || "",
@@ -280,6 +282,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       email:              form.email              || null,
       instagram_url:      form.instagram_url      || null,
       facebook_url:       form.facebook_url       || null,
+      tiktok_url:         form.tiktok_url         || null,
       whatsapp_number:    form.whatsapp_number    || null,
       google_review_link: form.google_review_link || null,
       google_maps_url:    form.google_maps_url    || null,
@@ -363,6 +366,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       email:              form.email              || null,
       instagram_url:      form.instagram_url      || null,
       facebook_url:       form.facebook_url       || null,
+      tiktok_url:         form.tiktok_url         || null,
       whatsapp_number:    form.whatsapp_number    || null,
       google_review_link: form.google_review_link || null,
       google_maps_url:    form.google_maps_url    || null,
@@ -756,6 +760,11 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   <Field label="Facebook">
                     <input value={form.facebook_url} onChange={e => set("facebook_url", e.target.value)} placeholder="https://facebook.com/studioavi" style={inputStyle} />
                   </Field>
+                  <Field label="TikTok">
+                    <input value={form.tiktok_url} onChange={e => set("tiktok_url", e.target.value)} placeholder="https://tiktok.com/@studioavi" style={inputStyle} />
+                  </Field>
+                </Row>
+                <Row>
                   <Field label="Google Review Link">
                     <input value={form.google_review_link} onChange={e => set("google_review_link", e.target.value)} placeholder="https://g.page/r/..." style={inputStyle} />
                   </Field>

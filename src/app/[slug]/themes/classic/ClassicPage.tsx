@@ -45,6 +45,9 @@ function WaIcon({ size = 20, color = "currentColor" }) {
 function FbIcon({ size = 16, color = "currentColor" }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>;
 }
+function TkIcon({ size = 16, color = "currentColor" }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.37 6.37 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.01a8.16 8.16 0 004.77 1.52V7.08a4.85 4.85 0 01-1-.39z"/></svg>;
+}
 
 interface Props { business: Business; services: Service[]; }
 
@@ -316,11 +319,12 @@ export function ClassicPage({ business, services }: Props) {
           {business.phone && (
             <a href={`tel:${business.phone}`} style={{ display: "block", fontSize: 13, color: C.dark, opacity: 0.5, textDecoration: "none", marginBottom: 14 }}>{business.phone}</a>
           )}
-          {(business.instagram_url || business.whatsapp_number || business.facebook_url) && (
+          {(business.instagram_url || business.whatsapp_number || business.facebook_url || business.tiktok_url) && (
             <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 14 }}>
               {business.instagram_url && <a href={business.instagram_url} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: "50%", background: C.cream2, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e=>{e.currentTarget.style.opacity="0.7"}} onMouseLeave={e=>{e.currentTarget.style.opacity="1"}}><IgIcon size={16} color={C.dark}/></a>}
               {business.whatsapp_number && <a href={`https://wa.me/${business.whatsapp_number.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: "50%", background: C.cream2, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e=>{e.currentTarget.style.opacity="0.7"}} onMouseLeave={e=>{e.currentTarget.style.opacity="1"}}><WaIcon size={16} color={C.dark}/></a>}
               {business.facebook_url && <a href={business.facebook_url} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: "50%", background: C.cream2, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e=>{e.currentTarget.style.opacity="0.7"}} onMouseLeave={e=>{e.currentTarget.style.opacity="1"}}><FbIcon size={16} color={C.dark}/></a>}
+              {business.tiktok_url && <a href={business.tiktok_url} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: "50%", background: C.cream2, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e=>{e.currentTarget.style.opacity="0.7"}} onMouseLeave={e=>{e.currentTarget.style.opacity="1"}}><TkIcon size={16} color={C.dark}/></a>}
             </div>
           )}
           <div style={{ fontSize: 12, color: C.dark, opacity: 0.38 }}>

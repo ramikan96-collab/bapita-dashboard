@@ -1153,6 +1153,7 @@ function WebsiteSection({
   const [defaultLang, setDefaultLang] = useState<"en" | "he">((business.default_lang as "en" | "he") || "en");
   const [images, setImages]           = useState<string[]>(business.gallery_images || []);
   const [showGallery, setShowGallery] = useState(business.show_gallery !== false);
+  const [tiktokUrl, setTiktokUrl]     = useState(business.tiktok_url || "");
   const [uploading, setUploading]     = useState(false);
   const [saving, setSaving]           = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -1162,8 +1163,10 @@ function WebsiteSection({
   const origLang        = (business.default_lang as "en" | "he") || "en";
   const origImages      = JSON.stringify(business.gallery_images || []);
   const origShowGallery = business.show_gallery !== false;
+  const origTiktokUrl   = business.tiktok_url || "";
   const dirty = slug !== origSlug || defaultLang !== origLang ||
-                JSON.stringify(images) !== origImages || showGallery !== origShowGallery;
+                JSON.stringify(images) !== origImages || showGallery !== origShowGallery ||
+                tiktokUrl !== origTiktokUrl;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty]);
@@ -1217,6 +1220,7 @@ function WebsiteSection({
       gallery_images:  images,
       hero_image_url:  images[0] || null,
       show_gallery:    showGallery,
+      tiktok_url:      tiktokUrl.trim() || null,
     }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast(getErrorMessage(error), "error"); return; }
@@ -1367,7 +1371,18 @@ function WebsiteSection({
         )}
       </SectionCard>
 
-      {/* Single Save button covers slug + language + gallery */}
+      {/* Social links */}
+      <SectionCard title="Social links">
+        <InputField
+          label="TikTok"
+          value={tiktokUrl}
+          onChange={setTiktokUrl}
+          placeholder="https://tiktok.com/@youraccount"
+          hint="Shown as an icon on your booking page. Leave blank to hide."
+        />
+      </SectionCard>
+
+      {/* Single Save button covers slug + language + gallery + social */}
       <SaveButton onClick={save} saving={saving} dirty={dirty} />
 
       {/* Reviews — individual adds/edits/deletes, own save per item */}

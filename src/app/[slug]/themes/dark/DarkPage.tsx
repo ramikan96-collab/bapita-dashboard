@@ -64,6 +64,9 @@ function WaIcon({ size = 20, color = "currentColor" }) {
 function FbIcon({ size = 16, color = "currentColor" }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>;
 }
+function TkIcon({ size = 16, color = "currentColor" }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.37 6.37 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.01a8.16 8.16 0 004.77 1.52V7.08a4.85 4.85 0 01-1-.39z"/></svg>;
+}
 
 // ─── Gold ornamental divider ──────────────────────────────────────────────────
 
@@ -460,11 +463,12 @@ export function DarkPage({ business, services }: Props) {
         {/* Footer */}
         <footer style={{ marginTop: 64, paddingTop: 32, borderTop: `1px solid ${D.border}`, textAlign: "center" }}>
           {business.phone && <a href={`tel:${business.phone}`} style={{ display: "block", fontSize: 13, color: D.muted, textDecoration: "none", marginBottom: 14 }}>{business.phone}</a>}
-          {(business.instagram_url || business.whatsapp_number || business.facebook_url) && (
+          {(business.instagram_url || business.whatsapp_number || business.facebook_url || business.tiktok_url) && (
             <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 20 }}>
               {business.instagram_url && <a href={business.instagram_url} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: 2, background: accent, display: "flex", alignItems: "center", justifyContent: "center", transition: "opacity 0.2s" }} onMouseEnter={e=>{e.currentTarget.style.opacity="0.75";}} onMouseLeave={e=>{e.currentTarget.style.opacity="1";}}><IgIcon size={16} color={D.bg}/></a>}
               {business.whatsapp_number && <a href={`https://wa.me/${business.whatsapp_number.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: 2, background: accent, display: "flex", alignItems: "center", justifyContent: "center", transition: "opacity 0.2s" }} onMouseEnter={e=>{e.currentTarget.style.opacity="0.75";}} onMouseLeave={e=>{e.currentTarget.style.opacity="1";}}><WaIcon size={16} color={D.bg}/></a>}
               {business.facebook_url && <a href={business.facebook_url} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: 2, background: accent, display: "flex", alignItems: "center", justifyContent: "center", transition: "opacity 0.2s" }} onMouseEnter={e=>{e.currentTarget.style.opacity="0.75";}} onMouseLeave={e=>{e.currentTarget.style.opacity="1";}}><FbIcon size={16} color={D.bg}/></a>}
+              {business.tiktok_url && <a href={business.tiktok_url} target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: 2, background: accent, display: "flex", alignItems: "center", justifyContent: "center", transition: "opacity 0.2s" }} onMouseEnter={e=>{e.currentTarget.style.opacity="0.75";}} onMouseLeave={e=>{e.currentTarget.style.opacity="1";}}><TkIcon size={16} color={D.bg}/></a>}
             </div>
           )}
           <div style={{ fontSize: 12, fontFamily: "'Oswald', sans-serif", letterSpacing: "0.08em", color: D.muted, textTransform: "uppercase" }}>

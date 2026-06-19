@@ -61,6 +61,7 @@ export interface Business {
   address: string | null;
   instagram_url: string | null;
   facebook_url: string | null;
+  tiktok_url: string | null;
   whatsapp_number: string | null;
   google_review_link: string | null;
   google_maps_url: string | null;
