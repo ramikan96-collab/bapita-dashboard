@@ -10,7 +10,19 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  await supabase.from("notifications").delete().eq("id", id);
+  const { data: biz } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!biz) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  await supabase
+    .from("notifications")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", biz.id);
 
   return NextResponse.json({ ok: true });
 }
