@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import BookingShell from "./BookingShell";
 import type { Business, Service } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 function getPublicClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
