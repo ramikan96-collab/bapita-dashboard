@@ -38,33 +38,20 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10,
   let galleryNode: React.ReactNode;
 
   if (layout === "masonry") {
-    const col1 = visible.filter((_, i) => i % 2 === 0);
-    const col2 = visible.filter((_, i) => i % 2 === 1);
-    const h1 = [220, 160, 220, 160, 220];
-    const h2 = [160, 220, 160, 220, 160];
+    // True CSS-columns masonry: images keep their natural aspect ratio and tile
+    // without fixed heights, so mixed portrait/landscape uploads never leave the
+    // ragged empty gaps the old fixed-height columns produced.
     galleryNode = (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {col1.map((photo, i) => {
-            const idx = i * 2;
-            return (
-              <div key={i} style={{ height: h1[i % h1.length], borderRadius, overflow: "hidden" }}>
-                <img src={photo} alt="" style={imgStyle} onClick={() => setLightboxIdx(idx)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
-              </div>
-            );
-          })}
+      <>
+        <style>{`.sg-masonry{column-count:2;column-gap:8px}.sg-masonry>div{break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:8px}`}</style>
+        <div className="sg-masonry">
+          {visible.map((photo, i) => (
+            <div key={i} style={{ borderRadius, overflow: "hidden" }}>
+              <img src={photo} alt="" style={{ ...imgStyle, height: "auto" }} onClick={() => setLightboxIdx(i)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
+            </div>
+          ))}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {col2.map((photo, i) => {
-            const idx = i * 2 + 1;
-            return (
-              <div key={i} style={{ height: h2[i % h2.length], borderRadius, overflow: "hidden" }}>
-                <img src={photo} alt="" style={imgStyle} onClick={() => setLightboxIdx(idx)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      </>
     );
   } else if (layout === "grid") {
     galleryNode = (
