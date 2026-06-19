@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export type AppNotification = {
   id: string;
@@ -14,6 +15,7 @@ export type AppNotification = {
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [businessId, setBusinessId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -23,6 +25,7 @@ export function useNotifications() {
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications ?? []);
+        if (data.businessId) setBusinessId(data.businessId);
       }
     } catch {
       // silently ignore network errors
@@ -31,13 +34,55 @@ export function useNotifications() {
     }
   }, []);
 
+  // initial fetch + 60s poll as fallback if Realtime drops
   useEffect(() => {
     refetch();
-    intervalRef.current = setInterval(refetch, 30_000);
+    intervalRef.current = setInterval(refetch, 60_000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [refetch]);
+
+  // Realtime — set up once businessId is known
+  useEffect(() => {
+    if (!businessId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`notifications:${businessId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `business_id=eq.${businessId}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setNotifications((prev) =>
+              [payload.new as AppNotification, ...prev].slice(0, 30)
+            );
+          } else if (payload.eventType === "DELETE") {
+            setNotifications((prev) =>
+              prev.filter((n) => n.id !== (payload.old as { id: string }).id)
+            );
+          } else if (payload.eventType === "UPDATE") {
+            setNotifications((prev) =>
+              prev.map((n) =>
+                n.id === (payload.new as AppNotification).id
+                  ? (payload.new as AppNotification)
+                  : n
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [businessId]);
 
   const markAllRead = useCallback(async () => {
     setNotifications((prev) =>
@@ -51,12 +96,7 @@ export function useNotifications() {
     await fetch(`/api/notifications/${id}`, { method: "DELETE" });
   }, []);
 
-  const deleteAll = useCallback(async () => {
-    setNotifications([]);
-    await fetch("/api/notifications", { method: "DELETE" });
-  }, []);
-
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
-  return { notifications, unreadCount, loading, refetch, markAllRead, deleteOne, deleteAll };
+  return { notifications, unreadCount, loading, refetch, markAllRead, deleteOne };
 }
