@@ -1111,17 +1111,22 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             onClick={() => setNotificationsOpen(false)}
           />
           <div
-            className="fixed bottom-0 start-0 end-0 z-50 flex flex-col"
             style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 50,
+              width: "min(420px, 92vw)",
+              maxHeight: "70dvh",
               background: "var(--color-surface)",
-              borderRadius: "20px 20px 0 0",
-              paddingBottom: "env(safe-area-inset-bottom)",
-              maxHeight: "80dvh",
+              borderRadius: 20,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              boxShadow: "0 8px 40px rgba(30,26,20,0.18)",
             }}
           >
-            {/* Handle */}
-            <div style={{ width: 40, height: 4, borderRadius: 99, background: "var(--color-cream-2)", margin: "12px auto 0" }} />
-
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px 10px" }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-dark)" }}>Notifications</span>
