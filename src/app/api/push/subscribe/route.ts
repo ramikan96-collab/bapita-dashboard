@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getOwnerBusinessId } from "@/lib/business";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -9,12 +10,8 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { data: biz } = await supabase
-    .from("businesses")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-  if (!biz) return NextResponse.json({ error: "no business" }, { status: 404 });
+  const businessId = await getOwnerBusinessId(supabase, user.id);
+  if (!businessId) return NextResponse.json({ error: "no business" }, { status: 404 });
 
   const { subscription } = await req.json();
   if (!subscription?.endpoint) {
@@ -27,11 +24,11 @@ export async function POST(req: NextRequest) {
   await service
     .from("push_subscriptions")
     .delete()
-    .eq("business_id", biz.id)
+    .eq("business_id", businessId)
     .eq("subscription_json->>endpoint", subscription.endpoint);
 
   await service.from("push_subscriptions").insert({
-    business_id: biz.id,
+    business_id: businessId,
     subscription_json: subscription,
   });
 
