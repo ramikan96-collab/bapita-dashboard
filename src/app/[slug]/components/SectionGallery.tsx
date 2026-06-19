@@ -76,25 +76,45 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10,
     // height; both columns fill it. (A definite height on the main image alone
     // left the thumbnail column's percentage heights unresolved, so it grew to
     // the images' natural size and broke the layout.)
-    const [main, ...rest] = visible;
+    // The featured row holds the hero + up to 3 matched-height thumbnails. Any
+    // extra photos (e.g. after "show more") flow into a grid BELOW the row so the
+    // section grows downward instead of squeezing more thumbnails into the same
+    // fixed-height column.
+    const main       = visible[0];
+    const sideThumbs = visible.slice(1, 4);
+    const overflow   = visible.slice(4);
     galleryNode = (
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: rest.length ? "2fr 1fr" : "1fr",
-        gap: 8,
-        aspectRatio: rest.length ? "16 / 10" : "4 / 3",
-      }}>
-        <div style={{ borderRadius, overflow: "hidden" }}>
-          <img src={main} alt="" style={imgStyle} onClick={() => setLightboxIdx(0)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
-        </div>
-        {rest.length > 0 && (
-          <div style={{ display: "grid", gridTemplateRows: `repeat(${rest.length}, 1fr)`, gap: 8, minHeight: 0 }}>
-            {rest.map((photo, i) => (
-              <div key={i} style={{ borderRadius, overflow: "hidden", minHeight: 0 }}>
-                <img src={photo} alt="" style={imgStyle} onClick={() => setLightboxIdx(i + 1)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
-              </div>
-            ))}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: sideThumbs.length ? "2fr 1fr" : "1fr",
+          gap: 8,
+          aspectRatio: sideThumbs.length ? "16 / 10" : "4 / 3",
+        }}>
+          <div style={{ borderRadius, overflow: "hidden" }}>
+            <img src={main} alt="" style={imgStyle} onClick={() => setLightboxIdx(0)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
           </div>
+          {sideThumbs.length > 0 && (
+            <div style={{ display: "grid", gridTemplateRows: `repeat(${sideThumbs.length}, 1fr)`, gap: 8, minHeight: 0 }}>
+              {sideThumbs.map((photo, i) => (
+                <div key={i} style={{ borderRadius, overflow: "hidden", minHeight: 0 }}>
+                  <img src={photo} alt="" style={imgStyle} onClick={() => setLightboxIdx(i + 1)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {overflow.length > 0 && (
+          <>
+            <style>{`.sg-feat-more{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(min-width:600px){.sg-feat-more{grid-template-columns:1fr 1fr 1fr}}`}</style>
+            <div className="sg-feat-more">
+              {overflow.map((photo, i) => (
+                <div key={i} style={{ borderRadius, overflow: "hidden", aspectRatio: "4/3", position: "relative" }}>
+                  <img src={photo} alt="" style={{ ...imgStyle, position: "absolute", inset: 0 }} onClick={() => setLightboxIdx(i + 4)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     );
