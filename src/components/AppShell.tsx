@@ -286,7 +286,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const { notifications, unreadCount, markAllRead, deleteOne } = useNotifications();
+  const { notifications, unreadCount, markAllRead, deleteOne, deleteAll } = useNotifications();
   const supabase = createClient();
 
   const onCalendar = pathname === "/calendar";
@@ -359,7 +359,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
         {/* Bell — desktop top bar */}
         <button
-          onClick={() => { setNotificationsOpen(true); if (unreadCount > 0) markAllRead(); }}
+          onClick={() => { setNotificationsOpen(true); }}
           className="relative p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
           aria-label="Notifications"
         >
@@ -412,7 +412,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
         {/* Bell — mobile top bar */}
         <button
-          onClick={() => { setNotificationsOpen(true); if (unreadCount > 0) markAllRead(); }}
+          onClick={() => { setNotificationsOpen(true); }}
           className="relative rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors shrink-0"
           style={{ padding: 14, marginInlineEnd: 20 }}
           aria-label="Notifications"
@@ -912,7 +912,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: "var(--color-cream-2)" }}>
           <Wordmark />
           <button
-            onClick={() => { setDrawerOpen(false); setNotificationsOpen(true); if (unreadCount > 0) markAllRead(); }}
+            onClick={() => { setDrawerOpen(false); setNotificationsOpen(true); }}
             className="relative p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors"
             aria-label="Notifications"
           >
@@ -1162,14 +1162,24 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px 10px" }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-dark)" }}>Notifications</span>
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllRead}
-                  style={{ fontSize: 13, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                >
-                  Mark all read
-                </button>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllRead}
+                    style={{ fontSize: 13, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    Mark all read
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button
+                    onClick={deleteAll}
+                    style={{ fontSize: 13, fontWeight: 600, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* List */}
