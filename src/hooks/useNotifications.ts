@@ -51,7 +51,12 @@ export function useNotifications() {
     await fetch(`/api/notifications/${id}`, { method: "DELETE" });
   }, []);
 
+  const deleteAll = useCallback(async () => {
+    setNotifications([]);
+    await fetch("/api/notifications", { method: "DELETE" });
+  }, []);
+
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
-  return { notifications, unreadCount, loading, refetch, markAllRead, deleteOne };
+  return { notifications, unreadCount, loading, refetch, markAllRead, deleteOne, deleteAll };
 }
