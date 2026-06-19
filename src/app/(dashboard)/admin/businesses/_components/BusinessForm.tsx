@@ -338,8 +338,17 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     } else {
       if (!form.slug.trim()) { setError("Slug is required"); setSaving(false); return; }
       const payload = { ...basePayload, slug: form.slug.trim(), template_style: form.template_style };
-      const { error: e } = await supabase.from("businesses").update(payload).eq("id", businessId!);
-      if (e) { setError(e.message); setSaving(false); return; }
+      // Go through the admin service-role route: admins edit businesses they don't
+      // own, which RLS would silently no-op via the browser client.
+      const res = await fetch(`/api/admin/update-business/${businessId!}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error || "Failed to save"); setSaving(false); return;
+      }
       setSaving(false); setSaved(true); setDirty(false);
       setTimeout(() => setSaved(false), 2000);
       onSaved(form.slug);
