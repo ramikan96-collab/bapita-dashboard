@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { PushInit } from "@/components/PushInit";
 
 const heebo = Heebo({
   subsets: ["latin"],
@@ -21,7 +22,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="he" className={`${heebo.className} h-full`}>
-      <body className="h-full">{children}</body>
+      <body className="h-full">
+        {children}
+        <PushInit />
+      </body>
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=G-XESDNYB9T6"
         strategy="afterInteractive"
