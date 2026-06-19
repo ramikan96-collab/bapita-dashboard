@@ -286,7 +286,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const { notifications, unreadCount, markAllRead, deleteOne, deleteAll } = useNotifications();
+  const { notifications, unreadCount, markAllRead, deleteOne } = useNotifications();
   const supabase = createClient();
 
   const onCalendar = pathname === "/calendar";
@@ -1111,55 +1111,28 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             onClick={() => setNotificationsOpen(false)}
           />
           <div
+            className="fixed bottom-0 start-0 end-0 z-50 flex flex-col"
             style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              zIndex: 50,
-              width: "min(420px, 92vw)",
-              maxHeight: "70dvh",
               background: "var(--color-surface)",
-              borderRadius: 20,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-              boxShadow: "0 8px 40px rgba(30,26,20,0.18)",
+              borderRadius: "20px 20px 0 0",
+              paddingBottom: "env(safe-area-inset-bottom)",
+              maxHeight: "80dvh",
             }}
           >
+            {/* Handle */}
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: "var(--color-cream-2)", margin: "12px auto 0" }} />
+
             {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px 10px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px 10px" }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-dark)" }}>Notifications</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                {unreadCount > 0 && (
-                  <button
-                    onClick={markAllRead}
-                    style={{ fontSize: 13, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}
-                  >
-                    Mark all read
-                  </button>
-                )}
-                {notifications.length > 0 && (
-                  <button
-                    onClick={deleteAll}
-                    style={{
-                      fontSize: 12, fontWeight: 600,
-                      color: "#EF4444",
-                      background: "rgba(239,68,68,0.07)",
-                      border: "1px solid rgba(239,68,68,0.18)",
-                      borderRadius: 8,
-                      cursor: "pointer",
-                      padding: "5px 10px",
-                      lineHeight: 1,
-                      transition: "background 0.15s",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.14)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.07)"; }}
-                  >
-                    Delete all
-                  </button>
-                )}
-              </div>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllRead}
+                  style={{ fontSize: 13, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  Mark all read
+                </button>
+              )}
             </div>
 
             {/* List */}
