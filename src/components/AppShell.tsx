@@ -13,6 +13,7 @@ import {
 import CalendarSelectorPanel from "@/components/calendar/CalendarSelectorPanel";
 import { STATUS_LABEL, type BookingStatus } from "@/types";
 import { useNotifications } from "@/hooks/useNotifications";
+import { enablePush, usePushStatus } from "@/components/PushInit";
 
 // ─── Icons (inline SVG, no dep) ────────────────────────────────────────────
 // stroke-only, 24px, strokeWidth 1.5 per design system
@@ -287,7 +288,24 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const [searchInput, setSearchInput] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { notifications, unreadCount, markAllRead, deleteOne, deleteAll } = useNotifications();
+  const { status: pushStatus, refresh: refreshPushStatus } = usePushStatus();
   const supabase = createClient();
+
+  async function handleEnablePush() {
+    const result = await enablePush();
+    if (result === "ok") {
+      showToast("Push notifications enabled", "success");
+    } else if (result === "denied") {
+      showToast("Notifications blocked — enable them in your browser settings", "error");
+    } else if (result === "needs-install") {
+      showToast("Add Bapita to your home screen first, then enable notifications", "info");
+    } else if (result === "unsupported") {
+      showToast("This device doesn't support push notifications", "error");
+    } else {
+      showToast("Couldn't enable notifications — try again", "error");
+    }
+    refreshPushStatus();
+  }
 
   const onCalendar = pathname === "/calendar";
 
@@ -350,29 +368,13 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         {onCalendar && (
           <button
             onClick={() => window.print()}
-            className="p-2 me-1 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
+            className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
             aria-label="Print"
           >
             <IconPrint size={18} />
           </button>
         )}
-
-        {/* Bell — desktop top bar */}
-        <button
-          onClick={() => { setNotificationsOpen(true); }}
-          className="relative p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
-          aria-label="Notifications"
-        >
-          <IconBell size={20} />
-          {unreadCount > 0 && (
-            <span
-              className="absolute top-1 end-1 flex items-center justify-center rounded-full text-white font-bold"
-              style={{ minWidth: 16, height: 16, fontSize: 10, background: "var(--color-amber)", padding: "0 3px" }}
-            >
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          )}
-        </button>
+        {/* Notifications bell lives in the hamburger drawer only */}
       </div>
 
       {/* ─── Mobile Top Bar ───────────────────────────────────────────── */}
@@ -410,23 +412,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           </>
         )}
 
-        {/* Bell — mobile top bar */}
-        <button
-          onClick={() => { setNotificationsOpen(true); }}
-          className="relative rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors shrink-0"
-          style={{ padding: 14, marginInlineEnd: 20 }}
-          aria-label="Notifications"
-        >
-          <IconBell size={22} />
-          {unreadCount > 0 && (
-            <span
-              className="absolute top-2 end-2 flex items-center justify-center rounded-full text-white font-bold"
-              style={{ minWidth: 16, height: 16, fontSize: 10, background: "var(--color-amber)", padding: "0 3px" }}
-            >
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          )}
-        </button>
+        {/* Spacer mirrors the hamburger so the wordmark stays centered.
+            Notifications bell lives in the hamburger drawer only. */}
+        <div className="shrink-0" style={{ width: 24, padding: 14, marginInlineEnd: 20 }} aria-hidden />
       </div>
 
       {/* ─── Mobile Calendar Toolbar (calendar-only) ─────────────────── */}
@@ -1181,6 +1169,36 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 )}
               </div>
             </div>
+
+            {/* Push opt-in — requires a user tap (iOS rejects auto-prompts) */}
+            {(pushStatus === "disabled" || pushStatus === "needs-install") && (
+              <div style={{ margin: "0 16px 12px" }}>
+                {pushStatus === "needs-install" ? (
+                  <div
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10, padding: "12px 14px",
+                      borderRadius: 12, background: "var(--color-cream)",
+                      border: "1px solid var(--color-cream-2)", fontSize: 13, color: "var(--color-muted)",
+                    }}
+                  >
+                    <IconBell size={18} />
+                    Add Bapita to your home screen to get push notifications.
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleEnablePush}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+                      gap: 8, height: 44, borderRadius: 12, background: "var(--wash-amber)",
+                      color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer",
+                    }}
+                  >
+                    <IconBell size={18} />
+                    Enable push notifications
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* List */}
             <div style={{ overflowY: "auto", flex: 1 }}>
