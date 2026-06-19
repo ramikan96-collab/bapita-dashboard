@@ -19,9 +19,23 @@ export function SectionLocation({ address, darkColor, accentColor, directionsLab
   const fallbackMapsUrl = `https://maps.google.com/?q=${encodeURIComponent(address)}`;
   const mapsUrl = isSafeUrl(googleMapsUrl) ? googleMapsUrl : fallbackMapsUrl;
 
+  const embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ fontSize: 15, color: darkColor, lineHeight: 1.6 }}>{address}</div>
+
+      <div style={{ borderRadius: 12, overflow: "hidden", width: "100%", aspectRatio: "16/9" }}>
+        <iframe
+          src={embedSrc}
+          width="100%"
+          height="100%"
+          style={{ border: 0, display: "block" }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title="Location map"
+        />
+      </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {/* Google Maps button */}
