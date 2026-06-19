@@ -12,6 +12,7 @@ import {
 } from "@/components/calendar/CalendarChrome";
 import CalendarSelectorPanel from "@/components/calendar/CalendarSelectorPanel";
 import { STATUS_LABEL, type BookingStatus } from "@/types";
+import { useNotifications } from "@/hooks/useNotifications";
 
 // ─── Icons (inline SVG, no dep) ────────────────────────────────────────────
 // stroke-only, 24px, strokeWidth 1.5 per design system
@@ -165,6 +166,33 @@ function IconAdmin({ size = 20 }: IconProps) {
   );
 }
 
+function IconBell({ size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+    </svg>
+  );
+}
+
+function IconXSmall({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  );
+}
+
+function IconRefresh({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 4 23 10 17 10"></polyline>
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+    </svg>
+  );
+}
+
 function IconExtras({ size = 20 }: IconProps) {
   // sparkles — "the store of upgrades"
   return (
@@ -173,6 +201,18 @@ function IconExtras({ size = 20 }: IconProps) {
       <path d="M19 14l.7 1.8 1.8.7-1.8.7L19 19l-.7-1.8-1.8-.7 1.8-.7L19 14z"></path>
     </svg>
   );
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function timeAgo(iso: string): string {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
 }
 
 // Brand mark — inlined from bapita/v2/.../img/favicon.svg
@@ -245,6 +285,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const [viewSheetOpen, setViewSheetOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const { notifications, unreadCount, markAllRead, deleteOne } = useNotifications();
   const supabase = createClient();
 
   const onCalendar = pathname === "/calendar";
@@ -832,9 +874,30 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         role="dialog"
         aria-label="Navigation menu"
       >
-        {/* Bapita wordmark at top */}
-        <div className="px-5 py-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
+        {/* Bapita wordmark + bell */}
+        <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: "var(--color-cream-2)" }}>
           <Wordmark />
+          <button
+            onClick={() => { setDrawerOpen(false); setNotificationsOpen(true); if (unreadCount > 0) markAllRead(); }}
+            className="relative p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors"
+            aria-label="Notifications"
+          >
+            <IconBell size={20} />
+            {unreadCount > 0 && (
+              <span
+                className="absolute top-1 end-1 flex items-center justify-center rounded-full text-white font-bold"
+                style={{
+                  minWidth: 16, height: 16,
+                  padding: "0 3px",
+                  fontSize: 10,
+                  background: "var(--color-amber)",
+                  lineHeight: 1,
+                }}
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Nav items */}
@@ -1034,6 +1097,105 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 calendarFilter={chrome.calendarFilter}
                 setCalendarFilter={chrome.setCalendarFilter}
               />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ─── Notifications Sheet ─────────────────────────────────────── */}
+      {notificationsOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            style={{ background: "rgba(30,26,20,0.4)" }}
+            onClick={() => setNotificationsOpen(false)}
+          />
+          <div
+            className="fixed bottom-0 start-0 end-0 z-50 flex flex-col"
+            style={{
+              background: "var(--color-surface)",
+              borderRadius: "20px 20px 0 0",
+              paddingBottom: "env(safe-area-inset-bottom)",
+              maxHeight: "80dvh",
+            }}
+          >
+            {/* Handle */}
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: "var(--color-cream-2)", margin: "12px auto 0" }} />
+
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px 10px" }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-dark)" }}>Notifications</span>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllRead}
+                  style={{ fontSize: 13, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  Mark all read
+                </button>
+              )}
+            </div>
+
+            {/* List */}
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {notifications.length === 0 ? (
+                <div style={{ padding: "32px 24px", textAlign: "center", color: "var(--color-muted)", fontSize: 14 }}>
+                  No notifications yet
+                </div>
+              ) : (
+                <div style={{ margin: "0 16px 16px", borderRadius: 16, overflow: "hidden", border: "1px solid var(--color-cream-2)" }}>
+                  {notifications.map((n, i) => {
+                    const isUnread = !n.read_at;
+                    const iconColor =
+                      n.type === "booking_created" ? "var(--color-amber)" :
+                      n.type === "booking_cancelled" ? "#EF4444" :
+                      "var(--color-muted)";
+                    const Icon =
+                      n.type === "booking_created" ? IconCalendar :
+                      n.type === "booking_cancelled" ? IconXSmall :
+                      IconRefresh;
+                    return (
+                      <div key={n.id}>
+                        {i > 0 && <div style={{ height: 1, background: "var(--color-cream-2)" }} />}
+                        <div
+                          style={{
+                            display: "flex", alignItems: "center", gap: 12,
+                            padding: "14px 16px",
+                            background: isUnread ? "rgba(232,146,10,0.04)" : "var(--color-surface)",
+                            borderInlineStart: isUnread ? "3px solid var(--color-amber)" : "3px solid transparent",
+                          }}
+                        >
+                          {/* Type icon */}
+                          <span style={{ color: iconColor, flexShrink: 0 }}>
+                            <Icon size={18} />
+                          </span>
+                          {/* Content */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: isUnread ? 600 : 400, color: "var(--color-dark)", marginBottom: 2, lineHeight: 1.3 }}>
+                              {n.title}
+                            </div>
+                            <div style={{ fontSize: 12, color: "var(--color-muted)", lineHeight: 1.3 }}>
+                              {n.body}
+                            </div>
+                          </div>
+                          {/* Time + delete */}
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                            <span style={{ fontSize: 11, color: "var(--color-muted)", whiteSpace: "nowrap" }}>
+                              {timeAgo(n.created_at)}
+                            </span>
+                            <button
+                              onClick={() => deleteOne(n.id)}
+                              style={{ color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", lineHeight: 1 }}
+                              aria-label="Delete notification"
+                            >
+                              <IconXSmall size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </>
