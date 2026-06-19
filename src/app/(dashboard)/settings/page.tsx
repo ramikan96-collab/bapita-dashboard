@@ -1149,24 +1149,39 @@ function WebsiteSection({
   const { showToast } = useToast();
 
   // ── All editable state ─────────────────────────────────────────────────────
-  const [slug, setSlug]               = useState(business.slug || "");
-  const [defaultLang, setDefaultLang] = useState<"en" | "he">((business.default_lang as "en" | "he") || "en");
-  const [images, setImages]           = useState<string[]>(business.gallery_images || []);
-  const [showGallery, setShowGallery] = useState(business.show_gallery !== false);
-  const [tiktokUrl, setTiktokUrl]     = useState(business.tiktok_url || "");
-  const [uploading, setUploading]     = useState(false);
-  const [saving, setSaving]           = useState(false);
+  const [slug, setSlug]                       = useState(business.slug || "");
+  const [defaultLang, setDefaultLang]         = useState<"en" | "he">((business.default_lang as "en" | "he") || "en");
+  const [images, setImages]                   = useState<string[]>(business.gallery_images || []);
+  const [showGallery, setShowGallery]         = useState(business.show_gallery !== false);
+  const [tiktokUrl, setTiktokUrl]             = useState(business.tiktok_url || "");
+  const [instagramUrl, setInstagramUrl]       = useState(business.instagram_url || "");
+  const [facebookUrl, setFacebookUrl]         = useState(business.facebook_url || "");
+  const [whatsappNumber, setWhatsappNumber]   = useState(business.whatsapp_number || "");
+  const [googleReviewLink, setGoogleReviewLink] = useState(business.google_review_link || "");
+  const [googleMapsUrl, setGoogleMapsUrl]     = useState(business.google_maps_url || "");
+  const [wazeUrl, setWazeUrl]                 = useState(business.waze_url || "");
+  const [uploading, setUploading]             = useState(false);
+  const [saving, setSaving]                   = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── Dirty detection (all fields together) ─────────────────────────────────
-  const origSlug        = business.slug || "";
-  const origLang        = (business.default_lang as "en" | "he") || "en";
-  const origImages      = JSON.stringify(business.gallery_images || []);
-  const origShowGallery = business.show_gallery !== false;
-  const origTiktokUrl   = business.tiktok_url || "";
+  const origSlug             = business.slug || "";
+  const origLang             = (business.default_lang as "en" | "he") || "en";
+  const origImages           = JSON.stringify(business.gallery_images || []);
+  const origShowGallery      = business.show_gallery !== false;
+  const origTiktokUrl        = business.tiktok_url || "";
+  const origInstagramUrl     = business.instagram_url || "";
+  const origFacebookUrl      = business.facebook_url || "";
+  const origWhatsappNumber   = business.whatsapp_number || "";
+  const origGoogleReviewLink = business.google_review_link || "";
+  const origGoogleMapsUrl    = business.google_maps_url || "";
+  const origWazeUrl          = business.waze_url || "";
   const dirty = slug !== origSlug || defaultLang !== origLang ||
                 JSON.stringify(images) !== origImages || showGallery !== origShowGallery ||
-                tiktokUrl !== origTiktokUrl;
+                tiktokUrl !== origTiktokUrl || instagramUrl !== origInstagramUrl ||
+                facebookUrl !== origFacebookUrl || whatsappNumber !== origWhatsappNumber ||
+                googleReviewLink !== origGoogleReviewLink || googleMapsUrl !== origGoogleMapsUrl ||
+                wazeUrl !== origWazeUrl;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty]);
@@ -1215,12 +1230,18 @@ function WebsiteSection({
       setSlug(finalSlug);
     }
     const { error } = await supabase.from("businesses").update({
-      slug:            finalSlug,
-      default_lang:    defaultLang,
-      gallery_images:  images,
-      hero_image_url:  images[0] || null,
-      show_gallery:    showGallery,
-      tiktok_url:      tiktokUrl.trim() || null,
+      slug:               finalSlug,
+      default_lang:       defaultLang,
+      gallery_images:     images,
+      hero_image_url:     images[0] || null,
+      show_gallery:       showGallery,
+      tiktok_url:         tiktokUrl.trim() || null,
+      instagram_url:      instagramUrl.trim() || null,
+      facebook_url:       facebookUrl.trim() || null,
+      whatsapp_number:    whatsappNumber.trim() || null,
+      google_review_link: googleReviewLink.trim() || null,
+      google_maps_url:    googleMapsUrl.trim() || null,
+      waze_url:           wazeUrl.trim() || null,
     }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast(getErrorMessage(error), "error"); return; }
@@ -1373,13 +1394,14 @@ function WebsiteSection({
 
       {/* Social links */}
       <SectionCard title="Social links">
-        <InputField
-          label="TikTok"
-          value={tiktokUrl}
-          onChange={setTiktokUrl}
-          placeholder="https://tiktok.com/@youraccount"
-          hint="Shown as an icon on your booking page. Leave blank to hide."
-        />
+        <p style={{ fontSize: 12, color: "var(--color-muted)", margin: "0 0 4px" }}>All links shown as icons on your booking page. Leave blank to hide.</p>
+        <InputField label="WhatsApp number" value={whatsappNumber} onChange={setWhatsappNumber} placeholder="+972501234567" hint="Customers can tap to message you directly" />
+        <InputField label="Instagram" value={instagramUrl} onChange={setInstagramUrl} placeholder="https://instagram.com/youraccount" />
+        <InputField label="Facebook" value={facebookUrl} onChange={setFacebookUrl} placeholder="https://facebook.com/youraccount" />
+        <InputField label="TikTok" value={tiktokUrl} onChange={setTiktokUrl} placeholder="https://tiktok.com/@youraccount" />
+        <InputField label="Google Review link" value={googleReviewLink} onChange={setGoogleReviewLink} placeholder="https://g.page/r/..." hint="Link customers click to leave you a Google review" />
+        <InputField label="Google Maps" value={googleMapsUrl} onChange={setGoogleMapsUrl} placeholder="https://maps.google.com/?q=..." />
+        <InputField label="Waze" value={wazeUrl} onChange={setWazeUrl} placeholder="https://waze.com/ul?ll=..." />
       </SectionCard>
 
       {/* Single Save button covers slug + language + gallery + social */}
