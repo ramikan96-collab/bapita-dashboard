@@ -71,18 +71,27 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10,
       </>
     );
   } else {
-    // featured: 2fr main + 1fr stack
+    // featured: big main image + a matched-height column of thumbnails.
+    // The aspectRatio lives on the grid container so the row gets one definite
+    // height; both columns fill it. (A definite height on the main image alone
+    // left the thumbnail column's percentage heights unresolved, so it grew to
+    // the images' natural size and broke the layout.)
     const [main, ...rest] = visible;
     galleryNode = (
-      <div style={{ display: "grid", gridTemplateColumns: rest.length ? "2fr 1fr" : "1fr", gap: 8 }}>
-        <div style={{ borderRadius, overflow: "hidden", aspectRatio: "4/3" }}>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: rest.length ? "2fr 1fr" : "1fr",
+        gap: 8,
+        aspectRatio: rest.length ? "16 / 10" : "4 / 3",
+      }}>
+        <div style={{ borderRadius, overflow: "hidden" }}>
           <img src={main} alt="" style={imgStyle} onClick={() => setLightboxIdx(0)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
         </div>
         {rest.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateRows: `repeat(${rest.length}, 1fr)`, gap: 8, minHeight: 0 }}>
             {rest.map((photo, i) => (
-              <div key={i} style={{ borderRadius, overflow: "hidden", flex: 1, minHeight: 80 }}>
-                <img src={photo} alt="" style={{ ...imgStyle, height: "100%" }} onClick={() => setLightboxIdx(i + 1)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
+              <div key={i} style={{ borderRadius, overflow: "hidden", minHeight: 0 }}>
+                <img src={photo} alt="" style={imgStyle} onClick={() => setLightboxIdx(i + 1)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
               </div>
             ))}
           </div>
