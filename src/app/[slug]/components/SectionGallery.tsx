@@ -38,16 +38,16 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10,
   let galleryNode: React.ReactNode;
 
   if (layout === "masonry") {
-    // True CSS-columns masonry: images keep their natural aspect ratio and tile
-    // without fixed heights, so mixed portrait/landscape uploads never leave the
-    // ragged empty gaps the old fixed-height columns produced.
+    // Clean theme: an airy, uniform square grid. Every image fills a fixed-ratio
+    // cell (object-fit: cover) so mixed portrait/landscape uploads always crop to
+    // a consistent, premium-looking tile — no ragged heights, no gaps.
     galleryNode = (
       <>
-        <style>{`.sg-masonry{column-count:2;column-gap:8px}.sg-masonry>div{break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:8px}`}</style>
-        <div className="sg-masonry">
+        <style>{`.sg-clean{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}@media(min-width:680px){.sg-clean{grid-template-columns:repeat(3,1fr)}}`}</style>
+        <div className="sg-clean">
           {visible.map((photo, i) => (
-            <div key={i} style={{ borderRadius, overflow: "hidden" }}>
-              <img src={photo} alt="" style={{ ...imgStyle, height: "auto" }} onClick={() => setLightboxIdx(i)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
+            <div key={i} style={{ borderRadius, overflow: "hidden", aspectRatio: "1 / 1", position: "relative" }}>
+              <img src={photo} alt="" style={{ ...imgStyle, position: "absolute", inset: 0 }} onClick={() => setLightboxIdx(i)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
             </div>
           ))}
         </div>
@@ -71,46 +71,24 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10,
       </>
     );
   } else {
-    // featured: big main image + a matched-height column of thumbnails.
-    // The aspectRatio lives on the grid container so the row gets one definite
-    // height; both columns fill it. (A definite height on the main image alone
-    // left the thumbnail column's percentage heights unresolved, so it grew to
-    // the images' natural size and broke the layout.)
-    // The featured row holds the hero + up to 3 matched-height thumbnails. Any
-    // extra photos (e.g. after "show more") flow into a grid BELOW the row so the
-    // section grows downward instead of squeezing more thumbnails into the same
-    // fixed-height column.
-    const main       = visible[0];
-    const sideThumbs = visible.slice(1, 4);
-    const overflow   = visible.slice(4);
+    // featured (classic theme): a cinematic full-width hero banner followed by a
+    // uniform tile grid. The hero spans the full row so it never leaves a hole,
+    // and every other image fills a fixed 4:3 cell (object-fit: cover), so all
+    // sizes crop consistently. "Show more" simply adds tiles and grows downward.
+    const hero = visible[0];
+    const rest = visible.slice(1);
     galleryNode = (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: sideThumbs.length ? "2fr 1fr" : "1fr",
-          gap: 8,
-          aspectRatio: sideThumbs.length ? "16 / 10" : "4 / 3",
-        }}>
-          <div style={{ borderRadius, overflow: "hidden" }}>
-            <img src={main} alt="" style={imgStyle} onClick={() => setLightboxIdx(0)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
-          </div>
-          {sideThumbs.length > 0 && (
-            <div style={{ display: "grid", gridTemplateRows: `repeat(${sideThumbs.length}, 1fr)`, gap: 8, minHeight: 0 }}>
-              {sideThumbs.map((photo, i) => (
-                <div key={i} style={{ borderRadius, overflow: "hidden", minHeight: 0 }}>
-                  <img src={photo} alt="" style={imgStyle} onClick={() => setLightboxIdx(i + 1)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
-                </div>
-              ))}
-            </div>
-          )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ borderRadius, overflow: "hidden", aspectRatio: "16 / 9", position: "relative" }}>
+          <img src={hero} alt="" style={{ ...imgStyle, position: "absolute", inset: 0 }} onClick={() => setLightboxIdx(0)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
         </div>
-        {overflow.length > 0 && (
+        {rest.length > 0 && (
           <>
-            <style>{`.sg-feat-more{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(min-width:600px){.sg-feat-more{grid-template-columns:1fr 1fr 1fr}}`}</style>
-            <div className="sg-feat-more">
-              {overflow.map((photo, i) => (
-                <div key={i} style={{ borderRadius, overflow: "hidden", aspectRatio: "4/3", position: "relative" }}>
-                  <img src={photo} alt="" style={{ ...imgStyle, position: "absolute", inset: 0 }} onClick={() => setLightboxIdx(i + 4)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
+            <style>{`.sg-feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}@media(min-width:680px){.sg-feat-grid{grid-template-columns:repeat(3,1fr)}}`}</style>
+            <div className="sg-feat-grid">
+              {rest.map((photo, i) => (
+                <div key={i} style={{ borderRadius, overflow: "hidden", aspectRatio: "4 / 3", position: "relative" }}>
+                  <img src={photo} alt="" style={{ ...imgStyle, position: "absolute", inset: 0 }} onClick={() => setLightboxIdx(i + 1)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
                 </div>
               ))}
             </div>
