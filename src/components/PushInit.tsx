@@ -13,12 +13,21 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   return output;
 }
 
+async function sendSubscription(sub: PushSubscription) {
+  await fetch("/api/push/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ subscription: sub.toJSON() }),
+  });
+}
+
 export function PushInit() {
   useEffect(() => {
     if (
       typeof window === "undefined" ||
       !("serviceWorker" in navigator) ||
-      !("PushManager" in window)
+      !("PushManager" in window) ||
+      !("Notification" in window)
     )
       return;
 
@@ -27,26 +36,19 @@ export function PushInit() {
 
     async function init() {
       try {
-        const reg = await navigator.serviceWorker.register("/sw.js", {
-          scope: "/",
-        });
+        const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
 
-        // Only request permission in standalone mode (required for iOS)
-        const isStandalone =
-          window.matchMedia("(display-mode: standalone)").matches ||
-          ("standalone" in navigator && (navigator as { standalone?: boolean }).standalone === true);
-
-        if (!isStandalone && /iPhone|iPad|iPod/.test(navigator.userAgent)) return;
-
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") return;
-
+        // If there's already a subscription, re-send it (handles page reload / re-installs)
         const existing = await reg.pushManager.getSubscription();
         if (existing) {
-          // Re-send to server in case it was lost
           await sendSubscription(existing);
           return;
         }
+
+        // Request permission — on iOS this only works in standalone mode;
+        // on Android it works from the browser tab too.
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return;
 
         const subscription = await reg.pushManager.subscribe({
           userVisibleOnly: true,
@@ -59,15 +61,9 @@ export function PushInit() {
       }
     }
 
-    async function sendSubscription(sub: PushSubscription) {
-      await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription: sub.toJSON() }),
-      });
-    }
-
-    init();
+    // Small delay so SW has time to install on first load
+    const t = setTimeout(init, 1500);
+    return () => clearTimeout(t);
   }, []);
 
   return null;

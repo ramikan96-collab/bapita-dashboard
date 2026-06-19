@@ -356,6 +356,23 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <IconPrint size={18} />
           </button>
         )}
+
+        {/* Bell — desktop top bar */}
+        <button
+          onClick={() => { setNotificationsOpen(true); if (unreadCount > 0) markAllRead(); }}
+          className="relative p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
+          aria-label="Notifications"
+        >
+          <IconBell size={20} />
+          {unreadCount > 0 && (
+            <span
+              className="absolute top-1 end-1 flex items-center justify-center rounded-full text-white font-bold"
+              style={{ minWidth: 16, height: 16, fontSize: 10, background: "var(--color-amber)", padding: "0 3px" }}
+            >
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* ─── Mobile Top Bar ───────────────────────────────────────────── */}
@@ -390,9 +407,26 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <div className="flex-1 flex justify-center">
               <Wordmark />
             </div>
-            <div className="w-10" />
           </>
         )}
+
+        {/* Bell — mobile top bar */}
+        <button
+          onClick={() => { setNotificationsOpen(true); if (unreadCount > 0) markAllRead(); }}
+          className="relative rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors shrink-0"
+          style={{ padding: 14, marginInlineEnd: 20 }}
+          aria-label="Notifications"
+        >
+          <IconBell size={22} />
+          {unreadCount > 0 && (
+            <span
+              className="absolute top-2 end-2 flex items-center justify-center rounded-full text-white font-bold"
+              style={{ minWidth: 16, height: 16, fontSize: 10, background: "var(--color-amber)", padding: "0 3px" }}
+            >
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* ─── Mobile Calendar Toolbar (calendar-only) ─────────────────── */}
