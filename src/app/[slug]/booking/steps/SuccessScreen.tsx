@@ -42,6 +42,7 @@ function buildICS(service: Service, date: string, time: string, businessName: st
 }
 
 export function SuccessScreen({ service, date, time, customerName, businessName, businessPhone, businessAddress, accentColor, darkColor, bgColor, t, dateLocale, minLabel }: Props) {
+  const isDark  = /^#[01]/.test(bgColor);
   const fmtDate = new Date(date + "T00:00:00").toLocaleDateString(dateLocale, {
     weekday:"long", day:"numeric", month:"long",
   });
@@ -69,8 +70,10 @@ export function SuccessScreen({ service, date, time, customerName, businessName,
       </div>
 
       <div style={{
-        width:"100%", background:bgColor, borderRadius:14,
+        width:"100%", borderRadius:14,
         padding:"16px 18px", display:"flex", flexDirection:"column", gap:6,
+        background: isDark ? "rgba(255,255,255,0.07)" : bgColor,
+        border: isDark ? "1px solid rgba(255,255,255,0.12)" : `1.5px solid ${accentColor}33`,
       }}>
         <div style={{ fontSize:16, fontWeight:700, color:darkColor }}>{service.name}</div>
         <div style={{ fontSize:13, color:darkColor, opacity:0.6, display:"flex", flexDirection:"column", gap:3 }}>

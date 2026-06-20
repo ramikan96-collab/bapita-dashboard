@@ -179,7 +179,7 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
               service={state.service} date={state.date}
               slots={slots} selectedTime={state.time} onSelect={setTime}
               loading={slotsLoading}
-              accentColor={accentColor} darkColor={darkColor}
+              accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
               stepTitle={t.steps.time.title}
               dateLocale={dateLocale}
             />

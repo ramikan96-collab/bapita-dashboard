@@ -6,10 +6,12 @@ interface Props {
   onSelect: (time: string) => void;
   accentColor: string;
   darkColor: string;
+  bgColor?: string;
   loading: boolean;
 }
 
-export function TimeGrid({ slots, selectedTime, onSelect, accentColor, darkColor, loading }: Props) {
+export function TimeGrid({ slots, selectedTime, onSelect, accentColor, darkColor, bgColor, loading }: Props) {
+  const isDark = /^#[01]/.test(bgColor ?? "");
   if (loading) {
     return (
       <div style={{ display:"flex", justifyContent:"center", padding:"32px 0" }}>
@@ -40,9 +42,9 @@ export function TimeGrid({ slots, selectedTime, onSelect, accentColor, darkColor
             onClick={() => onSelect(slot)}
             style={{
               padding:"12px 0", borderRadius:10,
-              border:`2px solid ${sel ? accentColor : "rgba(0,0,0,0.1)"}`,
-              background: sel ? accentColor : "#fff",
-              color: sel ? "#fff" : darkColor,
+              border:`2px solid ${sel ? accentColor : isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)"}`,
+              background: sel ? accentColor : isDark ? "rgba(255,255,255,0.07)" : "#fff",
+              color: sel ? (isDark ? "#111" : "#fff") : darkColor,
               fontSize:14, fontWeight:700,
               cursor:"pointer", transition:"all 0.15s ease",
             }}

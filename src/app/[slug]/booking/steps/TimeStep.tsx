@@ -12,11 +12,12 @@ interface Props {
   loading: boolean;
   accentColor: string;
   darkColor: string;
+  bgColor?: string;
   stepTitle: string;
   dateLocale: string;
 }
 
-export function TimeStep({ service, date, slots, selectedTime, onSelect, loading, accentColor, darkColor, stepTitle, dateLocale }: Props) {
+export function TimeStep({ service, date, slots, selectedTime, onSelect, loading, accentColor, darkColor, bgColor, stepTitle, dateLocale }: Props) {
   const fmtDate = new Date(date + "T00:00:00").toLocaleDateString(dateLocale, {
     weekday:"long", day:"numeric", month:"long",
   });
@@ -32,7 +33,7 @@ export function TimeStep({ service, date, slots, selectedTime, onSelect, loading
       <div style={{ fontSize:15, fontWeight:700, color:darkColor }}>{stepTitle}</div>
       <TimeGrid
         slots={slots} selectedTime={selectedTime} onSelect={onSelect}
-        accentColor={accentColor} darkColor={darkColor} loading={loading}
+        accentColor={accentColor} darkColor={darkColor} bgColor={bgColor} loading={loading}
       />
     </div>
   );
