@@ -59,7 +59,7 @@ export function CleanPage({ business, services }: Props) {
   const openStatus   = getOpenStatus(business.business_hours, t.status, t.days);
   const igHandle     = getInstagramHandle(business.instagram_url);
   const cityLabel    = getCityFromAddress(business.address);
-  const hasStats     = business.stat_years != null || business.stat_clients != null || business.stat_rating != null;
+  const hasStats     = business.stat_clients != null || business.stat_rating != null;
   const displayName  = (isRtl && business.name_he) ? business.name_he : business.name;
 
   const socialProofText = (() => {
@@ -201,13 +201,6 @@ export function CleanPage({ business, services }: Props) {
           opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(12px)",
           transition: "opacity 0.55s ease, transform 0.55s ease" }}>
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-            {business.stat_years != null && <>
-              <div style={{ textAlign: "center", padding: "0 20px" }}>
-                <div style={{ fontSize: 24, fontWeight: 900, color: P.text, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_years}+</div>
-                <div style={{ fontSize: 10, color: P.muted, fontWeight: 700, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "שנות ניסיון" : "Years Exp."}</div>
-              </div>
-              {(business.stat_clients != null || business.stat_rating != null) && <div style={{ width: 1, height: 32, background: P.border, flexShrink: 0 }} />}
-            </>}
             {business.stat_clients != null && <>
               <div style={{ textAlign: "center", padding: "0 20px" }}>
                 <div style={{ fontSize: 24, fontWeight: 900, color: P.text, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_clients}+</div>

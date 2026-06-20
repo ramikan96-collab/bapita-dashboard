@@ -210,12 +210,21 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         const hero: string    = b.hero_image_url || "";
         const merged          = hero && !imgs.includes(hero) ? [hero, ...imgs] : imgs;
         setGallery(merged.map((url: string) => ({ url })));
-        // Section order — merge DB order with any missing keys from default
-        if (Array.isArray(b.section_order) && b.section_order.length > 0) {
-          const base = b.section_order as string[];
-          const missing = DEFAULT_SECTION_ORDER.filter(k => !base.includes(k));
-          setSectionOrder(missing.length ? [...base, ...missing] : base);
-        }
+        // Section order — merge DB order with missing keys, filter by show_* flags
+        const showFlags: Record<string, boolean> = {
+          services: b.show_services ?? true,
+          gallery:  b.show_gallery  ?? true,
+          about:    b.show_about    ?? true,
+          reviews:  b.show_reviews  ?? true,
+          hours:    b.show_hours    ?? true,
+          location: b.show_location ?? true,
+        };
+        const soBase = Array.isArray(b.section_order) && b.section_order.length > 0
+          ? b.section_order as string[]
+          : DEFAULT_SECTION_ORDER;
+        const soMissing = DEFAULT_SECTION_ORDER.filter(k => !soBase.includes(k));
+        const soMerged = soMissing.length ? [...soBase, ...soMissing] : soBase;
+        setSectionOrder(soMerged.filter(k => showFlags[k] !== false));
         // Hours
         if (b.business_hours) setHours(b.business_hours as BusinessHours);
         // Reviews
@@ -849,6 +858,20 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 </Row>
               </SectionCard>
 
+              <SectionCard title="Booking Page Stats">
+                <p style={{ fontSize:13, color:"var(--color-muted)", marginTop:0, marginBottom:16 }}>
+                  Shown as social proof on the booking page. Leave blank to hide.
+                </p>
+                <Row>
+                  <Field label="Total Clients">
+                    <input type="number" min="0" value={form.stat_clients} onChange={e => set("stat_clients", e.target.value)} placeholder="500" style={inputStyle} />
+                  </Field>
+                  <Field label="Google Rating">
+                    <input value={form.stat_rating} onChange={e => set("stat_rating", e.target.value)} placeholder="4.9" style={inputStyle} />
+                  </Field>
+                </Row>
+              </SectionCard>
+
               <SectionCard title="Links & Social">
                 <Row>
                   <Field label="WhatsApp Number">
@@ -896,23 +919,6 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     style={{ ...inputStyle, height:"auto", resize:"vertical", padding:"10px 13px", lineHeight:1.6, direction:"rtl" }}
                   />
                 </Field>
-              </SectionCard>
-
-              <SectionCard title="Booking Page Stats">
-                <p style={{ fontSize:13, color:"var(--color-muted)", marginTop:0, marginBottom:16 }}>
-                  Shown as social proof on the booking page. Leave blank to hide.
-                </p>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
-                  <Field label="Years Experience">
-                    <input type="number" min="0" value={form.stat_years} onChange={e => set("stat_years", e.target.value)} placeholder="8" style={inputStyle} />
-                  </Field>
-                  <Field label="Total Clients">
-                    <input type="number" min="0" value={form.stat_clients} onChange={e => set("stat_clients", e.target.value)} placeholder="500" style={inputStyle} />
-                  </Field>
-                  <Field label="Google Rating">
-                    <input value={form.stat_rating} onChange={e => set("stat_rating", e.target.value)} placeholder="4.9" style={inputStyle} />
-                  </Field>
-                </div>
               </SectionCard>
 
               <SectionCard title="Section Visibility & Order">

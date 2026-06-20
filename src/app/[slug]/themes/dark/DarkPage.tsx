@@ -109,7 +109,7 @@ export function DarkPage({ business, services }: Props) {
   const openStatus   = getOpenStatus(business.business_hours, t.status, t.days);
   const igHandle     = getInstagramHandle(business.instagram_url);
   const cityLabel    = getCityFromAddress(business.address);
-  const hasStats     = business.stat_years != null || business.stat_clients != null || business.stat_rating != null;
+  const hasStats     = business.stat_clients != null || business.stat_rating != null;
   const displayName  = (isRtl && business.name_he) ? business.name_he : business.name;
   const displayTag   = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
   const displayAbout = (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
@@ -225,13 +225,6 @@ export function DarkPage({ business, services }: Props) {
           opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(12px)",
           transition: "opacity 0.6s ease, transform 0.6s ease" }}>
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-            {business.stat_years != null && <>
-              <div style={{ textAlign: "center", padding: "0 20px" }}>
-                <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 22, fontWeight: 700, color: accent, lineHeight: 1 }}>{business.stat_years}+</div>
-                <div style={{ fontSize: 10, color: D.muted, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "שנות ניסיון" : "Years Exp."}</div>
-              </div>
-              {(business.stat_clients != null || business.stat_rating != null) && <div style={{ width: 1, height: 32, background: `${accent}35`, flexShrink: 0 }} />}
-            </>}
             {business.stat_clients != null && <>
               <div style={{ textAlign: "center", padding: "0 20px" }}>
                 <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 22, fontWeight: 700, color: accent, lineHeight: 1 }}>{business.stat_clients}+</div>
