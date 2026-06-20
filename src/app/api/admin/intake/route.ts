@@ -6,7 +6,7 @@ import OpenAI from "openai";
 const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
 
 const GROQ_MODEL  = "llama-3.3-70b-versatile";
-const OLLAMA_MODEL = "llama3.2:3b";
+const OLLAMA_MODEL = "llama3.2:1b";
 
 const SYSTEM_INSTRUCTION = `You are a senior brand copywriter and data extractor for Bapita, which builds booking websites for Israeli appointment businesses (barbershops, salons, nail/beauty studios). You receive messy, partial notes about ONE business and return a single strict JSON object. Rules:
 - Extract every fact present (name, services, prices, hours, phone, address, socials, reviews, rating).
