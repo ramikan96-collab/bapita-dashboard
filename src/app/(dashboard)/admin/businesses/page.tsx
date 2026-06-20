@@ -199,6 +199,14 @@ export default function AdminPage() {
                 ↓ CSV
               </button>
               <button
+                onClick={() => router.push("/admin/businesses/auto")}
+                style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "1.5px solid var(--color-amber)", background: "rgba(232,146,10,0.08)", color: "var(--color-amber)", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", fontFamily: "inherit" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(232,146,10,0.16)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(232,146,10,0.08)"; }}
+              >
+                ✨ Auto-create
+              </button>
+              <button
                 onClick={() => router.push("/admin/businesses/new")}
                 style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)", transition: "transform 0.15s, box-shadow 0.15s", fontFamily: "inherit" }}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,146,10,0.36)"; }}

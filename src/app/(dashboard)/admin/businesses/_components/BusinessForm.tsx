@@ -141,8 +141,10 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
   const [saved,        setSaved]        = useState(false);
   const [dirty,        setDirty]        = useState(false);
   const [loading,      setLoading]      = useState(mode === "edit");
-  const [cloning,      setCloning]      = useState(false);
-  const [confirmClone, setConfirmClone] = useState(false);
+  const [cloning,        setCloning]        = useState(false);
+  const [confirmClone,   setConfirmClone]   = useState(false);
+  const [showEjectPanel, setShowEjectPanel] = useState(false);
+  const [copiedStep,     setCopiedStep]     = useState<number | null>(null);
   const stableId = useRef<string>(businessId || crypto.randomUUID());
 
   useEffect(() => {
@@ -589,6 +591,68 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                       </select>
                     </Field>
                   </Row>
+                )}
+
+                {/* Eject to custom page */}
+                {mode === "edit" && (
+                  <div style={{ marginTop: 4, marginBottom: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowEjectPanel(p => !p)}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--color-muted)", padding: 0, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}
+                    >
+                      {showEjectPanel ? "▾" : "▸"} Eject to custom page
+                    </button>
+                    {showEjectPanel && (() => {
+                      const sl = form.slug || "your-slug";
+                      const tmpl = form.template_style || "classic";
+                      const bizName = form.name || sl;
+                      const steps = [
+                        `cd /Users/admin/Desktop/bapita-dashboard`,
+                        `npm run eject ${sl} --from ${tmpl}`,
+                        `git add -A && git commit -m "feat: custom page for ${sl}" && git push`,
+                      ];
+                      const claudePrompt = `Customize the booking page at \`src/app/[slug]/customs/${sl}.tsx\` for the business "${bizName}". Keep it wired to the platform: do not change the booking flow — keep importing and using \`BookingOverlay\` and the shared section components, keep RTL + EN/HE support and the lang toggle. Make the design bespoke and premium for this business. Start by reading the file and the shared primitives in \`src/app/[slug]/_shared/\`, then propose changes.`;
+                      function copy(text: string, step: number) {
+                        navigator.clipboard.writeText(text);
+                        setCopiedStep(step);
+                        setTimeout(() => setCopiedStep(null), 1800);
+                      }
+                      return (
+                        <div style={{ marginTop: 10, background: "var(--color-surface)", border: "1.5px solid var(--color-cream-2)", borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+                          <p style={{ margin: 0, fontSize: 12, color: "var(--color-muted)", lineHeight: 1.6 }}>
+                            Run these commands locally to create a fully custom page for <strong>{sl}</strong>. After that, open Claude Code and paste the prompt below.
+                          </p>
+                          {steps.map((cmd, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-amber)", minWidth: 18, marginTop: 10 }}>{i + 1}.</span>
+                              <code style={{ flex: 1, fontSize: 12, background: "#1a1a1a", color: "#e8e8e8", padding: "8px 12px", borderRadius: 8, fontFamily: "monospace", wordBreak: "break-all", lineHeight: 1.5 }}>{cmd}</code>
+                              <button
+                                type="button"
+                                onClick={() => copy(cmd, i + 1)}
+                                style={{ marginTop: 6, height: 28, padding: "0 10px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: copiedStep === i + 1 ? "#D1FAE5" : "var(--color-bg)", color: copiedStep === i + 1 ? "#065F46" : "var(--color-muted)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit", flexShrink: 0 }}
+                              >
+                                {copiedStep === i + 1 ? "Copied!" : "Copy"}
+                              </button>
+                            </div>
+                          ))}
+                          <div style={{ borderTop: "1px solid var(--color-cream-2)", paddingTop: 10, marginTop: 2 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Claude Code prompt</div>
+                            <div style={{ fontSize: 12, color: "var(--color-muted)", lineHeight: 1.6, background: "var(--color-bg)", border: "1px solid var(--color-cream-2)", borderRadius: 8, padding: "10px 12px", marginBottom: 8 }}>
+                              {claudePrompt}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => copy(claudePrompt, 99)}
+                              style={{ height: 32, padding: "0 14px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                            >
+                              {copiedStep === 99 ? "Copied!" : "Copy Claude Code prompt"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 )}
 
                 {/* Batch variants — new mode or cloning */}
