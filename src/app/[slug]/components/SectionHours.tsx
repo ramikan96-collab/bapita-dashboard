@@ -11,6 +11,7 @@ interface Props {
   hours: BusinessHours;
   darkColor: string;
   accentColor: string;
+  mutedColor?: string;
   dayLabels?: Record<DayKey, string>;
   closedLabel?: string;
 }
@@ -20,7 +21,7 @@ function fmt(t: string) {
   return `${h % 12 || 12}:${String(m).padStart(2,"0")} ${h >= 12 ? "PM" : "AM"}`;
 }
 
-export function SectionHours({ hours, darkColor, accentColor, dayLabels, closedLabel = "Closed" }: Props) {
+export function SectionHours({ hours, darkColor, accentColor, mutedColor, dayLabels, closedLabel = "Closed" }: Props) {
   const labels = dayLabels ?? EN_LABELS;
   const todayKey = ORDER[new Date().getDay()];
   return (
@@ -37,7 +38,7 @@ export function SectionHours({ hours, darkColor, accentColor, dayLabels, closedL
             <span style={{ fontSize:14, fontWeight: today ? 700 : 400, color: darkColor }}>
               {labels[day]}
             </span>
-            <span style={{ fontSize:13, fontWeight:500, color: h.open ? darkColor : "rgba(0,0,0,0.35)" }}>
+            <span style={{ fontSize:13, fontWeight:500, color: h.open ? darkColor : (mutedColor ?? "rgba(0,0,0,0.35)") }}>
               {h.open ? `${fmt(h.start)} – ${fmt(h.end)}` : closedLabel}
             </span>
           </div>

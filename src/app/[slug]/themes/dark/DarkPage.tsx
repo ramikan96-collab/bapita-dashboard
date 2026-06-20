@@ -393,7 +393,7 @@ export function DarkPage({ business, services }: Props) {
                   <GoldDivider accent={accent} />
                   <DarkSectionTitle title={t.hours.title} accent={accent} isRtl={isRtl} />
                   <div style={{ background: D.surface, borderRadius: 2, padding: "8px 4px", border: `1px solid ${D.border}` }}>
-                    <SectionHours hours={business.business_hours} darkColor={D.text} accentColor={accent} dayLabels={t.days} closedLabel={t.hours.closed} />
+                    <SectionHours hours={business.business_hours} darkColor={D.text} accentColor={accent} mutedColor={D.muted} dayLabels={t.days} closedLabel={t.hours.closed} />
                   </div>
                 </div>
               ) : null;

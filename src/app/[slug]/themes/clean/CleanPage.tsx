@@ -300,7 +300,7 @@ export function CleanPage({ business, services }: Props) {
               return business.show_hours !== false && business.business_hours ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.hours.title} accent={accent} />
-                  <SectionHours hours={business.business_hours} darkColor={P.text} accentColor={accent} dayLabels={t.days} closedLabel={t.hours.closed} />
+                  <SectionHours hours={business.business_hours} darkColor={P.text} accentColor={accent} mutedColor={P.muted} dayLabels={t.days} closedLabel={t.hours.closed} />
                 </section>
               ) : null;
             case "location":

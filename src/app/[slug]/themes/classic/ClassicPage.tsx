@@ -269,7 +269,7 @@ export function ClassicPage({ business, services }: Props) {
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.hours.title} accentColor={accent} darkColor={C.dark} />
                   <div style={{ marginTop: 20 }}>
-                    <SectionHours hours={business.business_hours} darkColor={C.dark} accentColor={accent} dayLabels={t.days} closedLabel={t.hours.closed} />
+                    <SectionHours hours={business.business_hours} darkColor={C.dark} accentColor={accent} mutedColor="rgba(34,21,16,0.45)" dayLabels={t.days} closedLabel={t.hours.closed} />
                   </div>
                 </section>
               ) : null;
