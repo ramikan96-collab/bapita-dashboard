@@ -135,6 +135,7 @@ ${raw}`;
 
   const { data: biz, error: bizErr } = await service.from("businesses").insert({
     slug,
+    owner_id:           user.id,
     name:               parsed.name        || slug,
     name_he:            parsed.name_he     || "",
     tagline:            parsed.tagline     || "",
