@@ -95,6 +95,16 @@ Remove `src/app/[slug]/customs/studio-avi.tsx` and its `CUSTOM_PAGES` entry + im
 
 ---
 
+## F.1 — Full custom page per barber (capability preserved)
+
+Deleting `studio-avi` removes a stale file, **not** the ability to fully hand-customize a barber. The `CUSTOM_PAGES` registry in `BookingShell` stays. Recipe to bespoke-customize one barber later (off-template, edit anything):
+
+1. Copy the theme he picked, e.g. `themes/dark/DarkPage.tsx`, into `customs/<his-slug>.tsx`; rename the component (e.g. `RamiBarberPage`).
+2. Register it in `BookingShell`'s `CUSTOM_PAGES`: `"<his-slug>": RamiBarberPage`.
+3. Edit that file as freely as you want — it now owns that slug; the template switch no longer applies to him.
+
+After the A refactor, a custom starts from a *current* theme (shared primitives, RTL, reviews, stats) — a better starting point than the old `studio-avi` was. The theme switcher does not render for a slug that has a custom page (theme already decided).
+
 ## G — Template count: stay at 3
 
 Clean (light/minimal), Classic (warm/traditional), Dark (bold). Covers the barber aesthetic spectrum. With B's switcher + A's primitives a 4th is a ~1hr add later if a real barber profile needs it. No 4th built speculatively.
