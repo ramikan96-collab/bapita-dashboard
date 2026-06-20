@@ -105,6 +105,29 @@ Deleting `studio-avi` removes a stale file, **not** the ability to fully hand-cu
 
 After the A refactor, a custom starts from a *current* theme (shared primitives, RTL, reviews, stats) — a better starting point than the old `studio-avi` was. The theme switcher does not render for a slug that has a custom page (theme already decided).
 
+### F.2 — Eject flow (admin button + script)
+
+A custom page is a `.tsx` component, automatically connected to bookings/Supabase/dashboard because it reuses the shared `BookingOverlay` and platform components. Vercel's runtime filesystem is read-only, so file generation runs **locally via a script** that the admin triggers by copy-pasting commands. No GitHub token, no secrets.
+
+**Script:** `scripts/eject-page.ts`, run as `npm run eject <slug> --from <theme>`:
+1. Copies `themes/<theme>/<Theme>Page.tsx` → `customs/<slug>.tsx`, renames the exported component to a PascalCase name from the slug (e.g. `rami-barber` → `RamiBarberPage`).
+2. Idempotently registers it in `BookingShell`'s `CUSTOM_PAGES` (adds the import + map entry; no-op if already present).
+3. Prints a confirmation + the file path.
+
+Add `"eject": "tsx scripts/eject-page.ts"` (or node-compatible runner already in the project) to `package.json` scripts.
+
+**Admin UI — "Eject to custom page" button** on the `BusinessForm` (edit mode), near the `template_style` select. Opens a panel/modal pre-filled with this business's `slug` and current `template_style`. The panel shows **clearly numbered steps, each with its own Copy button**, kept short:
+
+1. `cd /Users/admin/Desktop/bapita-dashboard`
+2. `npm run eject <slug> --from <template_style>`
+3. `git add -A && git commit -m "feat: custom page for <slug>" && git push`
+
+Then a final button **"Copy Claude Code prompt"** that copies a ready prompt, e.g.:
+
+> Customize the booking page at `src/app/[slug]/customs/<slug>.tsx` for the business "<name>". Keep it wired to the platform: do not change the booking flow — keep importing and using `BookingOverlay` and the shared section components, keep RTL + EN/HE support and the lang toggle. Make the design bespoke and premium for this business. Start by reading the file and the shared primitives in `src/app/[slug]/_shared/`, then propose changes.
+
+Each step and the prompt are copy-to-clipboard. The admin runs steps 1–3 in order, then pastes the prompt into Claude Code to start customizing. The custom file owns the slug from then on (template switch + theme switcher no longer apply to it).
+
 ## G — Template count: stay at 3
 
 Clean (light/minimal), Classic (warm/traditional), Dark (bold). Covers the barber aesthetic spectrum. With B's switcher + A's primitives a 4th is a ~1hr add later if a real barber profile needs it. No 4th built speculatively.
@@ -204,6 +227,7 @@ Intake route is admin-only — reuse the same admin guard the existing `/api/adm
 - [ ] C — responsive `BookingOverlay` (sheet mobile / centered desktop)
 - [ ] B — `previewTheme` in `BookingShell` + `DemoThemeSwitcher` (draft-only)
 - [ ] H — `✨ Auto-create` button, `/admin/businesses/auto` screen, `/api/admin/intake` route, Gemini wiring, create-draft-then-redirect-to-edit
+- [ ] F.2 — `scripts/eject-page.ts` + `npm run eject`; "Eject to custom page" panel on `BusinessForm` (steps + copy buttons + Claude Code prompt)
 - [ ] Pull `GEMINI_API_KEY` into `.env.local`
 - [ ] Build passes, manual smoke on one draft business
 - [ ] Commit + push
@@ -223,6 +247,8 @@ Intake route is admin-only — reuse the same admin guard the existing `/api/adm
 | `src/app/(dashboard)/admin/businesses/page.tsx` | `✨ Auto-create` button (middle) |
 | `src/app/(dashboard)/admin/businesses/auto/page.tsx` | NEW intake screen |
 | `src/app/api/admin/intake/route.ts` | NEW Gemini route |
+| `src/app/(dashboard)/admin/businesses/_components/BusinessForm.tsx` | NEW: "Eject to custom page" panel (steps + copy + Claude prompt) |
+| `scripts/eject-page.ts` + `package.json` | NEW eject script + `npm run eject` |
 | `.env.local` | add `GEMINI_API_KEY` |
 
 ---
