@@ -40,7 +40,7 @@ export default function AutoIntakePage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Something went wrong.");
+        setError(data.error + (data.detail ? `\n\nDetail: ${data.detail}` : "") || "Something went wrong.");
         return;
       }
       router.push(`/admin/businesses/${data.id}`);
@@ -141,7 +141,7 @@ export default function AutoIntakePage() {
       </div>
 
       {error && (
-        <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 10, padding: "12px 16px", fontSize: 14, color: "#991B1B", marginBottom: 20 }}>
+        <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 10, padding: "12px 16px", fontSize: 14, color: "#991B1B", marginBottom: 20, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
           {error}
         </div>
       )}

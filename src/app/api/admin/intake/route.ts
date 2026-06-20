@@ -118,9 +118,15 @@ ${raw}`;
   try {
     const result = await model.generateContent(userMessage);
     const text = result.response.text();
-    parsed = JSON.parse(text);
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      console.error("[intake] JSON parse failed, raw text:", text);
+      return NextResponse.json({ error: "Gemini returned invalid JSON", detail: text.slice(0, 500) }, { status: 422 });
+    }
   } catch (err) {
-    return NextResponse.json({ error: "Gemini parse failed", detail: String(err) }, { status: 422 });
+    console.error("[intake] Gemini API error:", err);
+    return NextResponse.json({ error: "Gemini API error", detail: String(err) }, { status: 422 });
   }
 
   // Insert via service role
