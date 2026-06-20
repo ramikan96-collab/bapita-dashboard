@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     await transporter.sendMail({
       from: `Bapita <${process.env.GMAIL_USER}>`,
       to: "info.bapita@gmail.com",
-      subject: `New lead: ${esc(name)}${business_name ? ` — ${esc(business_name)}` : ""}`,
+      subject: `New lead: ${name}${business_name ? ` — ${business_name}` : ""}`,
       html: `
         <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;">
           <h2 style="margin:0 0 20px;color:#1C1814;">New lead from bapita.com</h2>

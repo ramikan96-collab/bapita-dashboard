@@ -21,7 +21,7 @@ function buildEmailHtml(params: {
   const { lang: l, customerName, businessName, serviceName, formattedDate, time, servicePrice, cancelUrl } = params;
   if (l === "he") {
     return {
-      subject: `ההזמנה שלך אושרה — ${esc(businessName)}`,
+      subject: `ההזמנה שלך אושרה — ${businessName}`,
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;direction:rtl;text-align:right;">
           <h2 style="margin:0 0 8px;">הזמנה אושרה</h2>
@@ -39,7 +39,7 @@ function buildEmailHtml(params: {
     };
   }
   return {
-    subject: `Booking confirmed — ${esc(businessName)}`,
+    subject: `Booking confirmed — ${businessName}`,
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
         <h2 style="margin:0 0 8px;">Booking confirmed</h2>
@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
       await transporter.sendMail({
         from: `Bapita <${process.env.GMAIL_USER}>`,
         to: bccEmail,
-        subject: `הזמנה חדשה — ${esc(customerName)} | ${esc(serviceName)}`,
+        subject: `הזמנה חדשה — ${customerName} | ${serviceName}`,
         html: `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;direction:rtl;text-align:right;">
             <h2 style="margin:0 0 8px;">הזמנה חדשה 📅</h2>

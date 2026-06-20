@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       from: `Bapita <${process.env.GMAIL_USER}>`,
       to: customerEmail,
       bcc: bccEmail,
-      subject: `Booking confirmed - ${esc(businessName)}`,
+      subject: `Booking confirmed - ${businessName}`,
       html,
     });
   } catch (e) {

@@ -73,6 +73,8 @@ export interface Business {
   tagline?: string | null;
   tagline_he?: string | null;
   hero_image_url?: string | null;
+  /** object-position for the hero image: "top" | "center" | "bottom" (default center) */
+  hero_position?: string | null;
   gallery_images?: string[] | null;
   about_text?: string | null;
   about_text_he?: string | null;

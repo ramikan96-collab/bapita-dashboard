@@ -43,7 +43,6 @@ export function CleanPage({ business, services }: Props) {
   const isRtl = lang === "he";
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
-  const { ref: statsRef,    visible: statsVisible }    = useFadeInOnEnter(0.3);
 
   useEffect(() => {
     const onScroll = () => {
@@ -55,11 +54,11 @@ export function CleanPage({ business, services }: Props) {
 
   const accent       = business.accent_color || "#111111";
   const heroImage    = business.hero_image_url || FALLBACK_HERO;
+  const heroPos      = business.hero_position || "center";
   const waNumber     = business.whatsapp_number?.replace(/\D/g, "");
   const openStatus   = getOpenStatus(business.business_hours, t.status, t.days);
   const igHandle     = getInstagramHandle(business.instagram_url);
   const cityLabel    = getCityFromAddress(business.address);
-  const hasStats     = business.stat_clients != null || business.stat_rating != null;
   const displayName  = (isRtl && business.name_he) ? business.name_he : business.name;
 
   const socialProofText = (() => {
@@ -99,17 +98,16 @@ export function CleanPage({ business, services }: Props) {
         .cl-hero-panel { width: 50%; background: ${P.panel}; display: flex; flex-direction: column; justify-content: center; padding: 60px 52px 60px 52px; box-sizing: border-box; position: relative; overflow: hidden; }
         .cl-hero-photo { width: 50%; position: relative; overflow: hidden; }
         @media (max-width: 767px) {
-          .cl-hero { flex-direction: column; }
-          .cl-hero-panel { width: 100%; padding: 44px 28px 52px; justify-content: flex-end; min-height: 48svh; }
-          .cl-hero-photo { width: 100%; height: 52svh; }
+          .cl-hero { flex-direction: column; height: auto; }
+          .cl-hero-panel { width: 100%; padding: 84px 28px 56px; justify-content: flex-end; min-height: 60svh; }
+          .cl-hero-photo { width: 100%; height: 46svh; }
         }
       `}</style>
 
-      <LangToggle lang={lang} setLang={setLang} />
-
       {/* Sticky header */}
-      <div className="cl-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", gap: 12, paddingInlineStart: 24, paddingInlineEnd: 20 }}>
+      <div className="cl-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", gap: 10, paddingInlineStart: 24, paddingInlineEnd: 14 }}>
         <span style={{ fontSize: 15, fontWeight: 800, color: P.text, letterSpacing: "-0.02em", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
+        <LangToggle lang={lang} setLang={setLang} inline />
         <button onClick={openFromCTA}
           style={{ flexShrink: 0, height: 36, padding: "0 18px", borderRadius: 9999, background: accent, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}
           onMouseEnter={e => { e.currentTarget.style.opacity = "0.82"; }}
@@ -191,32 +189,9 @@ export function CleanPage({ business, services }: Props) {
 
         {/* Right — photo */}
         <div className="cl-hero-photo">
-          <img src={heroImage} alt="" className="cl-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <img src={heroImage} alt="" className="cl-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `center ${heroPos}`, display: "block" }} />
         </div>
       </section>
-
-      {/* Stats strip */}
-      {business.show_stats !== false && hasStats && (
-        <div ref={statsRef} style={{ padding: "32px 20px 0", maxWidth: 640, margin: "0 auto",
-          opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(12px)",
-          transition: "opacity 0.55s ease, transform 0.55s ease" }}>
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-            {business.stat_clients != null && <>
-              <div style={{ textAlign: "center", padding: "0 20px" }}>
-                <div style={{ fontSize: 24, fontWeight: 900, color: P.text, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_clients}+</div>
-                <div style={{ fontSize: 10, color: P.muted, fontWeight: 700, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "לקוחות" : "Clients"}</div>
-              </div>
-              {business.stat_rating != null && <div style={{ width: 1, height: 32, background: P.border, flexShrink: 0 }} />}
-            </>}
-            {business.stat_rating != null && (
-              <div style={{ textAlign: "center", padding: "0 20px" }}>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "#F59E0B", letterSpacing: "-0.04em", lineHeight: 1 }}>⭐ {business.stat_rating}</div>
-                <div style={{ fontSize: 10, color: P.muted, fontWeight: 700, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "גוגל" : "Google"}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Main content */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px" }}>
@@ -230,7 +205,7 @@ export function CleanPage({ business, services }: Props) {
           switch (key) {
             case "services":
               return business.show_services !== false ? (
-                <section key={key} ref={servicesRef} style={{ paddingTop: (business.show_stats !== false && hasStats) ? 44 : 52 }}>
+                <section key={key} ref={servicesRef} style={{ paddingTop: 52 }}>
                   <SectionTitle title={t.services.title} accent={accent} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {services.map((s, i) => {

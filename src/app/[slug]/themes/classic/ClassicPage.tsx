@@ -42,7 +42,6 @@ export function ClassicPage({ business, services }: Props) {
   const isRtl  = lang === "he";
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
-  const { ref: statsRef,    visible: statsVisible }    = useFadeInOnEnter();
 
   useEffect(() => {
     const onScroll = () => setShowWa(window.scrollY > window.innerHeight * 0.7);
@@ -52,12 +51,12 @@ export function ClassicPage({ business, services }: Props) {
 
   const accent      = business.accent_color || C.gold;
   const heroImage   = business.hero_image_url || FALLBACK_HERO;
+  const heroPos     = business.hero_position || "center";
   const openStatus  = getOpenStatus(business.business_hours, t.status, t.days);
   const igHandle    = getInstagramHandle(business.instagram_url);
   const cityLabel   = getCityFromAddress(business.address);
   const waNumber    = business.whatsapp_number?.replace(/\D/g, "");
   const displayName = (isRtl && business.name_he) ? business.name_he : business.name;
-  const hasStats    = business.stat_clients != null || business.stat_rating != null;
 
   const socialProofText = (() => {
     if (business.stat_rating && business.stat_clients)
@@ -96,7 +95,7 @@ export function ClassicPage({ business, services }: Props) {
       {/* Hero */}
       <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-          <img src={heroImage} alt="" className="c-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", transformOrigin: "center center" }} />
+          <img src={heroImage} alt="" className="c-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `center ${heroPos}`, transformOrigin: "center center" }} />
         </div>
         <div style={{ position: "absolute", inset: 0, background: "rgba(34,21,16,0.65)" }} />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", width: "100%", maxWidth: 640 }}>
@@ -155,29 +154,6 @@ export function ClassicPage({ business, services }: Props) {
         </div>
       </section>
 
-      {/* Stats strip */}
-      {business.show_stats !== false && hasStats && (
-        <div ref={statsRef} style={{ padding: "32px 20px 0", maxWidth: 640, margin: "0 auto",
-          opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(12px)",
-          transition: "opacity 0.55s ease, transform 0.55s ease" }}>
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-            {business.stat_clients != null && <>
-              <div style={{ textAlign: "center", padding: "0 20px" }}>
-                <div style={{ fontSize: 24, fontWeight: 900, color: C.dark, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_clients}+</div>
-                <div style={{ fontSize: 10, color: C.dark, opacity: 0.45, fontWeight: 700, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "לקוחות" : "Clients"}</div>
-              </div>
-              {business.stat_rating != null && <div style={{ width: 1, height: 32, background: `${accent}35`, flexShrink: 0 }} />}
-            </>}
-            {business.stat_rating != null && (
-              <div style={{ textAlign: "center", padding: "0 20px" }}>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "#F59E0B", letterSpacing: "-0.04em", lineHeight: 1 }}>⭐ {business.stat_rating}</div>
-                <div style={{ fontSize: 10, color: C.dark, opacity: 0.45, fontWeight: 700, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "גוגל" : "Google"}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Sections — ordered by business.section_order */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px" }}>
         {(() => {
@@ -188,7 +164,7 @@ export function ClassicPage({ business, services }: Props) {
           switch (key) {
             case "services":
               return business.show_services !== false ? (
-                <section key={key} ref={servicesRef} style={{ paddingTop: (business.show_stats !== false && hasStats) ? 44 : 56 }}>
+                <section key={key} ref={servicesRef} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.services.title} accentColor={accent} darkColor={C.dark} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 28 }}>
                     {services.map((s, i) => {

@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     await transporter.sendMail({
       from: `Bapita <${process.env.GMAIL_USER}>`,
       to: "info.bapita@gmail.com",
-      subject: `Add-on request: ${esc(addonName)} — ${esc(businessName)}`,
+      subject: `Add-on request: ${addonName} — ${businessName}`,
       html,
     });
   } catch (e) {

@@ -78,6 +78,7 @@ interface FormData {
   about_text:         string;
   about_text_he:      string;
   accent_color:       string;
+  hero_position:      string;
   show_gallery:       boolean;
   show_about:         boolean;
   show_hours:         boolean;
@@ -117,7 +118,7 @@ const EMPTY_FORM: FormData = {
   tagline: "", tagline_he: "", phone: "", address: "", email: "",
   instagram_url: "", facebook_url: "", tiktok_url: "", whatsapp_number: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
-  about_text: "", about_text_he: "", accent_color: "",
+  about_text: "", about_text_he: "", accent_color: "", hero_position: "center",
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
   show_stats: true, show_services: true, show_reviews: true,
   status: "draft",
@@ -185,6 +186,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           about_text:         b.about_text          || "",
           about_text_he:      b.about_text_he       || "",
           accent_color:       b.accent_color        || "",
+          hero_position:      b.hero_position        || "center",
           show_gallery:       b.show_gallery        ?? true,
           show_about:         b.show_about          ?? true,
           show_hours:         b.show_hours          ?? true,
@@ -349,6 +351,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       status:             form.status,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
+      hero_position:      form.hero_position       || "center",
       section_order:      sectionOrder,
       plan_tier:          form.plan_tier           || null,
       plan_price:         form.plan_price          ? Number(form.plan_price) : null,
@@ -436,6 +439,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       status:             "draft" as const,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
+      hero_position:      form.hero_position       || "center",
       section_order:      sectionOrder,
       plan_tier:          form.plan_tier           || null,
       plan_price:         form.plan_price          ? Number(form.plan_price) : null,
@@ -963,7 +967,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
           {/* ── GALLERY ── */}
           {tab === "gallery" && (
-            <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} />
+            <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} heroPosition={form.hero_position} setHeroPosition={v => set("hero_position", v)} />
           )}
 
           {/* ── SERVICES ── */}
@@ -1374,10 +1378,12 @@ function SectionReorder({ order, setOrder }: { order: string[]; setOrder: (o: st
 
 // ─── Gallery Manager ──────────────────────────────────────────────────────────
 
-function GalleryManager({ gallery, setGallery, businessId }: {
+function GalleryManager({ gallery, setGallery, businessId, heroPosition, setHeroPosition }: {
   gallery:    GalleryItem[];
   setGallery: React.Dispatch<React.SetStateAction<GalleryItem[]>>;
   businessId?: string;
+  heroPosition: string;
+  setHeroPosition: (v: string) => void;
 }) {
   const supabase  = createClient();
   const inputRef  = useRef<HTMLInputElement>(null);
@@ -1453,6 +1459,42 @@ function GalleryManager({ gallery, setGallery, businessId }: {
       <p style={{ fontSize:13, color:"var(--color-muted)", marginTop:0, marginBottom:16 }}>
         Drag to reorder. First image = hero on booking page.
       </p>
+
+      {/* Hero crop position — controls object-position of the hero image on mobile */}
+      {gallery[0]?.url && !gallery[0].uploading && (
+        <div style={{ marginBottom:20 }}>
+          <p style={{ fontSize:13, fontWeight:600, color:"var(--color-dark)", margin:"0 0 8px" }}>
+            Hero crop (mobile framing)
+          </p>
+          <div style={{ display:"flex", gap:12, alignItems:"flex-start", flexWrap:"wrap" }}>
+            {/* Live preview at a phone-ish aspect ratio */}
+            <div style={{ width:120, aspectRatio:"9 / 16", borderRadius:10, overflow:"hidden", border:"1px solid var(--color-cream-2)", flexShrink:0, background:"var(--color-cream-2)" }}>
+              <img src={gallery[0].url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition: `center ${heroPosition}`, display:"block" }} />
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {(["top","center","bottom"] as const).map(pos => (
+                <button
+                  key={pos}
+                  type="button"
+                  onClick={() => setHeroPosition(pos)}
+                  style={{
+                    padding:"8px 16px", borderRadius:8, cursor:"pointer", fontFamily:"inherit",
+                    fontSize:13, fontWeight:600, textTransform:"capitalize", minWidth:96, textAlign:"start",
+                    border: heroPosition === pos ? "2px solid var(--color-amber)" : "1px solid var(--color-cream-2)",
+                    background: heroPosition === pos ? "var(--color-amber)" : "#fff",
+                    color: heroPosition === pos ? "#fff" : "var(--color-dark)",
+                  }}
+                >
+                  {pos}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p style={{ fontSize:12, color:"var(--color-muted)", margin:"8px 0 0" }}>
+            Pick which part of the photo stays in frame when it&apos;s cropped on small screens.
+          </p>
+        </div>
+      )}
 
       {gallery.length > 0 && (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10, marginBottom:16 }}>
