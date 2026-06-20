@@ -58,78 +58,106 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
 
   return (
     <>
-      <style>{`@keyframes slideUpSheet { from { transform:translateY(100%); } to { transform:translateY(0); } }`}</style>
+      <style>{`
+        @keyframes slideUpSheet {
+          from { transform: translateY(100%); }
+          to   { transform: translateY(0); }
+        }
+        @keyframes popIn {
+          from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+          to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        .bap-overlay-sheet {
+          position: fixed;
+          inset-inline-start: 0;
+          inset-inline-end: 0;
+          bottom: 0;
+          z-index: 101;
+          border-radius: 20px 20px 0 0;
+          max-height: 92svh;
+          display: flex;
+          flex-direction: column;
+          animation: slideUpSheet 0.35s ease;
+        }
+        @media (min-width: 768px) {
+          .bap-overlay-sheet {
+            inset-inline-start: unset;
+            inset-inline-end: unset;
+            bottom: unset;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(440px, calc(100vw - 48px));
+            max-height: 88svh;
+            border-radius: 20px;
+            animation: popIn 0.28s ease;
+          }
+        }
+      `}</style>
 
       {/* Backdrop */}
       <div onClick={onClose} style={{
-        position:"fixed", inset:0,
-        background:"rgba(0,0,0,0.5)",
-        backdropFilter:"blur(4px)",
-        zIndex:100,
+        position: "fixed", inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        backdropFilter: "blur(4px)",
+        zIndex: 100,
       }} />
 
-      {/* Sheet */}
-      <div style={{
-        position:"fixed", insetInlineStart:0, insetInlineEnd:0, bottom:0,
-        zIndex:101, background:bgColor,
-        borderRadius:"20px 20px 0 0",
-        maxHeight:"92svh",
-        display:"flex", flexDirection:"column",
-        animation:"slideUpSheet 0.35s ease",
-      }}>
+      {/* Sheet / Card */}
+      <div className="bap-overlay-sheet" style={{ background: bgColor }}>
         {/* Header */}
         {state.step !== "success" && (
           <div style={{
-            display:"flex", alignItems:"center", justifyContent:"space-between",
-            padding:"18px 20px 14px",
-            borderBottom:`1px solid ${dividerClr}`,
-            flexShrink:0,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "18px 20px 14px",
+            borderBottom: `1px solid ${dividerClr}`,
+            flexShrink: 0,
           }}>
             <button
               onClick={isFirst ? onClose : goBack}
-              style={{ width:36, height:36, borderRadius:8, border:"none", background:btnBg, cursor:"pointer", fontSize:18, color:darkColor, fontFamily:"inherit" }}
+              style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: btnBg, cursor: "pointer", fontSize: 18, color: darkColor, fontFamily: "inherit" }}
             >←</button>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:15, fontWeight:800, color:darkColor }}>{business.name}</div>
-              <div style={{ fontSize:12, color:darkColor, opacity:0.45, marginTop:2 }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: darkColor }}>{business.name}</div>
+              <div style={{ fontSize: 12, color: darkColor, opacity: 0.45, marginTop: 2 }}>
                 {t.overlay.stepOf(stepNum, totalSteps)}
               </div>
             </div>
             <button
               onClick={onClose}
-              style={{ width:36, height:36, borderRadius:8, border:"none", background:btnBg, cursor:"pointer", fontSize:20, color:darkColor, fontFamily:"inherit" }}
+              style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: btnBg, cursor: "pointer", fontSize: 20, color: darkColor, fontFamily: "inherit" }}
             >×</button>
           </div>
         )}
 
         {/* Scrollable content */}
-        <div style={{ flex:1, overflowY:"auto", padding:"20px 20px 48px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 48px" }}>
 
           {state.step === "service" && (
-            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-              <div style={{ fontSize:15, fontWeight:700, color:darkColor }}>{t.steps.service.title}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: darkColor }}>{t.steps.service.title}</div>
               {services.length === 0 && (
-                <div style={{ textAlign:"center", padding:"40px 0", fontSize:14, color:darkColor, opacity:0.45 }}>
+                <div style={{ textAlign: "center", padding: "40px 0", fontSize: 14, color: darkColor, opacity: 0.45 }}>
                   {lang === "he" ? "אין שירותים זמינים כרגע" : "No services available at the moment"}
                 </div>
               )}
               {services.map(s => (
                 <button key={s.id} onClick={() => setService(s)} style={{
-                  width:"100%", padding:"14px 16px", borderRadius:12,
-                  border:`1.5px solid ${borderClr}`,
-                  background:cardBg, cursor:"pointer",
-                  display:"flex", justifyContent:"space-between", alignItems:"center",
-                  textAlign:"start", transition:"border-color 0.15s ease",
-                  fontFamily:"inherit",
+                  width: "100%", padding: "14px 16px", borderRadius: 12,
+                  border: `1.5px solid ${borderClr}`,
+                  background: cardBg, cursor: "pointer",
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  textAlign: "start", transition: "border-color 0.15s ease",
+                  fontFamily: "inherit",
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = accentColor; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = borderClr; }}
                 >
                   <div>
-                    <div style={{ fontSize:15, fontWeight:700, color:darkColor }}>{s.name}</div>
-                    <div style={{ fontSize:13, color:darkColor, opacity:0.5, marginTop:2 }}>{s.duration} {t.min}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: darkColor }}>{s.name}</div>
+                    <div style={{ fontSize: 13, color: darkColor, opacity: 0.5, marginTop: 2 }}>{s.duration} {t.min}</div>
                   </div>
-                  <div style={{ fontSize:17, fontWeight:900, color:accentColor }}>₪{s.price}</div>
+                  <div style={{ fontSize: 17, fontWeight: 900, color: accentColor }}>₪{s.price}</div>
                 </button>
               ))}
             </div>
