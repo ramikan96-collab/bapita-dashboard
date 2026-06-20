@@ -221,16 +221,16 @@ Intake route is admin-only — reuse the same admin guard the existing `/api/adm
 
 ## Build order checklist
 
-- [ ] A — `_shared/` primitives; themes consume them; visual parity
-- [ ] D — `SectionHours` `mutedColor`; Dark legible
-- [ ] F — delete `studio-avi` + `CUSTOM_PAGES` entry
-- [ ] C — responsive `BookingOverlay` (sheet mobile / centered desktop)
-- [ ] B — `previewTheme` in `BookingShell` + `DemoThemeSwitcher` (draft-only)
-- [ ] H — `✨ Auto-create` button, `/admin/businesses/auto` screen, `/api/admin/intake` route, Gemini wiring, create-draft-then-redirect-to-edit
-- [ ] F.2 — `scripts/eject-page.ts` + `npm run eject`; "Eject to custom page" panel on `BusinessForm` (steps + copy buttons + Claude Code prompt)
-- [ ] Pull `GEMINI_API_KEY` into `.env.local`
-- [ ] Build passes, manual smoke on one draft business
-- [ ] Commit + push
+- [x] A — `_shared/` primitives; themes consume them; visual parity
+- [x] D — `SectionHours` `mutedColor`; Dark legible
+- [x] F — delete `studio-avi` + `CUSTOM_PAGES` entry
+- [x] C — responsive `BookingOverlay` (sheet mobile / centered desktop)
+- [x] B — `previewTheme` in `BookingShell` + `DemoThemeSwitcher` (draft-only)
+- [x] H — `✨ Auto-create` button, `/admin/businesses/auto` screen, `/api/admin/intake` route, Gemini wiring, create-draft-then-redirect-to-edit
+- [x] F.2 — `scripts/eject-page.ts` + `npm run eject`; "Eject to custom page" panel on `BusinessForm` (steps + copy buttons + Claude Code prompt)
+- [x] Pull `GEMINI_API_KEY` into `.env.local`
+- [x] Build passes, manual smoke on one draft business
+- [x] Commit + push
 
 ---
 
