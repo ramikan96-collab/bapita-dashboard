@@ -54,7 +54,7 @@ export function CleanPage({ business, services }: Props) {
 
   const accent       = business.accent_color || "#111111";
   const heroImage    = business.hero_image_url || FALLBACK_HERO;
-  const heroPos      = business.hero_position || "center";
+  const heroFocal    = business.image_focal?.[heroImage] || "center";
   const waNumber     = business.whatsapp_number?.replace(/\D/g, "");
   const openStatus   = getOpenStatus(business.business_hours, t.status, t.days);
   const igHandle     = getInstagramHandle(business.instagram_url);
@@ -127,7 +127,7 @@ export function CleanPage({ business, services }: Props) {
 
           {/* Open status / city pill */}
           <div className="cl-pill" style={{ marginBottom: 20 }}>
-            {openStatus ? (
+            {(business.show_open_status !== false && openStatus) ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.1)", borderRadius: 9999, padding: "5px 13px", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#4ade80" : "#9CA3AF", flexShrink: 0 }} />
                 {openStatus.text}
@@ -150,6 +150,7 @@ export function CleanPage({ business, services }: Props) {
           )}
 
           {/* Stars strip */}
+          {business.show_stats !== false && (
           <div className="cl-stars" style={{ marginBottom: 28 }}>
             {business.google_review_link ? (
               <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.1)", borderRadius: 9999, padding: "6px 14px", textDecoration: "none" }}>
@@ -163,6 +164,7 @@ export function CleanPage({ business, services }: Props) {
               </div>
             )}
           </div>
+          )}
 
           {/* CTA */}
           <button className="cl-cta" onClick={openFromCTA}
@@ -189,7 +191,7 @@ export function CleanPage({ business, services }: Props) {
 
         {/* Right — photo */}
         <div className="cl-hero-photo">
-          <img src={heroImage} alt="" className="cl-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `center ${heroPos}`, display: "block" }} />
+          <img src={heroImage} alt="" className="cl-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: heroFocal, display: "block" }} />
         </div>
       </section>
 
@@ -257,7 +259,7 @@ export function CleanPage({ business, services }: Props) {
               return business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.gallery.title} accent={accent} />
-                  <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={10} initialCount={4} />
+                  <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={10} initialCount={4} focal={business.image_focal ?? undefined} />
                 </section>
               ) : null;
             case "reviews":

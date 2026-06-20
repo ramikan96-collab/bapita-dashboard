@@ -78,12 +78,13 @@ interface FormData {
   about_text:         string;
   about_text_he:      string;
   accent_color:       string;
-  hero_position:      string;
+  image_focal:        Record<string, string>;
   show_gallery:       boolean;
   show_about:         boolean;
   show_hours:         boolean;
   show_location:      boolean;
   show_stats:         boolean;
+  show_open_status:   boolean;
   show_services:      boolean;
   show_reviews:       boolean;
   status:             "draft" | "live";
@@ -118,9 +119,9 @@ const EMPTY_FORM: FormData = {
   tagline: "", tagline_he: "", phone: "", address: "", email: "",
   instagram_url: "", facebook_url: "", tiktok_url: "", whatsapp_number: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
-  about_text: "", about_text_he: "", accent_color: "", hero_position: "center",
+  about_text: "", about_text_he: "", accent_color: "", image_focal: {},
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
-  show_stats: true, show_services: true, show_reviews: true,
+  show_stats: true, show_open_status: true, show_services: true, show_reviews: true,
   status: "draft",
   plan_tier: "", plan_price: "", plan_setup_price: "", plan_addons: [],
   plan_booking_limit: "", plan_start_date: "", plan_renewal_date: "", plan_notes: "",
@@ -186,12 +187,13 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           about_text:         b.about_text          || "",
           about_text_he:      b.about_text_he       || "",
           accent_color:       b.accent_color        || "",
-          hero_position:      b.hero_position        || "center",
+          image_focal:        (b.image_focal as Record<string, string>) || {},
           show_gallery:       b.show_gallery        ?? true,
           show_about:         b.show_about          ?? true,
           show_hours:         b.show_hours          ?? true,
           show_location:      b.show_location       ?? true,
           show_stats:         b.show_stats          ?? true,
+          show_open_status:   b.show_open_status    ?? true,
           show_services:      b.show_services       ?? true,
           show_reviews:       b.show_reviews        ?? true,
           status:             b.status              || "draft",
@@ -346,12 +348,13 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_hours:         form.show_hours,
       show_location:      form.show_location,
       show_stats:         form.show_stats,
+      show_open_status:   form.show_open_status,
       show_services:      form.show_services,
       show_reviews:       form.show_reviews,
       status:             form.status,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
-      hero_position:      form.hero_position       || "center",
+      image_focal:        form.image_focal,
       section_order:      sectionOrder,
       plan_tier:          form.plan_tier           || null,
       plan_price:         form.plan_price          ? Number(form.plan_price) : null,
@@ -434,12 +437,13 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_hours:         form.show_hours,
       show_location:      form.show_location,
       show_stats:         form.show_stats,
+      show_open_status:   form.show_open_status,
       show_services:      form.show_services,
       show_reviews:       form.show_reviews,
       status:             "draft" as const,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
-      hero_position:      form.hero_position       || "center",
+      image_focal:        form.image_focal,
       section_order:      sectionOrder,
       plan_tier:          form.plan_tier           || null,
       plan_price:         form.plan_price          ? Number(form.plan_price) : null,
@@ -934,7 +938,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                   {([
                     ["show_services", "Services"],
-                    ["show_stats",    "Stats Strip"],
+                    ["show_stats",    "Stats (hero)"],
+                    ["show_open_status", "Open/Closed (hero)"],
                     ["show_gallery",  "Gallery"],
                     ["show_about",    "About"],
                     ["show_reviews",  "Reviews"],
@@ -967,7 +972,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
           {/* ── GALLERY ── */}
           {tab === "gallery" && (
-            <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} heroPosition={form.hero_position} setHeroPosition={v => set("hero_position", v)} />
+            <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} focal={form.image_focal} setFocal={f => set("image_focal", f)} />
           )}
 
           {/* ── SERVICES ── */}
@@ -1378,18 +1383,29 @@ function SectionReorder({ order, setOrder }: { order: string[]; setOrder: (o: st
 
 // ─── Gallery Manager ──────────────────────────────────────────────────────────
 
-function GalleryManager({ gallery, setGallery, businessId, heroPosition, setHeroPosition }: {
+function GalleryManager({ gallery, setGallery, businessId, focal, setFocal }: {
   gallery:    GalleryItem[];
   setGallery: React.Dispatch<React.SetStateAction<GalleryItem[]>>;
   businessId?: string;
-  heroPosition: string;
-  setHeroPosition: (v: string) => void;
+  focal:    Record<string, string>;
+  setFocal: (f: Record<string, string>) => void;
 }) {
   const supabase  = createClient();
   const inputRef  = useRef<HTMLInputElement>(null);
   const dragIdx   = useRef<number | null>(null);
   const [dragOver,  setDragOver]  = useState<number | null>(null);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [focalEditUrl, setFocalEditUrl] = useState<string | null>(null);
+
+  function setImageFocal(url: string, value: string) {
+    setFocal({ ...focal, [url]: value });
+  }
+  function onFocalClick(e: React.MouseEvent<HTMLDivElement>, url: string) {
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = Math.round(((e.clientX - r.left) / r.width)  * 100);
+    const y = Math.round(((e.clientY - r.top)  / r.height) * 100);
+    setImageFocal(url, `${Math.max(0, Math.min(100, x))}% ${Math.max(0, Math.min(100, y))}%`);
+  }
 
   async function uploadFiles(files: File[]) {
     const placeholders: GalleryItem[] = files.map(() => ({ url: "", uploading: true }));
@@ -1457,44 +1473,8 @@ function GalleryManager({ gallery, setGallery, businessId, heroPosition, setHero
   return (
     <SectionCard title="Gallery">
       <p style={{ fontSize:13, color:"var(--color-muted)", marginTop:0, marginBottom:16 }}>
-        Drag to reorder. First image = hero on booking page.
+        Drag to reorder. First image = hero. Hover a photo and hit <strong>⌖ Crop</strong> to pick the focal point that stays in frame when it&apos;s cropped.
       </p>
-
-      {/* Hero crop position — controls object-position of the hero image on mobile */}
-      {gallery[0]?.url && !gallery[0].uploading && (
-        <div style={{ marginBottom:20 }}>
-          <p style={{ fontSize:13, fontWeight:600, color:"var(--color-dark)", margin:"0 0 8px" }}>
-            Hero crop (mobile framing)
-          </p>
-          <div style={{ display:"flex", gap:12, alignItems:"flex-start", flexWrap:"wrap" }}>
-            {/* Live preview at a phone-ish aspect ratio */}
-            <div style={{ width:120, aspectRatio:"9 / 16", borderRadius:10, overflow:"hidden", border:"1px solid var(--color-cream-2)", flexShrink:0, background:"var(--color-cream-2)" }}>
-              <img src={gallery[0].url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition: `center ${heroPosition}`, display:"block" }} />
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              {(["top","center","bottom"] as const).map(pos => (
-                <button
-                  key={pos}
-                  type="button"
-                  onClick={() => setHeroPosition(pos)}
-                  style={{
-                    padding:"8px 16px", borderRadius:8, cursor:"pointer", fontFamily:"inherit",
-                    fontSize:13, fontWeight:600, textTransform:"capitalize", minWidth:96, textAlign:"start",
-                    border: heroPosition === pos ? "2px solid var(--color-amber)" : "1px solid var(--color-cream-2)",
-                    background: heroPosition === pos ? "var(--color-amber)" : "#fff",
-                    color: heroPosition === pos ? "#fff" : "var(--color-dark)",
-                  }}
-                >
-                  {pos}
-                </button>
-              ))}
-            </div>
-          </div>
-          <p style={{ fontSize:12, color:"var(--color-muted)", margin:"8px 0 0" }}>
-            Pick which part of the photo stays in frame when it&apos;s cropped on small screens.
-          </p>
-        </div>
-      )}
 
       {gallery.length > 0 && (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10, marginBottom:16 }}>
@@ -1519,7 +1499,7 @@ function GalleryManager({ gallery, setGallery, businessId, heroPosition, setHero
               }}
             >
               {item.url && (
-                <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", pointerEvents:"none" }} />
+                <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition: focal[item.url] || "center", display:"block", pointerEvents:"none" }} />
               )}
               {item.uploading && (
                 <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"var(--color-muted)" }}>
@@ -1541,18 +1521,32 @@ function GalleryManager({ gallery, setGallery, businessId, heroPosition, setHero
               {/* Hover actions */}
               {hoveredIdx === i && !item.uploading && (
                 <div style={{ position:"absolute", inset:0, background:"rgba(34,21,16,0.28)", display:"flex", flexDirection:"column", justifyContent:"space-between", padding:6 }}>
-                  {i !== 0 ? (
-                    <button
-                      onClick={() => setAsHero(i)}
-                      style={{
-                        alignSelf:"flex-start", background:"rgba(34,21,16,0.7)", border:"none",
-                        borderRadius:6, color:"#fff", fontSize:9, fontWeight:700, padding:"3px 7px",
-                        cursor:"pointer", fontFamily:"inherit",
-                      }}
-                    >
-                      Set hero
-                    </button>
-                  ) : <div />}
+                  <div style={{ display:"flex", gap:5 }}>
+                    {i !== 0 && (
+                      <button
+                        onClick={() => setAsHero(i)}
+                        style={{
+                          background:"rgba(34,21,16,0.7)", border:"none",
+                          borderRadius:6, color:"#fff", fontSize:9, fontWeight:700, padding:"3px 7px",
+                          cursor:"pointer", fontFamily:"inherit",
+                        }}
+                      >
+                        Set hero
+                      </button>
+                    )}
+                    {item.url && (
+                      <button
+                        onClick={() => setFocalEditUrl(item.url)}
+                        style={{
+                          background:"rgba(34,21,16,0.7)", border:"none",
+                          borderRadius:6, color:"#fff", fontSize:9, fontWeight:700, padding:"3px 7px",
+                          cursor:"pointer", fontFamily:"inherit",
+                        }}
+                      >
+                        ⌖ Crop
+                      </button>
+                    )}
+                  </div>
                   <button
                     onClick={() => removeImage(i)}
                     style={{
@@ -1590,6 +1584,70 @@ function GalleryManager({ gallery, setGallery, businessId, heroPosition, setHero
         </p>
         <p style={{ fontSize:12, color:"var(--color-muted)", margin:0 }}>JPG, PNG, WEBP — multiple files OK</p>
       </div>
+
+      {/* Focal-point editor */}
+      {focalEditUrl && (() => {
+        const url = focalEditUrl;
+        const pos = focal[url] || "50% 50%";
+        const [fx, fy] = pos.replace(/%/g, "").split(" ").map(n => Number(n) || 50);
+        return (
+          <div
+            onClick={() => setFocalEditUrl(null)}
+            style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          >
+            <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:16, padding:20, maxWidth:560, width:"100%", maxHeight:"90vh", overflowY:"auto" }}>
+              <p style={{ fontSize:15, fontWeight:700, color:"var(--color-dark)", margin:"0 0 4px" }}>Set focal point</p>
+              <p style={{ fontSize:13, color:"var(--color-muted)", margin:"0 0 14px" }}>
+                Click the part of the photo that should always stay visible when it&apos;s cropped.
+              </p>
+
+              {/* Click target */}
+              <div
+                onClick={e => onFocalClick(e, url)}
+                style={{ position:"relative", width:"100%", maxHeight:"46vh", aspectRatio:"4 / 3", borderRadius:12, overflow:"hidden", cursor:"crosshair", background:"var(--color-cream-2)" }}
+              >
+                <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", pointerEvents:"none" }} />
+                <div style={{
+                  position:"absolute", left:`${fx}%`, top:`${fy}%`, transform:"translate(-50%,-50%)",
+                  width:26, height:26, borderRadius:"50%", border:"3px solid #fff",
+                  boxShadow:"0 0 0 2px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.4)", pointerEvents:"none",
+                }} />
+              </div>
+
+              {/* Crop previews */}
+              <div style={{ display:"flex", gap:12, marginTop:14, alignItems:"flex-start" }}>
+                <div>
+                  <div style={{ width:90, aspectRatio:"9 / 16", borderRadius:8, overflow:"hidden", border:"1px solid var(--color-cream-2)" }}>
+                    <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:pos, display:"block" }} />
+                  </div>
+                  <p style={{ fontSize:11, color:"var(--color-muted)", textAlign:"center", margin:"4px 0 0" }}>Phone</p>
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ width:"100%", aspectRatio:"16 / 9", borderRadius:8, overflow:"hidden", border:"1px solid var(--color-cream-2)" }}>
+                    <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:pos, display:"block" }} />
+                  </div>
+                  <p style={{ fontSize:11, color:"var(--color-muted)", textAlign:"center", margin:"4px 0 0" }}>Wide</p>
+                </div>
+              </div>
+
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:18 }}>
+                <button
+                  onClick={() => setImageFocal(url, "50% 50%")}
+                  style={{ background:"transparent", border:"1px solid var(--color-cream-2)", borderRadius:8, padding:"9px 16px", fontSize:13, fontWeight:600, color:"var(--color-muted)", cursor:"pointer", fontFamily:"inherit" }}
+                >
+                  Reset to center
+                </button>
+                <button
+                  onClick={() => setFocalEditUrl(null)}
+                  style={{ background:"var(--color-amber)", border:"none", borderRadius:8, padding:"9px 22px", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit" }}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </SectionCard>
   );
 }

@@ -7,9 +7,12 @@ interface Props {
   layout?: "featured" | "masonry" | "grid";
   borderRadius?: number;
   initialCount?: number;
+  /** per-image focal point map: { [url]: "x% y%" } */
+  focal?: Record<string, string>;
 }
 
-export function SectionGallery({ photos, layout = "featured", borderRadius = 10, initialCount }: Props) {
+export function SectionGallery({ photos, layout = "featured", borderRadius = 10, initialCount, focal }: Props) {
+  const fp = (url: string) => focal?.[url] || "center";
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
 
@@ -47,7 +50,7 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10,
         <div className="sg-clean">
           {visible.map((photo, i) => (
             <div key={i} style={{ borderRadius, overflow: "hidden", aspectRatio: "1 / 1", position: "relative" }}>
-              <img src={photo} alt="" style={{ ...imgStyle, position: "absolute", inset: 0 }} onClick={() => setLightboxIdx(i)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
+              <img src={photo} alt="" style={{ ...imgStyle, objectPosition: fp(photo), position: "absolute", inset: 0 }} onClick={() => setLightboxIdx(i)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
             </div>
           ))}
         </div>
@@ -60,7 +63,7 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10,
         <div className="sg-grid">
           {visible.map((photo, i) => (
             <div key={i} style={{ borderRadius, overflow: "hidden", aspectRatio: "4/3", position: "relative" }}>
-              <img src={photo} alt="" style={{ ...imgStyle, position: "absolute", inset: 0 }}
+              <img src={photo} alt="" style={{ ...imgStyle, objectPosition: fp(photo), position: "absolute", inset: 0 }}
                 onClick={() => setLightboxIdx(i)}
                 onMouseEnter={e => { e.currentTarget.style.filter = "brightness(0.8)"; e.currentTarget.style.transform = "scale(1.03)"; }}
                 onMouseLeave={e => { e.currentTarget.style.filter = "brightness(1)"; e.currentTarget.style.transform = "scale(1.0)"; }}
@@ -80,7 +83,7 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10,
     galleryNode = (
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ borderRadius, overflow: "hidden", aspectRatio: "16 / 9", position: "relative" }}>
-          <img src={hero} alt="" style={{ ...imgStyle, position: "absolute", inset: 0 }} onClick={() => setLightboxIdx(0)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
+          <img src={hero} alt="" style={{ ...imgStyle, objectPosition: fp(hero), position: "absolute", inset: 0 }} onClick={() => setLightboxIdx(0)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
         </div>
         {rest.length > 0 && (
           <>
@@ -88,7 +91,7 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10,
             <div className="sg-feat-grid">
               {rest.map((photo, i) => (
                 <div key={i} style={{ borderRadius, overflow: "hidden", aspectRatio: "4 / 3", position: "relative" }}>
-                  <img src={photo} alt="" style={{ ...imgStyle, position: "absolute", inset: 0 }} onClick={() => setLightboxIdx(i + 1)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
+                  <img src={photo} alt="" style={{ ...imgStyle, objectPosition: fp(photo), position: "absolute", inset: 0 }} onClick={() => setLightboxIdx(i + 1)} onMouseEnter={onEnter} onMouseLeave={onLeave} />
                 </div>
               ))}
             </div>

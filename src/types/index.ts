@@ -73,8 +73,10 @@ export interface Business {
   tagline?: string | null;
   tagline_he?: string | null;
   hero_image_url?: string | null;
-  /** object-position for the hero image: "top" | "center" | "bottom" (default center) */
+  /** object-position for the hero image: "top" | "center" | "bottom" (default center) — legacy, superseded by image_focal */
   hero_position?: string | null;
+  /** per-image focal point: { [imageUrl]: "x% y%" } — applied as object-position wherever the image is cropped */
+  image_focal?: Record<string, string> | null;
   gallery_images?: string[] | null;
   about_text?: string | null;
   about_text_he?: string | null;
@@ -104,6 +106,8 @@ export interface Business {
   stat_clients?:       number | null;
   stat_rating?:        string | null;
   show_stats?:         boolean | null;
+  /** show the "open now / opens at" status pill in the hero (default true) */
+  show_open_status?:   boolean | null;
   show_services?:      boolean | null;
   google_reviews?:     GoogleReview[] | null;
   show_reviews?:       boolean | null;

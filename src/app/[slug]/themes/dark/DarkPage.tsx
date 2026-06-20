@@ -104,7 +104,7 @@ export function DarkPage({ business, services }: Props) {
 
   const accent       = business.accent_color || "#C9A24A";
   const heroImage    = business.hero_image_url || FALLBACK_HERO;
-  const heroPos      = business.hero_position || "center";
+  const heroFocal    = business.image_focal?.[heroImage] || "center";
   const waNumber     = business.whatsapp_number?.replace(/\D/g, "");
   const openStatus   = getOpenStatus(business.business_hours, t.status, t.days);
   const igHandle     = getInstagramHandle(business.instagram_url);
@@ -118,7 +118,7 @@ export function DarkPage({ business, services }: Props) {
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
   return (
-    <div dir={isRtl ? "rtl" : "ltr"} style={{ background: D.bg, minHeight: "100svh", color: D.text, fontFamily: "'Inter', system-ui, sans-serif", position: "relative" }}>
+    <div dir={isRtl ? "rtl" : "ltr"} style={{ background: D.bg, minHeight: "100svh", color: D.text, fontFamily: "'Inter', system-ui, sans-serif", position: "relative", overflowX: "hidden" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap');
         @keyframes kenBurns   { 0%{transform:scale(1.0)} 100%{transform:scale(1.07)} }
@@ -162,12 +162,12 @@ export function DarkPage({ business, services }: Props) {
       {/* Hero */}
       <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-          <img src={heroImage} alt="" className="dk-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `center ${heroPos}`, transformOrigin: "center center" }} />
+          <img src={heroImage} alt="" className="dk-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: heroFocal, transformOrigin: "center center" }} />
         </div>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(13,13,13,0.6) 0%, rgba(13,13,13,0.1) 30%, rgba(13,13,13,0.1) 55%, rgba(13,13,13,0.88) 100%)" }} />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", width: "100%", maxWidth: 720 }}>
           <div className="dk-pill" style={{ marginBottom: 22, display: "flex", justifyContent: "center" }}>
-            {openStatus ? (
+            {(business.show_open_status !== false && openStatus) ? (
               <span style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", color: "#fff", borderRadius: 9999, padding: "5px 16px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,0.14)" }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#4ade80" : "#555", display: "inline-block" }} />
                 {openStatus.text}
@@ -194,6 +194,7 @@ export function DarkPage({ business, services }: Props) {
             </div>
           )}
           {/* Stars strip in hero */}
+          {business.show_stats !== false && (
           <div className="dk-cta" style={{ marginBottom: 28, display: "flex", justifyContent: "center" }}>
             {business.google_review_link ? (
               <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", border: `1px solid ${accent}40`, borderRadius: 9999, padding: "6px 16px", textDecoration: "none" }}>
@@ -207,6 +208,7 @@ export function DarkPage({ business, services }: Props) {
               </div>
             )}
           </div>
+          )}
           <button className="dk-cta" onClick={openFromCTA}
             style={{ fontFamily: "'Oswald', sans-serif", background: accent, border: `2px solid ${accent}`, color: D.bg, padding: "15px 48px", borderRadius: 2, fontSize: 16, fontWeight: 700, cursor: "pointer", letterSpacing: "0.1em", textTransform: "uppercase", transition: "background 0.2s, color 0.2s, transform 0.15s" }}
             onMouseEnter={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = accent; e.currentTarget.style.transform = "translateY(-2px)"; }}
@@ -298,7 +300,7 @@ export function DarkPage({ business, services }: Props) {
                 <div key={key}>
                   <GoldDivider accent={accent} />
                   <DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} />
-                  <SectionGallery photos={business.gallery_images} layout="grid" borderRadius={2} initialCount={4} />
+                  <SectionGallery photos={business.gallery_images} layout="grid" borderRadius={2} initialCount={4} focal={business.image_focal ?? undefined} />
                 </div>
               ) : null;
             case "reviews":

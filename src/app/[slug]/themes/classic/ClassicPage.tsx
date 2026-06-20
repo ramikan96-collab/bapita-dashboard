@@ -51,7 +51,7 @@ export function ClassicPage({ business, services }: Props) {
 
   const accent      = business.accent_color || C.gold;
   const heroImage   = business.hero_image_url || FALLBACK_HERO;
-  const heroPos     = business.hero_position || "center";
+  const heroFocal   = business.image_focal?.[heroImage] || "center";
   const openStatus  = getOpenStatus(business.business_hours, t.status, t.days);
   const igHandle    = getInstagramHandle(business.instagram_url);
   const cityLabel   = getCityFromAddress(business.address);
@@ -95,12 +95,12 @@ export function ClassicPage({ business, services }: Props) {
       {/* Hero */}
       <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-          <img src={heroImage} alt="" className="c-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: `center ${heroPos}`, transformOrigin: "center center" }} />
+          <img src={heroImage} alt="" className="c-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: heroFocal, transformOrigin: "center center" }} />
         </div>
         <div style={{ position: "absolute", inset: 0, background: "rgba(34,21,16,0.65)" }} />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", width: "100%", maxWidth: 640 }}>
           <div className="c-pill" style={{ marginBottom: 18, display: "flex", justifyContent: "center" }}>
-            {openStatus ? (
+            {(business.show_open_status !== false && openStatus) ? (
               <span style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)", color: "#fff", borderRadius: 9999, padding: "5px 14px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: openStatus.open ? "#22c55e" : "#888", display: "inline-block" }} />
                 {openStatus.text}
@@ -131,6 +131,7 @@ export function ClassicPage({ business, services }: Props) {
             </div>
           )}
           {/* Stars strip */}
+          {business.show_stats !== false && (
           <div className="c-hero-cta" style={{ marginBottom: 24, display: "flex", justifyContent: "center" }}>
             {business.google_review_link ? (
               <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(0,0,0,0.38)", backdropFilter: "blur(6px)", borderRadius: 9999, padding: "6px 14px", textDecoration: "none" }}>
@@ -144,6 +145,7 @@ export function ClassicPage({ business, services }: Props) {
               </div>
             )}
           </div>
+          )}
           <button className="c-hero-cta" onClick={openFromCTA}
             style={{ background: "#fff", border: "2px solid #fff", color: C.dark, padding: "14px 36px", borderRadius: 9999, fontSize: 16, fontWeight: 700, cursor: "pointer", letterSpacing: "0.02em", transition: "background 0.2s, color 0.2s, border-color 0.2s", fontFamily: "inherit" }}
             onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.borderColor = accent; e.currentTarget.style.color = "#fff"; }}
@@ -216,7 +218,7 @@ export function ClassicPage({ business, services }: Props) {
               return business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} />
-                  <div style={{ marginTop: 28 }}><SectionGallery photos={business.gallery_images} initialCount={4} /></div>
+                  <div style={{ marginTop: 28 }}><SectionGallery photos={business.gallery_images} initialCount={4} focal={business.image_focal ?? undefined} /></div>
                 </section>
               ) : null;
             case "reviews":
