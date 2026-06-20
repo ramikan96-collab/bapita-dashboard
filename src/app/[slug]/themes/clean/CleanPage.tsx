@@ -64,6 +64,16 @@ export function CleanPage({ business, services }: Props) {
   const cityLabel    = getCityFromAddress(business.address);
   const hasStats     = business.stat_years != null || business.stat_clients != null || business.stat_rating != null;
   const displayName  = (isRtl && business.name_he) ? business.name_he : business.name;
+
+  const socialProofText = (() => {
+    if (business.stat_rating && business.stat_clients)
+      return isRtl ? `${business.stat_rating} · ${business.stat_clients}+ לקוחות מרוצים` : `${business.stat_rating} · ${business.stat_clients}+ happy clients`;
+    if (business.stat_rating)
+      return isRtl ? `${business.stat_rating} ⭐ גוגל` : `${business.stat_rating} Google rating`;
+    if (business.stat_clients)
+      return isRtl ? `${business.stat_clients}+ לקוחות מרוצים` : `${business.stat_clients}+ happy clients`;
+    return t.social.happyClients;
+  })();
   const displayTag   = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
   const displayAbout = (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
@@ -100,12 +110,12 @@ export function CleanPage({ business, services }: Props) {
 
       <LangToggle lang={lang} setLang={setLang} />
 
-      {/* Sticky header — fixed positioning, no logical properties */}
+      {/* Sticky header */}
       {stickyVisible && (
-        <div className="cl-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", paddingLeft: 24, paddingRight: 140 }}>
+        <div className="cl-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", gap: 12, paddingInlineStart: 24, paddingInlineEnd: 20 }}>
           <span style={{ fontSize: 15, fontWeight: 800, color: P.text, letterSpacing: "-0.02em", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
           <button onClick={openFromCTA}
-            style={{ position: "absolute", right: 140, top: "50%", transform: "translateY(-50%)", height: 36, padding: "0 18px", borderRadius: 9999, background: accent, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}
+            style={{ flexShrink: 0, height: 36, padding: "0 18px", borderRadius: 9999, background: accent, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}
             onMouseEnter={e => { e.currentTarget.style.opacity = "0.82"; }}
             onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
           >{t.hero.cta}</button>
@@ -151,12 +161,12 @@ export function CleanPage({ business, services }: Props) {
             {business.google_review_link ? (
               <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.1)", borderRadius: 9999, padding: "6px 14px", textDecoration: "none" }}>
                 <span style={{ display: "flex", gap: 2, color: accent || "#F59E0B" }}>{[0,1,2,3,4].map(i => <StarIcon key={i} size={13} color="currentColor" />)}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>{t.social.happyClients}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>{socialProofText}</span>
               </a>
             ) : (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.1)", borderRadius: 9999, padding: "6px 14px" }}>
                 <span style={{ display: "flex", gap: 2, color: accent || "#F59E0B" }}>{[0,1,2,3,4].map(i => <StarIcon key={i} size={13} color="currentColor" />)}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>{t.social.happyClients}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>{socialProofText}</span>
               </div>
             )}
           </div>
@@ -190,26 +200,30 @@ export function CleanPage({ business, services }: Props) {
         </div>
       </section>
 
-      {/* Stats row */}
+      {/* Stats strip */}
       {business.show_stats !== false && hasStats && (
-        <div ref={statsRef} style={{ padding: "40px 20px 0", maxWidth: 640, margin: "0 auto" }}>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            {business.stat_years != null && (
-              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0s, transform 0.55s ease 0s, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-                <div style={{ fontSize: 32, fontWeight: 800, color: P.text, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_years}+</div>
-                <div style={{ fontSize: 11, color: P.muted, fontWeight: 600, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "שנות ניסיון" : "Years Exp."}</div>
+        <div ref={statsRef} style={{ padding: "32px 20px 0", maxWidth: 640, margin: "0 auto",
+          opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(12px)",
+          transition: "opacity 0.55s ease, transform 0.55s ease" }}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+            {business.stat_years != null && <>
+              <div style={{ textAlign: "center", padding: "0 20px" }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: P.text, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_years}+</div>
+                <div style={{ fontSize: 10, color: P.muted, fontWeight: 700, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "שנות ניסיון" : "Years Exp."}</div>
               </div>
-            )}
-            {business.stat_clients != null && (
-              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.1s, transform 0.55s ease 0.1s, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-                <div style={{ fontSize: 32, fontWeight: 800, color: P.text, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_clients}+</div>
-                <div style={{ fontSize: 11, color: P.muted, fontWeight: 600, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "לקוחות מרוצים" : "Happy Clients"}</div>
+              {(business.stat_clients != null || business.stat_rating != null) && <div style={{ width: 1, height: 32, background: P.border, flexShrink: 0 }} />}
+            </>}
+            {business.stat_clients != null && <>
+              <div style={{ textAlign: "center", padding: "0 20px" }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: P.text, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_clients}+</div>
+                <div style={{ fontSize: 10, color: P.muted, fontWeight: 700, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "לקוחות" : "Clients"}</div>
               </div>
-            )}
+              {business.stat_rating != null && <div style={{ width: 1, height: 32, background: P.border, flexShrink: 0 }} />}
+            </>}
             {business.stat_rating != null && (
-              <div className="cl-stat-card" style={{ flex: "1 1 120px", maxWidth: 180, background: P.surface, border: `1px solid ${P.border}`, borderRadius: 14, padding: "20px 16px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.2s, transform 0.55s ease 0.2s, box-shadow 0.18s ease", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-                <div style={{ fontSize: 32, fontWeight: 800, color: "#F59E0B", letterSpacing: "-0.04em", lineHeight: 1 }}>⭐ {business.stat_rating}</div>
-                <div style={{ fontSize: 11, color: P.muted, fontWeight: 600, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "גוגל" : "Google"}</div>
+              <div style={{ textAlign: "center", padding: "0 20px" }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: "#F59E0B", letterSpacing: "-0.04em", lineHeight: 1 }}>⭐ {business.stat_rating}</div>
+                <div style={{ fontSize: 10, color: P.muted, fontWeight: 700, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "גוגל" : "Google"}</div>
               </div>
             )}
           </div>
@@ -219,8 +233,12 @@ export function CleanPage({ business, services }: Props) {
       {/* Main content */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px" }}>
 
-        {/* Sections — ordered by business.section_order */}
-        {(business.section_order || DEFAULT_SECTION_ORDER).map(key => {
+        {/* Sections — ordered by business.section_order, missing keys appended */}
+        {(() => {
+          const base = business.section_order || DEFAULT_SECTION_ORDER;
+          const missing = DEFAULT_SECTION_ORDER.filter(k => !base.includes(k));
+          return missing.length ? [...base, ...missing] : base;
+        })().map(key => {
           switch (key) {
             case "services":
               return business.show_services !== false ? (
@@ -280,12 +298,12 @@ export function CleanPage({ business, services }: Props) {
                 </section>
               ) : null;
             case "reviews":
-              return business.show_reviews !== false && business.google_reviews && business.google_reviews.length > 0 ? (
+              return business.show_reviews !== false && ((business.google_reviews && business.google_reviews.length > 0) || !!business.google_review_link) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.reviews.title} accent={accent} />
                   <div style={{ marginTop: 20 }}>
                     <SectionReviews
-                      reviews={business.google_reviews}
+                      reviews={business.google_reviews ?? []}
                       accentColor={accent}
                       darkColor={P.text}
                       bgColor={P.surface}

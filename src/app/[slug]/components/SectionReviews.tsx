@@ -25,7 +25,7 @@ interface Props {
 }
 
 export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borderColor, reviewLink, leaveReviewLabel }: Props) {
-  if (!reviews.length) return null;
+  if (!reviews.length && !reviewLink) return null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

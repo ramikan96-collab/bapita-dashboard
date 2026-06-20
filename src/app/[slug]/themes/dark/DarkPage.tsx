@@ -12,7 +12,6 @@ import { translations, type Lang } from "../../translations";
 import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../../utils/openStatus";
 import { IgIcon, WaIcon, StarIcon } from "../../_shared/icons";
 import { useFadeInOnEnter } from "../../_shared/useFadeInOnEnter";
-import { useCountUp } from "../../_shared/useCountUp";
 import { LangToggle } from "../../_shared/LangToggle";
 import { ThemeFooter } from "../../_shared/ThemeFooter";
 
@@ -69,37 +68,6 @@ function DarkSectionTitle({ title, accent, isRtl }: { title: string; accent: str
   );
 }
 
-// ─── Stats chip with count-up ─────────────────────────────────────────────────
-
-function StatChip({ value, suffix, label, accent, delay, enabled }: {
-  value: number | null;
-  suffix?: string;
-  label: string;
-  accent: string;
-  delay: number;
-  enabled: boolean;
-}) {
-  const counted = useCountUp(value, 1400, enabled);
-  return (
-    <div style={{
-      flex: "1 1 100px",
-      background: D.surface,
-      border: `1px solid ${accent}30`,
-      borderRadius: 2,
-      padding: "28px 16px 22px",
-      textAlign: "center",
-      opacity: enabled ? 1 : 0,
-      transform: enabled ? "translateY(0)" : "translateY(24px)",
-      transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
-    }}>
-      <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 44, fontWeight: 700, color: accent, lineHeight: 1, letterSpacing: "-0.01em" }}>
-        {value != null ? counted : "—"}{suffix}
-      </div>
-      <div style={{ fontSize: 10, fontWeight: 600, color: D.muted, marginTop: 8, textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</div>
-    </div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 interface Props { business: Business; services: Service[]; }
@@ -117,6 +85,16 @@ export function DarkPage({ business, services }: Props) {
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
   const { ref: statsRef,    visible: statsVisible }    = useFadeInOnEnter(0.25);
+
+  const socialProofText = (() => {
+    if (business.stat_rating && business.stat_clients)
+      return isRtl ? `${business.stat_rating} · ${business.stat_clients}+ לקוחות מרוצים` : `${business.stat_rating} · ${business.stat_clients}+ happy clients`;
+    if (business.stat_rating)
+      return isRtl ? `${business.stat_rating} ⭐ גוגל` : `${business.stat_rating} Google rating`;
+    if (business.stat_clients)
+      return isRtl ? `${business.stat_clients}+ לקוחות מרוצים` : `${business.stat_clients}+ happy clients`;
+    return t.social.happyClients;
+  })();
 
   useEffect(() => {
     const onScroll = () => {
@@ -178,10 +156,10 @@ export function DarkPage({ business, services }: Props) {
 
       {/* Sticky header */}
       {stickyVisible && (
-        <div className="dk-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(13,13,13,0.92)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${accent}25`, display: "flex", alignItems: "center", paddingLeft: 24, paddingRight: 128 }}>
+        <div className="dk-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(13,13,13,0.92)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${accent}25`, display: "flex", alignItems: "center", gap: 12, paddingInlineStart: 24, paddingInlineEnd: 20 }}>
           <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, color: D.text, letterSpacing: "0.08em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayName}</span>
           <button onClick={openFromCTA}
-            style={{ fontFamily: "'Oswald', sans-serif", position: "absolute", right: 128, top: "50%", transform: "translateY(-50%)", height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
+            style={{ fontFamily: "'Oswald', sans-serif", flexShrink: 0, height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
             onMouseEnter={e => { e.currentTarget.style.background = "#fff"; }}
             onMouseLeave={e => { e.currentTarget.style.background = accent; }}
           >{t.hero.bookNow}</button>
@@ -227,12 +205,12 @@ export function DarkPage({ business, services }: Props) {
             {business.google_review_link ? (
               <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", border: `1px solid ${accent}40`, borderRadius: 9999, padding: "6px 16px", textDecoration: "none" }}>
                 <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <StarIcon key={i} size={12} color="currentColor" />)}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#fff" }}>{t.social.happyClients}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#fff" }}>{socialProofText}</span>
               </a>
             ) : (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", border: `1px solid ${accent}40`, borderRadius: 9999, padding: "6px 16px" }}>
                 <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <StarIcon key={i} size={12} color="currentColor" />)}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#fff" }}>{t.social.happyClients}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#fff" }}>{socialProofText}</span>
               </div>
             )}
           </div>
@@ -253,38 +231,36 @@ export function DarkPage({ business, services }: Props) {
             <span style={{ display: "flex", gap: 2, color: accent }}>
               {[0,1,2,3,4].map(i => <StarIcon key={i} size={15} color="currentColor" />)}
             </span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: D.text }}>{t.social.happyClients}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: D.text }}>{socialProofText}</span>
           </div>
         );
         return business.google_review_link ? <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", position: "relative", zIndex: 1 }}>{bar}</a> : <div style={{ position: "relative", zIndex: 1 }}>{bar}</div>;
       })()}
 
-      {/* Stats row with count-up */}
+      {/* Stats strip */}
       {business.show_stats !== false && hasStats && (
-        <div ref={statsRef} style={{ position: "relative", zIndex: 1, maxWidth: 640, margin: "0 auto", padding: "0 20px" }}>
-          <div style={{ display: "flex", gap: 2, marginTop: 2 }}>
-            {business.stat_years != null && (
-              <StatChip value={business.stat_years} suffix="+" label={isRtl ? "שנות ניסיון" : "Years Exp."} accent={accent} delay={0} enabled={statsVisible} />
-            )}
-            {business.stat_clients != null && (
-              <StatChip value={business.stat_clients} suffix="+" label={isRtl ? "לקוחות" : "Clients Served"} accent={accent} delay={120} enabled={statsVisible} />
-            )}
+        <div ref={statsRef} style={{ position: "relative", zIndex: 1, maxWidth: 640, margin: "0 auto", padding: "20px 20px 0",
+          opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(12px)",
+          transition: "opacity 0.6s ease, transform 0.6s ease" }}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+            {business.stat_years != null && <>
+              <div style={{ textAlign: "center", padding: "0 20px" }}>
+                <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 22, fontWeight: 700, color: accent, lineHeight: 1 }}>{business.stat_years}+</div>
+                <div style={{ fontSize: 10, color: D.muted, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "שנות ניסיון" : "Years Exp."}</div>
+              </div>
+              {(business.stat_clients != null || business.stat_rating != null) && <div style={{ width: 1, height: 32, background: `${accent}35`, flexShrink: 0 }} />}
+            </>}
+            {business.stat_clients != null && <>
+              <div style={{ textAlign: "center", padding: "0 20px" }}>
+                <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 22, fontWeight: 700, color: accent, lineHeight: 1 }}>{business.stat_clients}+</div>
+                <div style={{ fontSize: 10, color: D.muted, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "לקוחות" : "Clients"}</div>
+              </div>
+              {business.stat_rating != null && <div style={{ width: 1, height: 32, background: `${accent}35`, flexShrink: 0 }} />}
+            </>}
             {business.stat_rating != null && (
-              <div style={{
-                flex: "1 1 100px",
-                background: D.surface,
-                border: `1px solid ${accent}30`,
-                borderRadius: 2,
-                padding: "28px 16px 22px",
-                textAlign: "center",
-                opacity: statsVisible ? 1 : 0,
-                transform: statsVisible ? "translateY(0)" : "translateY(24px)",
-                transition: `opacity 0.6s ease 240ms, transform 0.6s ease 240ms`,
-              }}>
-                <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 44, fontWeight: 700, color: accent, lineHeight: 1, letterSpacing: "-0.01em" }}>
-                  ⭐ {business.stat_rating}
-                </div>
-                <div style={{ fontSize: 10, fontWeight: 600, color: D.muted, marginTop: 8, textTransform: "uppercase", letterSpacing: "0.1em" }}>{isRtl ? "גוגל" : "Google Rating"}</div>
+              <div style={{ textAlign: "center", padding: "0 20px" }}>
+                <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 22, fontWeight: 700, color: "#F59E0B", lineHeight: 1 }}>⭐ {business.stat_rating}</div>
+                <div style={{ fontSize: 10, color: D.muted, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "גוגל" : "Google"}</div>
               </div>
             )}
           </div>
@@ -294,8 +270,12 @@ export function DarkPage({ business, services }: Props) {
       {/* Main content */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px", position: "relative", zIndex: 1 }}>
 
-        {/* Sections — ordered by business.section_order */}
-        {(business.section_order || DEFAULT_SECTION_ORDER).map(key => {
+        {/* Sections — ordered by business.section_order, missing keys appended */}
+        {(() => {
+          const base = business.section_order || DEFAULT_SECTION_ORDER;
+          const missing = DEFAULT_SECTION_ORDER.filter(k => !base.includes(k));
+          return missing.length ? [...base, ...missing] : base;
+        })().map(key => {
           switch (key) {
             case "services":
               return business.show_services !== false ? (
@@ -372,12 +352,12 @@ export function DarkPage({ business, services }: Props) {
                 </div>
               ) : null;
             case "reviews":
-              return business.show_reviews !== false && business.google_reviews && business.google_reviews.length > 0 ? (
+              return business.show_reviews !== false && ((business.google_reviews && business.google_reviews.length > 0) || !!business.google_review_link) ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
                   <DarkSectionTitle title={t.reviews.title} accent={accent} isRtl={isRtl} />
                   <SectionReviews
-                    reviews={business.google_reviews}
+                    reviews={business.google_reviews ?? []}
                     accentColor={accent}
                     darkColor={D.text}
                     bgColor={D.surface}

@@ -58,6 +58,16 @@ export function ClassicPage({ business, services }: Props) {
   const waNumber    = business.whatsapp_number?.replace(/\D/g, "");
   const displayName = (isRtl && business.name_he) ? business.name_he : business.name;
   const hasStats    = business.stat_years != null || business.stat_clients != null || business.stat_rating != null;
+
+  const socialProofText = (() => {
+    if (business.stat_rating && business.stat_clients)
+      return isRtl ? `${business.stat_rating} · ${business.stat_clients}+ לקוחות מרוצים` : `${business.stat_rating} · ${business.stat_clients}+ happy clients`;
+    if (business.stat_rating)
+      return isRtl ? `${business.stat_rating} ⭐ גוגל` : `${business.stat_rating} Google rating`;
+    if (business.stat_clients)
+      return isRtl ? `${business.stat_clients}+ לקוחות מרוצים` : `${business.stat_clients}+ happy clients`;
+    return t.social.happyClients;
+  })();
   const displayTag  = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
   const displayAbout= (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
@@ -126,12 +136,12 @@ export function ClassicPage({ business, services }: Props) {
             {business.google_review_link ? (
               <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(0,0,0,0.38)", backdropFilter: "blur(6px)", borderRadius: 9999, padding: "6px 14px", textDecoration: "none" }}>
                 <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <StarIcon key={i} size={13} color="currentColor" />)}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{t.social.happyClients}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{socialProofText}</span>
               </a>
             ) : (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(0,0,0,0.38)", backdropFilter: "blur(6px)", borderRadius: 9999, padding: "6px 14px" }}>
                 <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <StarIcon key={i} size={13} color="currentColor" />)}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{t.social.happyClients}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{socialProofText}</span>
               </div>
             )}
           </div>
@@ -152,7 +162,7 @@ export function ClassicPage({ business, services }: Props) {
             <span style={{ display: "flex", gap: 2, color: accent }}>
               {[0,1,2,3,4].map(i => <StarIcon key={i} size={16} color="currentColor" />)}
             </span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: C.dark }}>{t.social.happyClients}</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: C.dark }}>{socialProofText}</span>
           </div>
         );
         return business.google_review_link
@@ -160,26 +170,30 @@ export function ClassicPage({ business, services }: Props) {
           : bar;
       })()}
 
-      {/* Stats chips */}
+      {/* Stats strip */}
       {business.show_stats !== false && hasStats && (
-        <div ref={statsRef} style={{ padding: "32px 20px 0", maxWidth: 640, margin: "0 auto" }}>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-            {business.stat_years != null && (
-              <div style={{ flex: "1 1 100px", maxWidth: 160, background: "#fff", border: `1px solid ${accent}33`, borderRadius: 12, padding: "18px 14px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0s, transform 0.55s ease 0s", boxShadow: "0 1px 6px rgba(34,21,16,0.06)" }}>
-                <div style={{ fontSize: 30, fontWeight: 900, color: C.dark, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_years}+</div>
-                <div style={{ fontSize: 10, color: C.dark, opacity: 0.5, fontWeight: 700, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "שנות ניסיון" : "Years Exp."}</div>
+        <div ref={statsRef} style={{ padding: "32px 20px 0", maxWidth: 640, margin: "0 auto",
+          opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(12px)",
+          transition: "opacity 0.55s ease, transform 0.55s ease" }}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+            {business.stat_years != null && <>
+              <div style={{ textAlign: "center", padding: "0 20px" }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: C.dark, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_years}+</div>
+                <div style={{ fontSize: 10, color: C.dark, opacity: 0.45, fontWeight: 700, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "שנות ניסיון" : "Years Exp."}</div>
               </div>
-            )}
-            {business.stat_clients != null && (
-              <div style={{ flex: "1 1 100px", maxWidth: 160, background: "#fff", border: `1px solid ${accent}33`, borderRadius: 12, padding: "18px 14px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.1s, transform 0.55s ease 0.1s", boxShadow: "0 1px 6px rgba(34,21,16,0.06)" }}>
-                <div style={{ fontSize: 30, fontWeight: 900, color: C.dark, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_clients}+</div>
-                <div style={{ fontSize: 10, color: C.dark, opacity: 0.5, fontWeight: 700, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "לקוחות מרוצים" : "Happy Clients"}</div>
+              {(business.stat_clients != null || business.stat_rating != null) && <div style={{ width: 1, height: 32, background: `${accent}35`, flexShrink: 0 }} />}
+            </>}
+            {business.stat_clients != null && <>
+              <div style={{ textAlign: "center", padding: "0 20px" }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: C.dark, letterSpacing: "-0.04em", lineHeight: 1 }}>{business.stat_clients}+</div>
+                <div style={{ fontSize: 10, color: C.dark, opacity: 0.45, fontWeight: 700, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "לקוחות" : "Clients"}</div>
               </div>
-            )}
+              {business.stat_rating != null && <div style={{ width: 1, height: 32, background: `${accent}35`, flexShrink: 0 }} />}
+            </>}
             {business.stat_rating != null && (
-              <div style={{ flex: "1 1 100px", maxWidth: 160, background: "#fff", border: `1px solid ${accent}33`, borderRadius: 12, padding: "18px 14px", textAlign: "center", opacity: statsVisible ? 1 : 0, transform: statsVisible ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.55s ease 0.2s, transform 0.55s ease 0.2s", boxShadow: "0 1px 6px rgba(34,21,16,0.06)" }}>
-                <div style={{ fontSize: 30, fontWeight: 900, color: "#F59E0B", letterSpacing: "-0.04em", lineHeight: 1 }}>⭐ {business.stat_rating}</div>
-                <div style={{ fontSize: 10, color: C.dark, opacity: 0.5, fontWeight: 700, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "גוגל" : "Google"}</div>
+              <div style={{ textAlign: "center", padding: "0 20px" }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: "#F59E0B", letterSpacing: "-0.04em", lineHeight: 1 }}>⭐ {business.stat_rating}</div>
+                <div style={{ fontSize: 10, color: C.dark, opacity: 0.45, fontWeight: 700, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{isRtl ? "גוגל" : "Google"}</div>
               </div>
             )}
           </div>
@@ -188,7 +202,11 @@ export function ClassicPage({ business, services }: Props) {
 
       {/* Sections — ordered by business.section_order */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px" }}>
-        {(business.section_order || DEFAULT_SECTION_ORDER).map(key => {
+        {(() => {
+          const base = business.section_order || DEFAULT_SECTION_ORDER;
+          const missing = DEFAULT_SECTION_ORDER.filter(k => !base.includes(k));
+          return missing.length ? [...base, ...missing] : base;
+        })().map(key => {
           switch (key) {
             case "services":
               return business.show_services !== false ? (
@@ -248,12 +266,12 @@ export function ClassicPage({ business, services }: Props) {
                 </section>
               ) : null;
             case "reviews":
-              return business.show_reviews !== false && business.google_reviews && business.google_reviews.length > 0 ? (
+              return business.show_reviews !== false && ((business.google_reviews && business.google_reviews.length > 0) || !!business.google_review_link) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.reviews.title} accentColor={accent} darkColor={C.dark} />
                   <div style={{ marginTop: 20 }}>
                     <SectionReviews
-                      reviews={business.google_reviews}
+                      reviews={business.google_reviews ?? []}
                       accentColor={accent}
                       darkColor={C.dark}
                       bgColor="#fff"

@@ -2,7 +2,7 @@ function isSafeUrl(u?: string | null): u is string {
   if (!u) return false;
   try {
     const p = new URL(u);
-    return p.protocol === "https:" || p.protocol === "http:";
+    return p.protocol === "https:" || p.protocol === "http:" || p.protocol === "waze:";
   } catch { return false; }
 }
 

@@ -10,10 +10,11 @@ const SECTION_LABELS: Record<string, string> = {
   services: "Services",
   gallery:  "Gallery",
   about:    "About",
+  reviews:  "Reviews",
   hours:    "Hours",
   location: "Location",
 };
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "reviews", "hours", "location"];
 
 const DAYS: { key: DayKey; label: string }[] = [
   { key: "sunday",    label: "Sunday"    },
@@ -436,7 +437,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       { id: "services" as Tab, label: `Services (${services.length})`                        },
       { id: "hours"    as Tab, label: "Hours"                                                },
       { id: "reviews"  as Tab, label: `Reviews (${adminReviews.length})`                    },
-      { id: "plan"     as Tab, label: "Plan & Stats"                                        },
+      { id: "plan"     as Tab, label: "Stats"                                               },
     ] : []),
   ];
 
@@ -582,15 +583,44 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   )}
                 </Row>
                 {mode === "edit" && (
-                  <Row>
-                    <Field label="Template">
-                      <select value={form.template_style} onChange={e => set("template_style", e.target.value)} style={inputStyle}>
-                        <option value="classic">Classic (cream/gold)</option>
-                        <option value="clean">Clean (white/black)</option>
-                        <option value="dark">Dark (dark/gold)</option>
-                      </select>
-                    </Field>
-                  </Row>
+                  <>
+                    <Row>
+                      <Field label="Template">
+                        <select value={form.template_style} onChange={e => set("template_style", e.target.value)} style={inputStyle}>
+                          <option value="classic">Classic (cream/gold)</option>
+                          <option value="clean">Clean (white/black)</option>
+                          <option value="dark">Dark (dark/gold)</option>
+                        </select>
+                      </Field>
+                      {!cloning && !confirmClone && (
+                        <Field label=" ">
+                          <button
+                            onClick={() => setConfirmClone(true)}
+                            style={{ width:"100%", height:42, borderRadius:9, border:"none", background:"#2563EB", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"background 0.15s" }}
+                            onMouseEnter={e => { e.currentTarget.style.background = "#1D4ED8"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = "#2563EB"; }}
+                          >Clone business</button>
+                        </Field>
+                      )}
+                    </Row>
+                    {!cloning && confirmClone && (
+                      <div style={{ background:"#FEF3C7", borderRadius:11, padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, border:"1px solid #FDE68A" }}>
+                        <span style={{ fontSize:13, color:"#92400E", fontWeight:600 }}>
+                          Duplicate all data to new pages? They start as draft. Original untouched.
+                        </span>
+                        <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+                          <button
+                            onClick={() => { setConfirmClone(false); setCloning(true); setVariants([{ slug: "", template: form.template_style || "classic" }]); }}
+                            style={{ height:30, padding:"0 14px", borderRadius:8, border:"none", background:"var(--color-amber)", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}
+                          >Yes, Clone</button>
+                          <button
+                            onClick={() => setConfirmClone(false)}
+                            style={{ height:30, padding:"0 12px", borderRadius:8, border:"1.5px solid #FDE68A", background:"transparent", color:"#92400E", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}
+                          >Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Eject to custom page */}
@@ -733,39 +763,6 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     )}
                   </div>
                 )}
-                {/* Clone button — edit mode only, not while cloning */}
-                {mode === "edit" && !cloning && (
-                  confirmClone ? (
-                    <div style={{ background:"#FEF3C7", borderRadius:11, padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, border:"1px solid #FDE68A" }}>
-                      <span style={{ fontSize:13, color:"#92400E", fontWeight:600 }}>
-                        Duplicate all data to new pages? They start as draft. Original untouched.
-                      </span>
-                      <div style={{ display:"flex", gap:8, flexShrink:0 }}>
-                        <button
-                          onClick={() => { setConfirmClone(false); setCloning(true); setVariants([{ slug: "", template: form.template_style || "classic" }]); }}
-                          style={{ height:30, padding:"0 14px", borderRadius:8, border:"none", background:"var(--color-amber)", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}
-                        >
-                          Yes, Clone
-                        </button>
-                        <button
-                          onClick={() => setConfirmClone(false)}
-                          style={{ height:30, padding:"0 12px", borderRadius:8, border:"1.5px solid #FDE68A", background:"transparent", color:"#92400E", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmClone(true)}
-                      style={{ alignSelf:"flex-start", height:32, padding:"0 14px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"var(--color-cream)", color:"var(--color-muted)", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"border-color 0.15s, color 0.15s" }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor="var(--color-amber)"; e.currentTarget.style.color="var(--color-dark)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor="var(--color-cream-2)"; e.currentTarget.style.color="var(--color-muted)"; }}
-                    >
-                      Clone business
-                    </button>
-                  )
-                )}
 
                 <Row>
                   <Field label="Default Language">
@@ -888,9 +885,10 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                   {([
                     ["show_services", "Services"],
-                    ["show_stats",    "Stats Chips"],
+                    ["show_stats",    "Stats Strip"],
                     ["show_gallery",  "Gallery"],
                     ["show_about",    "About"],
+                    ["show_reviews",  "Reviews"],
                     ["show_hours",    "Business Hours"],
                     ["show_location", "Location"],
                   ] as [keyof FormData, string][]).map(([key, label]) => (
@@ -1060,59 +1058,18 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 </div>
               </SectionCard>
 
-              {/* Plan */}
-              <SectionCard title="Bapita Plan — Internal">
+              {/* Billing */}
+              <SectionCard title="Billing — Internal">
                 <p style={{ fontSize:12, color:"var(--color-muted)", marginTop:0, marginBottom:4, fontStyle:"italic" }}>
-                  Your business records. Not visible to the barber.
+                  Not visible to the barber.
                 </p>
                 <Row>
-                  <Field label="Plan Tier">
-                    <select value={form.plan_tier} onChange={e => set("plan_tier", e.target.value)} style={inputStyle}>
-                      <option value="">— select —</option>
-                      {PLAN_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </Field>
                   <Field label="Monthly Price (₪)">
                     <input value={form.plan_price} onChange={e => set("plan_price", e.target.value)}
                       type="number" placeholder="299" style={inputStyle} />
                   </Field>
+                  <div />
                 </Row>
-                <Row>
-                  <Field label="Booking Limit / month">
-                    <input value={form.plan_booking_limit} onChange={e => set("plan_booking_limit", e.target.value)}
-                      type="number" placeholder="100" style={inputStyle} />
-                  </Field>
-                  <div /> {/* spacer */}
-                </Row>
-                <Row>
-                  <Field label="Start Date">
-                    <input value={form.plan_start_date} onChange={e => set("plan_start_date", e.target.value)}
-                      type="date" style={inputStyle} />
-                  </Field>
-                  <Field label="Renewal Date">
-                    <input value={form.plan_renewal_date} onChange={e => set("plan_renewal_date", e.target.value)}
-                      type="date" style={inputStyle} />
-                  </Field>
-                </Row>
-
-                <Field label="Add-ons Enabled">
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:4 }}>
-                    {PLAN_ADDONS.map(a => (
-                      <label key={a.key} style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", padding:"8px 10px", borderRadius:8, background:"var(--color-cream)", border:`1.5px solid ${form.plan_addons.includes(a.key) ? "var(--color-amber)" : "var(--color-cream-2)"}`, transition:"border-color 0.15s" }}>
-                        <input
-                          type="checkbox"
-                          checked={form.plan_addons.includes(a.key)}
-                          onChange={() => toggleAddon(a.key)}
-                          style={{ accentColor:"var(--color-amber)", width:14, height:14, flexShrink:0 }}
-                        />
-                        <span style={{ fontSize:13, color:"var(--color-dark)", fontWeight:form.plan_addons.includes(a.key) ? 700 : 500 }}>
-                          {a.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </Field>
-
                 <Field label="Internal Notes">
                   <textarea
                     value={form.plan_notes}
