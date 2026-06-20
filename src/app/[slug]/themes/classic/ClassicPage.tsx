@@ -16,7 +16,7 @@ import { LangToggle } from "../../_shared/LangToggle";
 import { ThemeFooter } from "../../_shared/ThemeFooter";
 
 const C = { bg: "#F8F2E8", dark: "#221510", gold: "#B8862A", cream2: "#F0E8D8" };
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "reviews", "hours", "location"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location", "reviews"];
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=1200&q=80";
 
 function SectionTitle({ title, accentColor, darkColor }: { title: string; accentColor: string; darkColor: string }) {
@@ -154,21 +154,6 @@ export function ClassicPage({ business, services }: Props) {
           </button>
         </div>
       </section>
-
-      {/* Social proof bar */}
-      {(() => {
-        const bar = (
-          <div style={{ background: C.bg, borderTop: "1px solid rgba(34,21,16,0.08)", borderBottom: "1px solid rgba(34,21,16,0.08)", padding: "16px 20px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-            <span style={{ display: "flex", gap: 2, color: accent }}>
-              {[0,1,2,3,4].map(i => <StarIcon key={i} size={16} color="currentColor" />)}
-            </span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: C.dark }}>{socialProofText}</span>
-          </div>
-        );
-        return business.google_review_link
-          ? <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none" }}>{bar}</a>
-          : bar;
-      })()}
 
       {/* Stats strip */}
       {business.show_stats !== false && hasStats && (

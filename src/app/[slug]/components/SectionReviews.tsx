@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { GoogleReview } from "@/types";
 
 function Stars({ rating, color }: { rating: number; color: string }) {
@@ -25,11 +26,16 @@ interface Props {
 }
 
 export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borderColor, reviewLink, leaveReviewLabel }: Props) {
+  const [visibleCount, setVisibleCount] = useState(3);
+
   if (!reviews.length && !reviewLink) return null;
+
+  const visible = reviews.slice(0, visibleCount);
+  const remaining = reviews.length - visibleCount;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {reviews.map((r, i) => (
+      {visible.map((r, i) => (
         <div
           key={r.id}
           style={{
@@ -62,6 +68,23 @@ export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borde
           <p style={{ fontSize: 14, lineHeight: 1.65, color: darkColor, opacity: 0.78, margin: 0 }}>{r.text}</p>
         </div>
       ))}
+
+      {remaining > 0 && (
+        <button
+          onClick={() => setVisibleCount(c => c + 3)}
+          style={{
+            width: "100%", height: 40, borderRadius: 10,
+            border: `1.5px solid ${accentColor}33`,
+            background: "transparent", color: accentColor,
+            fontSize: 13, fontWeight: 700, cursor: "pointer",
+            transition: "background 0.15s, border-color 0.15s",
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = accentColor + "12"; (e.currentTarget as HTMLElement).style.borderColor = accentColor; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.borderColor = accentColor + "33"; }}
+        >
+          +{Math.min(remaining, 3)} more
+        </button>
+      )}
 
       {reviewLink && (
         <a

@@ -18,7 +18,7 @@ import { ThemeFooter } from "../../_shared/ThemeFooter";
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&q=80";
 
 const P = { bg: "#FFFFFF", text: "#111111", muted: "#6B7280", surface: "#F9F9F9", border: "#E5E5E5", panel: "#141414" };
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "reviews", "hours", "location"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location", "reviews"];
 
 function SectionTitle({ title, accent }: { title: string; accent: string }) {
   const { ref, visible } = useFadeInOnEnter();
@@ -37,7 +37,6 @@ export function CleanPage({ business, services }: Props) {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [hoveredCard,     setHoveredCard]     = useState<string | null>(null);
   const [showWa,          setShowWa]          = useState(false);
-  const [stickyVisible,   setStickyVisible]   = useState(false);
   const [lang,            setLang]            = useState<Lang>((business.default_lang as Lang) || "en");
 
   const t     = translations[lang];
@@ -48,9 +47,7 @@ export function CleanPage({ business, services }: Props) {
 
   useEffect(() => {
     const onScroll = () => {
-      const y = window.scrollY;
-      setShowWa(y > window.innerHeight * 0.7);
-      setStickyVisible(y > window.innerHeight * 0.82);
+      setShowWa(window.scrollY > window.innerHeight * 0.7);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -111,16 +108,14 @@ export function CleanPage({ business, services }: Props) {
       <LangToggle lang={lang} setLang={setLang} />
 
       {/* Sticky header */}
-      {stickyVisible && (
-        <div className="cl-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", gap: 12, paddingInlineStart: 24, paddingInlineEnd: 20 }}>
-          <span style={{ fontSize: 15, fontWeight: 800, color: P.text, letterSpacing: "-0.02em", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
-          <button onClick={openFromCTA}
-            style={{ flexShrink: 0, height: 36, padding: "0 18px", borderRadius: 9999, background: accent, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}
-            onMouseEnter={e => { e.currentTarget.style.opacity = "0.82"; }}
-            onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
-          >{t.hero.cta}</button>
-        </div>
-      )}
+      <div className="cl-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${P.border}`, display: "flex", alignItems: "center", gap: 12, paddingInlineStart: 24, paddingInlineEnd: 20 }}>
+        <span style={{ fontSize: 15, fontWeight: 800, color: P.text, letterSpacing: "-0.02em", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
+        <button onClick={openFromCTA}
+          style={{ flexShrink: 0, height: 36, padding: "0 18px", borderRadius: 9999, background: accent, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = "0.82"; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+        >{t.hero.cta}</button>
+      </div>
 
       {/* Split hero */}
       <section className="cl-hero">

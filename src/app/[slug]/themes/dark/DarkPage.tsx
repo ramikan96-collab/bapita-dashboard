@@ -16,7 +16,7 @@ import { LangToggle } from "../../_shared/LangToggle";
 import { ThemeFooter } from "../../_shared/ThemeFooter";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=1200&q=80";
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "reviews", "hours", "location"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location", "reviews"];
 
 const D = {
   bg:      "#0D0D0D",
@@ -77,7 +77,6 @@ export function DarkPage({ business, services }: Props) {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [hoveredCard,     setHoveredCard]     = useState<string | null>(null);
   const [showWa,          setShowWa]          = useState(false);
-  const [stickyVisible,   setStickyVisible]   = useState(false);
   const [lang,            setLang]            = useState<Lang>((business.default_lang as Lang) || "en");
 
   const t     = translations[lang];
@@ -98,9 +97,7 @@ export function DarkPage({ business, services }: Props) {
 
   useEffect(() => {
     const onScroll = () => {
-      const y = window.scrollY;
-      setShowWa(y > window.innerHeight * 0.7);
-      setStickyVisible(y > window.innerHeight * 0.85);
+      setShowWa(window.scrollY > window.innerHeight * 0.7);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -155,16 +152,14 @@ export function DarkPage({ business, services }: Props) {
       <LangToggle lang={lang} setLang={setLang} variant="bordered" />
 
       {/* Sticky header */}
-      {stickyVisible && (
-        <div className="dk-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(13,13,13,0.92)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${accent}25`, display: "flex", alignItems: "center", gap: 12, paddingInlineStart: 24, paddingInlineEnd: 20 }}>
-          <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, color: D.text, letterSpacing: "0.08em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayName}</span>
-          <button onClick={openFromCTA}
-            style={{ fontFamily: "'Oswald', sans-serif", flexShrink: 0, height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#fff"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = accent; }}
-          >{t.hero.bookNow}</button>
-        </div>
-      )}
+      <div className="dk-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(13,13,13,0.92)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${accent}25`, display: "flex", alignItems: "center", gap: 12, paddingInlineStart: 24, paddingInlineEnd: 20 }}>
+        <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, color: D.text, letterSpacing: "0.08em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayName}</span>
+        <button onClick={openFromCTA}
+          style={{ fontFamily: "'Oswald', sans-serif", flexShrink: 0, height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
+          onMouseEnter={e => { e.currentTarget.style.background = "#fff"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = accent; }}
+        >{t.hero.bookNow}</button>
+      </div>
 
       {/* Hero */}
       <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
@@ -223,19 +218,6 @@ export function DarkPage({ business, services }: Props) {
           </button>
         </div>
       </section>
-
-      {/* Social proof */}
-      {(() => {
-        const bar = (
-          <div style={{ background: D.surface, padding: "15px 20px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, borderBottom: `1px solid ${D.border}`, position: "relative", zIndex: 1 }}>
-            <span style={{ display: "flex", gap: 2, color: accent }}>
-              {[0,1,2,3,4].map(i => <StarIcon key={i} size={15} color="currentColor" />)}
-            </span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: D.text }}>{socialProofText}</span>
-          </div>
-        );
-        return business.google_review_link ? <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "block", textDecoration: "none", position: "relative", zIndex: 1 }}>{bar}</a> : <div style={{ position: "relative", zIndex: 1 }}>{bar}</div>;
-      })()}
 
       {/* Stats strip */}
       {business.show_stats !== false && hasStats && (

@@ -14,7 +14,16 @@ const SECTION_LABELS: Record<string, string> = {
   hours:    "Hours",
   location: "Location",
 };
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "reviews", "hours", "location"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location", "reviews"];
+
+const SECTION_KEY_MAP: Record<string, string> = {
+  show_services: "services",
+  show_gallery:  "gallery",
+  show_about:    "about",
+  show_reviews:  "reviews",
+  show_hours:    "hours",
+  show_location: "location",
+};
 
 const DAYS: { key: DayKey; label: string }[] = [
   { key: "sunday",    label: "Sunday"    },
@@ -84,6 +93,7 @@ interface FormData {
   plan_booking_limit: string;
   plan_start_date:    string;
   plan_renewal_date:  string;
+  plan_setup_price:   string;
   plan_notes:         string;
   stat_years:         string;
   stat_clients:       string;
@@ -111,7 +121,7 @@ const EMPTY_FORM: FormData = {
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
   show_stats: true, show_services: true, show_reviews: true,
   status: "draft",
-  plan_tier: "", plan_price: "", plan_addons: [],
+  plan_tier: "", plan_price: "", plan_setup_price: "", plan_addons: [],
   plan_booking_limit: "", plan_start_date: "", plan_renewal_date: "", plan_notes: "",
   stat_years: "", stat_clients: "", stat_rating: "",
 };
@@ -144,6 +154,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
   const [loading,      setLoading]      = useState(mode === "edit");
   const [cloning,        setCloning]        = useState(false);
   const [confirmClone,   setConfirmClone]   = useState(false);
+  const [billingEditing, setBillingEditing] = useState(false);
   const [showEjectPanel, setShowEjectPanel] = useState(false);
   const [copiedStep,     setCopiedStep]     = useState<number | null>(null);
   const stableId = useRef<string>(businessId || crypto.randomUUID());
@@ -184,6 +195,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           status:             b.status              || "draft",
           plan_tier:          b.plan_tier           || "",
           plan_price:         b.plan_price != null   ? String(b.plan_price) : "",
+          plan_setup_price:   (b as unknown as { plan_setup_price?: number | null }).plan_setup_price != null ? String((b as unknown as { plan_setup_price?: number | null }).plan_setup_price) : "",
           plan_addons:        Array.isArray(b.plan_addons) ? b.plan_addons : [],
           plan_booking_limit: b.plan_booking_limit  != null ? String(b.plan_booking_limit) : "",
           plan_start_date:    b.plan_start_date     || "",
@@ -198,9 +210,11 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         const hero: string    = b.hero_image_url || "";
         const merged          = hero && !imgs.includes(hero) ? [hero, ...imgs] : imgs;
         setGallery(merged.map((url: string) => ({ url })));
-        // Section order
+        // Section order — merge DB order with any missing keys from default
         if (Array.isArray(b.section_order) && b.section_order.length > 0) {
-          setSectionOrder(b.section_order);
+          const base = b.section_order as string[];
+          const missing = DEFAULT_SECTION_ORDER.filter(k => !base.includes(k));
+          setSectionOrder(missing.length ? [...base, ...missing] : base);
         }
         // Hours
         if (b.business_hours) setHours(b.business_hours as BusinessHours);
@@ -257,6 +271,29 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     }
   }
 
+  function toggleSection(key: keyof FormData) {
+    const isOn = form[key] as boolean;
+    setDirty(true);
+    setForm(f => ({ ...f, [key]: !f[key] }));
+    const sectionKey = SECTION_KEY_MAP[key as string];
+    if (!sectionKey) return;
+    if (isOn) {
+      setSectionOrder(o => o.filter(k => k !== sectionKey));
+    } else {
+      setSectionOrder(o => {
+        if (o.includes(sectionKey)) return o;
+        const defaultIdx = DEFAULT_SECTION_ORDER.indexOf(sectionKey);
+        const predecessors = DEFAULT_SECTION_ORDER.slice(0, defaultIdx).filter(k => o.includes(k));
+        if (predecessors.length === 0) return [sectionKey, ...o];
+        const afterKey = predecessors[predecessors.length - 1];
+        const afterIdx = o.indexOf(afterKey);
+        const next = [...o];
+        next.splice(afterIdx + 1, 0, sectionKey);
+        return next;
+      });
+    }
+  }
+
   function toggleAddon(key: string) {
     setForm(f => ({
       ...f,
@@ -306,6 +343,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       section_order:      sectionOrder,
       plan_tier:          form.plan_tier           || null,
       plan_price:         form.plan_price          ? Number(form.plan_price) : null,
+      plan_setup_price:   form.plan_setup_price    ? Number(form.plan_setup_price) : null,
       plan_addons:        form.plan_addons,
       plan_booking_limit: form.plan_booking_limit  ? Number(form.plan_booking_limit) : null,
       plan_start_date:    form.plan_start_date     || null,
@@ -392,6 +430,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       section_order:      sectionOrder,
       plan_tier:          form.plan_tier           || null,
       plan_price:         form.plan_price          ? Number(form.plan_price) : null,
+      plan_setup_price:   form.plan_setup_price    ? Number(form.plan_setup_price) : null,
       plan_addons:        form.plan_addons,
       plan_booking_limit: form.plan_booking_limit  ? Number(form.plan_booking_limit) : null,
       plan_start_date:    form.plan_start_date     || null,
@@ -593,14 +632,14 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                         </select>
                       </Field>
                       {!cloning && !confirmClone && (
-                        <Field label=" ">
+                        <div style={{ display:"flex", alignItems:"flex-end", paddingBottom:2 }}>
                           <button
                             onClick={() => setConfirmClone(true)}
-                            style={{ width:"100%", height:42, borderRadius:9, border:"none", background:"#2563EB", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"background 0.15s" }}
-                            onMouseEnter={e => { e.currentTarget.style.background = "#1D4ED8"; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = "#2563EB"; }}
-                          >Clone business</button>
-                        </Field>
+                            style={{ height:34, padding:"0 14px", borderRadius:8, border:"1.5px solid #2563EB", background:"transparent", color:"#2563EB", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s", whiteSpace:"nowrap" }}
+                            onMouseEnter={e => { e.currentTarget.style.background = "#2563EB"; e.currentTarget.style.color = "#fff"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#2563EB"; }}
+                          >Clone</button>
+                        </div>
                       )}
                     </Row>
                     {!cloning && confirmClone && (
@@ -894,7 +933,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   ] as [keyof FormData, string][]).map(([key, label]) => (
                     <label key={key} style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer" }}>
                       <div
-                        onClick={() => set(key, !form[key])}
+                        onClick={() => toggleSection(key)}
                         style={{
                           width:40, height:22, borderRadius:11, position:"relative", cursor:"pointer",
                           background: form[key] ? "var(--color-amber)" : "var(--color-cream-2)",
@@ -1059,27 +1098,57 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
               </SectionCard>
 
               {/* Billing */}
-              <SectionCard title="Billing — Internal">
-                <p style={{ fontSize:12, color:"var(--color-muted)", marginTop:0, marginBottom:4, fontStyle:"italic" }}>
-                  Not visible to the barber.
-                </p>
-                <Row>
-                  <Field label="Monthly Price (₪)">
-                    <input value={form.plan_price} onChange={e => set("plan_price", e.target.value)}
-                      type="number" placeholder="299" style={inputStyle} />
-                  </Field>
-                  <div />
-                </Row>
-                <Field label="Internal Notes">
-                  <textarea
-                    value={form.plan_notes}
-                    onChange={e => set("plan_notes", e.target.value)}
-                    placeholder="e.g. Pays on the 1st. Wants to add WhatsApp next month."
-                    rows={3}
-                    style={{ ...inputStyle, height:"auto", resize:"vertical", padding:"10px 13px", lineHeight:1.6 }}
-                  />
-                </Field>
-              </SectionCard>
+              {(() => {
+                const billingLocked = !billingEditing && (!!form.plan_price || !!form.plan_setup_price);
+                return (
+                  <SectionCard title="Billing — Internal">
+                    <p style={{ fontSize:12, color:"var(--color-muted)", marginTop:0, marginBottom:12, fontStyle:"italic" }}>
+                      Not visible to the barber.
+                    </p>
+                    {billingLocked ? (
+                      <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                          <div>
+                            <div style={{ fontSize:10, color:"var(--color-muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>Monthly</div>
+                            <div style={{ fontSize:20, fontWeight:900, color:"var(--color-dark)", lineHeight:1 }}>{form.plan_price ? `₪${form.plan_price}` : "—"}<span style={{ fontSize:11, fontWeight:500, color:"var(--color-muted)" }}>/mo</span></div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize:10, color:"var(--color-muted)", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>Setup</div>
+                            <div style={{ fontSize:20, fontWeight:900, color:"var(--color-dark)", lineHeight:1 }}>{form.plan_setup_price ? `₪${form.plan_setup_price}` : "—"}</div>
+                          </div>
+                        </div>
+                        {form.plan_notes && <div style={{ fontSize:13, color:"var(--color-muted)", lineHeight:1.5 }}>{form.plan_notes}</div>}
+                        <button onClick={() => setBillingEditing(true)} style={{ alignSelf:"flex-start", height:30, padding:"0 14px", borderRadius:8, border:"1.5px solid var(--color-cream-2)", background:"transparent", color:"var(--color-muted)", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor="var(--color-amber)"; e.currentTarget.style.color="var(--color-amber)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor="var(--color-cream-2)"; e.currentTarget.style.color="var(--color-muted)"; }}
+                        >Edit billing</button>
+                      </div>
+                    ) : (
+                      <>
+                        <Row>
+                          <Field label="Monthly Price (₪)">
+                            <input value={form.plan_price} onChange={e => set("plan_price", e.target.value)}
+                              type="number" placeholder="299" style={inputStyle} />
+                          </Field>
+                          <Field label="Setup Fee (₪)">
+                            <input value={form.plan_setup_price} onChange={e => set("plan_setup_price", e.target.value)}
+                              type="number" placeholder="500" style={inputStyle} />
+                          </Field>
+                        </Row>
+                        <Field label="Internal Notes">
+                          <textarea
+                            value={form.plan_notes}
+                            onChange={e => set("plan_notes", e.target.value)}
+                            placeholder="e.g. Pays on the 1st. Wants to add WhatsApp next month."
+                            rows={3}
+                            style={{ ...inputStyle, height:"auto", resize:"vertical", padding:"10px 13px", lineHeight:1.6 }}
+                          />
+                        </Field>
+                      </>
+                    )}
+                  </SectionCard>
+                );
+              })()}
             </div>
           )}
 
