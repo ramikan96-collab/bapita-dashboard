@@ -644,7 +644,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       </nav>
 
       {/* ─── FAB → New Booking (calendar-only) ────────────────────────── */}
-      {onCalendar && !drawerOpen && (
+      {onCalendar && !drawerOpen && !notificationsOpen && (
         <button
           data-noprint
           onClick={() => router.push("/new-booking")}
@@ -1187,6 +1187,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               paddingBottom: "env(safe-area-inset-bottom)",
               maxHeight: "80dvh",
               boxShadow: "0 8px 40px rgba(30,26,20,0.18)",
+              // iOS: become a compositing layer so z-50 actually wins against
+              // composited siblings (FAB, drawer) instead of losing taps to them.
+              willChange: "transform",
+              isolation: "isolate",
             }}
           >
             {/* Handle (mobile only) */}
