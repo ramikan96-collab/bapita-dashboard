@@ -918,7 +918,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ─── Main Content ─────────────────────────────────────────────── */}
-      <main className="flex-1 min-w-0 overflow-y-auto flex flex-col pt-4 pb-16 md:overflow-visible md:pt-0 md:pb-0">{children}</main>
+      <main key={pathname} className="page-anim flex-1 min-w-0 overflow-y-auto flex flex-col pt-4 pb-16 md:overflow-visible md:pt-0 md:pb-0">{children}</main>
       </div>
       </div>
 
@@ -942,18 +942,20 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         aria-label="Navigation menu"
       >
         {/* Bapita wordmark + bell */}
-        <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: "var(--color-cream-2)" }}>
+        <div className="px-5 border-b flex items-center justify-between" style={{ borderColor: "var(--color-cream-2)", minHeight: 64 }}>
           <Wordmark />
           <button
             onClick={() => { setDrawerOpen(false); setNotificationsOpen(true); }}
-            className="relative p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors"
+            className="relative flex items-center justify-center rounded-full text-dark hover:bg-[var(--color-cream-2)] active:bg-[var(--color-cream-2)] transition-colors shrink-0"
+            style={{ width: 44, height: 44, marginInlineEnd: -8 }}
             aria-label="Notifications"
           >
             <IconBell size={20} />
             {unreadCount > 0 && (
               <span
-                className="absolute top-1 end-1 flex items-center justify-center rounded-full text-white font-bold"
+                className="absolute flex items-center justify-center rounded-full text-white font-bold"
                 style={{
+                  top: 6, insetInlineEnd: 6,
                   minWidth: 16, height: 16,
                   padding: "0 3px",
                   fontSize: 10,
@@ -968,7 +970,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 overflow-y-auto py-2">
+        <nav className="flex-1 overflow-y-auto pt-3 pb-2">
           {/* Primary nav — Calendar, Clients, Insights (desktop only; mobile uses bottom nav) */}
           <div className="hidden md:block">
             {navItems.map((item) => {
@@ -1061,7 +1063,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         {/* Business name + sign out — bottom */}
         <div className="border-t" style={{ borderColor: "var(--color-cream-2)" }}>
           {/* Business identity */}
-          <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex items-center gap-3 px-4 pt-4 pb-3">
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-[15px] shrink-0"
               style={{ background: "var(--color-amber)" }}

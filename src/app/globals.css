@@ -63,6 +63,30 @@ body {
   }
 }
 
+/* Page enter transition — fires on route change (main remounts via key={pathname}).
+   In-page state changes like the calendar day-swipe keep the same pathname, so
+   they never retrigger this. */
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-anim {
+  animation: pageIn 0.24s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-anim {
+    animation: none;
+  }
+}
+
 @media print {
   nav,
   aside,
