@@ -288,7 +288,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const [searchInput, setSearchInput] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [pushHelpOpen, setPushHelpOpen] = useState(false);
-  const { notifications, unreadCount, refetch, markAllRead, deleteOne, deleteAll } = useNotifications();
+  const { notifications, unreadCount, refetch, markAllRead, markOneRead, deleteOne, deleteAll } = useNotifications();
   const { status: pushStatus, refresh: refreshPushStatus } = usePushStatus();
   const supabase = createClient();
 
@@ -322,15 +322,30 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   }
 
   // Open the notifications modal when arriving via a push click (?notifications=1).
+  // Run once on mount — push notification click always causes a full page reload.
   // Read from window (not useSearchParams) to avoid a static-prerender bailout.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("notifications") === "1") {
       setNotificationsOpen(true);
-      router.replace(pathname);
+      window.history.replaceState(null, "", window.location.pathname);
     }
-  }, [pathname, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Also listen for postMessage from SW — handles the case where the app was
+  // already open and the SW sends OPEN_NOTIFICATIONS instead of navigating.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.serviceWorker) return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === "OPEN_NOTIFICATIONS") {
+        setNotificationsOpen(true);
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", handler);
+    return () => navigator.serviceWorker.removeEventListener("message", handler);
+  }, []);
 
   // Always show the freshest list when the modal opens
   useEffect(() => {
@@ -1277,11 +1292,19 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                       <div key={n.id}>
                         {i > 0 && <div style={{ height: 1, background: "var(--color-cream-2)" }} />}
                         <div
+                          onClick={() => {
+                            markOneRead(n.id);
+                            if (n.booking_id) {
+                              setNotificationsOpen(false);
+                              router.push(`/calendar?booking=${n.booking_id}`);
+                            }
+                          }}
                           style={{
                             display: "flex", alignItems: "center", gap: 12,
                             padding: "14px 16px",
                             background: isUnread ? "rgba(232,146,10,0.04)" : "var(--color-surface)",
                             borderInlineStart: isUnread ? "3px solid var(--color-amber)" : "3px solid transparent",
+                            cursor: n.booking_id ? "pointer" : "default",
                           }}
                         >
                           {/* Type icon */}
@@ -1303,7 +1326,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                               {timeAgo(n.created_at)}
                             </span>
                             <button
-                              onClick={() => deleteOne(n.id)}
+                              onClick={(e) => { e.stopPropagation(); deleteOne(n.id); }}
                               style={{ color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", lineHeight: 1 }}
                               aria-label="Delete notification"
                             >

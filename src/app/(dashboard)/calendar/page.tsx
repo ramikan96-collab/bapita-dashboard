@@ -106,6 +106,27 @@ export default function CalendarPage() {
     return () => { supabase.removeChannel(channel); };
   }, [business, supabase, fetchBookings]);
 
+  // Open booking drawer from notification click (?booking=<id>).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const bookingId = new URLSearchParams(window.location.search).get("booking");
+    if (!bookingId) return;
+    window.history.replaceState(null, "", window.location.pathname);
+    createClient()
+      .from("bookings")
+      .select("*, service:services(name, duration, price), label:labels(id,name,color)")
+      .eq("id", bookingId)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setSelected(data as Booking);
+          setDate(parseISO((data as Booking).appointment_date));
+          setView("day");
+        }
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Publish state to the AppShell top bar.
   const isTodaySelected = isSameDay(date, new Date());
 

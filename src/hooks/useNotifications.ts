@@ -84,6 +84,13 @@ export function useNotifications() {
     };
   }, [businessId]);
 
+  const markOneRead = useCallback(async (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => n.id === id ? { ...n, read_at: n.read_at ?? new Date().toISOString() } : n)
+    );
+    await fetch(`/api/notifications/${id}`, { method: "PATCH" });
+  }, []);
+
   const markAllRead = useCallback(async () => {
     setNotifications((prev) =>
       prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() }))
@@ -103,5 +110,5 @@ export function useNotifications() {
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
-  return { notifications, unreadCount, loading, refetch, markAllRead, deleteOne, deleteAll };
+  return { notifications, unreadCount, loading, refetch, markAllRead, markOneRead, deleteOne, deleteAll };
 }
