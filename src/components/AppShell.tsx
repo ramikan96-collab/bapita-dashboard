@@ -1291,9 +1291,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     return (
                       <div key={n.id}>
                         {i > 0 && <div style={{ height: 1, background: "var(--color-cream-2)" }} />}
-                        {/* position:relative so the full-area button and delete can layer correctly */}
-                        <div style={{ position: "relative" }}>
-                          {/* Full-row tap target — proper <button> for reliable mobile touch */}
+                        <div style={{ display: "flex", alignItems: "stretch" }}>
+                          {/* Navigation button — takes all space except the delete column */}
                           <button
                             onClick={() => {
                               markOneRead(n.id);
@@ -1303,21 +1302,12 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                               }
                             }}
                             style={{
-                              position: "absolute", inset: 0,
-                              background: "none", border: "none",
-                              cursor: n.booking_id ? "pointer" : "default",
-                              WebkitTapHighlightColor: "transparent",
-                            }}
-                            aria-label={n.title}
-                          />
-                          {/* Visual row — pointer-events:none so touches fall through to button above */}
-                          <div
-                            style={{
-                              display: "flex", alignItems: "center", gap: 12,
-                              padding: "14px 16px",
+                              flex: 1, display: "flex", alignItems: "center", gap: 12,
+                              padding: "14px 0 14px 16px",
                               background: isUnread ? "rgba(232,146,10,0.04)" : "var(--color-surface)",
                               borderInlineStart: isUnread ? "3px solid var(--color-amber)" : "3px solid transparent",
-                              pointerEvents: "none",
+                              border: "none", textAlign: "left", minWidth: 0,
+                              cursor: n.booking_id ? "pointer" : "default",
                             }}
                           >
                             <span style={{ color: iconColor, flexShrink: 0 }}>
@@ -1331,28 +1321,25 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                                 {n.body}
                               </div>
                             </div>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-                              <span style={{ fontSize: 11, color: "var(--color-muted)", whiteSpace: "nowrap" }}>
-                                {timeAgo(n.created_at)}
-                              </span>
-                              {/* Spacer matching delete button size */}
-                              <span style={{ width: 18, height: 18 }} />
-                            </div>
-                          </div>
-                          {/* Delete — sits above the full-area button via position:relative+zIndex */}
-                          <button
-                            onClick={() => deleteOne(n.id)}
-                            style={{
-                              position: "absolute", bottom: 14, insetInlineEnd: 16,
-                              color: "var(--color-muted)", background: "none", border: "none",
-                              cursor: "pointer", padding: 2,
-                              display: "flex", alignItems: "center", lineHeight: 1,
-                              zIndex: 1,
-                            }}
-                            aria-label="Delete notification"
-                          >
-                            <IconXSmall size={14} />
                           </button>
+                          {/* Time + delete — separate column, never triggers navigation */}
+                          <div style={{
+                            display: "flex", flexDirection: "column", alignItems: "flex-end",
+                            justifyContent: "center", gap: 6, padding: "14px 16px 14px 12px",
+                            background: isUnread ? "rgba(232,146,10,0.04)" : "var(--color-surface)",
+                            flexShrink: 0,
+                          }}>
+                            <span style={{ fontSize: 11, color: "var(--color-muted)", whiteSpace: "nowrap" }}>
+                              {timeAgo(n.created_at)}
+                            </span>
+                            <button
+                              onClick={() => deleteOne(n.id)}
+                              style={{ color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", lineHeight: 1 }}
+                              aria-label="Delete notification"
+                            >
+                              <IconXSmall size={14} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
