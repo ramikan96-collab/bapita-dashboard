@@ -6,6 +6,7 @@ export const en = {
   hours: { title: "Hours", closed: "Closed" },
   location: { title: "Location", directions: "Get Directions →" },
   reviews: { title: "What Clients Say", leaveReview: "Leave a review on Google" },
+  staff: { title: "Team" },
   footer: { poweredBy: "Powered by", brand: "Bapita" },
   social: { happyClients: "4.9 · 340 happy clients" },
   min: "min",

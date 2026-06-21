@@ -16,7 +16,7 @@ import { LangToggle } from "../../_shared/LangToggle";
 import { ThemeFooter } from "../../_shared/ThemeFooter";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=1200&q=80";
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location", "reviews"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews"];
 
 const D = {
   bg:      "#0D0D0D",
@@ -132,6 +132,8 @@ export function DarkPage({ business, services }: Props) {
         .dk-ig        { animation: fadeUp 0.65s ease-out 0.52s both; }
         .dk-cta       { animation: fadeUp 0.65s ease-out 0.6s both; }
         .dk-sticky    { animation: slideDown 0.28s ease-out both; }
+        .dk-staff-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        @media (max-width: 600px) { .dk-staff-grid { grid-template-columns: repeat(2, 1fr); } }
       `}</style>
 
       {/* Film grain overlay */}
@@ -275,6 +277,29 @@ export function DarkPage({ business, services }: Props) {
                       })}
                     </div>
                   </section>
+                </div>
+              ) : null;
+            case "staff":
+              return business.show_staff !== false && business.staff_members && business.staff_members.length > 0 ? (
+                <div key={key}>
+                  <GoldDivider accent={accent} />
+                  <DarkSectionTitle title={t.staff.title} accent={accent} isRtl={isRtl} />
+                  <div className="dk-staff-grid">
+                    {business.staff_members.map(member => (
+                      <div key={member.id} style={{ background: D.surface, border: `1px solid ${D.border}`, borderInlineStart: `3px solid ${accent}60`, borderRadius: 2, padding: "16px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
+                        <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", background: D.raised, border: `2px solid ${accent}55`, flexShrink: 0 }}>
+                          {member.photo_url
+                            ? <img src={member.photo_url} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: D.muted }}>👤</div>
+                          }
+                        </div>
+                        <div>
+                          <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 14, fontWeight: 600, color: accent, letterSpacing: "0.05em", textTransform: "uppercase" }}>{member.name}</div>
+                          {member.role && <div style={{ fontSize: 12, color: D.muted, marginTop: 3 }}>{member.role}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : null;
             case "about":

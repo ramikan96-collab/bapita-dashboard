@@ -16,7 +16,7 @@ import { LangToggle } from "../../_shared/LangToggle";
 import { ThemeFooter } from "../../_shared/ThemeFooter";
 
 const C = { bg: "#F8F2E8", dark: "#221510", gold: "#B8862A", cream2: "#F0E8D8" };
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location", "reviews"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews"];
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=1200&q=80";
 
 function SectionTitle({ title, accentColor, darkColor }: { title: string; accentColor: string; darkColor: string }) {
@@ -88,6 +88,8 @@ export function ClassicPage({ business, services }: Props) {
         .c-hero-cta { animation: fadeUpLoad 0.6s ease-out 0.55s both; }
         .about-row  { display:flex; flex-direction:column; align-items:center; gap:20px; }
         @media(min-width:480px) { .about-row { flex-direction:row; align-items:flex-start; } }
+        .c-staff-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        @media (max-width: 600px) { .c-staff-grid { grid-template-columns: repeat(2, 1fr); } }
       `}</style>
 
       <LangToggle lang={lang} setLang={setLang} />
@@ -211,6 +213,28 @@ export function ClassicPage({ business, services }: Props) {
                       </div>
                     )}
                     <p style={{ fontSize: 16, lineHeight: 1.8, color: C.dark, opacity: 0.82, margin: 0 }}>{displayAbout}</p>
+                  </div>
+                </section>
+              ) : null;
+            case "staff":
+              return business.show_staff !== false && business.staff_members && business.staff_members.length > 0 ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.staff.title} accentColor={accent} darkColor={C.dark} />
+                  <div className="c-staff-grid" style={{ marginTop: 24 }}>
+                    {business.staff_members.map(member => (
+                      <div key={member.id} style={{ background: "#fff", borderRadius: 10, padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center", boxShadow: "0 1px 4px rgba(34,21,16,0.06)", borderInlineStart: `3px solid ${accent}` }}>
+                        <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: C.cream2, border: `2px solid ${accent}`, flexShrink: 0 }}>
+                          {member.photo_url
+                            ? <img src={member.photo_url} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: C.dark, opacity: 0.4 }}>👤</div>
+                          }
+                        </div>
+                        <div>
+                          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: C.dark }}>{member.name}</div>
+                          {member.role && <div style={{ fontSize: 12, color: C.dark, opacity: 0.55, marginTop: 3 }}>{member.role}</div>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </section>
               ) : null;

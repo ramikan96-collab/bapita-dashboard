@@ -112,6 +112,15 @@ export interface Business {
   show_services?:      boolean | null;
   google_reviews?:     GoogleReview[] | null;
   show_reviews?:       boolean | null;
+  staff_members?:      StaffMember[] | null;
+  show_staff?:         boolean | null;
+}
+
+export interface StaffMember {
+  id:        string;
+  name:      string;
+  role:      string;
+  photo_url?: string | null;
 }
 
 export interface GoogleReview {

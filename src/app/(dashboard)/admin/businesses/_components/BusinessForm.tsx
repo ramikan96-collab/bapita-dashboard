@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Service, BusinessHours, DayKey, GoogleReview } from "@/types";
+import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -10,16 +10,18 @@ const SECTION_LABELS: Record<string, string> = {
   services: "Services",
   gallery:  "Gallery",
   about:    "About",
+  staff:    "Staff",
   reviews:  "Reviews",
   hours:    "Hours",
   location: "Location",
 };
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location", "reviews"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews"];
 
 const SECTION_KEY_MAP: Record<string, string> = {
   show_services: "services",
   show_gallery:  "gallery",
   show_about:    "about",
+  show_staff:    "staff",
   show_reviews:  "reviews",
   show_hours:    "hours",
   show_location: "location",
@@ -87,6 +89,7 @@ interface FormData {
   show_open_status:   boolean;
   show_services:      boolean;
   show_reviews:       boolean;
+  show_staff:         boolean;
   status:             "draft" | "live";
   // plan
   plan_tier:          string;
@@ -121,7 +124,7 @@ const EMPTY_FORM: FormData = {
   google_review_link: "", google_maps_url: "", waze_url: "",
   about_text: "", about_text_he: "", accent_color: "#B8862A", image_focal: {},
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
-  show_stats: true, show_open_status: true, show_services: true, show_reviews: true,
+  show_stats: true, show_open_status: true, show_services: true, show_reviews: true, show_staff: true,
   status: "draft",
   plan_tier: "", plan_price: "", plan_setup_price: "", plan_addons: [],
   plan_booking_limit: "", plan_start_date: "", plan_renewal_date: "", plan_notes: "",
@@ -144,6 +147,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
   const [services,      setServices]     = useState<Service[]>([]);
   const [gallery,       setGallery]      = useState<GalleryItem[]>([]);
   const [adminReviews,  setAdminReviews] = useState<GoogleReview[]>([]);
+  const [staffMembers,  setStaffMembers] = useState<StaffMember[]>([]);
+  const [staffUploading, setStaffUploading] = useState<Record<string, boolean>>({});
   const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
   const [hours,        setHours]        = useState<BusinessHours>(DEFAULT_HOURS);
   const [variants,     setVariants]     = useState<Variant[]>([{ slug: "", template: "classic" }]);
@@ -197,6 +202,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           show_open_status:   b.show_open_status    ?? true,
           show_services:      b.show_services       ?? true,
           show_reviews:       b.show_reviews        ?? true,
+          show_staff:         b.show_staff          ?? true,
           status:             b.status              || "draft",
           plan_tier:          b.plan_tier           || "",
           plan_price:         b.plan_price != null   ? String(b.plan_price) : "",
@@ -221,6 +227,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           services: b.show_services ?? true,
           gallery:  b.show_gallery  ?? true,
           about:    b.show_about    ?? true,
+          staff:    b.show_staff    ?? true,
           reviews:  b.show_reviews  ?? true,
           hours:    b.show_hours    ?? true,
           location: b.show_location ?? true,
@@ -235,6 +242,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         if (b.business_hours) setHours(b.business_hours as BusinessHours);
         // Reviews
         if (Array.isArray(b.google_reviews)) setAdminReviews(b.google_reviews as GoogleReview[]);
+        // Staff
+        if (Array.isArray(b.staff_members)) setStaffMembers(b.staff_members as StaffMember[]);
       }
 
       // Load services
@@ -353,6 +362,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_open_status:   form.show_open_status,
       show_services:      form.show_services,
       show_reviews:       form.show_reviews,
+      show_staff:         form.show_staff,
+      staff_members:      staffMembers,
       status:             form.status,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
@@ -443,6 +454,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_open_status:   form.show_open_status,
       show_services:      form.show_services,
       show_reviews:       form.show_reviews,
+      show_staff:         form.show_staff,
+      staff_members:      staffMembers,
       status:             "draft" as const,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
@@ -933,6 +946,90 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 </Field>
               </SectionCard>
 
+              <SectionCard title="Staff">
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+                  <div>
+                    <div style={{ fontSize:14, fontWeight:600, color:"var(--color-dark)" }}>Show staff section</div>
+                    <div style={{ fontSize:12, color:"var(--color-muted)", marginTop:2 }}>Visible when at least one member is added</div>
+                  </div>
+                  <div
+                    onClick={() => toggleSection("show_staff")}
+                    style={{ width:40, height:22, borderRadius:11, position:"relative", cursor:"pointer", background: form.show_staff ? "var(--color-amber)" : "var(--color-cream-2)", transition:"background 0.2s", flexShrink:0 }}
+                  >
+                    <div style={{ position:"absolute", top:3, width:16, height:16, borderRadius:8, background:"#fff", transition:"left 0.2s", left: form.show_staff ? 21 : 3, boxShadow:"0 1px 3px rgba(0,0,0,0.15)" }} />
+                  </div>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  {staffMembers.map((member, idx) => (
+                    <div key={member.id} style={{ background:"var(--color-cream)", border:"1.5px solid var(--color-cream-2)", borderRadius:12, padding:"12px 14px", display:"flex", gap:12, alignItems:"flex-start" }}>
+                      {/* Photo */}
+                      <div style={{ position:"relative", flexShrink:0 }}>
+                        <div style={{ width:52, height:52, borderRadius:"50%", overflow:"hidden", background:"var(--color-cream-2)", border:"1.5px solid var(--color-cream-2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          {member.photo_url
+                            ? <img src={member.photo_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                            : <span style={{ fontSize:20 }}>👤</span>
+                          }
+                        </div>
+                        <label style={{ position:"absolute", bottom:-2, right:-2, width:20, height:20, borderRadius:"50%", background:"var(--color-amber)", border:"2px solid var(--color-surface)", display:"flex", alignItems:"center", justifyContent:"center", cursor: staffUploading[member.id] ? "default" : "pointer", opacity: staffUploading[member.id] ? 0.6 : 1 }}>
+                          {staffUploading[member.id]
+                            ? <div style={{ width:8, height:8, borderRadius:"50%", border:"1.5px solid #fff", borderTopColor:"transparent", animation:"spin 0.7s linear infinite" }} />
+                            : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                          }
+                          <input
+                            type="file" accept="image/*" style={{ display:"none" }}
+                            disabled={staffUploading[member.id]}
+                            onChange={async e => {
+                              const file = e.target.files?.[0]; e.target.value = "";
+                              if (!file) return;
+                              setStaffUploading(s => ({ ...s, [member.id]: true }));
+                              const ext = file.name.split(".").pop();
+                              const path = `profiles/staff/${stableId.current}/${member.id}.${ext}`;
+                              const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true });
+                              if (!error) {
+                                const { data } = supabase.storage.from("business-images").getPublicUrl(path);
+                                setStaffMembers(ms => ms.map((m, i) => i === idx ? { ...m, photo_url: data.publicUrl } : m));
+                                setDirty(true);
+                              }
+                              setStaffUploading(s => ({ ...s, [member.id]: false }));
+                            }}
+                          />
+                        </label>
+                      </div>
+                      {/* Name + Role */}
+                      <div style={{ flex:1, display:"flex", flexDirection:"column", gap:6 }}>
+                        <input
+                          value={member.name}
+                          onChange={e => { setDirty(true); setStaffMembers(ms => ms.map((m, i) => i === idx ? { ...m, name: e.target.value } : m)); }}
+                          placeholder="Name"
+                          style={inputStyle}
+                        />
+                        <input
+                          value={member.role}
+                          onChange={e => { setDirty(true); setStaffMembers(ms => ms.map((m, i) => i === idx ? { ...m, role: e.target.value } : m)); }}
+                          placeholder="Role (e.g. Hairstylist)"
+                          style={inputStyle}
+                        />
+                      </div>
+                      {/* Remove */}
+                      <button
+                        type="button"
+                        onClick={() => { setDirty(true); setStaffMembers(ms => ms.filter((_, i) => i !== idx)); }}
+                        style={{ height:32, width:32, borderRadius:8, border:"1.5px solid #FCA5A5", background:"transparent", color:"#991B1B", cursor:"pointer", fontSize:16, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", marginTop:2 }}
+                      >×</button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setDirty(true); setStaffMembers(ms => [...ms, { id: crypto.randomUUID(), name: "", role: "", photo_url: null }]); }}
+                  style={{ marginTop: staffMembers.length > 0 ? 8 : 0, width:"100%", height:38, borderRadius:10, border:"1.5px dashed var(--color-cream-2)", background:"transparent", color:"var(--color-muted)", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"border-color 0.15s, color 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor="var(--color-amber)"; e.currentTarget.style.color="var(--color-amber)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor="var(--color-cream-2)"; e.currentTarget.style.color="var(--color-muted)"; }}
+                >
+                  + Add member
+                </button>
+              </SectionCard>
+
               <SectionCard title="Section Visibility & Order">
                 <p style={{ fontSize:13, color:"var(--color-muted)", marginTop:0, marginBottom:16 }}>
                   Toggle visibility. Drag to reorder on the booking page.
@@ -946,6 +1043,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     ["show_open_status", "Open/Closed (hero)"],
                     ["show_gallery",  "Gallery"],
                     ["show_about",    "About"],
+                    ["show_staff",    "Staff"],
                     ["show_reviews",  "Reviews"],
                     ["show_hours",    "Business Hours"],
                     ["show_location", "Location"],

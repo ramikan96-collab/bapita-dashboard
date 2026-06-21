@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/components/Toast";
-import type { Service, BusinessHours, DayKey, GoogleReview } from "@/types";
+import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1164,6 +1164,9 @@ function WebsiteSection({
   const [saving, setSaving]                   = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>((business as unknown as { profile_image_url?: string | null }).profile_image_url || null);
   const [profileUploading, setProfileUploading] = useState(false);
+  const [showStaff, setShowStaff]       = useState((business as unknown as { show_staff?: boolean | null }).show_staff !== false);
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>((business as unknown as { staff_members?: StaffMember[] | null }).staff_members || []);
+  const [staffUploading, setStaffUploading] = useState<Record<string, boolean>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1180,12 +1183,15 @@ function WebsiteSection({
   const origGoogleMapsUrl    = business.google_maps_url || "";
   const origWazeUrl          = business.waze_url || "";
   const origProfileImageUrl  = (business as unknown as { profile_image_url?: string | null }).profile_image_url || null;
+  const origShowStaff        = (business as unknown as { show_staff?: boolean | null }).show_staff !== false;
+  const origStaffMembers     = JSON.stringify((business as unknown as { staff_members?: StaffMember[] | null }).staff_members || []);
   const dirty = slug !== origSlug || defaultLang !== origLang ||
                 JSON.stringify(images) !== origImages || showGallery !== origShowGallery ||
                 tiktokUrl !== origTiktokUrl || instagramUrl !== origInstagramUrl ||
                 facebookUrl !== origFacebookUrl || whatsappNumber !== origWhatsappNumber ||
                 googleReviewLink !== origGoogleReviewLink || googleMapsUrl !== origGoogleMapsUrl ||
-                wazeUrl !== origWazeUrl || profileImageUrl !== origProfileImageUrl;
+                wazeUrl !== origWazeUrl || profileImageUrl !== origProfileImageUrl ||
+                showStaff !== origShowStaff || JSON.stringify(staffMembers) !== origStaffMembers;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty]);
@@ -1210,6 +1216,20 @@ function WebsiteSection({
       showToast("Failed to upload photo", "error");
     }
     setProfileUploading(false);
+  }
+
+  async function uploadStaffPhoto(memberId: string, memberIdx: number, file: File) {
+    setStaffUploading(s => ({ ...s, [memberId]: true }));
+    const ext  = file.name.split(".").pop();
+    const path = `profiles/staff/${business.id}/${memberId}.${ext}`;
+    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data } = supabase.storage.from("business-images").getPublicUrl(path);
+      setStaffMembers(ms => ms.map((m, i) => i === memberIdx ? { ...m, photo_url: data.publicUrl } : m));
+    } else {
+      showToast("Failed to upload photo", "error");
+    }
+    setStaffUploading(s => ({ ...s, [memberId]: false }));
   }
 
   function copyLink() {
@@ -1261,6 +1281,8 @@ function WebsiteSection({
       google_maps_url:    googleMapsUrl.trim() || null,
       waze_url:           wazeUrl.trim() || null,
       profile_image_url:  profileImageUrl || null,
+      show_staff:         showStaff,
+      staff_members:      staffMembers,
     }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast(getErrorMessage(error), "error"); return; }
@@ -1439,6 +1461,74 @@ function WebsiteSection({
         {images.length > 0 && (
           <p style={{ fontSize: 12, color: "var(--color-muted)", margin: 0 }}>First photo is used as the cover image</p>
         )}
+      </SectionCard>
+
+      {/* Staff */}
+      <SectionCard title="Staff">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>Show staff section</div>
+            <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Visible when at least one member is added</div>
+          </div>
+          <Toggle on={showStaff} onChange={() => setShowStaff(s => !s)} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {staffMembers.map((member, idx) => (
+            <div key={member.id} style={{ background: "var(--color-cream)", border: "1.5px solid var(--color-cream-2)", borderRadius: 12, padding: "12px 14px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+              {/* Photo */}
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "var(--color-cream-2)", border: "1.5px solid var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {member.photo_url
+                    ? <img src={member.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <span style={{ fontSize: 20 }}>👤</span>
+                  }
+                </div>
+                <label style={{ position: "absolute", bottom: -2, right: -2, width: 20, height: 20, borderRadius: "50%", background: "var(--color-amber)", border: "2px solid var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: staffUploading[member.id] ? "default" : "pointer", opacity: staffUploading[member.id] ? 0.6 : 1 }}>
+                  {staffUploading[member.id]
+                    ? <div style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid #fff", borderTopColor: "transparent", animation: "spin 0.7s linear infinite" }} />
+                    : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  }
+                  <input
+                    type="file" accept="image/*" style={{ display: "none" }}
+                    disabled={staffUploading[member.id]}
+                    onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) uploadStaffPhoto(member.id, idx, f); }}
+                  />
+                </label>
+              </div>
+              {/* Name + Role */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                <input
+                  value={member.name}
+                  onChange={e => setStaffMembers(ms => ms.map((m, i) => i === idx ? { ...m, name: e.target.value } : m))}
+                  placeholder="Name"
+                  style={{ height: 38, padding: "0 12px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", fontSize: 13, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box" }}
+                />
+                <input
+                  value={member.role}
+                  onChange={e => setStaffMembers(ms => ms.map((m, i) => i === idx ? { ...m, role: e.target.value } : m))}
+                  placeholder="Role (e.g. Hairstylist)"
+                  style={{ height: 38, padding: "0 12px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", fontSize: 13, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box" }}
+                />
+              </div>
+              {/* Remove */}
+              <button
+                type="button"
+                onClick={() => setStaffMembers(ms => ms.filter((_, i) => i !== idx))}
+                style={{ height: 32, width: 32, borderRadius: 8, border: "1.5px solid #FCA5A5", background: "transparent", color: "#991B1B", cursor: "pointer", fontSize: 16, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 2 }}
+              >×</button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setStaffMembers(ms => [...ms, { id: crypto.randomUUID(), name: "", role: "", photo_url: null }])}
+          style={{ marginTop: staffMembers.length > 0 ? 8 : 0, width: "100%", height: 46, borderRadius: 12, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "var(--color-surface)", border: "1.5px dashed var(--color-cream-2)", color: "var(--color-dark)", cursor: "pointer", transition: "border-color 0.15s, color 0.15s, background 0.15s", boxShadow: "var(--shadow-sm)" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; e.currentTarget.style.background = "var(--amber-soft)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-dark)"; e.currentTarget.style.background = "var(--color-surface)"; }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add team member
+        </button>
       </SectionCard>
 
       {/* Social links */}

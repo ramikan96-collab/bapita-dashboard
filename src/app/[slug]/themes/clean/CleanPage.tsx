@@ -18,7 +18,7 @@ import { ThemeFooter } from "../../_shared/ThemeFooter";
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&q=80";
 
 const P = { bg: "#FFFFFF", text: "#111111", muted: "#6B7280", surface: "#F9F9F9", border: "#E5E5E5", panel: "#141414" };
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "hours", "location", "reviews"];
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews"];
 
 function SectionTitle({ title, accent }: { title: string; accent: string }) {
   const { ref, visible } = useFadeInOnEnter();
@@ -102,6 +102,8 @@ export function CleanPage({ business, services }: Props) {
           .cl-hero-panel { width: 100%; padding: 84px 28px 56px; justify-content: flex-end; min-height: 60svh; }
           .cl-hero-photo { width: 100%; height: 46svh; }
         }
+        .cl-staff-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        @media (max-width: 600px) { .cl-staff-grid { grid-template-columns: repeat(2, 1fr); } }
       `}</style>
 
       {/* Sticky header */}
@@ -253,6 +255,28 @@ export function CleanPage({ business, services }: Props) {
                     </div>
                   )}
                   <p style={{ fontSize: 16, lineHeight: 1.85, color: P.muted }}>{displayAbout}</p>
+                </section>
+              ) : null;
+            case "staff":
+              return business.show_staff !== false && business.staff_members && business.staff_members.length > 0 ? (
+                <section key={key} style={{ paddingTop: 56 }}>
+                  <SectionTitle title={t.staff.title} accent={accent} />
+                  <div className="cl-staff-grid" style={{ marginTop: 20 }}>
+                    {business.staff_members.map(member => (
+                      <div key={member.id} style={{ background: P.bg, border: `1px solid ${P.border}`, borderRadius: 10, padding: "16px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
+                        <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: P.surface, border: `2px solid ${P.border}`, flexShrink: 0 }}>
+                          {member.photo_url
+                            ? <img src={member.photo_url} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: P.muted }}>👤</div>
+                          }
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: P.text }}>{member.name}</div>
+                          {member.role && <div style={{ fontSize: 12, color: P.muted, marginTop: 2 }}>{member.role}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </section>
               ) : null;
             case "gallery":
