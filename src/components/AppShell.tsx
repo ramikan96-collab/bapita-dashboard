@@ -1291,48 +1291,68 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     return (
                       <div key={n.id}>
                         {i > 0 && <div style={{ height: 1, background: "var(--color-cream-2)" }} />}
-                        <div
-                          onClick={() => {
-                            markOneRead(n.id);
-                            if (n.booking_id) {
-                              setNotificationsOpen(false);
-                              router.push(`/calendar?booking=${n.booking_id}`);
-                            }
-                          }}
-                          style={{
-                            display: "flex", alignItems: "center", gap: 12,
-                            padding: "14px 16px",
-                            background: isUnread ? "rgba(232,146,10,0.04)" : "var(--color-surface)",
-                            borderInlineStart: isUnread ? "3px solid var(--color-amber)" : "3px solid transparent",
-                            cursor: n.booking_id ? "pointer" : "default",
-                          }}
-                        >
-                          {/* Type icon */}
-                          <span style={{ color: iconColor, flexShrink: 0 }}>
-                            <Icon size={18} />
-                          </span>
-                          {/* Content */}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 14, fontWeight: isUnread ? 600 : 400, color: "var(--color-dark)", marginBottom: 2, lineHeight: 1.3 }}>
-                              {n.title}
-                            </div>
-                            <div style={{ fontSize: 12, color: "var(--color-muted)", lineHeight: 1.3 }}>
-                              {n.body}
-                            </div>
-                          </div>
-                          {/* Time + delete */}
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-                            <span style={{ fontSize: 11, color: "var(--color-muted)", whiteSpace: "nowrap" }}>
-                              {timeAgo(n.created_at)}
+                        {/* position:relative so the full-area button and delete can layer correctly */}
+                        <div style={{ position: "relative" }}>
+                          {/* Full-row tap target — proper <button> for reliable mobile touch */}
+                          <button
+                            onClick={() => {
+                              markOneRead(n.id);
+                              if (n.booking_id) {
+                                setNotificationsOpen(false);
+                                router.push(`/calendar?booking=${n.booking_id}`);
+                              }
+                            }}
+                            style={{
+                              position: "absolute", inset: 0,
+                              background: "none", border: "none",
+                              cursor: n.booking_id ? "pointer" : "default",
+                              WebkitTapHighlightColor: "transparent",
+                            }}
+                            aria-label={n.title}
+                          />
+                          {/* Visual row — pointer-events:none so touches fall through to button above */}
+                          <div
+                            style={{
+                              display: "flex", alignItems: "center", gap: 12,
+                              padding: "14px 16px",
+                              background: isUnread ? "rgba(232,146,10,0.04)" : "var(--color-surface)",
+                              borderInlineStart: isUnread ? "3px solid var(--color-amber)" : "3px solid transparent",
+                              pointerEvents: "none",
+                            }}
+                          >
+                            <span style={{ color: iconColor, flexShrink: 0 }}>
+                              <Icon size={18} />
                             </span>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); deleteOne(n.id); }}
-                              style={{ color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", lineHeight: 1 }}
-                              aria-label="Delete notification"
-                            >
-                              <IconXSmall size={14} />
-                            </button>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 14, fontWeight: isUnread ? 600 : 400, color: "var(--color-dark)", marginBottom: 2, lineHeight: 1.3 }}>
+                                {n.title}
+                              </div>
+                              <div style={{ fontSize: 12, color: "var(--color-muted)", lineHeight: 1.3 }}>
+                                {n.body}
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                              <span style={{ fontSize: 11, color: "var(--color-muted)", whiteSpace: "nowrap" }}>
+                                {timeAgo(n.created_at)}
+                              </span>
+                              {/* Spacer matching delete button size */}
+                              <span style={{ width: 18, height: 18 }} />
+                            </div>
                           </div>
+                          {/* Delete — sits above the full-area button via position:relative+zIndex */}
+                          <button
+                            onClick={() => deleteOne(n.id)}
+                            style={{
+                              position: "absolute", bottom: 14, insetInlineEnd: 16,
+                              color: "var(--color-muted)", background: "none", border: "none",
+                              cursor: "pointer", padding: 2,
+                              display: "flex", alignItems: "center", lineHeight: 1,
+                              zIndex: 1,
+                            }}
+                            aria-label="Delete notification"
+                          >
+                            <IconXSmall size={14} />
+                          </button>
                         </div>
                       </div>
                     );
