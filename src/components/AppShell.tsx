@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ToastProvider, useToast } from "@/components/Toast";
@@ -291,6 +291,25 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const { notifications, unreadCount, refetch, markAllRead, markOneRead, deleteOne, deleteAll } = useNotifications();
   const { status: pushStatus, refresh: refreshPushStatus } = usePushStatus();
   const supabase = createClient();
+
+  // Swipe between bottom-nav tabs. Gesture is bound to the bottom nav bar only,
+  // so it never competes with the calendar's in-page left/right day-swipe.
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  function onTabTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }
+  function onTabTouchEnd(e: React.TouchEvent) {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return; // not a horizontal swipe
+    const idx = navItems.findIndex((it) => isActive(it.path));
+    if (idx === -1) return; // not on a primary tab
+    const next = dx < 0 ? idx + 1 : idx - 1; // swipe left → next, right → previous
+    if (next < 0 || next >= navItems.length) return; // clamp at the ends
+    router.push(navItems[next].path);
+  }
 
   async function handleEnablePush() {
     const result = await enablePush();
@@ -609,12 +628,15 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
       {/* ─── Mobile Bottom Nav ────────────────────────────────────────── */}
       <nav
+        onTouchStart={onTabTouchStart}
+        onTouchEnd={onTabTouchEnd}
         className="md:hidden fixed bottom-0 start-0 end-0 flex items-stretch border-t z-30"
         style={{
           background: "var(--color-surface)",
           borderColor: "var(--color-cream-2)",
           height: 64,
           paddingBottom: "env(safe-area-inset-bottom)",
+          touchAction: "pan-y",
         }}
       >
         {navItems.map((item) => {
@@ -937,12 +959,12 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         className={`fixed top-0 bottom-0 start-0 z-50 flex flex-col transition-transform duration-200 ease-out ${
           drawerOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
         }`}
-        style={{ width: "min(320px, 85vw)", background: "var(--color-surface)", boxShadow: "4px 0 24px rgba(30,26,20,0.12)" }}
+        style={{ width: "min(300px, 74vw)", background: "var(--color-surface)", boxShadow: "4px 0 24px rgba(30,26,20,0.12)" }}
         role="dialog"
         aria-label="Navigation menu"
       >
         {/* Bapita wordmark + bell */}
-        <div className="px-5 border-b flex items-center justify-between" style={{ borderColor: "var(--color-cream-2)", minHeight: 64 }}>
+        <div className="px-5 border-b flex items-center justify-between" style={{ borderColor: "var(--color-cream-2)", minHeight: 56 }}>
           <Wordmark />
           <button
             onClick={() => { setDrawerOpen(false); setNotificationsOpen(true); }}
@@ -1063,7 +1085,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         {/* Business name + sign out — bottom */}
         <div className="border-t" style={{ borderColor: "var(--color-cream-2)" }}>
           {/* Business identity */}
-          <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+          <div className="flex items-center gap-3 px-4 pt-5 pb-3">
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-[15px] shrink-0"
               style={{ background: "var(--color-amber)" }}
