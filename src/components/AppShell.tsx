@@ -935,7 +935,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       <div
         data-noprint
         className={`fixed top-0 bottom-0 start-0 z-50 flex flex-col transition-transform duration-200 ease-out ${
-          drawerOpen ? "translate-x-0" : "-translate-x-full"
+          drawerOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
         }`}
         style={{ width: "min(320px, 85vw)", background: "var(--color-surface)", boxShadow: "4px 0 24px rgba(30,26,20,0.12)" }}
         role="dialog"
@@ -1312,6 +1312,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                               borderInlineStart: isUnread ? "3px solid var(--color-amber)" : "3px solid transparent",
                               border: "none", textAlign: "left", minWidth: 0,
                               cursor: n.booking_id ? "pointer" : "default",
+                              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
                             }}
                           >
                             <span style={{ color: iconColor, flexShrink: 0 }}>
