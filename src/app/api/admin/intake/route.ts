@@ -6,7 +6,7 @@ import OpenAI from "openai";
 const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
 
 const GROQ_MODEL  = "llama-3.3-70b-versatile";
-const OLLAMA_MODEL = "llama3.2:1b";
+const OLLAMA_MODEL = "llama3.2:3b";
 
 const SYSTEM_INSTRUCTION = `You are a senior brand copywriter and data extractor for Bapita, which builds booking websites for Israeli appointment businesses (barbershops, salons, nail/beauty studios). You receive messy, partial notes about ONE business and return a single strict JSON object. Rules:
 - Extract every fact present (name, services, prices, hours, phone, address, socials, reviews, rating).
@@ -14,6 +14,8 @@ const SYSTEM_INSTRUCTION = `You are a senior brand copywriter and data extractor
 - Provide Hebrew AND English for name, tagline, about. If only one language is given, translate naturally (not literally).
 - For services with no stated price/duration, estimate realistic Israeli-market values; never invent services that were not implied.
 - Parse pasted reviews into the reviews array with author, 1–5 rating, text, and a display date string.
+- If a Google review count is mentioned (e.g. "125 reviews", "200 ביקורות", "(125)"), put that number in stat_clients when no explicit client count is given. If both are present, prefer the explicit client count.
+- Business hours parsing — Hebrew day abbreviations: א=Sunday, ב=Monday, ג=Tuesday, ד=Wednesday, ה=Thursday, ו=Friday, ש=Saturday. Common ranges: "א-ה"=Sunday–Thursday, "ב-ו"=Monday–Friday, "א-ש"=full week, "ו׳" or "ו"=Friday, "שבת" or "ש"=Saturday. Map all 7 days in the business_hours object; mark closed days as open:false.
 - Pick template_style: "clean" (modern/minimal/women's salons), "classic" (warm/traditional barbers), "dark" (bold/masculine/edgy). Suggest accent_color as a hex that suits the vibe.
 - Output ONLY a valid JSON object with these exact keys (omit optional keys if no data):
 {
@@ -136,6 +138,16 @@ ${raw}`;
   const { data: biz, error: bizErr } = await service.from("businesses").insert({
     slug,
     owner_id:           user.id,
+    status:             "draft",
+    show_about:         true,
+    show_gallery:       true,
+    show_hours:         true,
+    show_location:      true,
+    show_stats:         true,
+    show_open_status:   true,
+    show_services:      true,
+    show_reviews:       true,
+    profile_image_url:  null,
     name:               parsed.name        || slug,
     name_he:            parsed.name_he     || "",
     tagline:            parsed.tagline     || "",
@@ -153,8 +165,6 @@ ${raw}`;
     accent_color:       parsed.accent_color       || "#B8862A",
     template_style:     (parsed.template_style as string) || "classic",
     default_lang:       lang,
-    status:             "draft",
-    show_reviews:       true,
     google_reviews:     Array.isArray(parsed.google_reviews) ? parsed.google_reviews.map((r: Record<string,unknown>) => ({
       id:     crypto.randomUUID(),
       author: r.author,

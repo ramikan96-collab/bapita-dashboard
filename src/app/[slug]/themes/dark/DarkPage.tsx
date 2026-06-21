@@ -284,9 +284,9 @@ export function DarkPage({ business, services }: Props) {
                   <DarkSectionTitle title={t.about.title} accent={accent} isRtl={isRtl} />
                   <div style={{ background: D.surface, borderRadius: 2, padding: "24px 22px", border: `1px solid ${D.border}`, borderInlineStart: `3px solid ${accent}60` }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 16 }}>
-                      {business.hero_image_url && (
+                      {(business.profile_image_url || business.hero_image_url) && (
                         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                          <img src={business.hero_image_url} alt={displayName} style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}`, flexShrink: 0 }} />
+                          <img src={business.profile_image_url || business.hero_image_url || ""} alt={displayName} style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}`, flexShrink: 0 }} />
                           <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 13, color: accent, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>{displayName}</span>
                         </div>
                       )}

@@ -119,7 +119,7 @@ const EMPTY_FORM: FormData = {
   tagline: "", tagline_he: "", phone: "", address: "", email: "",
   instagram_url: "", facebook_url: "", tiktok_url: "", whatsapp_number: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
-  about_text: "", about_text_he: "", accent_color: "", image_focal: {},
+  about_text: "", about_text_he: "", accent_color: "#B8862A", image_focal: {},
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
   show_stats: true, show_open_status: true, show_services: true, show_reviews: true,
   status: "draft",
@@ -154,11 +154,12 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
   const [saved,        setSaved]        = useState(false);
   const [dirty,        setDirty]        = useState(false);
   const [loading,      setLoading]      = useState(mode === "edit");
-  const [cloning,        setCloning]        = useState(false);
-  const [confirmClone,   setConfirmClone]   = useState(false);
-  const [billingEditing, setBillingEditing] = useState(false);
-  const [showEjectPanel, setShowEjectPanel] = useState(false);
-  const [copiedStep,     setCopiedStep]     = useState<number | null>(null);
+  const [cloning,          setCloning]          = useState(false);
+  const [confirmClone,     setConfirmClone]     = useState(false);
+  const [billingEditing,   setBillingEditing]   = useState(false);
+  const [showEjectPanel,   setShowEjectPanel]   = useState(false);
+  const [copiedStep,       setCopiedStep]       = useState<number | null>(null);
+  const [profileImageUrl,  setProfileImageUrl]  = useState<string | null>(null);
   const stableId = useRef<string>(businessId || crypto.randomUUID());
 
   useEffect(() => {
@@ -186,7 +187,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           waze_url:           b.waze_url            || "",
           about_text:         b.about_text          || "",
           about_text_he:      b.about_text_he       || "",
-          accent_color:       b.accent_color        || "",
+          accent_color:       b.accent_color        || "#B8862A",
           image_focal:        (b.image_focal as Record<string, string>) || {},
           show_gallery:       b.show_gallery        ?? true,
           show_about:         b.show_about          ?? true,
@@ -214,6 +215,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         const hero: string    = b.hero_image_url || "";
         const merged          = hero && !imgs.includes(hero) ? [hero, ...imgs] : imgs;
         setGallery(merged.map((url: string) => ({ url })));
+        setProfileImageUrl((b as unknown as { profile_image_url?: string | null }).profile_image_url || null);
         // Section order — merge DB order with missing keys, filter by show_* flags
         const showFlags: Record<string, boolean> = {
           services: b.show_services ?? true,
@@ -354,6 +356,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       status:             form.status,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
+      profile_image_url:  profileImageUrl         || null,
       image_focal:        form.image_focal,
       section_order:      sectionOrder,
       plan_tier:          form.plan_tier           || null,
@@ -443,6 +446,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       status:             "draft" as const,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
+      profile_image_url:  profileImageUrl         || null,
       image_focal:        form.image_focal,
       section_order:      sectionOrder,
       plan_tier:          form.plan_tier           || null,
@@ -972,7 +976,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
           {/* ── GALLERY ── */}
           {tab === "gallery" && (
-            <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} focal={form.image_focal} setFocal={f => set("image_focal", f)} />
+            <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} focal={form.image_focal} setFocal={f => set("image_focal", f)} profileImageUrl={profileImageUrl} setProfileImageUrl={setProfileImageUrl} />
           )}
 
           {/* ── SERVICES ── */}
@@ -1383,19 +1387,35 @@ function SectionReorder({ order, setOrder }: { order: string[]; setOrder: (o: st
 
 // ─── Gallery Manager ──────────────────────────────────────────────────────────
 
-function GalleryManager({ gallery, setGallery, businessId, focal, setFocal }: {
+function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, profileImageUrl, setProfileImageUrl }: {
   gallery:    GalleryItem[];
   setGallery: React.Dispatch<React.SetStateAction<GalleryItem[]>>;
   businessId?: string;
   focal:    Record<string, string>;
   setFocal: (f: Record<string, string>) => void;
+  profileImageUrl:    string | null;
+  setProfileImageUrl: (url: string | null) => void;
 }) {
   const supabase  = createClient();
   const inputRef  = useRef<HTMLInputElement>(null);
+  const profileInputRef = useRef<HTMLInputElement>(null);
   const dragIdx   = useRef<number | null>(null);
   const [dragOver,  setDragOver]  = useState<number | null>(null);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [focalEditUrl, setFocalEditUrl] = useState<string | null>(null);
+  const [profileUploading, setProfileUploading] = useState(false);
+
+  async function uploadProfileImage(file: File) {
+    setProfileUploading(true);
+    const ext  = file.name.split(".").pop();
+    const path = `profiles/${businessId || "temp"}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data } = supabase.storage.from("business-images").getPublicUrl(path);
+      setProfileImageUrl(data.publicUrl);
+    }
+    setProfileUploading(false);
+  }
 
   function setImageFocal(url: string, value: string) {
     setFocal({ ...focal, [url]: value });
@@ -1471,6 +1491,37 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal }: {
   }
 
   return (
+    <>
+    {/* ── Profile photo ── */}
+    <SectionCard title="Profile photo">
+      <p style={{ fontSize:13, color:"var(--color-muted)", marginTop:0, marginBottom:16 }}>
+        Shown as a circle in the About section. Different from the hero/gallery images.
+      </p>
+      <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+        <div style={{ width:72, height:72, borderRadius:"50%", overflow:"hidden", background:"var(--color-cream-2)", flexShrink:0, border:"2px solid var(--color-cream-2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {profileImageUrl
+            ? <img src={profileImageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+            : <span style={{ fontSize:24 }}>👤</span>
+          }
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          <input ref={profileInputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadProfileImage(f); e.target.value = ""; }} />
+          <button
+            onClick={() => profileInputRef.current?.click()}
+            disabled={profileUploading}
+            style={{ height:34, padding:"0 14px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"var(--color-surface)", color:"var(--color-dark)", fontSize:13, fontWeight:600, cursor:profileUploading ? "default" : "pointer", fontFamily:"inherit" }}
+          >
+            {profileUploading ? "Uploading…" : profileImageUrl ? "Change photo" : "Upload photo"}
+          </button>
+          {profileImageUrl && (
+            <button onClick={() => setProfileImageUrl(null)} style={{ height:34, padding:"0 14px", borderRadius:9, border:"1.5px solid #FCA5A5", background:"transparent", color:"#991B1B", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+    </SectionCard>
+
     <SectionCard title="Gallery">
       <p style={{ fontSize:13, color:"var(--color-muted)", marginTop:0, marginBottom:16 }}>
         Drag to reorder. First image = hero. Hover a photo and hit <strong>⌖ Crop</strong> to pick the focal point that stays in frame when it&apos;s cropped.
@@ -1649,6 +1700,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal }: {
         );
       })()}
     </SectionCard>
+    </>
   );
 }
 

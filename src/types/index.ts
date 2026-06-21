@@ -73,6 +73,7 @@ export interface Business {
   tagline?: string | null;
   tagline_he?: string | null;
   hero_image_url?: string | null;
+  profile_image_url?: string | null;
   /** object-position for the hero image: "top" | "center" | "bottom" (default center) — legacy, superseded by image_focal */
   hero_position?: string | null;
   /** per-image focal point: { [imageUrl]: "x% y%" } — applied as object-position wherever the image is cropped */

@@ -246,9 +246,9 @@ export function CleanPage({ business, services }: Props) {
               return business.show_about !== false && displayAbout ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.about.title} accent={accent} />
-                  {business.hero_image_url && (
+                  {(business.profile_image_url || business.hero_image_url) && (
                     <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
-                      <img src={business.hero_image_url} alt={displayName} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${P.border}`, flexShrink: 0 }} />
+                      <img src={business.profile_image_url || business.hero_image_url || ""} alt={displayName} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${P.border}`, flexShrink: 0 }} />
                       <span style={{ fontSize: 14, fontWeight: 700, color: P.text }}>{displayName}</span>
                     </div>
                   )}
@@ -259,7 +259,7 @@ export function CleanPage({ business, services }: Props) {
               return business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.gallery.title} accent={accent} />
-                  <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={10} initialCount={4} focal={business.image_focal ?? undefined} />
+                  <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={10} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} />
                 </section>
               ) : null;
             case "reviews":

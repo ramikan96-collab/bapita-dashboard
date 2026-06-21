@@ -1162,7 +1162,10 @@ function WebsiteSection({
   const [wazeUrl, setWazeUrl]                 = useState(business.waze_url || "");
   const [uploading, setUploading]             = useState(false);
   const [saving, setSaving]                   = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>((business as unknown as { profile_image_url?: string | null }).profile_image_url || null);
+  const [profileUploading, setProfileUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const profileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Dirty detection (all fields together) ─────────────────────────────────
   const origSlug             = business.slug || "";
@@ -1176,12 +1179,13 @@ function WebsiteSection({
   const origGoogleReviewLink = business.google_review_link || "";
   const origGoogleMapsUrl    = business.google_maps_url || "";
   const origWazeUrl          = business.waze_url || "";
+  const origProfileImageUrl  = (business as unknown as { profile_image_url?: string | null }).profile_image_url || null;
   const dirty = slug !== origSlug || defaultLang !== origLang ||
                 JSON.stringify(images) !== origImages || showGallery !== origShowGallery ||
                 tiktokUrl !== origTiktokUrl || instagramUrl !== origInstagramUrl ||
                 facebookUrl !== origFacebookUrl || whatsappNumber !== origWhatsappNumber ||
                 googleReviewLink !== origGoogleReviewLink || googleMapsUrl !== origGoogleMapsUrl ||
-                wazeUrl !== origWazeUrl;
+                wazeUrl !== origWazeUrl || profileImageUrl !== origProfileImageUrl;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty]);
@@ -1194,6 +1198,20 @@ function WebsiteSection({
   }, [dirty]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
+  async function uploadProfileImage(file: File) {
+    setProfileUploading(true);
+    const ext  = file.name.split(".").pop();
+    const path = `profiles/${business.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data } = supabase.storage.from("business-images").getPublicUrl(path);
+      setProfileImageUrl(data.publicUrl);
+    } else {
+      showToast("Failed to upload photo", "error");
+    }
+    setProfileUploading(false);
+  }
+
   function copyLink() {
     navigator.clipboard.writeText(`https://book.bapita.com/${slug || "your-slug"}`);
     showToast("Booking link copied", "success");
@@ -1242,6 +1260,7 @@ function WebsiteSection({
       google_review_link: googleReviewLink.trim() || null,
       google_maps_url:    googleMapsUrl.trim() || null,
       waze_url:           wazeUrl.trim() || null,
+      profile_image_url:  profileImageUrl || null,
     }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast(getErrorMessage(error), "error"); return; }
@@ -1321,6 +1340,36 @@ function WebsiteSection({
                 {l === "en" ? "EN" : "עב"}
               </button>
             ))}
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Profile photo */}
+      <SectionCard title="Profile photo">
+        <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 12px" }}>
+          Shown as a circle in the About section on your booking page.
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: "var(--color-cream-2)", flexShrink: 0, border: "2px solid var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {profileImageUrl
+              ? <img src={profileImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : <span style={{ fontSize: 24 }}>👤</span>
+            }
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <input ref={profileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadProfileImage(f); e.target.value = ""; }} />
+            <button
+              onClick={() => profileInputRef.current?.click()}
+              disabled={profileUploading}
+              style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 13, fontWeight: 600, cursor: profileUploading ? "default" : "pointer", fontFamily: "inherit" }}
+            >
+              {profileUploading ? "Uploading…" : profileImageUrl ? "Change photo" : "Upload photo"}
+            </button>
+            {profileImageUrl && (
+              <button onClick={() => setProfileImageUrl(null)} style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "1.5px solid #FCA5A5", background: "transparent", color: "#991B1B", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                Remove
+              </button>
+            )}
           </div>
         </div>
       </SectionCard>

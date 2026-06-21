@@ -204,9 +204,9 @@ export function ClassicPage({ business, services }: Props) {
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.about.title} accentColor={accent} darkColor={C.dark} />
                   <div className="about-row" style={{ marginTop: 20 }}>
-                    {business.hero_image_url && (
+                    {(business.profile_image_url || business.hero_image_url) && (
                       <div style={{ textAlign: "center", flexShrink: 0 }}>
-                        <img src={business.hero_image_url} alt={displayName} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: `3px solid ${accent}`, display: "block", margin: "0 auto 6px" }} />
+                        <img src={business.profile_image_url || business.hero_image_url || ""} alt={displayName} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: `3px solid ${accent}`, display: "block", margin: "0 auto 6px" }} />
                         <span style={{ fontSize: 11, fontVariant: "small-caps", color: accent, fontWeight: 700, letterSpacing: "0.06em" }}>{displayName}</span>
                       </div>
                     )}

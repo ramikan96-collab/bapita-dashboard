@@ -7,16 +7,29 @@ interface Props {
   layout?: "featured" | "masonry" | "grid";
   borderRadius?: number;
   initialCount?: number;
+  /** On viewports >= desktopBreakpoint, use this count instead of initialCount */
+  desktopInitialCount?: number;
+  desktopBreakpoint?: number;
   /** per-image focal point map: { [url]: "x% y%" } */
   focal?: Record<string, string>;
 }
 
-export function SectionGallery({ photos, layout = "featured", borderRadius = 10, initialCount, focal }: Props) {
+export function SectionGallery({ photos, layout = "featured", borderRadius = 10, initialCount, desktopInitialCount, desktopBreakpoint = 680, focal }: Props) {
   const fp = (url: string) => focal?.[url] || "center";
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
 
-  const limit = (initialCount && !expanded) ? initialCount : photos.length;
+  useEffect(() => {
+    if (!desktopInitialCount) return;
+    const check = () => setIsDesktop(window.innerWidth >= desktopBreakpoint);
+    check();
+    window.addEventListener("resize", check, { passive: true });
+    return () => window.removeEventListener("resize", check);
+  }, [desktopInitialCount, desktopBreakpoint]);
+
+  const effectiveCount = (desktopInitialCount && isDesktop) ? desktopInitialCount : initialCount;
+  const limit = (effectiveCount && !expanded) ? effectiveCount : photos.length;
   const visible = photos.slice(0, limit);
   const hiddenCount = photos.length - limit;
 
@@ -106,7 +119,7 @@ export function SectionGallery({ photos, layout = "featured", borderRadius = 10,
       {galleryNode}
 
       {/* Show more / collapse */}
-      {initialCount && photos.length > initialCount && (
+      {effectiveCount && photos.length > effectiveCount && (
         <button
           onClick={() => setExpanded(v => !v)}
           style={{
