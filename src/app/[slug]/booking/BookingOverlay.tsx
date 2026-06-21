@@ -30,7 +30,12 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
   const btnBg      = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.06)";
   const dateLocale = lang === "he" ? "he-IL" : "en-US";
 
-  const { state, setService, setDate, setTime, setContact, goBack, submit } = useBookingFlow(initialService);
+  const localize = (s: Service): Service =>
+    lang === "he" && s.name_he ? { ...s, name: s.name_he } : s;
+  const localizedServices = services.map(localize);
+  const localizedInitial = initialService ? localize(initialService) : null;
+
+  const { state, setService, setDate, setTime, setContact, goBack, submit } = useBookingFlow(localizedInitial);
   const { slots, loading: slotsLoading } = useSlots(
     business.id,
     state.date,
@@ -141,7 +146,7 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
                   {lang === "he" ? "אין שירותים זמינים כרגע" : "No services available at the moment"}
                 </div>
               )}
-              {services.map(s => (
+              {localizedServices.map(s => (
                 <button key={s.id} onClick={() => setService(s)} style={{
                   width: "100%", padding: "14px 16px", borderRadius: 12,
                   border: `1.5px solid ${borderClr}`,
