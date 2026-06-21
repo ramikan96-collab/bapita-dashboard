@@ -634,7 +634,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         style={{
           background: "var(--color-surface)",
           borderColor: "var(--color-cream-2)",
-          height: 64,
+          height: 72,
           paddingBottom: "env(safe-area-inset-bottom)",
           touchAction: "pan-y",
         }}
@@ -672,7 +672,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           onClick={() => router.push("/new-booking")}
           className="md:hidden fixed end-4 z-40 w-14 h-14 rounded-full bg-amber text-white flex items-center justify-center active:scale-95 transition-transform"
           style={{
-            bottom: "calc(64px + 16px + env(safe-area-inset-bottom))",
+            bottom: "calc(72px + 16px + env(safe-area-inset-bottom))",
             boxShadow: "0 4px 16px rgba(232,146,10,0.35)",
           }}
           aria-label="New booking"
@@ -940,7 +940,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ─── Main Content ─────────────────────────────────────────────── */}
-      <main key={pathname} className="page-anim flex-1 min-w-0 overflow-y-auto flex flex-col pt-4 pb-16 md:overflow-visible md:pt-0 md:pb-0">{children}</main>
+      <main key={pathname} className="page-anim flex-1 min-w-0 overflow-y-auto flex flex-col pt-4 pb-20 md:overflow-visible md:pt-0 md:pb-0">{children}</main>
       </div>
       </div>
 
@@ -956,10 +956,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       />
       <div
         data-noprint
-        className={`fixed top-0 bottom-0 start-0 z-50 flex flex-col transition-transform duration-200 ease-out ${
+        className={`fixed top-0 bottom-0 start-0 z-50 flex flex-col transition-transform duration-200 ease-out w-[66vw] max-w-[280px] md:w-[300px] md:max-w-none ${
           drawerOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
         }`}
-        style={{ width: "min(300px, 74vw)", background: "var(--color-surface)", boxShadow: "4px 0 24px rgba(30,26,20,0.12)" }}
+        style={{ background: "var(--color-surface)", boxShadow: "4px 0 24px rgba(30,26,20,0.12)" }}
         role="dialog"
         aria-label="Navigation menu"
       >
