@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   format, startOfMonth, endOfMonth,
   isSameDay, parseISO, addDays, addMonths,
@@ -35,9 +35,10 @@ function rangeFor(view: CalView, date: Date): [Date, Date] {
   return [startOfMonth(date), endOfMonth(date)];
 }
 
-export default function CalendarPage() {
+function CalendarPageInner() {
   const { business, loading: bizLoading } = useBusiness();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [view, setView]           = useState<CalView>("week");
   const [date, setDate]           = useState<Date>(new Date());
   const [bookings, setBookings]   = useState<Booking[]>([]);
@@ -107,15 +108,15 @@ export default function CalendarPage() {
   }, [business, supabase, fetchBookings]);
 
   // Open booking drawer from notification click (?booking=<id>).
+  // Keyed on the search param so it re-runs even when we're already on
+  // /calendar and only the query string changes (no remount otherwise).
+  const bookingParam = searchParams.get("booking");
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const bookingId = new URLSearchParams(window.location.search).get("booking");
-    if (!bookingId) return;
-    window.history.replaceState(null, "", window.location.pathname);
+    if (!bookingParam) return;
     createClient()
       .from("bookings")
       .select("*, service:services(name, duration, price), label:labels(id,name,color)")
-      .eq("id", bookingId)
+      .eq("id", bookingParam)
       .single()
       .then(({ data }) => {
         if (data) {
@@ -123,9 +124,11 @@ export default function CalendarPage() {
           setDate(parseISO((data as Booking).appointment_date));
           setView("day");
         }
+        // Strip the param so a refresh doesn't reopen it and re-clicking the
+        // same booking flips the value null→id again, re-triggering this effect.
+        router.replace(window.location.pathname, { scroll: false });
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [bookingParam, router]);
 
   // Publish state to the AppShell top bar.
   const isTodaySelected = isSameDay(date, new Date());
@@ -408,5 +411,13 @@ export default function CalendarPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <Suspense fallback={null}>
+      <CalendarPageInner />
+    </Suspense>
   );
 }
