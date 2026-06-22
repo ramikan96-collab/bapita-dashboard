@@ -268,8 +268,8 @@ const drawerItemsTop = [
 ] as const;
 
 const drawerItemsBottom = [
-  { path: "/support", icon: IconSupport, label: "Support" },
   { path: "/profile", icon: IconProfile, label: "Profile" },
+  { path: "/support", icon: IconSupport, label: "Support" },
 ] as const;
 
 const calViews: { value: CalView; label: string }[] = [
