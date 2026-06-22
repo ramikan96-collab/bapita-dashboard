@@ -8,6 +8,10 @@ const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
 const GROQ_MODEL  = "llama-3.3-70b-versatile";
 const OLLAMA_MODEL = "llama3.2:3b";
 
+// Fixed brand accent applied to every auto-generated business (RGB 184,134,42).
+// The LLM's per-vibe accent_color suggestion is intentionally ignored.
+const BRAND_ACCENT = "#B8862A";
+
 const SYSTEM_INSTRUCTION = `You are a senior brand copywriter and data extractor for Bapita, which builds booking websites for Israeli appointment businesses (barbershops, salons, nail/beauty studios). You receive messy, partial notes about ONE business and return a single strict JSON object. Rules:
 - Extract every fact present (name, services, prices, hours, phone, address, socials, reviews, rating).
 - When copy is missing (tagline, about), WRITE it — specific, warm, on-brand, never generic. Never output filler like "Welcome to our shop" or "Quality service you can trust". Reference the vibe note and any real detail (location, specialty, gender focus, fancy vs neighborhood).
@@ -135,6 +139,13 @@ ${raw}`;
     saturday:  { open: false, start: "10:00", end: "14:00" },
   };
 
+  // Merge per-day so a day the LLM omitted falls back to a default instead of
+  // leaving a hole that breaks the public page.
+  const parsedHours = (parsed.business_hours ?? {}) as Record<string, unknown>;
+  const mergedHours = Object.fromEntries(
+    Object.entries(DEFAULT_HOURS).map(([day, def]) => [day, parsedHours[day] ?? def])
+  );
+
   const { data: biz, error: bizErr } = await service.from("businesses").insert({
     slug,
     owner_id:           user.id,
@@ -162,7 +173,7 @@ ${raw}`;
     whatsapp_number:    parsed.whatsapp_number    || null,
     google_maps_url:    parsed.google_maps_url    || null,
     google_review_link: parsed.google_review_link || null,
-    accent_color:       parsed.accent_color       || "#B8862A",
+    accent_color:       BRAND_ACCENT,
     template_style:     (parsed.template_style as string) || "classic",
     default_lang:       lang,
     google_reviews:     Array.isArray(parsed.google_reviews) ? parsed.google_reviews.map((r: Record<string,unknown>) => ({
@@ -172,7 +183,7 @@ ${raw}`;
       text:   r.text,
       date:   r.date,
     })) : null,
-    business_hours: parsed.business_hours || DEFAULT_HOURS,
+    business_hours: mergedHours,
     stat_years:   parsed.stat_years   || null,
     stat_clients: parsed.stat_clients || null,
     stat_rating:  parsed.stat_rating  || null,
