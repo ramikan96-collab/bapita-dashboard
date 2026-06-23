@@ -59,28 +59,37 @@ export default function AdminPage() {
   const dragIdx     = useRef<number | null>(null);
   const dragOverIdx = useRef<number | null>(null);
 
-  function onBizDragStart(index: number) {
-    dragIdx.current = index;
-    setDraggingIdx(index);
-  }
+  // Persist the whole list's order with per-row UPDATEs. (The old upsert silently
+  // failed: INSERT…ON CONFLICT must satisfy every NOT NULL column on the insert
+  // attempt, so display_order never actually saved and never synced to mobile.)
+  const persistOrder = useCallback(async (list: Business[]) => {
+    const res = await Promise.all(
+      list.map((b, i) => supabase.from("businesses").update({ display_order: i }).eq("id", b.id))
+    );
+    if (res.some(r => r.error)) showToast("Couldn't save the new order", "error");
+  }, [supabase, showToast]);
+
+  // Single source of truth for moving a row: updates local state AND the DB.
+  const reorder = useCallback((from: number, to: number) => {
+    setBusinesses(prev => {
+      if (from < 0 || from >= prev.length) return prev;
+      const clampedTo = Math.min(Math.max(to, 0), prev.length - 1);
+      if (from === clampedTo) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(clampedTo, 0, moved);
+      void persistOrder(next);
+      return next;
+    });
+  }, [persistOrder]);
+
+  function onBizDragStart(index: number) { dragIdx.current = index; setDraggingIdx(index); }
   function onBizDragEnter(index: number) { dragOverIdx.current = index; }
-  async function onBizDragEnd() {
+  function onBizDragEnd() {
     const from = dragIdx.current;
     const to   = dragOverIdx.current;
     dragIdx.current = null; dragOverIdx.current = null; setDraggingIdx(null);
-    if (from === null || to === null || from === to) return;
-    let next: Business[] = [];
-    setBusinesses(prev => {
-      next = [...prev];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved);
-      return next;
-    });
-    // Persist order to Supabase so it syncs across devices
-    await supabase.from("businesses").upsert(
-      next.map((b, i) => ({ id: b.id, display_order: i })),
-      { onConflict: "id" }
-    );
+    if (from !== null && to !== null) reorder(from, to);
   }
 
   const loadBusinesses = useCallback(async () => {
@@ -355,6 +364,11 @@ export default function AdminPage() {
                   onDragStart={() => onBizDragStart(idx)}
                   onDragEnter={() => onBizDragEnter(idx)}
                   onDragEnd={onBizDragEnd}
+                  position={idx + 1}
+                  total={filteredBusinesses.length}
+                  onMoveUp={() => reorder(idx, idx - 1)}
+                  onMoveDown={() => reorder(idx, idx + 1)}
+                  onSetPosition={(pos) => reorder(idx, pos - 1)}
                 />
               ))}
             </>
@@ -529,13 +543,33 @@ function csvDownload(rows: Record<string, unknown>[], filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function BusinessRow({ business: b, serviceCount, deleting, confirmDelete, onEdit, onDeleteRequest, onDeleteConfirm, onDeleteCancel, canDrag, isDragging, onDragStart, onDragEnter, onDragEnd }: {
+function BusinessRow({ business: b, serviceCount, deleting, confirmDelete, onEdit, onDeleteRequest, onDeleteConfirm, onDeleteCancel, canDrag, isDragging, onDragStart, onDragEnter, onDragEnd, position, total, onMoveUp, onMoveDown, onSetPosition }: {
   business: Business; serviceCount: number; deleting: boolean; confirmDelete: boolean;
   onEdit: () => void; onDeleteRequest: () => void; onDeleteConfirm: () => void; onDeleteCancel: () => void;
   canDrag?: boolean; isDragging?: boolean;
   onDragStart?: () => void; onDragEnter?: () => void; onDragEnd?: () => void;
+  position: number; total: number;
+  onMoveUp?: () => void; onMoveDown?: () => void; onSetPosition?: (pos: number) => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [posDraft, setPosDraft] = useState(String(position));
+  // Re-sync the input when this row's position changes (e.g. another row moved).
+  // Render-time adjustment is React's recommended pattern over a setState-in-effect.
+  const [lastPos, setLastPos] = useState(position);
+  if (position !== lastPos) { setLastPos(position); setPosDraft(String(position)); }
+
+  function commitPosition() {
+    const n = parseInt(posDraft, 10);
+    if (isNaN(n)) { setPosDraft(String(position)); return; }
+    const clamped = Math.min(Math.max(n, 1), total);
+    setPosDraft(String(clamped));
+    if (clamped !== position) onSetPosition?.(clamped);
+  }
+  const arrowStyle = (disabled: boolean): React.CSSProperties => ({
+    width: 20, height: 13, lineHeight: "11px", padding: 0, border: "none", background: "none",
+    cursor: disabled ? "default" : "pointer", color: disabled ? "var(--color-cream-2)" : "var(--color-muted)",
+    fontSize: 9, fontFamily: "inherit", borderRadius: 3,
+  });
   const template = b.template_style || "classic";
   const color    = TEMPLATE_COLORS[template] || "#B8862A";
   const status   = (b as any).status || "draft";
@@ -553,21 +587,46 @@ function BusinessRow({ business: b, serviceCount, deleting, confirmDelete, onEdi
 
   return (
     <div
-      draggable={canDrag}
-      onDragStart={canDrag ? onDragStart : undefined}
       onDragEnter={canDrag ? onDragEnter : undefined}
-      onDragEnd={canDrag ? onDragEnd : undefined}
       onDragOver={canDrag ? (e) => e.preventDefault() : undefined}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{ background: "var(--color-surface)", borderRadius: 13, boxShadow: hovered ? "0 4px 16px rgba(30,26,20,0.09)" : "0 1px 3px rgba(30,26,20,0.06)", border: `1.5px solid ${hovered ? "var(--color-cream-2)" : "transparent"}`, padding: "14px 18px", transform: hovered ? "translateY(-1px)" : "translateY(0)", transition: "all 0.15s ease", opacity: isDragging ? 0.4 : 1, cursor: canDrag ? "grab" : "default" }}
+      style={{ background: "var(--color-surface)", borderRadius: 13, boxShadow: hovered ? "0 4px 16px rgba(30,26,20,0.09)" : "0 1px 3px rgba(30,26,20,0.06)", border: `1.5px solid ${hovered ? "var(--color-cream-2)" : "transparent"}`, padding: "14px 18px", transform: hovered ? "translateY(-1px)" : "translateY(0)", transition: "all 0.15s ease", opacity: isDragging ? 0.4 : 1 }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         {canDrag && (
-          <div style={{ color: "var(--color-cream-2)", flexShrink: 0, display: "flex", alignItems: "center" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-            </svg>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+            {/* Drag grip — desktop only (touch devices use the arrows / number below) */}
+            <span
+              draggable
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              title="Drag to reorder"
+              style={{ cursor: "grab", color: "var(--color-cream-2)", display: "flex", alignItems: "center", touchAction: "none" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+            </span>
+            {/* Position controls — work on every device */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+              <button onClick={onMoveUp} disabled={position <= 1} aria-label="Move up" style={arrowStyle(position <= 1)}>▲</button>
+              <input
+                value={posDraft}
+                onChange={e => setPosDraft(e.target.value.replace(/[^0-9]/g, ""))}
+                onFocus={e => e.currentTarget.select()}
+                onBlur={commitPosition}
+                onKeyDown={e => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  else if (e.key === "Escape") { setPosDraft(String(position)); (e.target as HTMLInputElement).blur(); }
+                }}
+                inputMode="numeric"
+                aria-label="Position"
+                title="Type a number to move this business to that position"
+                style={{ width: 30, height: 22, textAlign: "center", border: "1.5px solid var(--color-cream-2)", borderRadius: 6, fontSize: 12, fontWeight: 700, color: "var(--color-dark)", background: "var(--color-cream)", fontFamily: "inherit", padding: 0, boxSizing: "border-box", MozAppearance: "textfield" }}
+              />
+              <button onClick={onMoveDown} disabled={position >= total} aria-label="Move down" style={arrowStyle(position >= total)}>▼</button>
+            </div>
           </div>
         )}
         <div style={{ width: 42, height: 42, borderRadius: 12, flexShrink: 0, background: "var(--amber-soft)", color: "var(--color-amber)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800 }}>
