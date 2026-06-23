@@ -1228,12 +1228,15 @@ function GooglePlaceIdCard({
   refresh: () => Promise<void>;
 }) {
   const { showToast } = useToast();
-  const [placeId, setPlaceId] = useState(business.google_place_id || "");
-  const [saving, setSaving]   = useState(false);
+  const saved = business.google_place_id || "";
+  const [placeId,  setPlaceId]  = useState(saved);
+  const [editing,  setEditing]  = useState(!saved);
+  const [saving,   setSaving]   = useState(false);
 
-  const dirty = placeId !== (business.google_place_id || "");
+  const dirty = placeId.trim() !== saved;
 
   async function save() {
+    if (!placeId.trim()) return;
     setSaving(true);
     const { error } = await supabase
       .from("businesses")
@@ -1242,20 +1245,73 @@ function GooglePlaceIdCard({
     setSaving(false);
     if (error) { showToast("Couldn't save. Please try again.", "error"); return; }
     await refresh();
-    showToast("Google Place ID saved", "success");
+    setEditing(false);
+    showToast("Google reviews connected", "success");
+  }
+
+  async function disconnect() {
+    setSaving(true);
+    await supabase.from("businesses").update({ google_place_id: null }).eq("id", business.id);
+    setSaving(false);
+    setPlaceId("");
+    setEditing(true);
+    await refresh();
+    showToast("Google reviews disconnected", "success");
   }
 
   return (
     <SectionCard title="Google Maps reviews">
-      <InputField
-        label="Place ID"
-        value={placeId}
-        onChange={setPlaceId}
-        placeholder="ChIJ…"
-        hint={<>Pulls your live Google reviews onto the booking page, updated hourly. Find your Place ID at <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-amber)" }}>Google Place ID Finder</a>. Can{"'"}t find your business there? Search it on <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-amber)" }}>Google Maps</a>, click Share → Copy link, and send the link to Rami — he{"'"}ll extract the ID for you.</>}
-      />
-
-      <SaveButton onClick={save} saving={saving} dirty={dirty} />
+      {saved && !editing ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#D1FAE5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-dark)" }}>Connected</div>
+              <div style={{ fontSize: 11, color: "var(--color-muted)", fontFamily: "monospace", marginTop: 1 }}>{saved}</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => setEditing(true)}
+              style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+            >Edit</button>
+            <button
+              onClick={disconnect}
+              disabled={saving}
+              style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid #FCA5A5", background: "transparent", color: "#991B1B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+            >Remove</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <InputField
+            label="Place ID"
+            value={placeId}
+            onChange={setPlaceId}
+            placeholder="ChIJ…"
+            hint={<>Find your Place ID at <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-amber)" }}>Google Place ID Finder</a>. Can{"'"}t find your business? Search on Google Maps → Share → Copy link → send to Rami.</>}
+          />
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={save}
+              disabled={saving || !placeId.trim() || !dirty}
+              style={{ flex: 1, height: 40, borderRadius: 11, border: "none", background: placeId.trim() && dirty ? "var(--color-amber)" : "var(--color-cream-2)", color: placeId.trim() && dirty ? "#fff" : "var(--color-muted)", fontSize: 13, fontWeight: 700, cursor: placeId.trim() && dirty ? "pointer" : "not-allowed", fontFamily: "inherit", transition: "background 0.15s, color 0.15s" }}
+            >
+              {saving ? "Saving…" : "Connect"}
+            </button>
+            {saved && (
+              <button
+                onClick={() => { setPlaceId(saved); setEditing(false); }}
+                style={{ height: 40, padding: "0 16px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+              >Cancel</button>
+            )}
+          </div>
+        </>
+      )}
     </SectionCard>
   );
 }
