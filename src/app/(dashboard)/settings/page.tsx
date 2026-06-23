@@ -277,6 +277,89 @@ function SetupForm({
   );
 }
 
+// ─── No business screen ───────────────────────────────────────────────────────
+
+function NoBusinessScreen() {
+  const [name,    setName]    = useState("");
+  const [subject, setSubject] = useState("My booking page is not showing");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const { showToast } = useToast();
+
+  const canSend = !!subject.trim() && !!message.trim() && !sending;
+
+  async function send() {
+    if (!canSend) return;
+    setSending(true);
+    try {
+      const res = await fetch("/api/support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, subject, message }),
+      });
+      if (!res.ok) throw new Error("failed");
+      showToast("Message sent — we'll get back to you soon", "success");
+      setName(""); setMessage("");
+    } catch {
+      showToast("Couldn't send. Please try again.", "error");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%", height: 42, padding: "0 13px", borderRadius: 11,
+    border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)",
+    fontSize: 14, color: "var(--color-dark)", outline: "none",
+    fontFamily: "inherit", transition: "border-color 0.15s", boxSizing: "border-box",
+  };
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+    letterSpacing: "0.06em", color: "var(--color-muted)", display: "block", marginBottom: 7,
+  };
+  const focus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (e.currentTarget.style.borderColor = "var(--color-amber)");
+  const blur  = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (e.currentTarget.style.borderColor = "var(--color-cream-2)");
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-cream)" }}>
+      <div style={{ flexShrink: 0, background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)" }}>
+        <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", padding: "26px 24px 20px" }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: 0, lineHeight: 1.1 }}>Settings</h1>
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", padding: "24px 24px 64px" }}>
+          <div style={{ background: "var(--color-surface)", borderRadius: 16, border: "1px solid var(--color-cream-2)", boxShadow: "var(--shadow-sm)", padding: "18px 20px" }}>
+            <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 18px", lineHeight: 1.6 }}>
+              Your booking page isn&apos;t active. Send us a message and we&apos;ll sort it out.
+            </p>
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>Name <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>(optional)</span></label>
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inputStyle} onFocus={focus} onBlur={blur} />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>Subject</label>
+              <input value={subject} onChange={e => setSubject(e.target.value)} style={inputStyle} onFocus={focus} onBlur={blur} />
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Message</label>
+              <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Tell us what's going on…" rows={5} style={{ ...inputStyle, height: "auto", padding: "11px 13px", resize: "vertical", lineHeight: 1.5 }} onFocus={focus} onBlur={blur} />
+            </div>
+            <button
+              onClick={send} disabled={!canSend}
+              style={{ width: "100%", height: 44, borderRadius: 12, border: "none", background: canSend ? "var(--wash-amber)" : "var(--color-cream-2)", color: canSend ? "#fff" : "var(--color-muted)", fontSize: 14, fontWeight: 700, cursor: canSend ? "pointer" : "not-allowed", transition: "background 0.15s, color 0.15s", boxShadow: canSend ? "0 4px 14px rgba(232,146,10,0.28)" : "none" }}
+            >
+              {sending ? "Sending…" : "Send message"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Business Info section ────────────────────────────────────────────────────
 
 function BusinessSection({
@@ -1796,25 +1879,7 @@ export default function SettingsPage() {
 
   if (!business) {
     if (isAdmin) return <SetupForm supabase={supabase} onCreated={refresh} />;
-    return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px", background: "var(--color-cream)", textAlign: "center" }}>
-        <div style={{ width: 56, height: 56, borderRadius: 16, background: "var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-        </div>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--color-dark)", margin: "0 0 8px" }}>Your website isn&apos;t active</h2>
-        <p style={{ fontSize: 14, color: "var(--color-muted)", maxWidth: 280, lineHeight: 1.6, margin: "0 0 28px" }}>
-          Your booking page has been removed or is not yet set up. Contact Bapita support to get it sorted.
-        </p>
-        <a
-          href="https://wa.me/972000000000"
-          style={{ height: 46, padding: "0 24px", borderRadius: 14, background: "var(--wash-amber)", color: "#fff", fontSize: 15, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none", boxShadow: "0 4px 14px rgba(232,146,10,0.26)" }}
-        >
-          Contact support
-        </a>
-      </div>
-    );
+    return <NoBusinessScreen />;
   }
 
   function handleSectionChange(id: Section) {
