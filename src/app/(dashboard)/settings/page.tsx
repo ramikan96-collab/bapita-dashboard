@@ -383,7 +383,6 @@ function BusinessSection({
   const [taglineHe, setTaglineHe] = useState(business.tagline_he || "");
   const [aboutHe, setAboutHe] = useState(business.about_text_he || "");
   const [notificationEmail, setNotificationEmail] = useState(business.notification_email || "");
-  const [googlePlaceId, setGooglePlaceId] = useState(business.google_place_id || "");
   const [saving, setSaving] = useState(false);
 
   const original = {
@@ -392,9 +391,8 @@ function BusinessSection({
     tagline: business.tagline || "", about: business.about_text || "",
     taglineHe: business.tagline_he || "", aboutHe: business.about_text_he || "",
     notificationEmail: business.notification_email || "",
-    googlePlaceId: business.google_place_id || "",
   };
-  const dirty = name !== original.name || nameHe !== original.nameHe || phone !== original.phone || address !== original.address || tagline !== original.tagline || about !== original.about || taglineHe !== original.taglineHe || aboutHe !== original.aboutHe || notificationEmail !== original.notificationEmail || googlePlaceId !== original.googlePlaceId;
+  const dirty = name !== original.name || nameHe !== original.nameHe || phone !== original.phone || address !== original.address || tagline !== original.tagline || about !== original.about || taglineHe !== original.taglineHe || aboutHe !== original.aboutHe || notificationEmail !== original.notificationEmail;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty]);
@@ -414,7 +412,6 @@ function BusinessSection({
       tagline: tagline || null, about_text: about || null,
       tagline_he: taglineHe || null, about_text_he: aboutHe || null,
       notification_email: notificationEmail.trim() || null,
-      google_place_id: googlePlaceId.trim() || null,
     }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast(getErrorMessage(error), "error"); return; }
@@ -430,13 +427,6 @@ function BusinessSection({
         <InputField label="Notification email" type="email" value={notificationEmail} onChange={setNotificationEmail} placeholder="you@example.com" hint="Booking alerts are sent to this address" />
         <InputField label="Address" value={address} onChange={setAddress} placeholder="Street, city" />
         <InputField label="Tagline" value={tagline} onChange={setTagline} placeholder="e.g. Premium cuts since 2010" />
-        <InputField
-          label="Google Place ID"
-          value={googlePlaceId}
-          onChange={setGooglePlaceId}
-          placeholder="ChIJ…"
-          hint={<>Paste your Place ID to pull Google reviews automatically. <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-amber)" }}>Find your Place ID →</a></>}
-        />
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-medium text-dark">About us</label>
           <textarea
@@ -1226,6 +1216,66 @@ function ReviewsSection({
 }
 
 
+// ─── Google Place ID card ─────────────────────────────────────────────────────
+
+function GooglePlaceIdCard({
+  business,
+  supabase,
+  refresh,
+}: {
+  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
+  supabase: ReturnType<typeof createClient>;
+  refresh: () => Promise<void>;
+}) {
+  const { showToast } = useToast();
+  const [placeId, setPlaceId] = useState(business.google_place_id || "");
+  const [saving, setSaving]   = useState(false);
+
+  const dirty = placeId !== (business.google_place_id || "");
+
+  async function save() {
+    setSaving(true);
+    const { error } = await supabase
+      .from("businesses")
+      .update({ google_place_id: placeId.trim() || null })
+      .eq("id", business.id);
+    setSaving(false);
+    if (error) { showToast("Couldn't save. Please try again.", "error"); return; }
+    await refresh();
+    showToast("Google Place ID saved", "success");
+  }
+
+  return (
+    <SectionCard title="Google Maps reviews">
+      <p style={{ fontSize: 13, color: "var(--color-muted)", margin: 0, lineHeight: 1.6 }}>
+        Connect your Google listing to automatically show your latest Google reviews on your booking page — updated every hour.
+      </p>
+
+      <div style={{ background: "var(--color-cream)", borderRadius: 12, padding: "14px 16px", border: "1px solid var(--color-cream-2)", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-dark)", textTransform: "uppercase", letterSpacing: "0.06em" }}>How to find your Place ID</div>
+        <ol style={{ margin: 0, paddingInlineStart: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+          <li style={{ fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5 }}>
+            Go to <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-amber)", fontWeight: 600 }}>Google Place ID Finder →</a>
+          </li>
+          <li style={{ fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5 }}>Search your business name in the search box</li>
+          <li style={{ fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5 }}>Copy the Place ID that appears (starts with <code style={{ fontSize: 12, background: "var(--color-cream-2)", padding: "1px 5px", borderRadius: 4 }}>ChIJ…</code>)</li>
+          <li style={{ fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5 }}>Paste it below and click Save</li>
+        </ol>
+      </div>
+
+      <InputField
+        label="Place ID"
+        value={placeId}
+        onChange={setPlaceId}
+        placeholder="ChIJ…"
+        hint="Paste the Place ID exactly as copied — no spaces"
+      />
+
+      <SaveButton onClick={save} saving={saving} dirty={dirty} />
+    </SectionCard>
+  );
+}
+
 // ─── Website section (booking link + language + gallery + reviews) ────────────
 
 function WebsiteSection({
@@ -1641,6 +1691,9 @@ function WebsiteSection({
 
       {/* Reviews — individual adds/edits/deletes, own save per item */}
       <ReviewsSection business={business} supabase={supabase} refresh={refresh} />
+
+      {/* Google Place ID — auto-pull live reviews */}
+      <GooglePlaceIdCard business={business} supabase={supabase} refresh={refresh} />
     </div>
   );
 }
