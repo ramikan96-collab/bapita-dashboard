@@ -9,19 +9,6 @@ import type { Business } from "@/types";
 const TEMPLATE_LABELS: Record<string, string> = { classic: "Classic", clean: "Clean", dark: "Dark" };
 const TEMPLATE_COLORS: Record<string, string> = { classic: "#B8862A", clean: "#0A0A0A", dark: "#C9A84C" };
 
-const BIZ_ORDER_KEY = "bapita_admin_biz_order";
-
-function applyStoredOrder(biz: Business[]): Business[] {
-  try {
-    const saved = JSON.parse(localStorage.getItem(BIZ_ORDER_KEY) || "[]") as string[];
-    if (!saved.length) return biz;
-    const map = new Map(biz.map(b => [b.id, b]));
-    const ordered: Business[] = [];
-    for (const id of saved) { const b = map.get(id); if (b) ordered.push(b); }
-    for (const b of biz) { if (!saved.includes(b.id)) ordered.push(b); }
-    return ordered;
-  } catch { return biz; }
-}
 
 type Tab = "businesses" | "leads";
 
@@ -77,28 +64,34 @@ export default function AdminPage() {
     setDraggingIdx(index);
   }
   function onBizDragEnter(index: number) { dragOverIdx.current = index; }
-  function onBizDragEnd() {
+  async function onBizDragEnd() {
     const from = dragIdx.current;
     const to   = dragOverIdx.current;
     dragIdx.current = null; dragOverIdx.current = null; setDraggingIdx(null);
     if (from === null || to === null || from === to) return;
+    let next: Business[] = [];
     setBusinesses(prev => {
-      const next = [...prev];
+      next = [...prev];
       const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
-      localStorage.setItem(BIZ_ORDER_KEY, JSON.stringify(next.map(b => b.id)));
       return next;
     });
+    // Persist order to Supabase so it syncs across devices
+    await supabase.from("businesses").upsert(
+      next.map((b, i) => ({ id: b.id, display_order: i })),
+      { onConflict: "id" }
+    );
   }
 
   const loadBusinesses = useCallback(async () => {
     setBizLoading(true);
     const { data } = await supabase
       .from("businesses")
-      .select("id, name, slug, template_style, tagline, phone, address, status, hero_image_url, gallery_images, whatsapp_number, about_text")
+      .select("id, name, slug, template_style, tagline, phone, address, status, hero_image_url, gallery_images, whatsapp_number, about_text, display_order")
+      .order("display_order", { ascending: true })
       .order("created_at", { ascending: false });
-    const biz = (data as Business[]) || [];
-    setBusinesses(applyStoredOrder(biz));
+    const biz = (data as unknown as Business[]) || [];
+    setBusinesses(biz);
     if (biz.length > 0) {
       const { data: svcs } = await supabase.from("services").select("business_id").in("business_id", biz.map(b => b.id)).eq("active", true);
       const counts: Record<string, number> = {};
@@ -226,29 +219,36 @@ export default function AdminPage() {
             </p>
           </div>
           {tab === "businesses" && (
-            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+            <div style={{ display: "flex", gap: 6, marginTop: 4, flexShrink: 0 }}>
+              {/* CSV — icon only on mobile */}
               <button
                 onClick={downloadBusinessesCSV}
                 disabled={businesses.length === 0}
-                style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-muted)", fontSize: 13, fontWeight: 600, cursor: businesses.length === 0 ? "default" : "pointer", opacity: businesses.length === 0 ? 0.4 : 1, fontFamily: "inherit" }}
+                title="Download CSV"
+                style={{ height: 34, padding: "0 10px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-muted)", fontSize: 13, fontWeight: 600, cursor: businesses.length === 0 ? "default" : "pointer", opacity: businesses.length === 0 ? 0.4 : 1, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}
               >
-                ↓ CSV
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span className="hidden sm:inline">CSV</span>
               </button>
+              {/* Auto-create — icon only on mobile */}
               <button
                 onClick={() => router.push("/admin/businesses/auto")}
-                style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "1.5px solid var(--color-amber)", background: "rgba(232,146,10,0.08)", color: "var(--color-amber)", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", fontFamily: "inherit" }}
+                title="Auto-create"
+                style={{ height: 34, padding: "0 10px", borderRadius: 9, border: "1.5px solid var(--color-amber)", background: "rgba(232,146,10,0.08)", color: "var(--color-amber)", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}
                 onMouseEnter={e => { e.currentTarget.style.background = "rgba(232,146,10,0.16)"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "rgba(232,146,10,0.08)"; }}
               >
-                ✨ Auto-create
+                <span>✨</span>
+                <span className="hidden sm:inline">Auto-create</span>
               </button>
+              {/* Add Business — always full label */}
               <button
                 onClick={() => router.push("/admin/businesses/new")}
-                style={{ height: 34, padding: "0 14px", borderRadius: 9, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)", transition: "transform 0.15s, box-shadow 0.15s", fontFamily: "inherit" }}
+                style={{ height: 34, padding: "0 12px", borderRadius: 9, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)", transition: "transform 0.15s, box-shadow 0.15s", fontFamily: "inherit", whiteSpace: "nowrap" }}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,146,10,0.36)"; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(232,146,10,0.28)"; }}
               >
-                + Add Business
+                + Add
               </button>
             </div>
           )}
