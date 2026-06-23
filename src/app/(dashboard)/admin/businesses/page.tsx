@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
@@ -8,6 +8,20 @@ import type { Business } from "@/types";
 
 const TEMPLATE_LABELS: Record<string, string> = { classic: "Classic", clean: "Clean", dark: "Dark" };
 const TEMPLATE_COLORS: Record<string, string> = { classic: "#B8862A", clean: "#0A0A0A", dark: "#C9A84C" };
+
+const BIZ_ORDER_KEY = "bapita_admin_biz_order";
+
+function applyStoredOrder(biz: Business[]): Business[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(BIZ_ORDER_KEY) || "[]") as string[];
+    if (!saved.length) return biz;
+    const map = new Map(biz.map(b => [b.id, b]));
+    const ordered: Business[] = [];
+    for (const id of saved) { const b = map.get(id); if (b) ordered.push(b); }
+    for (const b of biz) { if (!saved.includes(b.id)) ordered.push(b); }
+    return ordered;
+  } catch { return biz; }
+}
 
 type Tab = "businesses" | "leads";
 
@@ -54,6 +68,28 @@ export default function AdminPage() {
   const [bizLoading,    setBizLoading]    = useState(true);
   const [deleting,      setDeleting]      = useState<string | null>(null);
   const [deleteId,      setDeleteId]      = useState<string | null>(null);
+  const [draggingIdx,   setDraggingIdx]   = useState<number | null>(null);
+  const dragIdx     = useRef<number | null>(null);
+  const dragOverIdx = useRef<number | null>(null);
+
+  function onBizDragStart(index: number) {
+    dragIdx.current = index;
+    setDraggingIdx(index);
+  }
+  function onBizDragEnter(index: number) { dragOverIdx.current = index; }
+  function onBizDragEnd() {
+    const from = dragIdx.current;
+    const to   = dragOverIdx.current;
+    dragIdx.current = null; dragOverIdx.current = null; setDraggingIdx(null);
+    if (from === null || to === null || from === to) return;
+    setBusinesses(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      localStorage.setItem(BIZ_ORDER_KEY, JSON.stringify(next.map(b => b.id)));
+      return next;
+    });
+  }
 
   const loadBusinesses = useCallback(async () => {
     setBizLoading(true);
@@ -62,7 +98,7 @@ export default function AdminPage() {
       .select("id, name, slug, template_style, tagline, phone, address, status, hero_image_url, gallery_images, whatsapp_number, about_text")
       .order("created_at", { ascending: false });
     const biz = (data as Business[]) || [];
-    setBusinesses(biz);
+    setBusinesses(applyStoredOrder(biz));
     if (biz.length > 0) {
       const { data: svcs } = await supabase.from("services").select("business_id").in("business_id", biz.map(b => b.id)).eq("active", true);
       const counts: Record<string, number> = {};
@@ -306,7 +342,7 @@ export default function AdminPage() {
                   <button onClick={() => setSearchQuery("")} style={{ marginTop: 8, height: 30, padding: "0 14px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Clear search</button>
                 </div>
               )}
-              {filteredBusinesses.map(b => (
+              {filteredBusinesses.map((b, idx) => (
                 <BusinessRow
                   key={b.id} business={b} serviceCount={serviceCounts[b.id] || 0}
                   deleting={deleting === b.id} confirmDelete={deleteId === b.id}
@@ -314,6 +350,11 @@ export default function AdminPage() {
                   onDeleteRequest={() => setDeleteId(b.id)}
                   onDeleteConfirm={() => handleDelete(b.id)}
                   onDeleteCancel={() => setDeleteId(null)}
+                  canDrag={!q}
+                  isDragging={draggingIdx === idx}
+                  onDragStart={() => onBizDragStart(idx)}
+                  onDragEnter={() => onBizDragEnter(idx)}
+                  onDragEnd={onBizDragEnd}
                 />
               ))}
             </>
@@ -488,9 +529,11 @@ function csvDownload(rows: Record<string, unknown>[], filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function BusinessRow({ business: b, serviceCount, deleting, confirmDelete, onEdit, onDeleteRequest, onDeleteConfirm, onDeleteCancel }: {
+function BusinessRow({ business: b, serviceCount, deleting, confirmDelete, onEdit, onDeleteRequest, onDeleteConfirm, onDeleteCancel, canDrag, isDragging, onDragStart, onDragEnter, onDragEnd }: {
   business: Business; serviceCount: number; deleting: boolean; confirmDelete: boolean;
   onEdit: () => void; onDeleteRequest: () => void; onDeleteConfirm: () => void; onDeleteCancel: () => void;
+  canDrag?: boolean; isDragging?: boolean;
+  onDragStart?: () => void; onDragEnter?: () => void; onDragEnd?: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const template = b.template_style || "classic";
@@ -510,10 +553,23 @@ function BusinessRow({ business: b, serviceCount, deleting, confirmDelete, onEdi
 
   return (
     <div
+      draggable={canDrag}
+      onDragStart={canDrag ? onDragStart : undefined}
+      onDragEnter={canDrag ? onDragEnter : undefined}
+      onDragEnd={canDrag ? onDragEnd : undefined}
+      onDragOver={canDrag ? (e) => e.preventDefault() : undefined}
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{ background: "var(--color-surface)", borderRadius: 13, boxShadow: hovered ? "0 4px 16px rgba(30,26,20,0.09)" : "0 1px 3px rgba(30,26,20,0.06)", border: `1.5px solid ${hovered ? "var(--color-cream-2)" : "transparent"}`, padding: "14px 18px", transform: hovered ? "translateY(-1px)" : "translateY(0)", transition: "all 0.15s ease" }}
+      style={{ background: "var(--color-surface)", borderRadius: 13, boxShadow: hovered ? "0 4px 16px rgba(30,26,20,0.09)" : "0 1px 3px rgba(30,26,20,0.06)", border: `1.5px solid ${hovered ? "var(--color-cream-2)" : "transparent"}`, padding: "14px 18px", transform: hovered ? "translateY(-1px)" : "translateY(0)", transition: "all 0.15s ease", opacity: isDragging ? 0.4 : 1, cursor: canDrag ? "grab" : "default" }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        {canDrag && (
+          <div style={{ color: "var(--color-cream-2)", flexShrink: 0, display: "flex", alignItems: "center" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+          </div>
+        )}
         <div style={{ width: 42, height: 42, borderRadius: 12, flexShrink: 0, background: "var(--amber-soft)", color: "var(--color-amber)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800 }}>
           {b.name.charAt(0).toUpperCase()}
         </div>
