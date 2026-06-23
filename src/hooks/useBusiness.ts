@@ -4,9 +4,15 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Business } from "@/types";
 
+const ADMIN_PERSONAL_SLUGS: Record<string, string> = {
+  "ramikan96@gmail.com": "bapita-admin-rami",
+  "info.bapita@gmail.com": "bapita-admin-info",
+};
+
 export function useBusiness() {
   const [business, setBusiness] = useState<Business | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const supabase = createClient();
 
   const fetchBusiness = useCallback(async () => {
@@ -16,12 +22,16 @@ export function useBusiness() {
       return;
     }
 
-    const { data } = await supabase
-      .from("businesses")
-      .select("*")
-      .eq("owner_id", user.id)
-      .order("created_at", { ascending: true })
-      .limit(1);
+    const personalSlug = user.email ? ADMIN_PERSONAL_SLUGS[user.email] : undefined;
+    setIsAdmin(!!personalSlug);
+
+    let query = supabase.from("businesses").select("*").eq("owner_id", user.id);
+    if (personalSlug) {
+      query = query.eq("slug", personalSlug);
+    } else {
+      query = query.order("created_at", { ascending: true }).limit(1);
+    }
+    const { data } = await query;
 
     setBusiness(data?.[0] ?? null);
     setLoading(false);
@@ -37,5 +47,5 @@ export function useBusiness() {
     fetchBusiness();
   }, [fetchBusiness]);
 
-  return { business, loading, refresh };
+  return { business, loading, refresh, isAdmin };
 }

@@ -1781,7 +1781,7 @@ function OnboardingChecklist({
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const { business, loading: bizLoading, refresh } = useBusiness();
+  const { business, loading: bizLoading, refresh, isAdmin } = useBusiness();
   const supabase = createClient();
   const [activeSection, setActiveSection] = useState<Section>("business");
   const dirtyRef = useRef(false);
@@ -1795,7 +1795,26 @@ export default function SettingsPage() {
   }
 
   if (!business) {
-    return <SetupForm supabase={supabase} onCreated={refresh} />;
+    if (isAdmin) return <SetupForm supabase={supabase} onCreated={refresh} />;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 24px", background: "var(--color-cream)", textAlign: "center" }}>
+        <div style={{ width: 56, height: 56, borderRadius: 16, background: "var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--color-dark)", margin: "0 0 8px" }}>Your website isn&apos;t active</h2>
+        <p style={{ fontSize: 14, color: "var(--color-muted)", maxWidth: 280, lineHeight: 1.6, margin: "0 0 28px" }}>
+          Your booking page has been removed or is not yet set up. Contact Bapita support to get it sorted.
+        </p>
+        <a
+          href="https://wa.me/972000000000"
+          style={{ height: 46, padding: "0 24px", borderRadius: 14, background: "var(--wash-amber)", color: "#fff", fontSize: 15, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none", boxShadow: "0 4px 14px rgba(232,146,10,0.26)" }}
+        >
+          Contact support
+        </a>
+      </div>
+    );
   }
 
   function handleSectionChange(id: Section) {
