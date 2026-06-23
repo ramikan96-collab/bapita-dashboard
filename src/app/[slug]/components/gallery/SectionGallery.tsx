@@ -3,16 +3,18 @@
 import { useState, useEffect } from "react";
 import { UniformGrid } from "./UniformGrid";
 import { FeaturedHero } from "./FeaturedHero";
-import { JustifiedRows } from "./JustifiedRows";
 import { Lightbox } from "./Lightbox";
 
 interface Props {
   photos: string[];
-  layout?: "featured" | "masonry" | "grid";
+  // "grid" = uniform flex-row grid (Clean, Dark). "featured" = hero + grid (Classic).
+  layout?: "featured" | "grid";
   borderRadius?: number;
   initialCount?: number;
   desktopInitialCount?: number;
   desktopBreakpoint?: number;
+  mobileCols?: number;
+  desktopCols?: number;
   focal?: Record<string, string>;
   altLabel?: string;
   ui?: GalleryUi;
@@ -40,6 +42,8 @@ export function SectionGallery({
   initialCount,
   desktopInitialCount,
   desktopBreakpoint = 680,
+  mobileCols = 2,
+  desktopCols = 3,
   focal,
   altLabel,
   ui = DEFAULT_UI,
@@ -62,31 +66,17 @@ export function SectionGallery({
   const visible = photos.slice(0, limit);
   const hiddenCount = photos.length - limit;
 
-  // Column counts per engine + breakpoint.
-  const gridCols = isDesktop ? 2 : 1;          // dark "grid"
-  const restCols = isDesktop ? 3 : 2;          // classic featured rest
+  const cols = isDesktop ? desktopCols : mobileCols;
 
   let galleryNode: React.ReactNode;
 
-  if (layout === "masonry") {
-    galleryNode = (
-      <JustifiedRows
-        photos={visible}
-        gap={12}
-        borderRadius={borderRadius}
-        targetHeight={isDesktop ? 200 : 160}
-        focal={focal}
-        altLabel={altLabel}
-        onPhotoClick={setLightboxIdx}
-      />
-    );
-  } else if (layout === "grid") {
+  if (layout === "grid") {
     galleryNode = (
       <UniformGrid
         photos={visible}
-        cols={gridCols}
-        rowHeight={isDesktop ? 230 : 150}
-        gap={8}
+        cols={cols}
+        rowHeight={isDesktop ? 200 : 150}
+        gap={10}
         borderRadius={borderRadius}
         focal={focal}
         altLabel={altLabel}
@@ -102,8 +92,8 @@ export function SectionGallery({
         {rest.length > 0 && (
           <UniformGrid
             photos={rest}
-            cols={restCols}
-            rowHeight={isDesktop ? 150 : 115}
+            cols={cols}
+            rowHeight={isDesktop ? 150 : 120}
             gap={10}
             borderRadius={borderRadius}
             focal={focal}

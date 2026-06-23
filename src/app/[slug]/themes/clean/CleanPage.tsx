@@ -283,7 +283,7 @@ export function CleanPage({ business, services }: Props) {
               return business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.gallery.title} accent={accent} />
-                  <SectionGallery photos={business.gallery_images} layout="masonry" borderRadius={10} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} />
+                  <SectionGallery photos={business.gallery_images} layout="grid" borderRadius={10} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} />
                 </section>
               ) : null;
             case "reviews":
