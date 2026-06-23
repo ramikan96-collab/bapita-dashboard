@@ -2,13 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { UniformGrid } from "./UniformGrid";
-import { FeaturedHero } from "./FeaturedHero";
 import { Lightbox } from "./Lightbox";
 
 interface Props {
   photos: string[];
-  // "grid" = uniform flex-row grid (Clean, Dark). "featured" = hero + grid (Classic).
-  layout?: "featured" | "grid";
   borderRadius?: number;
   initialCount?: number;
   desktopInitialCount?: number;
@@ -37,7 +34,6 @@ const DEFAULT_UI: GalleryUi = {
 
 export function SectionGallery({
   photos,
-  layout = "featured",
   borderRadius = 10,
   initialCount,
   desktopInitialCount,
@@ -68,42 +64,21 @@ export function SectionGallery({
 
   const cols = isDesktop ? desktopCols : mobileCols;
 
-  let galleryNode: React.ReactNode;
+  // Fewer columns => bigger tiles, so use a taller row to keep them landscape.
+  const rowHeight = cols <= 2 ? (isDesktop ? 230 : 160) : (isDesktop ? 200 : 150);
 
-  if (layout === "grid") {
-    galleryNode = (
-      <UniformGrid
-        photos={visible}
-        cols={cols}
-        rowHeight={isDesktop ? 200 : 150}
-        gap={10}
-        borderRadius={borderRadius}
-        focal={focal}
-        altLabel={altLabel}
-        onPhotoClick={setLightboxIdx}
-      />
-    );
-  } else {
-    // featured (classic): hero + uniform rest grid
-    const rest = visible.slice(1);
-    galleryNode = (
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <FeaturedHero photo={visible[0]} borderRadius={borderRadius} focal={focal} altLabel={altLabel} onClick={() => setLightboxIdx(0)} />
-        {rest.length > 0 && (
-          <UniformGrid
-            photos={rest}
-            cols={cols}
-            rowHeight={isDesktop ? 150 : 120}
-            gap={10}
-            borderRadius={borderRadius}
-            focal={focal}
-            altLabel={altLabel}
-            onPhotoClick={(i) => setLightboxIdx(i + 1)}
-          />
-        )}
-      </div>
-    );
-  }
+  const galleryNode = (
+    <UniformGrid
+      photos={visible}
+      cols={cols}
+      rowHeight={rowHeight}
+      gap={10}
+      borderRadius={borderRadius}
+      focal={focal}
+      altLabel={altLabel}
+      onPhotoClick={setLightboxIdx}
+    />
+  );
 
   return (
     <>

@@ -242,7 +242,7 @@ export function ClassicPage({ business, services }: Props) {
               return business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} />
-                  <div style={{ marginTop: 28 }}><SectionGallery photos={business.gallery_images} initialCount={4} focal={business.image_focal ?? undefined} altLabel={displayName} /></div>
+                  <div style={{ marginTop: 28 }}><SectionGallery photos={business.gallery_images} mobileCols={2} desktopCols={2} initialCount={4} desktopInitialCount={4} focal={business.image_focal ?? undefined} altLabel={displayName} /></div>
                 </section>
               ) : null;
             case "reviews":
