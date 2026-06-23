@@ -27,7 +27,7 @@ export function packRows(
   const fill = (indices: number[], rSum: number, cap?: number): JustifyRow => {
     const totalGap = gap * (indices.length - 1);
     const rawScale = (containerWidth - totalGap) / (rSum * targetHeight);
-    const scale = cap ? Math.min(cap, rawScale) : rawScale;
+    const scale = cap !== undefined ? Math.min(cap, rawScale) : rawScale;
     return { indices, height: targetHeight * scale };
   };
 
