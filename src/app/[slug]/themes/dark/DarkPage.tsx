@@ -325,7 +325,7 @@ export function DarkPage({ business, services }: Props) {
                 <div key={key}>
                   <GoldDivider accent={accent} />
                   <DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} />
-                  <SectionGallery photos={business.gallery_images} layout="grid" borderRadius={2} initialCount={4} focal={business.image_focal ?? undefined} />
+                  <SectionGallery photos={business.gallery_images} layout="grid" borderRadius={2} initialCount={4} focal={business.image_focal ?? undefined} altLabel={displayName} />
                 </div>
               ) : null;
             case "reviews":

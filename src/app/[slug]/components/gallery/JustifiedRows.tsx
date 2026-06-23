@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { packRows } from "./justify";
 import { useImageRatios } from "./useImageRatios";
 import { imgStyle, focalPos } from "./tileStyles";
@@ -11,22 +11,24 @@ export interface JustifiedRowsProps {
   borderRadius: number;
   targetHeight: number;
   focal?: Record<string, string>;
+  altLabel?: string;
   onPhotoClick: (i: number) => void;
 }
 
-export function JustifiedRows({ photos, gap, borderRadius, targetHeight, focal, onPhotoClick }: JustifiedRowsProps) {
-  const ref = useRef<HTMLDivElement>(null);
+export function JustifiedRows({ photos, gap, borderRadius, targetHeight, focal, altLabel, onPhotoClick }: JustifiedRowsProps) {
+  const observerRef = useRef<ResizeObserver | null>(null);
   const [width, setWidth] = useState(0);
   const ratios = useImageRatios(photos);
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const update = () => setWidth(el.clientWidth);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
+  const setNode = useCallback((node: HTMLDivElement | null) => {
+    observerRef.current?.disconnect();
+    if (node) {
+      const update = () => setWidth(node.clientWidth);
+      update();
+      const ro = new ResizeObserver(update);
+      ro.observe(node);
+      observerRef.current = ro;
+    }
   }, []);
 
   const allMeasured = photos.every((p) => ratios[p]);
@@ -35,7 +37,7 @@ export function JustifiedRows({ photos, gap, borderRadius, targetHeight, focal, 
   // Skeleton until measured: one full-width block at target height.
   if (!ready) {
     return (
-      <div ref={ref}>
+      <div ref={setNode}>
         <div style={{ display: "flex", gap, flexWrap: "wrap" }}>
           {photos.slice(0, 6).map((_, i) => (
             <div key={i} style={{ flex: "1 1 30%", height: targetHeight, borderRadius, background: "#eee", animation: "sgPulse 1.4s ease-in-out infinite" }} />
@@ -49,7 +51,7 @@ export function JustifiedRows({ photos, gap, borderRadius, targetHeight, focal, 
   const rows = packRows(photos.map((p) => ratios[p]), width, targetHeight, gap);
 
   return (
-    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap }}>
+    <div ref={setNode} style={{ display: "flex", flexDirection: "column", gap }}>
       {rows.map((row, ri) => (
         <div key={ri} style={{ display: "flex", gap }}>
           {row.indices.map((idx) => (
@@ -59,7 +61,7 @@ export function JustifiedRows({ photos, gap, borderRadius, targetHeight, focal, 
             >
               <img
                 src={photos[idx]}
-                alt=""
+                alt={`${altLabel ?? "Gallery"} — photo ${idx + 1}`}
                 style={{ ...imgStyle, objectPosition: focalPos(focal, photos[idx]) }}
                 onClick={() => onPhotoClick(idx)}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.04)"; }}

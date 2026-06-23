@@ -7,9 +7,10 @@ export interface LightboxProps {
   index: number;
   onIndexChange: (i: number) => void;
   onClose: () => void;
+  altLabel?: string;
 }
 
-export function Lightbox({ photos, index, onIndexChange, onClose }: LightboxProps) {
+export function Lightbox({ photos, index, onIndexChange, onClose, altLabel }: LightboxProps) {
   const touchX = useRef<number | null>(null);
   const swiped = useRef<boolean>(false);
 
@@ -92,7 +93,7 @@ export function Lightbox({ photos, index, onIndexChange, onClose }: LightboxProp
 
       <img
         src={photos[index]}
-        alt=""
+        alt={`${altLabel ?? "Gallery"} — photo ${index + 1}`}
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: "90vw", maxHeight: "90vh", objectFit: "contain", borderRadius: 4 }}
       />

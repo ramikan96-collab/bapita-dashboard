@@ -14,6 +14,7 @@ interface Props {
   desktopInitialCount?: number;
   desktopBreakpoint?: number;
   focal?: Record<string, string>;
+  altLabel?: string;
 }
 
 export function SectionGallery({
@@ -24,6 +25,7 @@ export function SectionGallery({
   desktopInitialCount,
   desktopBreakpoint = 680,
   focal,
+  altLabel,
 }: Props) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -57,6 +59,7 @@ export function SectionGallery({
         borderRadius={borderRadius}
         targetHeight={isDesktop ? 200 : 160}
         focal={focal}
+        altLabel={altLabel}
         onPhotoClick={setLightboxIdx}
       />
     );
@@ -69,6 +72,7 @@ export function SectionGallery({
         gap={8}
         borderRadius={borderRadius}
         focal={focal}
+        altLabel={altLabel}
         onPhotoClick={setLightboxIdx}
       />
     );
@@ -77,7 +81,7 @@ export function SectionGallery({
     const rest = visible.slice(1);
     galleryNode = (
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <FeaturedHero photo={visible[0]} borderRadius={borderRadius} focal={focal} onClick={() => setLightboxIdx(0)} />
+        <FeaturedHero photo={visible[0]} borderRadius={borderRadius} focal={focal} altLabel={altLabel} onClick={() => setLightboxIdx(0)} />
         {rest.length > 0 && (
           <UniformGrid
             photos={rest}
@@ -86,6 +90,7 @@ export function SectionGallery({
             gap={10}
             borderRadius={borderRadius}
             focal={focal}
+            altLabel={altLabel}
             onPhotoClick={(i) => setLightboxIdx(i + 1)}
           />
         )}
@@ -119,6 +124,7 @@ export function SectionGallery({
           index={lightboxIdx}
           onIndexChange={setLightboxIdx}
           onClose={() => setLightboxIdx(null)}
+          altLabel={altLabel}
         />
       )}
     </>

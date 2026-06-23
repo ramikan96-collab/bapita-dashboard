@@ -9,10 +9,11 @@ export interface UniformGridProps {
   gap: number;
   borderRadius: number;
   focal?: Record<string, string>;
+  altLabel?: string;
   onPhotoClick: (i: number) => void;
 }
 
-export function UniformGrid({ photos, cols, aspect, gap, borderRadius, focal, onPhotoClick }: UniformGridProps) {
+export function UniformGrid({ photos, cols, aspect, gap, borderRadius, focal, altLabel, onPhotoClick }: UniformGridProps) {
   const remainder = cols > 1 ? photos.length % cols : 0;
 
   return (
@@ -35,7 +36,7 @@ export function UniformGrid({ photos, cols, aspect, gap, borderRadius, focal, on
           >
             <img
               src={photo}
-              alt=""
+              alt={`${altLabel ?? "Gallery"} — photo ${i + 1}`}
               style={{ ...imgStyle, objectPosition: focalPos(focal, photo) }}
               onClick={() => onPhotoClick(i)}
               onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.04)"; }}
