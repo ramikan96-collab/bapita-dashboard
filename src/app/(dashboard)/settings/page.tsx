@@ -1247,28 +1247,12 @@ function GooglePlaceIdCard({
 
   return (
     <SectionCard title="Google Maps reviews">
-      <p style={{ fontSize: 13, color: "var(--color-muted)", margin: 0, lineHeight: 1.6 }}>
-        Connect your Google listing to automatically show your latest Google reviews on your booking page — updated every hour.
-      </p>
-
-      <div style={{ background: "var(--color-cream)", borderRadius: 12, padding: "14px 16px", border: "1px solid var(--color-cream-2)", display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-dark)", textTransform: "uppercase", letterSpacing: "0.06em" }}>How to find your Place ID</div>
-        <ol style={{ margin: 0, paddingInlineStart: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-          <li style={{ fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5 }}>
-            Go to <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-amber)", fontWeight: 600 }}>Google Place ID Finder →</a>
-          </li>
-          <li style={{ fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5 }}>Search your business name in the search box</li>
-          <li style={{ fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5 }}>Copy the Place ID that appears (starts with <code style={{ fontSize: 12, background: "var(--color-cream-2)", padding: "1px 5px", borderRadius: 4 }}>ChIJ…</code>)</li>
-          <li style={{ fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5 }}>Paste it below and click Save</li>
-        </ol>
-      </div>
-
       <InputField
         label="Place ID"
         value={placeId}
         onChange={setPlaceId}
         placeholder="ChIJ…"
-        hint="Paste the Place ID exactly as copied — no spaces"
+        hint={<>Pulls your live Google reviews onto the booking page, updated hourly. Find your Place ID at <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-amber)" }}>Google Place ID Finder</a>. Can{"'"}t find your business there? Search it on <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-amber)" }}>Google Maps</a>, click Share → Copy link, and send the link to Rami — he{"'"}ll extract the ID for you.</>}
       />
 
       <SaveButton onClick={save} saving={saving} dirty={dirty} />
