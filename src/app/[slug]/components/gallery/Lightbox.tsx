@@ -11,10 +11,19 @@ export interface LightboxProps {
 
 export function Lightbox({ photos, index, onIndexChange, onClose }: LightboxProps) {
   const touchX = useRef<number | null>(null);
+  const swiped = useRef<boolean>(false);
 
   const go = (delta: number) => {
     const next = index + delta;
     if (next >= 0 && next < photos.length) onIndexChange(next);
+  };
+
+  const handleBackdropClick = () => {
+    if (swiped.current) {
+      swiped.current = false;
+      return;
+    }
+    onClose();
   };
 
   useEffect(() => {
@@ -52,12 +61,15 @@ export function Lightbox({ photos, index, onIndexChange, onClose }: LightboxProp
 
   return (
     <div
-      onClick={onClose}
+      onClick={handleBackdropClick}
       onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
       onTouchEnd={(e) => {
         if (touchX.current === null) return;
         const dx = e.changedTouches[0].clientX - touchX.current;
-        if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+        if (Math.abs(dx) > 40) {
+          swiped.current = true;
+          go(dx < 0 ? 1 : -1);
+        }
         touchX.current = null;
       }}
       style={{
