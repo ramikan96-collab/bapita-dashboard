@@ -18,7 +18,7 @@ export function packRows(
   containerWidth: number,
   targetHeight: number,
   gap: number,
-  lastRowMaxScale = 1.5,
+  lastRowMaxScale = 1.8,
 ): JustifyRow[] {
   const rows: JustifyRow[] = [];
   let current: number[] = [];
@@ -44,8 +44,10 @@ export function packRows(
 
   if (current.length) {
     const naturalWidth = ratioSum * targetHeight + gap * (current.length - 1);
-    // If the leftover row is nearly full, justify it exactly; otherwise cap.
-    const cap = naturalWidth >= containerWidth * 0.85 ? undefined : lastRowMaxScale;
+    // Justify the leftover row to fill the full width so it never leaves a
+    // ragged gap on the right. Only a very sparse row (a single narrow image
+    // < 40% of the width) stays capped, to stop one stray tile ballooning.
+    const cap = naturalWidth >= containerWidth * 0.4 ? undefined : lastRowMaxScale;
     rows.push(fill(current, ratioSum, cap));
   }
 

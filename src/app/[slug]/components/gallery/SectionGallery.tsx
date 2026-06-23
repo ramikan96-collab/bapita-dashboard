@@ -15,7 +15,23 @@ interface Props {
   desktopBreakpoint?: number;
   focal?: Record<string, string>;
   altLabel?: string;
+  ui?: GalleryUi;
 }
+
+// "Show more" button colors — defaults suit light themes; Dark overrides.
+interface GalleryUi {
+  btnBorder: string;
+  btnBorderHover: string;
+  btnText: string;
+  btnTextHover: string;
+}
+
+const DEFAULT_UI: GalleryUi = {
+  btnBorder: "#E5E5E5",
+  btnBorderHover: "#111",
+  btnText: "#6B7280",
+  btnTextHover: "#111",
+};
 
 export function SectionGallery({
   photos,
@@ -26,6 +42,7 @@ export function SectionGallery({
   desktopBreakpoint = 680,
   focal,
   altLabel,
+  ui = DEFAULT_UI,
 }: Props) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -68,7 +85,7 @@ export function SectionGallery({
       <UniformGrid
         photos={visible}
         cols={gridCols}
-        aspect="4 / 3"
+        rowHeight={isDesktop ? 230 : 150}
         gap={8}
         borderRadius={borderRadius}
         focal={focal}
@@ -86,7 +103,7 @@ export function SectionGallery({
           <UniformGrid
             photos={rest}
             cols={restCols}
-            aspect="4 / 3"
+            rowHeight={isDesktop ? 150 : 115}
             gap={10}
             borderRadius={borderRadius}
             focal={focal}
@@ -107,12 +124,12 @@ export function SectionGallery({
           onClick={() => setExpanded((v) => !v)}
           style={{
             marginTop: 12, width: "100%", height: 44, borderRadius,
-            border: "1.5px solid #E5E5E5", background: "transparent",
-            fontSize: 13, fontWeight: 700, color: "#6B7280",
+            border: `1.5px solid ${ui.btnBorder}`, background: "transparent",
+            fontSize: 13, fontWeight: 700, color: ui.btnText,
             cursor: "pointer", transition: "border-color 0.2s, color 0.2s", fontFamily: "inherit",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#111"; e.currentTarget.style.color = "#111"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E5E5E5"; e.currentTarget.style.color = "#6B7280"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = ui.btnBorderHover; e.currentTarget.style.color = ui.btnTextHover; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = ui.btnBorder; e.currentTarget.style.color = ui.btnText; }}
         >
           {expanded ? "Show less" : `Show ${hiddenCount} more photo${hiddenCount !== 1 ? "s" : ""}`}
         </button>
