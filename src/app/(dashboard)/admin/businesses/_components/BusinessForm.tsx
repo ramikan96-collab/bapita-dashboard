@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
+import { findPlaceId } from "@/app/actions/find-place-id";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -103,6 +104,7 @@ interface FormData {
   stat_years:         string;
   stat_clients:       string;
   stat_rating:        string;
+  google_place_id:    string;
 }
 
 interface GalleryItem { url: string; uploading?: boolean; }
@@ -129,6 +131,7 @@ const EMPTY_FORM: FormData = {
   plan_tier: "", plan_price: "", plan_setup_price: "", plan_addons: [],
   plan_booking_limit: "", plan_start_date: "", plan_renewal_date: "", plan_notes: "",
   stat_years: "", stat_clients: "", stat_rating: "",
+  google_place_id: "",
 };
 
 interface Props {
@@ -215,6 +218,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           stat_years:         b.stat_years   != null ? String(b.stat_years)   : "",
           stat_clients:       b.stat_clients != null ? String(b.stat_clients) : "",
           stat_rating:        b.stat_rating          || "",
+          google_place_id:    (b as unknown as { google_place_id?: string | null }).google_place_id || "",
         });
         // Merge hero + gallery_images
         const imgs: string[]  = b.gallery_images || [];
@@ -382,6 +386,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       stat_clients:       form.stat_clients ? Number(form.stat_clients) : null,
       stat_rating:        form.stat_rating          || null,
       business_hours:     hours,
+      google_place_id:    form.google_place_id.trim() || null,
     };
 
     if (mode === "new") {
@@ -474,6 +479,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       stat_clients:       form.stat_clients ? Number(form.stat_clients) : null,
       stat_rating:        form.stat_rating          || null,
       business_hours:     hours,
+      google_place_id:    form.google_place_id.trim() || null,
     };
     for (const v of variants) {
       const { error: e } = await supabase.from("businesses").insert({
@@ -1176,14 +1182,22 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
           {/* ── REVIEWS ── */}
           {tab === "reviews" && mode === "edit" && businessId && (
-            <AdminReviewsPanel
-              businessId={businessId}
-              supabase={supabase}
-              reviews={adminReviews}
-              showReviews={form.show_reviews}
-              onReviewsChange={setAdminReviews}
-              onToggleShow={() => set("show_reviews", !form.show_reviews)}
-            />
+            <>
+              <GooglePlaceIdSection
+                placeId={form.google_place_id}
+                businessName={form.name}
+                businessAddress={form.address}
+                onChange={v => set("google_place_id", v)}
+              />
+              <AdminReviewsPanel
+                businessId={businessId}
+                supabase={supabase}
+                reviews={adminReviews}
+                showReviews={form.show_reviews}
+                onReviewsChange={setAdminReviews}
+                onToggleShow={() => set("show_reviews", !form.show_reviews)}
+              />
+            </>
           )}
 
           {/* ── PLAN & STATS ── */}
@@ -1272,6 +1286,100 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Google Place ID Section ──────────────────────────────────────────────────
+
+function GooglePlaceIdSection({
+  placeId,
+  businessName,
+  businessAddress,
+  onChange,
+}: {
+  placeId: string;
+  businessName: string;
+  businessAddress: string;
+  onChange: (v: string) => void;
+}) {
+  const [looking,  setLooking]  = useState(false);
+  const [match,    setMatch]    = useState<{ placeId: string; name: string; address: string } | null>(null);
+  const [lookErr,  setLookErr]  = useState("");
+
+  async function handleLookup() {
+    if (!businessName.trim()) { setLookErr("Fill in business name first"); return; }
+    setLooking(true); setMatch(null); setLookErr("");
+    const result = await findPlaceId(businessName, businessAddress);
+    setLooking(false);
+    if (!result) { setLookErr("No match found — paste Place ID manually"); return; }
+    setMatch(result);
+  }
+
+  function acceptMatch() {
+    if (match) { onChange(match.placeId); setMatch(null); }
+  }
+
+  return (
+    <SectionCard title="Google Maps Reviews">
+      <p style={{ fontSize: 12, color: "var(--color-muted)", margin: "0 0 4px" }}>
+        Paste a Place ID to pull live Google reviews onto the booking page (refreshed hourly).{" "}
+        <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-amber)", textDecoration: "none" }}>
+          Find Place ID →
+        </a>
+      </p>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input
+          value={placeId}
+          onChange={e => onChange(e.target.value)}
+          placeholder="ChIJ…"
+          style={{
+            flex: 1, height: 36, padding: "0 12px", borderRadius: 9,
+            border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)",
+            fontSize: 13, color: "var(--color-dark)", outline: "none", fontFamily: "inherit",
+          }}
+          onFocus={e  => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+          onBlur={e   => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+        />
+        <button
+          onClick={handleLookup}
+          disabled={looking}
+          style={{
+            height: 36, padding: "0 14px", borderRadius: 9, flexShrink: 0,
+            border: "1.5px solid var(--color-amber)", background: "transparent",
+            color: "var(--color-amber)", fontSize: 12, fontWeight: 700,
+            cursor: looking ? "not-allowed" : "pointer", opacity: looking ? 0.6 : 1,
+            fontFamily: "inherit", whiteSpace: "nowrap",
+          }}
+        >
+          {looking ? "Searching…" : "Find on Google Maps"}
+        </button>
+      </div>
+      {lookErr && <p style={{ fontSize: 12, color: "#EF4444", margin: 0 }}>{lookErr}</p>}
+      {match && (
+        <div style={{
+          background: "#F0FDF4", border: "1.5px solid #86EFAC", borderRadius: 10,
+          padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "#166534" }}>Found: {match.name}</div>
+          <div style={{ fontSize: 12, color: "#166534", opacity: 0.75 }}>{match.address}</div>
+          <div style={{ fontSize: 11, color: "#166534", opacity: 0.6, fontFamily: "monospace" }}>{match.placeId}</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={acceptMatch}
+              style={{ height: 32, padding: "0 16px", borderRadius: 8, border: "none", background: "#16A34A", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              Use this Place ID
+            </button>
+            <button
+              onClick={() => setMatch(null)}
+              style={{ height: 32, padding: "0 14px", borderRadius: 8, border: "1.5px solid #86EFAC", background: "transparent", color: "#166534", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+    </SectionCard>
   );
 }
 

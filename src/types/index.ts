@@ -111,6 +111,7 @@ export interface Business {
   show_open_status?:   boolean | null;
   show_services?:      boolean | null;
   google_reviews?:     GoogleReview[] | null;
+  google_place_id?:    string | null;
   show_reviews?:       boolean | null;
   staff_members?:      StaffMember[] | null;
   show_staff?:         boolean | null;

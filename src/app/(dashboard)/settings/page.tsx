@@ -109,7 +109,7 @@ function InputField({
   action,
 }: {
   label: string;
-  hint?: string;
+  hint?: React.ReactNode;
   type?: string;
   value: string;
   onChange?: (v: string) => void;
@@ -383,6 +383,7 @@ function BusinessSection({
   const [taglineHe, setTaglineHe] = useState(business.tagline_he || "");
   const [aboutHe, setAboutHe] = useState(business.about_text_he || "");
   const [notificationEmail, setNotificationEmail] = useState(business.notification_email || "");
+  const [googlePlaceId, setGooglePlaceId] = useState(business.google_place_id || "");
   const [saving, setSaving] = useState(false);
 
   const original = {
@@ -391,8 +392,9 @@ function BusinessSection({
     tagline: business.tagline || "", about: business.about_text || "",
     taglineHe: business.tagline_he || "", aboutHe: business.about_text_he || "",
     notificationEmail: business.notification_email || "",
+    googlePlaceId: business.google_place_id || "",
   };
-  const dirty = name !== original.name || nameHe !== original.nameHe || phone !== original.phone || address !== original.address || tagline !== original.tagline || about !== original.about || taglineHe !== original.taglineHe || aboutHe !== original.aboutHe || notificationEmail !== original.notificationEmail;
+  const dirty = name !== original.name || nameHe !== original.nameHe || phone !== original.phone || address !== original.address || tagline !== original.tagline || about !== original.about || taglineHe !== original.taglineHe || aboutHe !== original.aboutHe || notificationEmail !== original.notificationEmail || googlePlaceId !== original.googlePlaceId;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty]);
@@ -412,6 +414,7 @@ function BusinessSection({
       tagline: tagline || null, about_text: about || null,
       tagline_he: taglineHe || null, about_text_he: aboutHe || null,
       notification_email: notificationEmail.trim() || null,
+      google_place_id: googlePlaceId.trim() || null,
     }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast(getErrorMessage(error), "error"); return; }
@@ -427,6 +430,13 @@ function BusinessSection({
         <InputField label="Notification email" type="email" value={notificationEmail} onChange={setNotificationEmail} placeholder="you@example.com" hint="Booking alerts are sent to this address" />
         <InputField label="Address" value={address} onChange={setAddress} placeholder="Street, city" />
         <InputField label="Tagline" value={tagline} onChange={setTagline} placeholder="e.g. Premium cuts since 2010" />
+        <InputField
+          label="Google Place ID"
+          value={googlePlaceId}
+          onChange={setGooglePlaceId}
+          placeholder="ChIJ…"
+          hint={<>Paste your Place ID to pull Google reviews automatically. <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-amber)" }}>Find your Place ID →</a></>}
+        />
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-medium text-dark">About us</label>
           <textarea

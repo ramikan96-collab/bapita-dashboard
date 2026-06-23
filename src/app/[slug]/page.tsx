@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import BookingShell from "./BookingShell";
 import type { Business, Service } from "@/types";
+import { fetchPlaceReviews } from "@/lib/google-places";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function BookPage({ params }: Props) {
 
   const { data: business, error } = await supabase
     .from("businesses")
-    .select("id, name, slug, status, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, business_hours, template_style, tagline, hero_image_url, hero_position, image_focal, gallery_images, about_text, accent_color, show_gallery, show_about, show_hours, show_location, default_lang, stat_years, stat_clients, stat_rating, google_reviews, show_reviews, section_order, name_he, tagline_he, about_text_he, show_services, show_stats, show_open_status, profile_image_url, show_staff, staff_members")
+    .select("id, name, slug, status, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, business_hours, template_style, tagline, hero_image_url, hero_position, image_focal, gallery_images, about_text, accent_color, show_gallery, show_about, show_hours, show_location, default_lang, stat_years, stat_clients, stat_rating, google_reviews, google_place_id, show_reviews, section_order, name_he, tagline_he, about_text_he, show_services, show_stats, show_open_status, profile_image_url, show_staff, staff_members")
     .eq("slug", slug)
     .single();
 
@@ -36,6 +37,16 @@ export default async function BookPage({ params }: Props) {
     .order("display_order");
 
   const b = business as unknown as Business;
+
+  // Merge Google Places reviews (server-side, 1h cache) with manual testimonials
+  if (b.google_place_id) {
+    const placeReviews = await fetchPlaceReviews(b.google_place_id);
+    if (placeReviews.length > 0) {
+      const manual = Array.isArray(b.google_reviews) ? b.google_reviews : [];
+      b.google_reviews = [...placeReviews, ...manual];
+    }
+  }
+
   const pageUrl = `https://bapita.com/${slug}`;
 
   const localBusinessSchema = {
