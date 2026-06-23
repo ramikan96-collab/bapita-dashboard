@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import type { Business, Service } from "@/types";
 import { FloatingCTA }    from "../../components/FloatingCTA";
-import { SectionGallery }  from "../../components/SectionGallery";
+import { SectionGallery }  from "../../components/gallery/SectionGallery";
 import { SectionHours }    from "../../components/SectionHours";
 import { SectionLocation } from "../../components/SectionLocation";
 import { SectionReviews }  from "../../components/SectionReviews";
