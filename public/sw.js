@@ -20,9 +20,9 @@ self.addEventListener("notificationclick", (event) => {
       .then((windowClients) => {
         for (const client of windowClients) {
           if (client.url.includes(self.location.origin) && "focus" in client) {
-            // Post message so app opens the panel even if URL params don't land (iOS).
+            // postMessage is the primary signal — navigate() not supported on iOS Safari.
             client.postMessage({ type: "OPEN_NOTIFICATIONS" });
-            client.navigate(target);
+            try { client.navigate(target); } catch (_) { /* unsupported on iOS */ }
             return client.focus();
           }
         }

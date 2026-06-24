@@ -374,12 +374,13 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     if (typeof navigator === "undefined" || !navigator.serviceWorker) return;
     const handler = (event: MessageEvent) => {
       if (event.data?.type === "OPEN_NOTIFICATIONS") {
+        router.push("/calendar");
         setNotificationsOpen(true);
       }
     };
     navigator.serviceWorker.addEventListener("message", handler);
     return () => navigator.serviceWorker.removeEventListener("message", handler);
-  }, []);
+  }, [router]);
 
   // Always show the freshest list when the modal opens
   useEffect(() => {
