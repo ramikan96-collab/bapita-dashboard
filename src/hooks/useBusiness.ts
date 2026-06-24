@@ -5,8 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { Business } from "@/types";
 
 const ADMIN_PERSONAL_SLUGS: Record<string, string> = {
-  "ramikan96@gmail.com": "bapita-admin-rami",
-  "info.bapita@gmail.com": "bapita-admin-info",
+  "ramikan96@gmail.com": "bapita-admin",
+  "info.bapita@gmail.com": "bapita-admin",
 };
 
 export function useBusiness() {
