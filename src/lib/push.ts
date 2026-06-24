@@ -46,11 +46,13 @@ export async function sendPush(
   // Remove stale subscriptions (410 Gone = unsubscribed)
   const staleIds: string[] = [];
   results.forEach((result, i) => {
-    if (
-      result.status === "rejected" &&
-      (result.reason as { statusCode?: number })?.statusCode === 410
-    ) {
-      staleIds.push(subs[i].id);
+    if (result.status === "rejected") {
+      const code = (result.reason as { statusCode?: number })?.statusCode;
+      if (code === 410) {
+        staleIds.push(subs[i].id);
+      } else {
+        console.error(`sendPush: failed sub ${subs[i].id} status=${code}:`, result.reason);
+      }
     }
   });
 
