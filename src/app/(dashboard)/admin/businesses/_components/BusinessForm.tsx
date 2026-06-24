@@ -677,22 +677,6 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   )}
                 </Row>
                 {mode === "edit" && (
-                  <Row>
-                    <Field label="Owner Email">
-                      <input
-                        type="email"
-                        value={form.owner_email}
-                        onChange={e => set("owner_email", e.target.value)}
-                        placeholder="barber@email.com"
-                        style={inputStyle}
-                      />
-                      <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
-                        Dashboard access + booking notifications
-                      </div>
-                    </Field>
-                  </Row>
-                )}
-                {mode === "edit" && (
                   <>
                     <Row>
                       <Field label="Template">
@@ -701,6 +685,18 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                           <option value="clean">Clean (white/black)</option>
                           <option value="dark">Dark (dark/gold)</option>
                         </select>
+                      </Field>
+                      <Field label="Owner Email">
+                        <input
+                          type="email"
+                          value={form.owner_email}
+                          onChange={e => set("owner_email", e.target.value)}
+                          placeholder="barber@email.com"
+                          style={inputStyle}
+                        />
+                        <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
+                          Dashboard access + notifications
+                        </div>
                       </Field>
                     </Row>
                     {!cloning && confirmClone && (

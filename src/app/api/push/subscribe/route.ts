@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const businessId = await getOwnerBusinessId(supabase, user.id);
+  const businessId = await getOwnerBusinessId(supabase, user.id, user.email);
   if (!businessId) return NextResponse.json({ error: "no business" }, { status: 404 });
 
   const { subscription } = await req.json();
@@ -42,7 +42,7 @@ export async function DELETE(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const businessId = await getOwnerBusinessId(supabase, user.id);
+  const businessId = await getOwnerBusinessId(supabase, user.id, user.email);
   if (!businessId) return NextResponse.json({ ok: true });
 
   const { endpoint } = await req.json().catch(() => ({ endpoint: undefined }));

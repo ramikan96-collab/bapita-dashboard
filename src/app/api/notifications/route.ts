@@ -7,7 +7,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const businessId = await getOwnerBusinessId(supabase, user.id);
+  const businessId = await getOwnerBusinessId(supabase, user.id, user.email);
   if (!businessId) return NextResponse.json({ notifications: [], unreadCount: 0 });
 
   const { data: notifications } = await supabase
@@ -27,7 +27,7 @@ export async function DELETE() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const businessId = await getOwnerBusinessId(supabase, user.id);
+  const businessId = await getOwnerBusinessId(supabase, user.id, user.email);
   if (!businessId) return NextResponse.json({ ok: true });
 
   await supabase
