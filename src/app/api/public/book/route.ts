@@ -210,7 +210,8 @@ export async function POST(req: NextRequest) {
       .single();
     const bccEmail = bizData?.notification_email || process.env.GMAIL_USER || "info.bapita@gmail.com";
 
-    const formattedDate = new Date(date + "T12:00:00").toLocaleDateString("he-IL", {
+    const dateLocale = lang === "he" ? "he-IL" : "en-US";
+    const formattedDate = new Date(date + "T12:00:00").toLocaleDateString(dateLocale, {
       weekday: "long", year: "numeric", month: "long", day: "numeric",
     });
 
