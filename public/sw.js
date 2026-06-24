@@ -13,20 +13,24 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = event.notification.data?.url || "/";
+  const target = event.notification.data?.url || "/calendar";
   event.waitUntil(
-    clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((windowClients) => {
-        for (const client of windowClients) {
-          if (client.url.includes(self.location.origin) && "focus" in client) {
-            // postMessage is the primary signal — navigate() not supported on iOS Safari.
-            client.postMessage({ type: "OPEN_NOTIFICATIONS" });
-            try { client.navigate(target); } catch (_) { /* unsupported on iOS */ }
-            return client.focus();
-          }
-        }
-        if (clients.openWindow) return clients.openWindow(target);
-      })
+    (async () => {
+      // BroadcastChannel is more reliable than client.postMessage on iOS
+      // (works even when page was frozen in background).
+      try {
+        const bc = new BroadcastChannel("bapita_push");
+        bc.postMessage({ type: "OPEN_NOTIFICATIONS" });
+        bc.close();
+      } catch (_) {}
+
+      const windowClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
+      const appClient = windowClients.find((c) => c.url.includes(self.location.origin));
+      if (appClient) {
+        return appClient.focus();
+      }
+      // App not open — launch it at the target URL so ?notifications=1 is read on mount.
+      if (clients.openWindow) return clients.openWindow(target);
+    })()
   );
 });

@@ -368,18 +368,23 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Also listen for postMessage from SW — handles the case where the app was
-  // already open and the SW sends OPEN_NOTIFICATIONS instead of navigating.
+  // BroadcastChannel from SW notificationclick — more reliable than client.postMessage
+  // on iOS (messages are queued and delivered when the frozen page resumes).
   useEffect(() => {
-    if (typeof navigator === "undefined" || !navigator.serviceWorker) return;
-    const handler = (event: MessageEvent) => {
-      if (event.data?.type === "OPEN_NOTIFICATIONS") {
-        router.push("/calendar");
-        setNotificationsOpen(true);
-      }
-    };
-    navigator.serviceWorker.addEventListener("message", handler);
-    return () => navigator.serviceWorker.removeEventListener("message", handler);
+    if (typeof BroadcastChannel === "undefined") return;
+    let bc: BroadcastChannel;
+    try {
+      bc = new BroadcastChannel("bapita_push");
+      bc.onmessage = (event) => {
+        if (event.data?.type === "OPEN_NOTIFICATIONS") {
+          router.push("/calendar");
+          setNotificationsOpen(true);
+        }
+      };
+    } catch (_) {
+      return;
+    }
+    return () => bc.close();
   }, [router]);
 
   // Always show the freshest list when the modal opens
