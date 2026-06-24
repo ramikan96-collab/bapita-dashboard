@@ -25,15 +25,31 @@ export function useBusiness() {
     const personalSlug = user.email ? ADMIN_PERSONAL_SLUGS[user.email] : undefined;
     setIsAdmin(!!personalSlug);
 
-    let query = supabase.from("businesses").select("*").eq("owner_id", user.id);
     if (personalSlug) {
-      query = query.eq("slug", personalSlug);
+      const { data } = await supabase.from("businesses").select("*")
+        .eq("owner_id", user.id)
+        .eq("slug", personalSlug);
+      setBusiness(data?.[0] ?? null);
     } else {
-      query = query.order("created_at", { ascending: true }).limit(1);
-    }
-    const { data } = await query;
+      // Try: business owned by this user's auth id
+      const { data: ownedData } = await supabase.from("businesses").select("*")
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: true })
+        .limit(1);
 
-    setBusiness(data?.[0] ?? null);
+      if (ownedData?.[0]) {
+        setBusiness(ownedData[0]);
+      } else if (user.email) {
+        // Fallback: business where admin set owner_email = this user's email
+        const { data: emailData } = await supabase.from("businesses").select("*")
+          .eq("owner_email", user.email)
+          .order("created_at", { ascending: true })
+          .limit(1);
+        setBusiness(emailData?.[0] ?? null);
+      } else {
+        setBusiness(null);
+      }
+    }
     setLoading(false);
   }, [supabase]);
 

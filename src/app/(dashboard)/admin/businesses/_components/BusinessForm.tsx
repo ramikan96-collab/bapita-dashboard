@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
 import { findPlaceId } from "@/app/actions/find-place-id";
+import { syncStaffTable, loadStaff } from "@/lib/staff";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -71,6 +72,7 @@ interface FormData {
   phone:              string;
   address:            string;
   email:              string;
+  owner_email:        string;
   instagram_url:      string;
   facebook_url:       string;
   tiktok_url:         string;
@@ -121,7 +123,7 @@ type Tab = "profile" | "gallery" | "services" | "plan" | "hours" | "reviews";
 
 const EMPTY_FORM: FormData = {
   name: "", name_he: "", slug: "", template_style: "classic", default_lang: "he",
-  tagline: "", tagline_he: "", phone: "", address: "", email: "",
+  tagline: "", tagline_he: "", phone: "", address: "", email: "", owner_email: "",
   instagram_url: "", facebook_url: "", tiktok_url: "", whatsapp_number: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
   about_text: "", about_text_he: "", accent_color: "#B8862A", image_focal: {},
@@ -186,6 +188,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           phone:              b.phone               || "",
           address:            b.address             || "",
           email:              b.email               || "",
+          owner_email:        (b as unknown as { owner_email?: string | null }).owner_email || "",
           instagram_url:      b.instagram_url       || "",
           facebook_url:       b.facebook_url        || "",
           tiktok_url:         (b as unknown as { tiktok_url?: string | null }).tiktok_url || "",
@@ -246,8 +249,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         if (b.business_hours) setHours(b.business_hours as BusinessHours);
         // Reviews
         if (Array.isArray(b.google_reviews)) setAdminReviews(b.google_reviews as GoogleReview[]);
-        // Staff
-        if (Array.isArray(b.staff_members)) setStaffMembers(b.staff_members as StaffMember[]);
+        // Staff now lives in the public.staff table.
+        setStaffMembers(await loadStaff(supabase, businessId));
       }
 
       // Load services
@@ -348,6 +351,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       phone:              form.phone              || null,
       address:            form.address            || null,
       email:              form.email              || null,
+      owner_email:        form.owner_email        || null,
       instagram_url:      form.instagram_url      || null,
       facebook_url:       form.facebook_url       || null,
       tiktok_url:         form.tiktok_url         || null,
@@ -367,7 +371,6 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_services:      form.show_services,
       show_reviews:       form.show_reviews,
       show_staff:         form.show_staff,
-      staff_members:      staffMembers,
       status:             form.status,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
@@ -399,13 +402,17 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       // Insert one business row per variant
       const firstSlug = slugs[0];
       for (const v of variants) {
-        const { error: e } = await supabase.from("businesses").insert({
+        const { data: created, error: e } = await supabase.from("businesses").insert({
           ...basePayload,
           slug:           v.slug.trim(),
           template_style: v.template,
           owner_id:       user.id,
-        });
-        if (e) { setError(`Slug "${v.slug}": ${e.message}`); setSaving(false); return; }
+        }).select("id").single();
+        if (e || !created) { setError(`Slug "${v.slug}": ${e?.message || "insert failed"}`); setSaving(false); return; }
+        // Each variant is its own business, so give it fresh staff ids.
+        try {
+          await syncStaffTable(supabase, created.id, staffMembers.map(m => ({ ...m, id: crypto.randomUUID() })));
+        } catch (se) { setError(`Slug "${v.slug}": ${(se as { message?: string }).message || "staff save failed"}`); setSaving(false); return; }
       }
       setSaving(false); setSaved(true); setDirty(false);
       setTimeout(() => setSaved(false), 2000);
@@ -417,6 +424,10 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       // client can update businesses they don't own.
       const { error: e } = await supabase.from("businesses").update(payload).eq("id", businessId!);
       if (e) { setError(e.message); setSaving(false); return; }
+      // Staff persists to the public.staff table, preserving existing ids.
+      try {
+        await syncStaffTable(supabase, businessId!, staffMembers);
+      } catch (se) { setError((se as { message?: string }).message || "staff save failed"); setSaving(false); return; }
       setSaving(false); setSaved(true); setDirty(false);
       setTimeout(() => setSaved(false), 2000);
       onSaved(form.slug);
@@ -441,6 +452,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       phone:              form.phone              || null,
       address:            form.address            || null,
       email:              form.email              || null,
+      owner_email:        form.owner_email        || null,
       instagram_url:      form.instagram_url      || null,
       facebook_url:       form.facebook_url       || null,
       tiktok_url:         form.tiktok_url         || null,
@@ -460,7 +472,6 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_services:      form.show_services,
       show_reviews:       form.show_reviews,
       show_staff:         form.show_staff,
-      staff_members:      staffMembers,
       status:             "draft" as const,
       gallery_images:     urls,
       hero_image_url:     urls[0]                 || null,
@@ -482,13 +493,17 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       google_place_id:    form.google_place_id.trim() || null,
     };
     for (const v of variants) {
-      const { error: e } = await supabase.from("businesses").insert({
+      const { data: created, error: e } = await supabase.from("businesses").insert({
         ...basePayload,
         slug:           v.slug.trim(),
         template_style: v.template,
         owner_id:       user.id,
-      });
-      if (e) { setError(`Slug "${v.slug}": ${e.message}`); setSaving(false); return; }
+      }).select("id").single();
+      if (e || !created) { setError(`Slug "${v.slug}": ${e?.message || "insert failed"}`); setSaving(false); return; }
+      // Clone staff into each new business with fresh ids.
+      try {
+        await syncStaffTable(supabase, created.id, staffMembers.map(m => ({ ...m, id: crypto.randomUUID() })));
+      } catch (se) { setError(`Slug "${v.slug}": ${(se as { message?: string }).message || "staff save failed"}`); setSaving(false); return; }
     }
     setSaving(false);
     onSaved(variants[0].slug);
@@ -662,6 +677,22 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   )}
                 </Row>
                 {mode === "edit" && (
+                  <Row>
+                    <Field label="Owner Email">
+                      <input
+                        type="email"
+                        value={form.owner_email}
+                        onChange={e => set("owner_email", e.target.value)}
+                        placeholder="barber@email.com"
+                        style={inputStyle}
+                      />
+                      <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
+                        Dashboard access + booking notifications
+                      </div>
+                    </Field>
+                  </Row>
+                )}
+                {mode === "edit" && (
                   <>
                     <Row>
                       <Field label="Template">
@@ -671,16 +702,6 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                           <option value="dark">Dark (dark/gold)</option>
                         </select>
                       </Field>
-                      {!cloning && !confirmClone && (
-                        <div style={{ display:"flex", alignItems:"flex-end", paddingBottom:2 }}>
-                          <button
-                            onClick={() => setConfirmClone(true)}
-                            style={{ height:34, padding:"0 14px", borderRadius:8, border:"1.5px solid #2563EB", background:"transparent", color:"#2563EB", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s", whiteSpace:"nowrap" }}
-                            onMouseEnter={e => { e.currentTarget.style.background = "#2563EB"; e.currentTarget.style.color = "#fff"; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#2563EB"; }}
-                          >Clone</button>
-                        </div>
-                      )}
                     </Row>
                     {!cloning && confirmClone && (
                       <div style={{ background:"#FEF3C7", borderRadius:11, padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, border:"1px solid #FDE68A" }}>
@@ -702,16 +723,27 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   </>
                 )}
 
-                {/* Eject to custom page */}
+                {/* Eject to custom page + Clone */}
                 {mode === "edit" && (
                   <div style={{ marginTop: 4, marginBottom: 8 }}>
-                    <button
-                      type="button"
-                      onClick={() => setShowEjectPanel(p => !p)}
-                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--color-muted)", padding: 0, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}
-                    >
-                      {showEjectPanel ? "▾" : "▸"} Eject to custom page
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowEjectPanel(p => !p)}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--color-muted)", padding: 0, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}
+                      >
+                        {showEjectPanel ? "▾" : "▸"} Eject to custom page
+                      </button>
+                      {!cloning && !confirmClone && (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmClone(true)}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#2563EB", padding: 0, fontFamily: "inherit", fontWeight: 700 }}
+                        >
+                          ⧉ Clone
+                        </button>
+                      )}
+                    </div>
                     {showEjectPanel && (() => {
                       const sl = form.slug || "your-slug";
                       const tmpl = form.template_style || "classic";
@@ -883,7 +915,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   <Field label="Address">
                     <input value={form.address} onChange={e => set("address", e.target.value)} placeholder="123 Dizengoff St, Tel Aviv" style={inputStyle} />
                   </Field>
-                  <Field label="Email">
+                  <Field label="Public Email">
                     <input value={form.email} onChange={e => set("email", e.target.value)} placeholder="avi@example.com" style={inputStyle} />
                   </Field>
                 </Row>

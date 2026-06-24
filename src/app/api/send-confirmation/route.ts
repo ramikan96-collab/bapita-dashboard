@@ -28,19 +28,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const { customerName, customerEmail, businessName, serviceName, date, time } = await req.json();
+  const { customerName, customerEmail, businessName, serviceName, date, time, businessId } = await req.json();
 
   if (!customerEmail) {
     return NextResponse.json({ ok: true });
   }
 
-  // Resolve notification_email server-side from the authenticated user's business
-  const { data: biz } = await supabase
-    .from("businesses")
-    .select("notification_email")
-    .eq("owner_id", user.id)
-    .single();
-  const bccEmail = biz?.notification_email || process.env.GMAIL_USER || "info.bapita@gmail.com";
+  // Resolve notification email: prefer explicit businessId, fall back to oldest business owned by user
+  let bccEmail = process.env.GMAIL_USER || "info.bapita@gmail.com";
+  if (businessId) {
+    const { data: biz } = await supabase
+      .from("businesses")
+      .select("notification_email, owner_email")
+      .eq("id", businessId)
+      .single();
+    bccEmail = biz?.notification_email || biz?.owner_email || bccEmail;
+  } else {
+    const { data: bizRows } = await supabase
+      .from("businesses")
+      .select("notification_email, owner_email")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    const biz = bizRows?.[0];
+    bccEmail = biz?.notification_email || biz?.owner_email || bccEmail;
+  }
 
   const formattedDate = new Date(date + "T00:00:00").toLocaleDateString("he-IL", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",

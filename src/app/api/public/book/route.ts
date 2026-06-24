@@ -205,10 +205,10 @@ export async function POST(req: NextRequest) {
   after(async () => {
     const { data: bizData } = await supabase
       .from("businesses")
-      .select("notification_email")
+      .select("notification_email, owner_email")
       .eq("id", businessId)
       .single();
-    const bccEmail = bizData?.notification_email || process.env.GMAIL_USER || "info.bapita@gmail.com";
+    const bccEmail = bizData?.notification_email || bizData?.owner_email || process.env.GMAIL_USER || "info.bapita@gmail.com";
 
     const dateLocale = lang === "he" ? "he-IL" : "en-US";
     const formattedDate = new Date(date + "T12:00:00").toLocaleDateString(dateLocale, {
