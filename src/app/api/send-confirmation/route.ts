@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       .from("businesses")
       .select("notification_email, owner_email")
       .eq("id", businessId)
+      .or(`owner_id.eq.${user.id},owner_email.eq.${user.email ?? ""}`)
       .single();
     bccEmail = biz?.notification_email || biz?.owner_email || bccEmail;
   } else {
