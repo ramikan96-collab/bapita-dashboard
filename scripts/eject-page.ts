@@ -41,9 +41,14 @@ if (!fs.existsSync(srcFile)) {
 const componentName =
   slug.split("-").map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join("") + "Page";
 
-// Copy + rename exported component
+// Copy + rename exported component; fix import paths (themes/x/ → customs/ = one level up)
 let src = fs.readFileSync(srcFile, "utf8");
 src = src.replaceAll(`export function ${themeName}`, `export function ${componentName}`);
+src = src.replaceAll(`from "../../components/`, `from "../components/`);
+src = src.replaceAll(`from "../../booking/`,    `from "../booking/`);
+src = src.replaceAll(`from "../../translations"`, `from "../translations"`);
+src = src.replaceAll(`from "../../utils/`,       `from "../utils/`);
+src = src.replaceAll(`from "../../_shared/`,     `from "../_shared/`);
 fs.mkdirSync(dstDir, { recursive: true });
 fs.writeFileSync(dstFile, src);
 console.log(`✓ Created ${path.relative(root, dstFile)}`);
