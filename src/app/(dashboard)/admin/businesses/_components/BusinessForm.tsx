@@ -114,7 +114,7 @@ interface FormData {
   instagram_embed:    string;
 }
 
-interface GalleryItem { url: string; uploading?: boolean; }
+interface GalleryItem { url: string; uploading?: boolean; hidden?: boolean; }
 interface Variant     { slug: string; template: string; }
 
 interface Stats {
@@ -237,7 +237,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         const imgs: string[]  = b.gallery_images || [];
         const hero: string    = b.hero_image_url || "";
         const merged          = hero && !imgs.includes(hero) ? [hero, ...imgs] : imgs;
-        setGallery(merged.map((url: string) => ({ url })));
+        const hiddenUrls      = new Set((b as unknown as { gallery_hidden?: string[] | null }).gallery_hidden || []);
+        setGallery(merged.map((url: string) => ({ url, hidden: hiddenUrls.has(url) })));
         setProfileImageUrl((b as unknown as { profile_image_url?: string | null }).profile_image_url || null);
         // Section order — merge DB order with missing keys, filter by show_* flags
         const showFlags: Record<string, boolean> = {
@@ -351,6 +352,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     if (!user) { setError("Not logged in"); setSaving(false); return; }
 
     const urls = gallery.filter(g => !g.uploading && g.url).map(g => g.url);
+    const hiddenUrls = gallery.filter(g => !g.uploading && g.url && g.hidden).map(g => g.url);
 
     const basePayload = {
       name:               form.name.trim(),
@@ -383,6 +385,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_staff:         form.show_staff,
       status:             form.status,
       gallery_images:     urls,
+      gallery_hidden:     hiddenUrls,
       hero_image_url:     urls[0]                 || null,
       profile_image_url:  profileImageUrl         || null,
       image_focal:        form.image_focal,
@@ -457,6 +460,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setError("Not logged in"); setSaving(false); return; }
     const urls = gallery.filter(g => !g.uploading && g.url).map(g => g.url);
+    const hiddenUrls = gallery.filter(g => !g.uploading && g.url && g.hidden).map(g => g.url);
     const basePayload = {
       name:               form.name.trim(),
       name_he:            form.name_he            || null,
@@ -488,6 +492,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_staff:         form.show_staff,
       status:             "draft" as const,
       gallery_images:     urls,
+      gallery_hidden:     hiddenUrls,
       hero_image_url:     urls[0]                 || null,
       profile_image_url:  profileImageUrl         || null,
       image_focal:        form.image_focal,
@@ -1763,6 +1768,8 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
 
   function removeImage(i: number)  { setGallery(prev => prev.filter((_, idx) => idx !== i)); }
 
+  function toggleHidden(i: number) { setGallery(prev => prev.map((it, idx) => idx === i ? { ...it, hidden: !it.hidden } : it)); }
+
   function setAsHero(i: number) {
     if (i === 0) return;
     setGallery(prev => {
@@ -1807,7 +1814,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
 
     <SectionCard title="Gallery">
       <p style={{ fontSize:13, color:"var(--color-muted)", marginTop:0, marginBottom:16 }}>
-        Drag to reorder. First image = hero. Hover a photo and hit <strong>⌖ Crop</strong> to pick the focal point that stays in frame when it&apos;s cropped.
+        Drag to reorder. First image = hero. Hover a photo and hit <strong>⌖ Crop</strong> to pick the focal point that stays in frame when it&apos;s cropped, or <strong>🛇 Hide</strong> to keep it as a cover/background without showing it in the public gallery.
       </p>
 
       {gallery.length > 0 && (
@@ -1833,7 +1840,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
               }}
             >
               {item.url && (
-                <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition: focal[item.url] || "center", display:"block", pointerEvents:"none" }} />
+                <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition: focal[item.url] || "center", display:"block", pointerEvents:"none", opacity: item.hidden ? 0.45 : 1, filter: item.hidden ? "grayscale(0.6)" : "none" }} />
               )}
               {item.uploading && (
                 <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"var(--color-muted)" }}>
@@ -1849,6 +1856,17 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
                   fontSize:9, fontWeight:800, padding:"2px 6px", borderRadius:20, letterSpacing:"0.05em",
                 }}>
                   ★ HERO
+                </div>
+              )}
+
+              {/* Hidden badge */}
+              {item.hidden && i !== 0 && !item.uploading && (
+                <div style={{
+                  position:"absolute", top:6, insetInlineStart:6,
+                  background:"rgba(34,21,16,0.7)", color:"#fff",
+                  fontSize:9, fontWeight:800, padding:"2px 6px", borderRadius:20, letterSpacing:"0.05em",
+                }}>
+                  HIDDEN
                 </div>
               )}
 
@@ -1878,6 +1896,18 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
                         }}
                       >
                         ⌖ Crop
+                      </button>
+                    )}
+                    {item.url && (
+                      <button
+                        onClick={() => toggleHidden(i)}
+                        style={{
+                          background:"rgba(34,21,16,0.7)", border:"none",
+                          borderRadius:6, color:"#fff", fontSize:9, fontWeight:700, padding:"3px 7px",
+                          cursor:"pointer", fontFamily:"inherit",
+                        }}
+                      >
+                        {item.hidden ? "👁 Show" : "🛇 Hide"}
                       </button>
                     )}
                   </div>

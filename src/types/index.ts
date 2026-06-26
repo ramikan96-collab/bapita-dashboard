@@ -79,6 +79,8 @@ export interface Business {
   /** per-image focal point: { [imageUrl]: "x% y%" } — applied as object-position wherever the image is cropped */
   image_focal?: Record<string, string> | null;
   gallery_images?: string[] | null;
+  /** URLs from gallery_images to exclude from the public gallery grid (still usable as cover/hero) */
+  gallery_hidden?: string[] | null;
   about_text?: string | null;
   about_text_he?: string | null;
   accent_color?: string | null;

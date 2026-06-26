@@ -1339,6 +1339,7 @@ function WebsiteSection({
   const [slug, setSlug]                       = useState(business.slug || "");
   const [defaultLang, setDefaultLang]         = useState<"en" | "he">((business.default_lang as "en" | "he") || "en");
   const [images, setImages]                   = useState<string[]>(business.gallery_images || []);
+  const [hidden, setHidden]                   = useState<string[]>(business.gallery_hidden || []);
   const [showGallery, setShowGallery]         = useState(business.show_gallery !== false);
   const [tiktokUrl, setTiktokUrl]             = useState(business.tiktok_url || "");
   const [instagramUrl, setInstagramUrl]       = useState(business.instagram_url || "");
@@ -1365,6 +1366,7 @@ function WebsiteSection({
   const origSlug             = business.slug || "";
   const origLang             = (business.default_lang as "en" | "he") || "en";
   const origImages           = JSON.stringify(business.gallery_images || []);
+  const origHidden           = JSON.stringify(business.gallery_hidden || []);
   const origShowGallery      = business.show_gallery !== false;
   const origTiktokUrl        = business.tiktok_url || "";
   const origInstagramUrl     = business.instagram_url || "";
@@ -1381,7 +1383,7 @@ function WebsiteSection({
   const origGallerySource    = ((business as unknown as { gallery_source?: string | null }).gallery_source as "images" | "instagram") || "images";
   const origInstagramEmbed   = (business as unknown as { instagram_embed?: string | null }).instagram_embed || "";
   const dirty = slug !== origSlug || defaultLang !== origLang ||
-                JSON.stringify(images) !== origImages || showGallery !== origShowGallery ||
+                JSON.stringify(images) !== origImages || JSON.stringify(hidden) !== origHidden || showGallery !== origShowGallery ||
                 tiktokUrl !== origTiktokUrl || instagramUrl !== origInstagramUrl ||
                 facebookUrl !== origFacebookUrl || whatsappNumber !== origWhatsappNumber ||
                 googleReviewLink !== origGoogleReviewLink || googleMapsUrl !== origGoogleMapsUrl ||
@@ -1454,6 +1456,11 @@ function WebsiteSection({
 
   function removeImage(url: string) {
     setImages(prev => prev.filter(u => u !== url));
+    setHidden(prev => prev.filter(u => u !== url));
+  }
+
+  function toggleHidden(url: string) {
+    setHidden(prev => prev.includes(url) ? prev.filter(u => u !== url) : [...prev, url]);
   }
 
   async function save() {
@@ -1468,6 +1475,7 @@ function WebsiteSection({
       slug:               finalSlug,
       default_lang:       defaultLang,
       gallery_images:     images,
+      gallery_hidden:     hidden.filter(u => images.includes(u)),
       hero_image_url:     images[0] || null,
       show_gallery:       showGallery,
       tiktok_url:         tiktokUrl.trim() || null,
@@ -1668,12 +1676,28 @@ function WebsiteSection({
       <SectionCard title={`Photos (${images.length})`}>
         {images.length > 0 && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-            {images.map((url, i) => (
+            {images.map((url, i) => {
+              const isHidden = hidden.includes(url);
+              return (
               <div key={url} style={{ position: "relative", borderRadius: 10, overflow: "hidden", aspectRatio: "1" }}>
-                <img src={url} alt={`Gallery ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <img src={url} alt={`Gallery ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: isHidden ? 0.45 : 1, filter: isHidden ? "grayscale(0.6)" : "none", transition: "opacity 0.15s, filter 0.15s" }} />
                 {i === 0 && (
                   <div style={{ position: "absolute", top: 4, left: 4, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Cover</div>
                 )}
+                {isHidden && i !== 0 && (
+                  <div style={{ position: "absolute", top: 4, left: 4, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Hidden</div>
+                )}
+                <button
+                  onClick={() => toggleHidden(url)}
+                  title={isHidden ? "Show in gallery" : "Hide from gallery"}
+                  style={{ position: "absolute", top: 4, right: 32, width: 24, height: 24, borderRadius: 6, background: isHidden ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.9)", border: "none", color: isHidden ? "#fff" : "var(--color-dark)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  {isHidden ? (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  ) : (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  )}
+                </button>
                 <button
                   onClick={() => removeImage(url)}
                   style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: 6, background: "rgba(239,68,68,0.85)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -1681,7 +1705,8 @@ function WebsiteSection({
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
         {images.length === 0 && !uploading && (
@@ -1717,7 +1742,7 @@ function WebsiteSection({
           )}
         </button>
         {images.length > 0 && (
-          <p style={{ fontSize: 12, color: "var(--color-muted)", margin: 0 }}>First photo is used as the cover image</p>
+          <p style={{ fontSize: 12, color: "var(--color-muted)", margin: 0 }}>First photo is used as the cover image. Tap the eye to hide a photo from the gallery (it stays available as a cover/background).</p>
         )}
       </SectionCard>
 

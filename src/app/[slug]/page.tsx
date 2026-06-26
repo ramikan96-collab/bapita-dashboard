@@ -23,7 +23,7 @@ export default async function BookPage({ params }: Props) {
 
   const { data: business, error } = await supabase
     .from("businesses")
-    .select("id, name, slug, status, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, business_hours, template_style, tagline, hero_image_url, hero_position, image_focal, gallery_images, about_text, accent_color, external_booking_url, show_gallery, show_about, show_hours, show_location, default_lang, stat_years, stat_clients, stat_rating, google_reviews, google_place_id, show_reviews, section_order, name_he, tagline_he, about_text_he, show_services, show_stats, show_open_status, profile_image_url, show_staff, staff_members, heading_font, body_font, gallery_source, instagram_embed")
+    .select("id, name, slug, status, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, business_hours, template_style, tagline, hero_image_url, hero_position, image_focal, gallery_images, gallery_hidden, about_text, accent_color, external_booking_url, show_gallery, show_about, show_hours, show_location, default_lang, stat_years, stat_clients, stat_rating, google_reviews, google_place_id, show_reviews, section_order, name_he, tagline_he, about_text_he, show_services, show_stats, show_open_status, profile_image_url, show_staff, staff_members, heading_font, body_font, gallery_source, instagram_embed")
     .eq("slug", slug)
     .single();
 
@@ -37,6 +37,13 @@ export default async function BookPage({ params }: Props) {
     .order("display_order");
 
   const b = business as unknown as Business;
+
+  // Hide images flagged as "not in gallery" (e.g. backgrounds/covers) from the
+  // public gallery grid. They stay available as hero/cover via hero_image_url.
+  if (Array.isArray(b.gallery_hidden) && b.gallery_hidden.length > 0 && Array.isArray(b.gallery_images)) {
+    const hidden = new Set(b.gallery_hidden);
+    b.gallery_images = b.gallery_images.filter((url) => !hidden.has(url));
+  }
 
   // Merge Google Places reviews (server-side, 1h cache) with manual testimonials
   if (b.google_place_id) {
