@@ -99,12 +99,26 @@ export async function generateMetadata({ params }: Props) {
     data.tagline ||
     `Book an appointment at ${data.name}${data.address ? `, ${data.address}` : ""}. Fast online booking.`;
   const pageUrl = `https://bapita.com/${slug}`;
-  const image = data.hero_image_url || "https://bapita.com/og-image.png";
+
+  // Per-business brand assets (favicon + share image). Lives under
+  // public/clients/<slug>/. Same per-slug override pattern as customs/.
+  const brandAssetSlugs = new Set(["shimi-azut-hairstudio"]);
+  const brand = brandAssetSlugs.has(slug) ? `/clients/${slug}` : null;
+
+  const image = brand
+    ? `https://bapita.com${brand}/og.png`
+    : data.hero_image_url || "https://bapita.com/og-image.png";
 
   return {
     title,
     description,
     alternates: { canonical: pageUrl },
+    ...(brand && {
+      icons: {
+        icon: [{ url: `${brand}/icon-32.png`, type: "image/png", sizes: "32x32" }],
+        apple: [{ url: `${brand}/icon-180.png`, sizes: "180x180" }],
+      },
+    }),
     openGraph: {
       title,
       description,
