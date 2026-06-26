@@ -10,7 +10,7 @@ import { SectionReviews }  from "../components/SectionReviews";
 import { BookingOverlay }  from "../booking/BookingOverlay";
 import { translations, type Lang } from "../translations";
 import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../utils/openStatus";
-import { IgIcon, WaIcon, StarIcon } from "../_shared/icons";
+import { WaIcon, StarIcon } from "../_shared/icons";
 import { useFadeInOnEnter } from "../_shared/useFadeInOnEnter";
 import { LangToggle } from "../_shared/LangToggle";
 import { ThemeFooter } from "../_shared/ThemeFooter";
@@ -96,7 +96,14 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
       <style>{`
         @keyframes heroReveal { from{transform:scale(1.06)} to{transform:scale(1)} }
         @keyframes fadeUpLoad { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes scrollCue { 0%,100%{transform:translateY(0);opacity:0.55} 50%{transform:translateY(6px);opacity:1} }
         .c-hero-img { animation: heroReveal 1.4s ease-out both; }
+        .c-scrollcue { animation: fadeUpLoad 0.6s ease-out 0.9s both; }
+        .c-scrollcue svg { animation: scrollCue 1.8s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .c-hero-img, .c-eyebrow, .c-pill, .c-name, .c-sub, .c-tagline, .c-ig, .c-hero-cta, .c-scrollcue { animation: none !important; }
+          .c-scrollcue svg { animation: none !important; }
+        }
         .c-eyebrow  { animation: fadeUpLoad 0.6s ease-out 0.2s both; }
         .c-pill     { animation: fadeUpLoad 0.5s ease-out 0.25s both; }
         .c-name     { animation: fadeUpLoad 0.7s ease-out 0.35s both; }
@@ -113,16 +120,16 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
       <LangToggle lang={lang} setLang={setLang} />
 
       {/* Hero — clean / minimal / editorial (IG-matched) */}
-      <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
           <img src={heroImage} alt="" className="c-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: heroFocal, transformOrigin: "center center" }} />
         </div>
         {/* Soft bottom-weighted scrim — keeps the photo bright and airy */}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(34,21,16,0.18) 0%, rgba(34,21,16,0.30) 48%, rgba(34,21,16,0.64) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(34,21,16,0.14) 0%, rgba(34,21,16,0.28) 42%, rgba(34,21,16,0.82) 100%)" }} />
         {/* Faint warm mocha wash — flat tint (cheap, no blend recompute) */}
         <div style={{ position: "absolute", inset: 0, background: accent, opacity: 0.12, pointerEvents: "none" }} />
 
-        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", width: "100%", maxWidth: 620 }}>
+        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px 92px", width: "100%", maxWidth: 620 }}>
           {/* Open status pill — minimal, translucent */}
           {(business.show_open_status !== false && openStatus) && (
             <div className="c-pill" style={{ marginBottom: 22, display: "flex", justifyContent: "center" }}>
@@ -149,23 +156,6 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             </p>
           )}
 
-          {/* Stars strip — minimal */}
-          {business.show_stats !== false && (
-            <div className="c-tagline" style={{ marginTop: 24, display: "flex", justifyContent: "center" }}>
-              {business.google_review_link ? (
-                <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-                  <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <StarIcon key={i} size={13} color="currentColor" />)}</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.88)", letterSpacing: "0.02em" }}>{socialProofText}</span>
-                </a>
-              ) : (
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <StarIcon key={i} size={13} color="currentColor" />)}</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.88)", letterSpacing: "0.02em" }}>{socialProofText}</span>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* CTA — thin outline, tracked */}
           <button className="c-hero-cta" onClick={openFromCTA}
             style={{ marginTop: 30, background: "transparent", border: "1px solid rgba(255,255,255,0.75)", color: "#fff", padding: "15px 42px", borderRadius: 9999, fontSize: 13, fontWeight: 500, cursor: "pointer", letterSpacing: "0.16em", textTransform: "uppercase", transition: "background 0.25s, border-color 0.25s, color 0.25s", fontFamily: "inherit" }}
@@ -175,20 +165,32 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             {t.hero.cta}
           </button>
 
-          {/* IG handle — quiet, at the foot of the fold */}
-          {igHandle && (
-            <div className="c-ig" style={{ marginTop: 26, display: "flex", justifyContent: "center" }}>
-              <a href={business.instagram_url ?? "#"} target="_blank" rel="noopener noreferrer"
-                style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.6)", textDecoration: "none", fontSize: 12.5, fontWeight: 400, letterSpacing: "0.03em", transition: "color 0.2s" }}
-                onMouseEnter={e => { e.currentTarget.style.color = "#fff"; }}
-                onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
-              >
-                <IgIcon size={14} color="currentColor" />{igHandle}
-              </a>
+        </div>
+
+        {/* Scroll cue — signals more below the fold */}
+        <div className="c-scrollcue" style={{ position: "absolute", bottom: 22, insetInlineStart: "50%", transform: "translateX(-50%)", zIndex: 1, pointerEvents: "none" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </div>
+      </section>
+
+      {/* Social proof strip — moved off the hero fold */}
+      {business.show_stats !== false && (
+        <div style={{ background: C.dark, padding: "16px 20px", display: "flex", justifyContent: "center" }}>
+          {business.google_review_link ? (
+            <a href={business.google_review_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
+              <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <StarIcon key={i} size={14} color="currentColor" />)}</span>
+              <span style={{ fontSize: 12.5, fontWeight: 500, color: "rgba(248,242,232,0.92)", letterSpacing: "0.02em" }}>{socialProofText}</span>
+            </a>
+          ) : (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+              <span style={{ display: "flex", gap: 2, color: accent }}>{[0,1,2,3,4].map(i => <StarIcon key={i} size={14} color="currentColor" />)}</span>
+              <span style={{ fontSize: 12.5, fontWeight: 500, color: "rgba(248,242,232,0.92)", letterSpacing: "0.02em" }}>{socialProofText}</span>
             </div>
           )}
         </div>
-      </section>
+      )}
 
       {/* Sections — ordered by business.section_order */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px" }}>
