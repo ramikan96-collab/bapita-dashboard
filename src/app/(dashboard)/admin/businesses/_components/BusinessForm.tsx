@@ -2028,9 +2028,11 @@ function ServicesPanel({ businessId, services, setServices }: {
   const [adding,   setAdding]   = useState(false);
   const [editing,  setEditing]  = useState<Service | null>(null);
   const [name,     setName]     = useState("");
+  const [nameHe,   setNameHe]   = useState("");
   const [price,    setPrice]    = useState("");
   const [duration, setDuration] = useState("");
   const [desc,     setDesc]     = useState("");
+  const [descHe,   setDescHe]   = useState("");
   const [saving,   setSaving]   = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -2039,17 +2041,17 @@ function ServicesPanel({ businessId, services, setServices }: {
     setServices((data as Service[]) || []);
   }
 
-  function startAdd()             { setEditing(null); setName(""); setPrice(""); setDuration(""); setDesc(""); setAdding(true); }
-  function startEdit(s: Service)  { setEditing(s); setName(s.name); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(s.description || ""); setAdding(true); }
+  function startAdd()             { setEditing(null); setName(""); setNameHe(""); setPrice(""); setDuration(""); setDesc(""); setDescHe(""); setAdding(true); }
+  function startEdit(s: Service)  { setEditing(s); setName(s.name); setNameHe(s.name_he || ""); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(s.description || ""); setDescHe(s.description_he || ""); setAdding(true); }
   function cancelAdd()            { setAdding(false); setEditing(null); }
 
   async function saveService() {
     if (!name.trim() || !price || !duration) return;
     setSaving(true);
     if (editing) {
-      await supabase.from("services").update({ name: name.trim(), price: Number(price), duration: Number(duration), description: desc || null }).eq("id", editing.id);
+      await supabase.from("services").update({ name: name.trim(), name_he: nameHe.trim() || null, price: Number(price), duration: Number(duration), description: desc || null, description_he: descHe.trim() || null }).eq("id", editing.id);
     } else {
-      await supabase.from("services").insert({ business_id: businessId, name: name.trim(), price: Number(price), duration: Number(duration), description: desc || null, active: true, display_order: services.length + 1 });
+      await supabase.from("services").insert({ business_id: businessId, name: name.trim(), name_he: nameHe.trim() || null, price: Number(price), duration: Number(duration), description: desc || null, description_he: descHe.trim() || null, active: true, display_order: services.length + 1 });
     }
     await reload();
     setSaving(false); setAdding(false); setEditing(null);
@@ -2103,7 +2105,11 @@ function ServicesPanel({ businessId, services, setServices }: {
               <div><label style={labelStyle}>Price (₪) *</label><input value={price} onChange={e => setPrice(e.target.value)} type="number" placeholder="80" style={inputStyle} /></div>
               <div><label style={labelStyle}>Duration (min) *</label><input value={duration} onChange={e => setDuration(e.target.value)} type="number" placeholder="30" style={inputStyle} /></div>
             </div>
-            <div><label style={labelStyle}>Description (optional)</label><input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Short description" style={inputStyle} /></div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              <div><label style={labelStyle}>Description (EN)</label><input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Short description" style={inputStyle} /></div>
+              <div><label style={labelStyle}>Description (HE) — תיאור</label><input value={descHe} onChange={e => setDescHe(e.target.value)} placeholder="תיאור קצר" dir="rtl" style={inputStyle} /></div>
+            </div>
+            <div><label style={labelStyle}>Name (HE) — שם בעברית</label><input value={nameHe} onChange={e => setNameHe(e.target.value)} placeholder="תספורת" dir="rtl" style={inputStyle} /></div>
             <div style={{ display:"flex", gap:8 }}>
               <button onClick={saveService} disabled={saving} style={{ height:34, padding:"0 16px", borderRadius:9, border:"none", background:"var(--color-amber)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                 {saving ? "Saving…" : editing ? "Update" : "Add Service"}
