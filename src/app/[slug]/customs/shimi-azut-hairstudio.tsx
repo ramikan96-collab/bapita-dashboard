@@ -96,14 +96,9 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
       <style>{`
         @keyframes heroReveal { from{transform:scale(1.06)} to{transform:scale(1)} }
         @keyframes fadeUpLoad { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes scrollCue { 0%,100%{transform:translateY(0);opacity:0.55} 50%{transform:translateY(6px);opacity:1} }
         .c-hero-img { animation: heroReveal 1.4s ease-out both; }
-        .c-scrollcue { display: none; animation: fadeUpLoad 0.6s ease-out 0.9s both; }
-        @media (min-width: 768px) { .c-scrollcue { display: block; } }
-        .c-scrollcue svg { animation: scrollCue 1.8s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) {
-          .c-hero-img, .c-eyebrow, .c-pill, .c-name, .c-sub, .c-tagline, .c-ig, .c-hero-cta, .c-scrollcue { animation: none !important; }
-          .c-scrollcue svg { animation: none !important; }
+          .c-hero-img, .c-eyebrow, .c-pill, .c-name, .c-sub, .c-tagline, .c-ig, .c-hero-cta { animation: none !important; }
         }
         .c-eyebrow  { animation: fadeUpLoad 0.6s ease-out 0.2s both; }
         .c-pill     { animation: fadeUpLoad 0.5s ease-out 0.25s both; }
@@ -132,7 +127,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
 
         {/* Open status pill — top corner, opposite the lang toggle */}
         {(business.show_open_status !== false && openStatus) && (
-          <div className="c-pill" style={{ position: "absolute", top: 18, insetInlineStart: 16, zIndex: 2 }}>
+          <div className="c-pill" style={{ position: "absolute", top: 18, left: 16, zIndex: 2 }}>
             <span style={{ background: "rgba(255,255,255,0.14)", backdropFilter: "blur(8px)", color: "rgba(255,255,255,0.92)", borderRadius: 9999, padding: "5px 14px", fontSize: 11.5, fontWeight: 500, letterSpacing: "0.04em", display: "inline-flex", alignItems: "center", gap: 7 }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#22c55e" : "#bbb", display: "inline-block" }} />
               {openStatus.text}
@@ -140,7 +135,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
           </div>
         )}
 
-        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px 92px", width: "100%", maxWidth: 620 }}>
+        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", paddingBottom: "calc(40px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 620 }}>
           {/* Wordmark — thin, tracked, bilingual lockup like his logo */}
           <h1 className="c-name" style={{ fontFamily: headingFont, fontWeight: 300, fontSize: "clamp(2.3rem, 8vw, 4.6rem)", color: "#fff", lineHeight: 1.06, letterSpacing: isRtl ? "0.02em" : "0.16em", textTransform: isRtl ? "none" : "uppercase", margin: 0 }}>
             {displayName}
@@ -166,13 +161,6 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             {t.hero.cta}
           </button>
 
-        </div>
-
-        {/* Scroll cue — signals more below the fold */}
-        <div className="c-scrollcue" style={{ position: "absolute", bottom: 22, left: "50%", transform: "translateX(-50%)", zIndex: 1, pointerEvents: "none" }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
         </div>
       </section>
 
