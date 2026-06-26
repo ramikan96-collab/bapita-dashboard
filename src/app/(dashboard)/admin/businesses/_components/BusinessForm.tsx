@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
 import { findPlaceId } from "@/app/actions/find-place-id";
 import { syncStaffTable, loadStaff } from "@/lib/staff";
+import { FONT_CATALOG } from "@/app/[slug]/_shared/fonts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -107,6 +108,10 @@ interface FormData {
   stat_clients:       string;
   stat_rating:        string;
   google_place_id:    string;
+  heading_font:       string;
+  body_font:          string;
+  gallery_source:     string;
+  instagram_embed:    string;
 }
 
 interface GalleryItem { url: string; uploading?: boolean; }
@@ -134,6 +139,7 @@ const EMPTY_FORM: FormData = {
   plan_booking_limit: "", plan_start_date: "", plan_renewal_date: "", plan_notes: "",
   stat_years: "", stat_clients: "", stat_rating: "",
   google_place_id: "",
+  heading_font: "", body_font: "", gallery_source: "images", instagram_embed: "",
 };
 
 interface Props {
@@ -222,6 +228,10 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           stat_clients:       b.stat_clients != null ? String(b.stat_clients) : "",
           stat_rating:        b.stat_rating          || "",
           google_place_id:    (b as unknown as { google_place_id?: string | null }).google_place_id || "",
+          heading_font:       (b as unknown as { heading_font?: string | null }).heading_font || "",
+          body_font:          (b as unknown as { body_font?: string | null }).body_font || "",
+          gallery_source:     (b as unknown as { gallery_source?: string | null }).gallery_source || "images",
+          instagram_embed:    (b as unknown as { instagram_embed?: string | null }).instagram_embed || "",
         });
         // Merge hero + gallery_images
         const imgs: string[]  = b.gallery_images || [];
@@ -390,6 +400,10 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       stat_rating:        form.stat_rating          || null,
       business_hours:     hours,
       google_place_id:    form.google_place_id.trim() || null,
+      heading_font:       form.heading_font       || null,
+      body_font:          form.body_font           || null,
+      gallery_source:     form.gallery_source      || "images",
+      instagram_embed:    form.instagram_embed     || null,
     };
 
     if (mode === "new") {
@@ -491,6 +505,10 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       stat_rating:        form.stat_rating          || null,
       business_hours:     hours,
       google_place_id:    form.google_place_id.trim() || null,
+      heading_font:       form.heading_font       || null,
+      body_font:          form.body_font           || null,
+      gallery_source:     form.gallery_source      || "images",
+      instagram_embed:    form.instagram_embed     || null,
     };
     for (const v of variants) {
       const { data: created, error: e } = await supabase.from("businesses").insert({
@@ -698,6 +716,36 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                           Dashboard access + notifications
                         </div>
                       </Field>
+                    </Row>
+                    <Row>
+                      <Field label="Heading font">
+                        <select value={form.heading_font} onChange={e => set("heading_font", e.target.value)} style={inputStyle}>
+                          <option value="">Theme default</option>
+                          {FONT_CATALOG.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+                        </select>
+                      </Field>
+                      <Field label="Body font">
+                        <select value={form.body_font} onChange={e => set("body_font", e.target.value)} style={inputStyle}>
+                          <option value="">Theme default</option>
+                          {FONT_CATALOG.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+                        </select>
+                      </Field>
+                    </Row>
+                    <Row>
+                      <Field label="Gallery content">
+                        <select value={form.gallery_source} onChange={e => set("gallery_source", e.target.value)} style={inputStyle}>
+                          <option value="images">Gallery images</option>
+                          <option value="instagram">Instagram feed</option>
+                        </select>
+                      </Field>
+                      {form.gallery_source === "instagram" && (
+                        <Field label="Instagram feed embed">
+                          <input value={form.instagram_embed} onChange={e => set("instagram_embed", e.target.value)} placeholder="LightWidget embed URL or ID" style={inputStyle} />
+                          <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
+                            LightWidget embed link or ID — not the profile URL
+                          </div>
+                        </Field>
+                      )}
                     </Row>
                     {!cloning && confirmClone && (
                       <div style={{ background:"#FEF3C7", borderRadius:11, padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, border:"1px solid #FDE68A" }}>

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/components/Toast";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
+import { FONT_CATALOG } from "@/app/[slug]/_shared/fonts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1350,6 +1351,10 @@ function WebsiteSection({
   const [showStaff, setShowStaff]       = useState((business as unknown as { show_staff?: boolean | null }).show_staff !== false);
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>((business as unknown as { staff_members?: StaffMember[] | null }).staff_members || []);
   const [staffUploading, setStaffUploading] = useState<Record<string, boolean>>({});
+  const [headingFont, setHeadingFont]       = useState<string>((business as unknown as { heading_font?: string | null }).heading_font || "");
+  const [bodyFont, setBodyFont]             = useState<string>((business as unknown as { body_font?: string | null }).body_font || "");
+  const [gallerySource, setGallerySource]   = useState<"images" | "instagram">(((business as unknown as { gallery_source?: string | null }).gallery_source as "images" | "instagram") || "images");
+  const [instagramEmbed, setInstagramEmbed] = useState<string>((business as unknown as { instagram_embed?: string | null }).instagram_embed || "");
   const inputRef = useRef<HTMLInputElement>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1368,13 +1373,19 @@ function WebsiteSection({
   const origProfileImageUrl  = (business as unknown as { profile_image_url?: string | null }).profile_image_url || null;
   const origShowStaff        = (business as unknown as { show_staff?: boolean | null }).show_staff !== false;
   const origStaffMembers     = JSON.stringify((business as unknown as { staff_members?: StaffMember[] | null }).staff_members || []);
+  const origHeadingFont      = (business as unknown as { heading_font?: string | null }).heading_font || "";
+  const origBodyFont         = (business as unknown as { body_font?: string | null }).body_font || "";
+  const origGallerySource    = ((business as unknown as { gallery_source?: string | null }).gallery_source as "images" | "instagram") || "images";
+  const origInstagramEmbed   = (business as unknown as { instagram_embed?: string | null }).instagram_embed || "";
   const dirty = slug !== origSlug || defaultLang !== origLang ||
                 JSON.stringify(images) !== origImages || showGallery !== origShowGallery ||
                 tiktokUrl !== origTiktokUrl || instagramUrl !== origInstagramUrl ||
                 facebookUrl !== origFacebookUrl || whatsappNumber !== origWhatsappNumber ||
                 googleReviewLink !== origGoogleReviewLink || googleMapsUrl !== origGoogleMapsUrl ||
                 wazeUrl !== origWazeUrl || profileImageUrl !== origProfileImageUrl ||
-                showStaff !== origShowStaff || JSON.stringify(staffMembers) !== origStaffMembers;
+                showStaff !== origShowStaff || JSON.stringify(staffMembers) !== origStaffMembers ||
+                headingFont !== origHeadingFont || bodyFont !== origBodyFont ||
+                gallerySource !== origGallerySource || instagramEmbed !== origInstagramEmbed;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty]);
@@ -1466,6 +1477,10 @@ function WebsiteSection({
       profile_image_url:  profileImageUrl || null,
       show_staff:         showStaff,
       staff_members:      staffMembers,
+      heading_font:       headingFont || null,
+      body_font:          bodyFont || null,
+      gallery_source:     gallerySource || null,
+      instagram_embed:    instagramEmbed.trim() || null,
     }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast(getErrorMessage(error), "error"); return; }
@@ -1587,6 +1602,58 @@ function WebsiteSection({
             <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>Visible when at least one photo is added</div>
           </div>
           <Toggle on={showGallery} onChange={() => setShowGallery(g => !g)} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>Gallery content</div>
+            <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>What the gallery section shows</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", borderRadius: 9999, padding: "3px", gap: 2, background: "var(--color-cream-2)", flexShrink: 0 }}>
+            {(["images", "instagram"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setGallerySource(s)}
+                style={{ padding: "6px 12px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: gallerySource === s ? "var(--color-amber)" : "transparent", color: gallerySource === s ? "#fff" : "var(--color-muted)" }}
+              >
+                {s === "images" ? "Gallery images" : "Instagram feed"}
+              </button>
+            ))}
+          </div>
+        </div>
+        {gallerySource === "instagram" && (
+          <InputField
+            label="Instagram feed embed"
+            value={instagramEmbed}
+            onChange={setInstagramEmbed}
+            placeholder="https://lightwidget.com/widgets/..."
+            hint="LightWidget widget embed URL or ID — not the Instagram profile URL"
+          />
+        )}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-dark">Heading font</label>
+          <select
+            value={headingFont}
+            onChange={(e) => setHeadingFont(e.target.value)}
+            style={{ height: 44, padding: "0 13px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box", transition: "border-color 0.15s", cursor: "pointer" }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+          >
+            <option value="">Theme default</option>
+            {FONT_CATALOG.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-dark">Body font</label>
+          <select
+            value={bodyFont}
+            onChange={(e) => setBodyFont(e.target.value)}
+            style={{ height: 44, padding: "0 13px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box", transition: "border-color 0.15s", cursor: "pointer" }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
+          >
+            <option value="">Theme default</option>
+            {FONT_CATALOG.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+          </select>
         </div>
       </SectionCard>
 
