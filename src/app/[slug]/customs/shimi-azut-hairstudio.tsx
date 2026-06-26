@@ -121,7 +121,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
           <img src={heroImage} alt="" className="c-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: heroFocal, transformOrigin: "center center" }} />
         </div>
         {/* Soft bottom-weighted scrim — keeps the photo bright and airy */}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(34,21,16,0.14) 0%, rgba(34,21,16,0.28) 42%, rgba(34,21,16,0.82) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(34,21,16,0.14) 0%, rgba(34,21,16,0.30) 40%, rgba(34,21,16,0.90) 100%)" }} />
         {/* Faint warm mocha wash — flat tint (cheap, no blend recompute) */}
         <div style={{ position: "absolute", inset: 0, background: accent, opacity: 0.12, pointerEvents: "none" }} />
 
@@ -135,28 +135,28 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
           </div>
         )}
 
-        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", paddingBottom: "calc(40px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 620 }}>
-          {/* Wordmark — thin, tracked, bilingual lockup like his logo */}
-          <h1 className="c-name" style={{ fontFamily: headingFont, fontWeight: 300, fontSize: "clamp(2.3rem, 8vw, 4.6rem)", color: "#fff", lineHeight: 1.06, letterSpacing: isRtl ? "0.02em" : "0.16em", textTransform: isRtl ? "none" : "uppercase", margin: 0 }}>
+        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", paddingBottom: "calc(28px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 620 }}>
+          {/* Wordmark — tracked, bilingual lockup like his logo */}
+          <h1 className="c-name" style={{ fontFamily: headingFont, fontWeight: 400, fontSize: "clamp(2.3rem, 8vw, 4.6rem)", color: "#fff", lineHeight: 1.06, letterSpacing: isRtl ? "0.02em" : "0.16em", textTransform: isRtl ? "none" : "uppercase", margin: 0, textShadow: "0 2px 18px rgba(0,0,0,0.5)" }}>
             {displayName}
           </h1>
           {secondaryName && (
-            <div className="c-sub" style={{ marginTop: 14, color: "rgba(255,255,255,0.7)", fontSize: "clamp(0.7rem, 1.6vw, 0.82rem)", fontWeight: 400, letterSpacing: isRtl ? "0.22em" : "0.05em", textTransform: isRtl ? "uppercase" : "none" }}>
+            <div className="c-sub" style={{ marginTop: 10, color: "rgba(255,255,255,0.78)", fontSize: "clamp(0.7rem, 1.6vw, 0.82rem)", fontWeight: 400, letterSpacing: isRtl ? "0.22em" : "0.05em", textTransform: isRtl ? "uppercase" : "none", textShadow: "0 1px 12px rgba(0,0,0,0.5)" }}>
               {secondaryName}
             </div>
           )}
 
           {displayTag && (
-            <p className="c-tagline" style={{ fontSize: "clamp(0.95rem, 2.4vw, 1.12rem)", color: "rgba(255,255,255,0.8)", fontWeight: 300, lineHeight: 1.6, margin: "20px auto 0", maxWidth: 420 }}>
+            <p className="c-tagline" style={{ fontSize: "clamp(0.95rem, 2.4vw, 1.12rem)", color: "rgba(255,255,255,0.88)", fontWeight: 400, lineHeight: 1.55, margin: "12px auto 0", maxWidth: 420, textShadow: "0 1px 12px rgba(0,0,0,0.5)" }}>
               {displayTag}
             </p>
           )}
 
-          {/* CTA — thin outline, tracked */}
+          {/* CTA — solid gold, matches the floating button + brand accent */}
           <button className="c-hero-cta" onClick={openFromCTA}
-            style={{ marginTop: 30, background: "transparent", border: "1px solid rgba(255,255,255,0.75)", color: "#fff", padding: "15px 42px", borderRadius: 9999, fontSize: 13, fontWeight: 500, cursor: "pointer", letterSpacing: "0.16em", textTransform: "uppercase", transition: "background 0.25s, border-color 0.25s, color 0.25s", fontFamily: "inherit" }}
-            onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.borderColor = accent; e.currentTarget.style.color = "#fff"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.75)"; e.currentTarget.style.color = "#fff"; }}
+            style={{ marginTop: 22, background: accent, border: "none", color: "#fff", padding: "16px 46px", borderRadius: 9999, fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", transition: "background 0.25s, transform 0.2s", fontFamily: "inherit", boxShadow: "0 6px 22px rgba(0,0,0,0.28)" }}
+            onMouseEnter={e => { e.currentTarget.style.background = C.dark; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = accent; e.currentTarget.style.transform = "translateY(0)"; }}
           >
             {t.hero.cta}
           </button>
@@ -325,7 +325,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
         />
       </div>
 
-      <FloatingCTA shopName={displayName} bookLabel={t.hero.cta} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
+      <FloatingCTA shopName="" bookLabel={t.hero.cta} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
 
       {waNumber && (
         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"

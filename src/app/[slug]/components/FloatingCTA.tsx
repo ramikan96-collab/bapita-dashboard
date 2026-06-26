@@ -44,7 +44,7 @@ export function FloatingCTA({ shopName, bookLabel, onBook, bgColor, textColor }:
           gap:6, boxShadow:"0 4px 20px rgba(0,0,0,0.18)",
         }}
       >
-        {shopName} · {bookLabel}
+        {shopName ? `${shopName} · ${bookLabel}` : bookLabel}
       </button>
     </div>
   );
