@@ -14,6 +14,9 @@ import { IgIcon, WaIcon, StarIcon } from "../../_shared/icons";
 import { useFadeInOnEnter } from "../../_shared/useFadeInOnEnter";
 import { LangToggle } from "../../_shared/LangToggle";
 import { ThemeFooter } from "../../_shared/ThemeFooter";
+import { resolveFont } from "../../_shared/fonts";
+import { FontLoader } from "../../_shared/FontLoader";
+import { InstagramFeed } from "../../_shared/InstagramFeed";
 
 const C = { bg: "#F8F2E8", dark: "#221510", gold: "#B8862A", cream2: "#F0E8D8" };
 const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews"];
@@ -57,6 +60,10 @@ export function ClassicPage({ business, services }: Props) {
   const cityLabel   = getCityFromAddress(business.address);
   const waNumber    = business.whatsapp_number?.replace(/\D/g, "");
   const displayName = (isRtl && business.name_he) ? business.name_he : business.name;
+  const headingFont = resolveFont(business.heading_font, "'Playfair Display', serif");
+  const bodyFont    = resolveFont(business.body_font, "'Heebo', sans-serif");
+  const showInstaGallery = business.show_gallery !== false && business.gallery_source === "instagram" && !!business.instagram_embed;
+  const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
 
   const socialProofText = (() => {
     if (business.stat_rating && business.stat_clients)
@@ -75,7 +82,8 @@ export function ClassicPage({ business, services }: Props) {
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
   return (
-    <div dir={isRtl ? "rtl" : "ltr"} style={{ background: C.bg, minHeight: "100svh", fontFamily: "'Heebo', sans-serif", color: C.dark }}>
+    <div dir={isRtl ? "rtl" : "ltr"} style={{ background: C.bg, minHeight: "100svh", fontFamily: bodyFont, color: C.dark }}>
+      <FontLoader fonts={[business.heading_font, business.body_font]} />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
         @keyframes kenBurns   { 0%{transform:scale(1.0)} 100%{transform:scale(1.06)} }
@@ -113,7 +121,7 @@ export function ClassicPage({ business, services }: Props) {
               </span>
             ) : null}
           </div>
-          <h1 className="c-name" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: "clamp(2.25rem, 8vw, 4.5rem)", color: "#fff", lineHeight: 1.08, marginBottom: 14 }}>
+          <h1 className="c-name" style={{ fontFamily: headingFont, fontWeight: 700, fontSize: "clamp(2.25rem, 8vw, 4.5rem)", color: "#fff", lineHeight: 1.08, marginBottom: 14 }}>
             {displayName}
           </h1>
           {displayTag && (
@@ -230,7 +238,7 @@ export function ClassicPage({ business, services }: Props) {
                           }
                         </div>
                         <div>
-                          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: C.dark }}>{member.name}</div>
+                          <div style={{ fontFamily: headingFont, fontSize: 15, fontWeight: 700, color: C.dark }}>{member.name}</div>
                           {member.role && <div style={{ fontSize: 12, color: C.dark, opacity: 0.55, marginTop: 3 }}>{member.role}</div>}
                         </div>
                       </div>
@@ -239,10 +247,14 @@ export function ClassicPage({ business, services }: Props) {
                 </section>
               ) : null;
             case "gallery":
-              return business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 ? (
+              return (showInstaGallery || showImageGallery) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} />
-                  <div style={{ marginTop: 28 }}><SectionGallery photos={business.gallery_images} mobileCols={2} desktopCols={2} initialCount={4} desktopInitialCount={4} focal={business.image_focal ?? undefined} altLabel={displayName} /></div>
+                  <div style={{ marginTop: 28 }}>
+                    {showInstaGallery
+                      ? <InstagramFeed embed={business.instagram_embed!} radius={10} />
+                      : <SectionGallery photos={business.gallery_images!} mobileCols={2} desktopCols={2} initialCount={4} desktopInitialCount={4} focal={business.image_focal ?? undefined} altLabel={displayName} />}
+                  </div>
                 </section>
               ) : null;
             case "reviews":

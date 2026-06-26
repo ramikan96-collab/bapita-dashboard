@@ -14,17 +14,20 @@ import { IgIcon, WaIcon, StarIcon } from "../../_shared/icons";
 import { useFadeInOnEnter } from "../../_shared/useFadeInOnEnter";
 import { LangToggle } from "../../_shared/LangToggle";
 import { ThemeFooter } from "../../_shared/ThemeFooter";
+import { resolveFont } from "../../_shared/fonts";
+import { FontLoader } from "../../_shared/FontLoader";
+import { InstagramFeed } from "../../_shared/InstagramFeed";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&q=80";
 
 const P = { bg: "#FFFFFF", text: "#111111", muted: "#6B7280", surface: "#F9F9F9", border: "#E5E5E5", panel: "#141414" };
 const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews"];
 
-function SectionTitle({ title, accent }: { title: string; accent: string }) {
+function SectionTitle({ title, accent, headingFont }: { title: string; accent: string; headingFont: string }) {
   const { ref, visible } = useFadeInOnEnter();
   return (
     <div ref={ref} style={{ marginBottom: 28 }}>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: P.text, letterSpacing: "-0.02em", marginBottom: 10 }}>{title}</h2>
+      <h2 style={{ fontFamily: headingFont, fontSize: 22, fontWeight: 800, color: P.text, letterSpacing: "-0.02em", marginBottom: 10 }}>{title}</h2>
       <div style={{ height: 2, borderRadius: 2, background: accent, width: visible ? 28 : 0, transition: "width 0.55s cubic-bezier(0.4,0,0.2,1)" }} />
     </div>
   );
@@ -60,6 +63,10 @@ export function CleanPage({ business, services }: Props) {
   const igHandle     = getInstagramHandle(business.instagram_url);
   const cityLabel    = getCityFromAddress(business.address);
   const displayName  = (isRtl && business.name_he) ? business.name_he : business.name;
+  const headingFont = resolveFont(business.heading_font, "'Plus Jakarta Sans', sans-serif");
+  const bodyFont    = resolveFont(business.body_font, "'Plus Jakarta Sans', sans-serif");
+  const showInstaGallery = business.show_gallery !== false && business.gallery_source === "instagram" && !!business.instagram_embed;
+  const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
 
   const socialProofText = (() => {
     if (business.stat_rating && business.stat_clients)
@@ -78,7 +85,8 @@ export function CleanPage({ business, services }: Props) {
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
   return (
-    <div dir={isRtl ? "rtl" : "ltr"} style={{ background: P.bg, minHeight: "100svh", fontFamily: "'Plus Jakarta Sans', sans-serif", color: P.text }}>
+    <div dir={isRtl ? "rtl" : "ltr"} style={{ background: P.bg, minHeight: "100svh", fontFamily: bodyFont, color: P.text }}>
+      <FontLoader fonts={[business.heading_font, business.body_font]} />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         @keyframes fadeUp    { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
@@ -140,7 +148,7 @@ export function CleanPage({ business, services }: Props) {
           </div>
 
           {/* Name */}
-          <h1 className="cl-name" style={{ fontWeight: 800, fontSize: "clamp(2.4rem, 5vw, 4.2rem)", color: "#fff", lineHeight: 0.95, letterSpacing: "-0.03em", marginBottom: 16, marginTop: 0 }}>
+          <h1 className="cl-name" style={{ fontFamily: headingFont, fontWeight: 800, fontSize: "clamp(2.4rem, 5vw, 4.2rem)", color: "#fff", lineHeight: 0.95, letterSpacing: "-0.03em", marginBottom: 16, marginTop: 0 }}>
             {displayName}
           </h1>
 
@@ -210,7 +218,7 @@ export function CleanPage({ business, services }: Props) {
             case "services":
               return business.show_services !== false ? (
                 <section key={key} ref={servicesRef} style={{ paddingTop: 52 }}>
-                  <SectionTitle title={t.services.title} accent={accent} />
+                  <SectionTitle title={t.services.title} accent={accent} headingFont={headingFont} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {services.map((s, i) => {
                       const hovered = hoveredCard === s.id;
@@ -247,7 +255,7 @@ export function CleanPage({ business, services }: Props) {
             case "about":
               return business.show_about !== false && displayAbout ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.about.title} accent={accent} />
+                  <SectionTitle title={t.about.title} accent={accent} headingFont={headingFont} />
                   {(business.profile_image_url || business.hero_image_url) && (
                     <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
                       <img src={business.profile_image_url || business.hero_image_url || ""} alt={displayName} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${P.border}`, flexShrink: 0 }} />
@@ -260,7 +268,7 @@ export function CleanPage({ business, services }: Props) {
             case "staff":
               return business.show_staff !== false && business.staff_members && business.staff_members.length > 0 ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.staff.title} accent={accent} />
+                  <SectionTitle title={t.staff.title} accent={accent} headingFont={headingFont} />
                   <div className="cl-staff-grid" style={{ marginTop: 20 }}>
                     {business.staff_members.map(member => (
                       <div key={member.id} style={{ background: P.bg, border: `1px solid ${P.border}`, borderRadius: 10, padding: "16px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
@@ -280,16 +288,18 @@ export function CleanPage({ business, services }: Props) {
                 </section>
               ) : null;
             case "gallery":
-              return business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 ? (
+              return (showInstaGallery || showImageGallery) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.gallery.title} accent={accent} />
-                  <SectionGallery photos={business.gallery_images} borderRadius={10} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} />
+                  <SectionTitle title={t.gallery.title} accent={accent} headingFont={headingFont} />
+                  {showInstaGallery
+                    ? <InstagramFeed embed={business.instagram_embed!} radius={10} />
+                    : <SectionGallery photos={business.gallery_images!} borderRadius={10} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} />}
                 </section>
               ) : null;
             case "reviews":
               return business.show_reviews !== false && ((business.google_reviews && business.google_reviews.length > 0) || !!business.google_review_link) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.reviews.title} accent={accent} />
+                  <SectionTitle title={t.reviews.title} accent={accent} headingFont={headingFont} />
                   <div style={{ marginTop: 20 }}>
                     <SectionReviews
                       reviews={business.google_reviews ?? []}
@@ -306,14 +316,14 @@ export function CleanPage({ business, services }: Props) {
             case "hours":
               return business.show_hours !== false && business.business_hours ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.hours.title} accent={accent} />
+                  <SectionTitle title={t.hours.title} accent={accent} headingFont={headingFont} />
                   <SectionHours hours={business.business_hours} darkColor={P.text} accentColor={accent} mutedColor={P.muted} dayLabels={t.days} closedLabel={t.hours.closed} />
                 </section>
               ) : null;
             case "location":
               return business.show_location !== false && business.address ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.location.title} accent={accent} />
+                  <SectionTitle title={t.location.title} accent={accent} headingFont={headingFont} />
                   <SectionLocation address={business.address} darkColor={P.text} accentColor={accent} directionsLabel={t.location.directions} googleMapsUrl={business.google_maps_url} wazeUrl={business.waze_url} />
                 </section>
               ) : null;

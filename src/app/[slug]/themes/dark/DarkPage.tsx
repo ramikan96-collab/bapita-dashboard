@@ -14,6 +14,9 @@ import { IgIcon, WaIcon, StarIcon } from "../../_shared/icons";
 import { useFadeInOnEnter } from "../../_shared/useFadeInOnEnter";
 import { LangToggle } from "../../_shared/LangToggle";
 import { ThemeFooter } from "../../_shared/ThemeFooter";
+import { resolveFont } from "../../_shared/fonts";
+import { FontLoader } from "../../_shared/FontLoader";
+import { InstagramFeed } from "../../_shared/InstagramFeed";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=1200&q=80";
 const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews"];
@@ -41,7 +44,7 @@ function GoldDivider({ accent }: { accent: string }) {
 
 // ─── Section heading with wipe reveal ────────────────────────────────────────
 
-function DarkSectionTitle({ title, accent, isRtl }: { title: string; accent: string; isRtl: boolean }) {
+function DarkSectionTitle({ title, accent, isRtl, headingFont }: { title: string; accent: string; isRtl: boolean; headingFont: string }) {
   const { ref, visible } = useFadeInOnEnter(0.2);
   return (
     <div ref={ref} style={{ marginBottom: 28, paddingTop: 44 }}>
@@ -49,7 +52,7 @@ function DarkSectionTitle({ title, accent, isRtl }: { title: string; accent: str
         <div style={{ width: 3, height: 20, background: accent, borderRadius: 2, flexShrink: 0 }} />
         <h2
           style={{
-            fontFamily: "'Oswald', sans-serif",
+            fontFamily: headingFont,
             fontWeight: 700,
             fontSize: 24,
             letterSpacing: visible ? "0.07em" : "0.01em",
@@ -111,6 +114,10 @@ export function DarkPage({ business, services }: Props) {
   const cityLabel    = getCityFromAddress(business.address);
   const displayName  = (isRtl && business.name_he) ? business.name_he : business.name;
   const displayTag   = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
+  const headingFont = resolveFont(business.heading_font, "'Oswald', sans-serif");
+  const bodyFont    = resolveFont(business.body_font, "'Inter', system-ui, sans-serif");
+  const showInstaGallery = business.show_gallery !== false && business.gallery_source === "instagram" && !!business.instagram_embed;
+  const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
   const displayAbout = (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
   function openFromService(s: Service) { setSelectedService(s); setOverlayOpen(true); }
@@ -118,7 +125,8 @@ export function DarkPage({ business, services }: Props) {
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
   return (
-    <div dir={isRtl ? "rtl" : "ltr"} style={{ background: D.bg, minHeight: "100svh", color: D.text, fontFamily: "'Inter', system-ui, sans-serif", position: "relative", overflowX: "hidden" }}>
+    <div dir={isRtl ? "rtl" : "ltr"} style={{ background: D.bg, minHeight: "100svh", color: D.text, fontFamily: bodyFont, position: "relative", overflowX: "hidden" }}>
+      <FontLoader fonts={[business.heading_font, business.body_font]} />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap');
         @keyframes kenBurns   { 0%{transform:scale(1.0)} 100%{transform:scale(1.07)} }
@@ -152,10 +160,10 @@ export function DarkPage({ business, services }: Props) {
 
       {/* Sticky header */}
       <div className="dk-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(13,13,13,0.92)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${accent}25`, display: "flex", alignItems: "center", gap: 10, paddingInlineStart: 24, paddingInlineEnd: 14 }}>
-        <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, color: D.text, letterSpacing: "0.08em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayName}</span>
+        <span style={{ fontFamily: headingFont, fontWeight: 600, fontSize: 16, color: D.text, letterSpacing: "0.08em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayName}</span>
         <LangToggle lang={lang} setLang={setLang} variant="bordered" inline />
         <button onClick={openFromCTA}
-          style={{ fontFamily: "'Oswald', sans-serif", flexShrink: 0, height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
+          style={{ fontFamily: headingFont, flexShrink: 0, height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
           onMouseEnter={e => { e.currentTarget.style.background = "#fff"; }}
           onMouseLeave={e => { e.currentTarget.style.background = accent; }}
         >{t.hero.bookNow}</button>
@@ -178,11 +186,11 @@ export function DarkPage({ business, services }: Props) {
               <span style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", color: "#fff", borderRadius: 9999, padding: "5px 16px", fontSize: 12, fontWeight: 600, border: "1px solid rgba(255,255,255,0.14)" }}>📍 {cityLabel}</span>
             ) : null}
           </div>
-          <h1 className="dk-name" style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: "clamp(3rem, 11vw, 7rem)", color: "#fff", lineHeight: 0.92, letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: 18 }}>
+          <h1 className="dk-name" style={{ fontFamily: headingFont, fontWeight: 700, fontSize: "clamp(3rem, 11vw, 7rem)", color: "#fff", lineHeight: 0.92, letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: 18 }}>
             {displayName}
           </h1>
           {displayTag && (
-            <p className="dk-tag" style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 400, fontSize: "clamp(0.9rem, 2.2vw, 1.1rem)", color: accent, lineHeight: 1.5, letterSpacing: "0.1em", marginBottom: 24, textTransform: "uppercase" }}>
+            <p className="dk-tag" style={{ fontFamily: headingFont, fontWeight: 400, fontSize: "clamp(0.9rem, 2.2vw, 1.1rem)", color: accent, lineHeight: 1.5, letterSpacing: "0.1em", marginBottom: 24, textTransform: "uppercase" }}>
               {displayTag}
             </p>
           )}
@@ -212,7 +220,7 @@ export function DarkPage({ business, services }: Props) {
           </div>
           )}
           <button className="dk-cta" onClick={openFromCTA}
-            style={{ fontFamily: "'Oswald', sans-serif", background: accent, border: `2px solid ${accent}`, color: D.bg, padding: "15px 48px", borderRadius: 2, fontSize: 16, fontWeight: 700, cursor: "pointer", letterSpacing: "0.1em", textTransform: "uppercase", transition: "background 0.2s, color 0.2s, transform 0.15s" }}
+            style={{ fontFamily: headingFont, background: accent, border: `2px solid ${accent}`, color: D.bg, padding: "15px 48px", borderRadius: 2, fontSize: 16, fontWeight: 700, cursor: "pointer", letterSpacing: "0.1em", textTransform: "uppercase", transition: "background 0.2s, color 0.2s, transform 0.15s" }}
             onMouseEnter={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = accent; e.currentTarget.style.transform = "translateY(-2px)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = D.bg; e.currentTarget.style.transform = "translateY(0)"; }}
           >
@@ -236,7 +244,7 @@ export function DarkPage({ business, services }: Props) {
                 <div key={key}>
                   <GoldDivider accent={accent} />
                   <section ref={servicesRef} style={{ paddingTop: 0 }}>
-                    <DarkSectionTitle title={t.services.title} accent={accent} isRtl={isRtl} />
+                    <DarkSectionTitle title={t.services.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {services.map((s, i) => {
                         const hovered = hoveredCard === s.id;
@@ -263,9 +271,9 @@ export function DarkPage({ business, services }: Props) {
                               <div style={{ fontSize: 12, color: D.muted }}>{s.duration} {t.min}</div>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0, marginInlineStart: 14 }}>
-                              <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 20, fontWeight: 700, color: accent }}>₪{s.price}</span>
+                              <span style={{ fontFamily: headingFont, fontSize: 20, fontWeight: 700, color: accent }}>₪{s.price}</span>
                               <button onClick={() => openFromService(s)}
-                                style={{ fontFamily: "'Oswald', sans-serif", background: hovered ? accent : "transparent", color: hovered ? D.bg : accent, border: `1.5px solid ${accent}`, borderRadius: 2, padding: "8px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase", transition: "background 0.2s, color 0.2s, transform 0.15s", whiteSpace: "nowrap" }}
+                                style={{ fontFamily: headingFont, background: hovered ? accent : "transparent", color: hovered ? D.bg : accent, border: `1.5px solid ${accent}`, borderRadius: 2, padding: "8px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase", transition: "background 0.2s, color 0.2s, transform 0.15s", whiteSpace: "nowrap" }}
                                 onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = D.bg; e.currentTarget.style.transform = "scale(1.04)"; }}
                                 onMouseLeave={e => { e.currentTarget.style.background = hovered ? accent : "transparent"; e.currentTarget.style.color = hovered ? D.bg : accent; e.currentTarget.style.transform = "scale(1)"; }}
                               >
@@ -283,7 +291,7 @@ export function DarkPage({ business, services }: Props) {
               return business.show_staff !== false && business.staff_members && business.staff_members.length > 0 ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.staff.title} accent={accent} isRtl={isRtl} />
+                  <DarkSectionTitle title={t.staff.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
                   <div className="dk-staff-grid">
                     {business.staff_members.map(member => (
                       <div key={member.id} style={{ background: D.surface, border: `1px solid ${D.border}`, borderInlineStart: `3px solid ${accent}60`, borderRadius: 2, padding: "16px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
@@ -294,7 +302,7 @@ export function DarkPage({ business, services }: Props) {
                           }
                         </div>
                         <div>
-                          <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 14, fontWeight: 600, color: accent, letterSpacing: "0.05em", textTransform: "uppercase" }}>{member.name}</div>
+                          <div style={{ fontFamily: headingFont, fontSize: 14, fontWeight: 600, color: accent, letterSpacing: "0.05em", textTransform: "uppercase" }}>{member.name}</div>
                           {member.role && <div style={{ fontSize: 12, color: D.muted, marginTop: 3 }}>{member.role}</div>}
                         </div>
                       </div>
@@ -306,13 +314,13 @@ export function DarkPage({ business, services }: Props) {
               return business.show_about !== false && displayAbout ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.about.title} accent={accent} isRtl={isRtl} />
+                  <DarkSectionTitle title={t.about.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
                   <div style={{ background: D.surface, borderRadius: 2, padding: "24px 22px", border: `1px solid ${D.border}`, borderInlineStart: `3px solid ${accent}60` }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 16 }}>
                       {(business.profile_image_url || business.hero_image_url) && (
                         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                           <img src={business.profile_image_url || business.hero_image_url || ""} alt={displayName} style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}`, flexShrink: 0 }} />
-                          <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 13, color: accent, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>{displayName}</span>
+                          <span style={{ fontFamily: headingFont, fontSize: 13, color: accent, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>{displayName}</span>
                         </div>
                       )}
                       <p style={{ fontSize: 15, lineHeight: 1.85, color: D.muted, margin: 0 }}>{displayAbout}</p>
@@ -321,18 +329,20 @@ export function DarkPage({ business, services }: Props) {
                 </div>
               ) : null;
             case "gallery":
-              return business.show_gallery !== false && business.gallery_images && business.gallery_images.length > 0 ? (
+              return (showInstaGallery || showImageGallery) ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} />
-                  <SectionGallery photos={business.gallery_images} borderRadius={2} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} ui={{ btnBorder: "rgba(255,255,255,0.18)", btnBorderHover: accent, btnText: "rgba(255,255,255,0.72)", btnTextHover: "#fff" }} />
+                  <DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
+                  {showInstaGallery
+                    ? <InstagramFeed embed={business.instagram_embed!} radius={2} />
+                    : <SectionGallery photos={business.gallery_images!} borderRadius={2} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} ui={{ btnBorder: "rgba(255,255,255,0.18)", btnBorderHover: accent, btnText: "rgba(255,255,255,0.72)", btnTextHover: "#fff" }} />}
                 </div>
               ) : null;
             case "reviews":
               return business.show_reviews !== false && ((business.google_reviews && business.google_reviews.length > 0) || !!business.google_review_link) ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.reviews.title} accent={accent} isRtl={isRtl} />
+                  <DarkSectionTitle title={t.reviews.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
                   <SectionReviews
                     reviews={business.google_reviews ?? []}
                     accentColor={accent}
@@ -348,7 +358,7 @@ export function DarkPage({ business, services }: Props) {
               return business.show_hours !== false && business.business_hours ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.hours.title} accent={accent} isRtl={isRtl} />
+                  <DarkSectionTitle title={t.hours.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
                   <div style={{ background: D.surface, borderRadius: 2, padding: "8px 4px", border: `1px solid ${D.border}` }}>
                     <SectionHours hours={business.business_hours} darkColor={D.text} accentColor={accent} mutedColor={D.muted} dayLabels={t.days} closedLabel={t.hours.closed} />
                   </div>
@@ -358,7 +368,7 @@ export function DarkPage({ business, services }: Props) {
               return business.show_location !== false && business.address ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.location.title} accent={accent} isRtl={isRtl} />
+                  <DarkSectionTitle title={t.location.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
                   <div style={{ background: D.surface, borderRadius: 2, padding: "20px", border: `1px solid ${D.border}` }}>
                     <SectionLocation address={business.address} darkColor={D.text} accentColor={accent} directionsLabel={t.location.directions} googleMapsUrl={business.google_maps_url} wazeUrl={business.waze_url} />
                   </div>
@@ -379,7 +389,7 @@ export function DarkPage({ business, services }: Props) {
           footerLabel={t.footer.poweredBy}
           brandLabel={t.footer.brand}
           topBorder
-          footerLabelStyle={{ fontFamily: "'Oswald', sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}
+          footerLabelStyle={{ fontFamily: headingFont, letterSpacing: "0.08em", textTransform: "uppercase" }}
         />
       </div>
 
