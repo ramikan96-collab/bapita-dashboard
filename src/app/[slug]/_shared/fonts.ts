@@ -19,6 +19,9 @@ export const FONT_CATALOG: FontDef[] = [
   { name: "Alef",             query: "Alef:wght@400;700" },
   { name: "David Libre",      query: "David+Libre:wght@400;500;700" },
   { name: "Karantina",        query: "Karantina:wght@300;400;700" },
+  // Latin-only geometric (Futura-style). Hebrew text falls back to Heebo via the
+  // resolveFont stack, so the Latin wordmark gets the brand look without breaking RTL.
+  { name: "Jost",             query: "Jost:wght@300;400;500;600;700" },
 ];
 
 export const HEBREW_FALLBACK = "'Heebo', sans-serif";

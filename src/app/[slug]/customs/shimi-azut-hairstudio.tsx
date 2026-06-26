@@ -22,11 +22,11 @@ const C = { bg: "#F8F2E8", dark: "#221510", gold: "#B8862A", cream2: "#F0E8D8" }
 const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews"];
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=1200&q=80";
 
-function SectionTitle({ title, accentColor, darkColor }: { title: string; accentColor: string; darkColor: string }) {
+function SectionTitle({ title, accentColor, darkColor, fontFamily }: { title: string; accentColor: string; darkColor: string; fontFamily?: string }) {
   const { ref, visible } = useFadeInOnEnter();
   return (
     <div ref={ref}>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: darkColor, marginBottom: 10, letterSpacing: "-0.01em" }}>{title}</h2>
+      <h2 style={{ fontFamily, fontSize: 22, fontWeight: 600, color: darkColor, marginBottom: 10, letterSpacing: "0.02em" }}>{title}</h2>
       <div style={{ height: 3, borderRadius: 2, background: accentColor, width: visible ? 32 : 0, transition: "width 0.5s ease" }} />
     </div>
   );
@@ -134,7 +134,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
           )}
 
           {/* Wordmark — thin, tracked, bilingual lockup like his logo */}
-          <h1 className="c-name" style={{ fontFamily: headingFont, fontWeight: 300, fontSize: "clamp(2.3rem, 8vw, 4.6rem)", color: "#fff", lineHeight: 1.06, letterSpacing: isRtl ? "0.01em" : "0.04em", margin: 0 }}>
+          <h1 className="c-name" style={{ fontFamily: headingFont, fontWeight: 300, fontSize: "clamp(2.3rem, 8vw, 4.6rem)", color: "#fff", lineHeight: 1.06, letterSpacing: isRtl ? "0.02em" : "0.16em", textTransform: isRtl ? "none" : "uppercase", margin: 0 }}>
             {displayName}
           </h1>
           {secondaryName && (
@@ -201,7 +201,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             case "services":
               return business.show_services !== false ? (
                 <section key={key} ref={servicesRef} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.services.title} accentColor={accent} darkColor={C.dark} />
+                  <SectionTitle title={t.services.title} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 28 }}>
                     {services.map((s, i) => {
                       const hovered = hoveredCard === s.id;
@@ -236,7 +236,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             case "about":
               return business.show_about !== false && displayAbout ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.about.title} accentColor={accent} darkColor={C.dark} />
+                  <SectionTitle title={t.about.title} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div className="about-row" style={{ marginTop: 20 }}>
                     {(business.profile_image_url || business.hero_image_url) && (
                       <div style={{ textAlign: "center", flexShrink: 0 }}>
@@ -251,7 +251,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             case "staff":
               return business.show_staff !== false && business.staff_members && business.staff_members.length > 0 ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.staff.title} accentColor={accent} darkColor={C.dark} />
+                  <SectionTitle title={t.staff.title} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div className="c-staff-grid" style={{ marginTop: 24 }}>
                     {business.staff_members.map(member => (
                       <div key={member.id} style={{ background: "#fff", borderRadius: 10, padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center", boxShadow: "0 1px 4px rgba(34,21,16,0.06)", borderInlineStart: `3px solid ${accent}` }}>
@@ -273,7 +273,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             case "gallery":
               return (showInstaGallery || showImageGallery) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} />
+                  <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div style={{ marginTop: 28 }}>
                     {showInstaGallery
                       ? <InstagramFeed embed={business.instagram_embed!} radius={10} />
@@ -284,7 +284,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             case "reviews":
               return business.show_reviews !== false && ((business.google_reviews && business.google_reviews.length > 0) || !!business.google_review_link) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.reviews.title} accentColor={accent} darkColor={C.dark} />
+                  <SectionTitle title={t.reviews.title} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div style={{ marginTop: 20 }}>
                     <SectionReviews
                       reviews={business.google_reviews ?? []}
@@ -301,7 +301,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             case "hours":
               return business.show_hours !== false && business.business_hours ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.hours.title} accentColor={accent} darkColor={C.dark} />
+                  <SectionTitle title={t.hours.title} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div style={{ marginTop: 20 }}>
                     <SectionHours hours={business.business_hours} darkColor={C.dark} accentColor={accent} mutedColor="rgba(34,21,16,0.45)" dayLabels={t.days} closedLabel={t.hours.closed} />
                   </div>
@@ -310,7 +310,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             case "location":
               return business.show_location !== false && business.address ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.location.title} accentColor={accent} darkColor={C.dark} />
+                  <SectionTitle title={t.location.title} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div style={{ marginTop: 20 }}>
                     <SectionLocation address={business.address} darkColor={C.dark} accentColor={accent} directionsLabel={t.location.directions} googleMapsUrl={business.google_maps_url} wazeUrl={business.waze_url} />
                   </div>
