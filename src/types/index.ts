@@ -82,6 +82,7 @@ export interface Business {
   about_text?: string | null;
   about_text_he?: string | null;
   accent_color?: string | null;
+  external_booking_url?: string | null;
   show_gallery?: boolean | null;
   show_about?: boolean | null;
   show_hours?: boolean | null;

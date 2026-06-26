@@ -9,8 +9,8 @@ export interface FontDef {
 }
 
 export const FONT_CATALOG: FontDef[] = [
-  { name: "Heebo",            query: "Heebo:wght@400;500;600;700;800" },
-  { name: "Assistant",        query: "Assistant:wght@400;500;600;700;800" },
+  { name: "Heebo",            query: "Heebo:wght@300;400;500;600;700;800" },
+  { name: "Assistant",        query: "Assistant:wght@300;400;500;600;700;800" },
   { name: "Rubik",            query: "Rubik:wght@400;500;600;700" },
   { name: "Frank Ruhl Libre", query: "Frank+Ruhl+Libre:wght@400;500;700;900" },
   { name: "Secular One",      query: "Secular+One" },
