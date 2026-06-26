@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
 import { findPlaceId } from "@/app/actions/find-place-id";
 import { syncStaffTable, loadStaff } from "@/lib/staff";
-import { FONT_CATALOG } from "@/app/[slug]/_shared/fonts";
+import { FontPicker } from "@/components/FontPicker";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -124,7 +124,7 @@ interface Stats {
   activeServices: number;
 }
 
-type Tab = "profile" | "gallery" | "services" | "plan" | "hours" | "reviews";
+type Tab = "profile" | "design" | "gallery" | "services" | "plan" | "hours" | "reviews";
 
 const EMPTY_FORM: FormData = {
   name: "", name_he: "", slug: "", template_style: "classic", default_lang: "he",
@@ -544,6 +544,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
   const TABS: { id: Tab; label: string }[] = [
     { id: "profile", label: "Profile" },
+    ...(mode === "edit" ? [{ id: "design" as Tab, label: "Design" }] : []),
     { id: "gallery", label: `Gallery${gallery.filter(g => !g.uploading).length > 0 ? ` (${gallery.filter(g => !g.uploading).length})` : ""}` },
     ...(mode === "edit" ? [
       { id: "services" as Tab, label: `Services (${services.length})`                        },
@@ -696,57 +697,18 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 </Row>
                 {mode === "edit" && (
                   <>
-                    <Row>
-                      <Field label="Template">
-                        <select value={form.template_style} onChange={e => set("template_style", e.target.value)} style={inputStyle}>
-                          <option value="classic">Classic (cream/gold)</option>
-                          <option value="clean">Clean (white/black)</option>
-                          <option value="dark">Dark (dark/gold)</option>
-                        </select>
-                      </Field>
-                      <Field label="Owner Email">
-                        <input
-                          type="email"
-                          value={form.owner_email}
-                          onChange={e => set("owner_email", e.target.value)}
-                          placeholder="barber@email.com"
-                          style={inputStyle}
-                        />
-                        <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
-                          Dashboard access + notifications
-                        </div>
-                      </Field>
-                    </Row>
-                    <Row>
-                      <Field label="Heading font">
-                        <select value={form.heading_font} onChange={e => set("heading_font", e.target.value)} style={inputStyle}>
-                          <option value="">Theme default</option>
-                          {FONT_CATALOG.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
-                        </select>
-                      </Field>
-                      <Field label="Body font">
-                        <select value={form.body_font} onChange={e => set("body_font", e.target.value)} style={inputStyle}>
-                          <option value="">Theme default</option>
-                          {FONT_CATALOG.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
-                        </select>
-                      </Field>
-                    </Row>
-                    <Row>
-                      <Field label="Gallery content">
-                        <select value={form.gallery_source} onChange={e => set("gallery_source", e.target.value)} style={inputStyle}>
-                          <option value="images">Gallery images</option>
-                          <option value="instagram">Instagram feed</option>
-                        </select>
-                      </Field>
-                      {form.gallery_source === "instagram" && (
-                        <Field label="Instagram feed embed">
-                          <input value={form.instagram_embed} onChange={e => set("instagram_embed", e.target.value)} placeholder="LightWidget embed URL or ID" style={inputStyle} />
-                          <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
-                            LightWidget embed link or ID — not the profile URL
-                          </div>
-                        </Field>
-                      )}
-                    </Row>
+                    <Field label="Owner Email">
+                      <input
+                        type="email"
+                        value={form.owner_email}
+                        onChange={e => set("owner_email", e.target.value)}
+                        placeholder="barber@email.com"
+                        style={inputStyle}
+                      />
+                      <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
+                        Dashboard access + notifications
+                      </div>
+                    </Field>
                     {!cloning && confirmClone && (
                       <div style={{ background:"#FEF3C7", borderRadius:11, padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, border:"1px solid #FDE68A" }}>
                         <span style={{ fontSize:13, color:"#92400E", fontWeight:600 }}>
@@ -919,26 +881,12 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   </div>
                 )}
 
-                <Row>
-                  <Field label="Default Language">
-                    <select value={form.default_lang} onChange={e => set("default_lang", e.target.value)} style={inputStyle}>
-                      <option value="he">Hebrew (עברית)</option>
-                      <option value="en">English</option>
-                    </select>
-                  </Field>
-                  <Field label="Accent Color">
-                    <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                      <input
-                        type="color"
-                        value={form.accent_color || "#B8862A"}
-                        onChange={e => set("accent_color", e.target.value)}
-                        style={{ width:44, height:44, border:"1.5px solid var(--color-cream-2)", borderRadius:9, cursor:"pointer", padding:2, flexShrink:0 }}
-                      />
-                      <input value={form.accent_color} onChange={e => set("accent_color", e.target.value)}
-                        placeholder="Leave blank for default" style={{ ...inputStyle, flex:1 }} />
-                    </div>
-                  </Field>
-                </Row>
+                <Field label="Default Language">
+                  <select value={form.default_lang} onChange={e => set("default_lang", e.target.value)} style={inputStyle}>
+                    <option value="he">Hebrew (עברית)</option>
+                    <option value="en">English</option>
+                  </select>
+                </Field>
                 <Row>
                   <Field label="Tagline (EN)">
                     <input value={form.tagline} onChange={e => set("tagline", e.target.value)} placeholder="Precision cuts. No waiting." style={inputStyle} />
@@ -1154,9 +1102,62 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
             </div>
           )}
 
+          {/* ── DESIGN ── */}
+          {tab === "design" && mode === "edit" && (
+            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+              <SectionCard title="Design">
+                <Row>
+                  <Field label="Template">
+                    <select value={form.template_style} onChange={e => set("template_style", e.target.value)} style={inputStyle}>
+                      <option value="classic">Classic (cream/gold)</option>
+                      <option value="clean">Clean (white/black)</option>
+                      <option value="dark">Dark (dark/gold)</option>
+                    </select>
+                  </Field>
+                  <Field label="Accent Color">
+                    <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                      <input
+                        type="color"
+                        value={form.accent_color || "#B8862A"}
+                        onChange={e => set("accent_color", e.target.value)}
+                        style={{ width:44, height:44, border:"1.5px solid var(--color-cream-2)", borderRadius:9, cursor:"pointer", padding:2, flexShrink:0 }}
+                      />
+                      <input value={form.accent_color} onChange={e => set("accent_color", e.target.value)}
+                        placeholder="Leave blank for default" style={{ ...inputStyle, flex:1 }} />
+                    </div>
+                  </Field>
+                </Row>
+                <Row>
+                  <Field label="Heading font"><FontPicker value={form.heading_font} onChange={v => set("heading_font", v)} /></Field>
+                  <Field label="Body font"><FontPicker value={form.body_font} onChange={v => set("body_font", v)} /></Field>
+                </Row>
+              </SectionCard>
+            </div>
+          )}
+
           {/* ── GALLERY ── */}
           {tab === "gallery" && (
-            <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} focal={form.image_focal} setFocal={f => set("image_focal", f)} profileImageUrl={profileImageUrl} setProfileImageUrl={setProfileImageUrl} />
+            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+              <SectionCard title="Gallery Source">
+                <Row>
+                  <Field label="Gallery content">
+                    <select value={form.gallery_source} onChange={e => set("gallery_source", e.target.value)} style={inputStyle}>
+                      <option value="images">Gallery images</option>
+                      <option value="instagram">Instagram feed</option>
+                    </select>
+                  </Field>
+                  {form.gallery_source === "instagram" && (
+                    <Field label="Instagram feed embed">
+                      <input value={form.instagram_embed} onChange={e => set("instagram_embed", e.target.value)} placeholder="LightWidget embed URL or ID" style={inputStyle} />
+                      <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
+                        LightWidget embed link or ID — not the profile URL
+                      </div>
+                    </Field>
+                  )}
+                </Row>
+              </SectionCard>
+              <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} focal={form.image_focal} setFocal={f => set("image_focal", f)} profileImageUrl={profileImageUrl} setProfileImageUrl={setProfileImageUrl} />
+            </div>
           )}
 
           {/* ── SERVICES ── */}

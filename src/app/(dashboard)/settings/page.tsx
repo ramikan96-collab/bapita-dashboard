@@ -5,11 +5,11 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/components/Toast";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
-import { FONT_CATALOG } from "@/app/[slug]/_shared/fonts";
+import { FontPicker } from "@/components/FontPicker";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Section = "business" | "services" | "hours" | "website";
+type Section = "business" | "services" | "hours" | "website" | "content";
 
 interface BookingSettings {
   buffer_minutes: number;
@@ -68,6 +68,7 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: "services", label: "Services" },
   { id: "hours",    label: "Hours" },
   { id: "website",  label: "Website" },
+  { id: "content",  label: "Content" },
 ];
 
 function getErrorMessage(error: { code?: string; message?: string }): string {
@@ -1324,11 +1325,13 @@ function WebsiteSection({
   supabase,
   refresh,
   onDirtyChange,
+  which,
 }: {
   business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
   supabase: ReturnType<typeof createClient>;
   refresh: () => Promise<void>;
   onDirtyChange?: (dirty: boolean) => void;
+  which: "website" | "content";
 }) {
   const { showToast } = useToast();
 
@@ -1490,7 +1493,7 @@ function WebsiteSection({
 
   const bookingUrl = `book.bapita.com/${slug || "your-slug"}`;
 
-  return (
+  if (which === "website") return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
       {/* Booking link */}
@@ -1564,6 +1567,37 @@ function WebsiteSection({
         </div>
       </SectionCard>
 
+      {/* Design — font pickers */}
+      <SectionCard title="Design">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-dark">Heading font</label>
+          <FontPicker value={headingFont} onChange={setHeadingFont} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-dark">Body font</label>
+          <FontPicker value={bodyFont} onChange={setBodyFont} />
+        </div>
+      </SectionCard>
+
+      {/* Social links */}
+      <SectionCard title="Social links">
+        <p style={{ fontSize: 12, color: "var(--color-muted)", margin: "0 0 4px" }}>All links shown as icons on your booking page. Leave blank to hide.</p>
+        <InputField label="WhatsApp number" value={whatsappNumber} onChange={setWhatsappNumber} placeholder="+972501234567" hint="Customers can tap to message you directly" />
+        <InputField label="Instagram" value={instagramUrl} onChange={setInstagramUrl} placeholder="https://instagram.com/youraccount" />
+        <InputField label="Facebook" value={facebookUrl} onChange={setFacebookUrl} placeholder="https://facebook.com/youraccount" />
+        <InputField label="TikTok" value={tiktokUrl} onChange={setTiktokUrl} placeholder="https://tiktok.com/@youraccount" />
+        <InputField label="Google Review link" value={googleReviewLink} onChange={setGoogleReviewLink} placeholder="https://g.page/r/..." hint="Link customers click to leave you a Google review" />
+        <InputField label="Google Maps" value={googleMapsUrl} onChange={setGoogleMapsUrl} placeholder="https://maps.google.com/?q=..." />
+        <InputField label="Waze" value={wazeUrl} onChange={setWazeUrl} placeholder="https://waze.com/ul?ll=..." />
+      </SectionCard>
+
+      <SaveButton onClick={save} saving={saving} dirty={dirty} />
+    </div>
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
       {/* Profile photo */}
       <SectionCard title="Profile photo">
         <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 12px" }}>
@@ -1629,32 +1663,6 @@ function WebsiteSection({
             hint="LightWidget widget embed URL or ID — not the Instagram profile URL"
           />
         )}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[13px] font-medium text-dark">Heading font</label>
-          <select
-            value={headingFont}
-            onChange={(e) => setHeadingFont(e.target.value)}
-            style={{ height: 44, padding: "0 13px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box", transition: "border-color 0.15s", cursor: "pointer" }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-          >
-            <option value="">Theme default</option>
-            {FONT_CATALOG.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[13px] font-medium text-dark">Body font</label>
-          <select
-            value={bodyFont}
-            onChange={(e) => setBodyFont(e.target.value)}
-            style={{ height: 44, padding: "0 13px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 14, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box", transition: "border-color 0.15s", cursor: "pointer" }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
-          >
-            <option value="">Theme default</option>
-            {FONT_CATALOG.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
-          </select>
-        </div>
       </SectionCard>
 
       <SectionCard title={`Photos (${images.length})`}>
@@ -1781,19 +1789,6 @@ function WebsiteSection({
         </button>
       </SectionCard>
 
-      {/* Social links */}
-      <SectionCard title="Social links">
-        <p style={{ fontSize: 12, color: "var(--color-muted)", margin: "0 0 4px" }}>All links shown as icons on your booking page. Leave blank to hide.</p>
-        <InputField label="WhatsApp number" value={whatsappNumber} onChange={setWhatsappNumber} placeholder="+972501234567" hint="Customers can tap to message you directly" />
-        <InputField label="Instagram" value={instagramUrl} onChange={setInstagramUrl} placeholder="https://instagram.com/youraccount" />
-        <InputField label="Facebook" value={facebookUrl} onChange={setFacebookUrl} placeholder="https://facebook.com/youraccount" />
-        <InputField label="TikTok" value={tiktokUrl} onChange={setTiktokUrl} placeholder="https://tiktok.com/@youraccount" />
-        <InputField label="Google Review link" value={googleReviewLink} onChange={setGoogleReviewLink} placeholder="https://g.page/r/..." hint="Link customers click to leave you a Google review" />
-        <InputField label="Google Maps" value={googleMapsUrl} onChange={setGoogleMapsUrl} placeholder="https://maps.google.com/?q=..." />
-        <InputField label="Waze" value={wazeUrl} onChange={setWazeUrl} placeholder="https://waze.com/ul?ll=..." />
-      </SectionCard>
-
-      {/* Single Save button covers slug + language + gallery + social */}
       <SaveButton onClick={save} saving={saving} dirty={dirty} />
 
       {/* Reviews — individual adds/edits/deletes, own save per item */}
@@ -2066,7 +2061,8 @@ export default function SettingsPage() {
       case "business": return <BusinessSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} />;
       case "services": return <ServicesSection business={business!} supabase={supabase} refresh={refresh} />;
       case "hours":    return <HoursSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} />;
-      case "website":  return <WebsiteSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} />;
+      case "website":  return <WebsiteSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} which="website" />;
+      case "content":  return <WebsiteSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} which="content" />;
     }
   }
 
