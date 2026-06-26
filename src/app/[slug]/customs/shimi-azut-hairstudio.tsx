@@ -94,9 +94,9 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
     <div dir={isRtl ? "rtl" : "ltr"} style={{ background: C.bg, minHeight: "100svh", fontFamily: bodyFont, color: C.dark }}>
       <FontLoader fonts={[business.heading_font, business.body_font]} />
       <style>{`
-        @keyframes kenBurns   { 0%{transform:scale(1.0)} 100%{transform:scale(1.05)} }
+        @keyframes heroReveal { from{transform:scale(1.06)} to{transform:scale(1)} }
         @keyframes fadeUpLoad { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        .c-hero-img { animation: kenBurns 16s ease-in-out infinite alternate; }
+        .c-hero-img { animation: heroReveal 1.4s ease-out both; }
         .c-eyebrow  { animation: fadeUpLoad 0.6s ease-out 0.2s both; }
         .c-pill     { animation: fadeUpLoad 0.5s ease-out 0.25s both; }
         .c-name     { animation: fadeUpLoad 0.7s ease-out 0.35s both; }
@@ -119,8 +119,8 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
         </div>
         {/* Soft bottom-weighted scrim — keeps the photo bright and airy */}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(34,21,16,0.18) 0%, rgba(34,21,16,0.30) 48%, rgba(34,21,16,0.64) 100%)" }} />
-        {/* Faint warm mocha wash — ties the photo to his brand tone */}
-        <div style={{ position: "absolute", inset: 0, background: accent, opacity: 0.16, mixBlendMode: "soft-light", pointerEvents: "none" }} />
+        {/* Faint warm mocha wash — flat tint (cheap, no blend recompute) */}
+        <div style={{ position: "absolute", inset: 0, background: accent, opacity: 0.12, pointerEvents: "none" }} />
 
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", width: "100%", maxWidth: 620 }}>
           {/* Open status pill — minimal, translucent */}
