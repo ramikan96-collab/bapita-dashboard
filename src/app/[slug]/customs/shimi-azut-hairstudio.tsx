@@ -137,7 +137,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
 
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", paddingBottom: "calc(28px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 620 }}>
           {/* Wordmark — tracked, bilingual lockup like his logo */}
-          <h1 className="c-name" style={{ fontFamily: headingFont, fontWeight: 400, fontSize: "clamp(2.3rem, 8vw, 4.6rem)", color: "#fff", lineHeight: 1.06, letterSpacing: isRtl ? "0.02em" : "0.16em", textTransform: isRtl ? "none" : "uppercase", margin: 0, textShadow: "0 2px 18px rgba(0,0,0,0.5)" }}>
+          <h1 className="c-name" style={{ fontFamily: headingFont, fontWeight: 300, fontSize: "clamp(2.3rem, 8vw, 4.6rem)", color: "#fff", lineHeight: 1.06, letterSpacing: isRtl ? "0.02em" : "0.16em", textTransform: isRtl ? "none" : "uppercase", margin: 0, textShadow: "0 2px 26px rgba(0,0,0,0.62)" }}>
             {displayName}
           </h1>
           {secondaryName && (
