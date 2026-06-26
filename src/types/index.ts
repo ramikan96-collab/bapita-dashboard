@@ -115,6 +115,11 @@ export interface Business {
   show_reviews?:       boolean | null;
   staff_members?:      StaffMember[] | null;
   show_staff?:         boolean | null;
+  // fonts (null = theme default) + Instagram feed
+  heading_font?:       string | null;
+  body_font?:          string | null;
+  gallery_source?:     "images" | "instagram" | null;
+  instagram_embed?:    string | null;
 }
 
 export interface StaffMember {
