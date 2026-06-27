@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import type { GoogleReview } from "@/types";
 
 function Stars({ rating, color }: { rating: number; color: string }) {
@@ -28,6 +29,16 @@ interface Props {
 }
 
 const INITIAL_COUNT = 3;
+
+function toggleBtnStyle(accentColor: string): CSSProperties {
+  return {
+    flex: 1, height: 40, borderRadius: 10,
+    border: `1.5px solid ${accentColor}33`,
+    background: "transparent", color: accentColor,
+    fontSize: 13, fontWeight: 700, cursor: "pointer",
+    transition: "background 0.15s, border-color 0.15s",
+  };
+}
 
 export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borderColor, reviewLink, leaveReviewLabel, showMoreLabel = "Show more", showLessLabel = "Show less" }: Props) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
@@ -75,20 +86,28 @@ export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borde
       ))}
 
       {(remaining > 0 || expanded) && (
-        <button
-          onClick={() => setVisibleCount(c => (remaining > 0 ? c + INITIAL_COUNT : INITIAL_COUNT))}
-          style={{
-            width: "100%", height: 40, borderRadius: 10,
-            border: `1.5px solid ${accentColor}33`,
-            background: "transparent", color: accentColor,
-            fontSize: 13, fontWeight: 700, cursor: "pointer",
-            transition: "background 0.15s, border-color 0.15s",
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = accentColor + "12"; (e.currentTarget as HTMLElement).style.borderColor = accentColor; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.borderColor = accentColor + "33"; }}
-        >
-          {remaining > 0 ? showMoreLabel : showLessLabel}
-        </button>
+        <div style={{ display: "flex", gap: 10 }}>
+          {remaining > 0 && (
+            <button
+              onClick={() => setVisibleCount(c => c + INITIAL_COUNT)}
+              style={toggleBtnStyle(accentColor)}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = accentColor + "12"; (e.currentTarget as HTMLElement).style.borderColor = accentColor; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.borderColor = accentColor + "33"; }}
+            >
+              {showMoreLabel}
+            </button>
+          )}
+          {expanded && (
+            <button
+              onClick={() => setVisibleCount(INITIAL_COUNT)}
+              style={toggleBtnStyle(accentColor)}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = accentColor + "12"; (e.currentTarget as HTMLElement).style.borderColor = accentColor; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.borderColor = accentColor + "33"; }}
+            >
+              {showLessLabel}
+            </button>
+          )}
+        </div>
       )}
 
       {reviewLink && (
