@@ -1667,8 +1667,8 @@ function WebsiteSection({
             label="Instagram feed embed"
             value={instagramEmbed}
             onChange={setInstagramEmbed}
-            placeholder="https://lightwidget.com/widgets/..."
-            hint="LightWidget widget embed URL or ID — not the Instagram profile URL"
+            placeholder="48IK66flQkZ8N0S8h1QP"
+            hint="Behold feed ID (or the full <behold-widget> embed snippet) — not the Instagram profile URL. Create the feed at behold.so."
           />
         )}
       </SectionCard>

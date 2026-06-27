@@ -1153,9 +1153,9 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   </Field>
                   {form.gallery_source === "instagram" && (
                     <Field label="Instagram feed embed">
-                      <input value={form.instagram_embed} onChange={e => set("instagram_embed", e.target.value)} placeholder="LightWidget embed URL or ID" style={inputStyle} />
+                      <input value={form.instagram_embed} onChange={e => set("instagram_embed", e.target.value)} placeholder="Behold feed ID (e.g. 48IK66flQkZ8N0S8h1QP)" style={inputStyle} />
                       <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
-                        LightWidget embed link or ID — not the profile URL
+                        Behold feed ID or full &lt;behold-widget&gt; snippet — not the profile URL
                       </div>
                     </Field>
                   )}
