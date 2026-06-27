@@ -108,6 +108,16 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
 
       <LangToggle lang={lang} setLang={setLang} />
 
+      {/* Open status pill — fixed top-left, always visible on scroll (mirrors lang toggle) */}
+      {(business.show_open_status !== false && openStatus) && (
+        <div className="c-pill" style={{ position: "fixed", top: 16, left: 16, zIndex: 200 }}>
+          <span style={{ background: "rgba(0,0,0,0.48)", backdropFilter: "blur(8px)", color: "rgba(255,255,255,0.92)", borderRadius: 9999, padding: "5px 14px", fontSize: 11.5, fontWeight: 500, letterSpacing: "0.04em", display: "inline-flex", alignItems: "center", gap: 7 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#22c55e" : "#bbb", display: "inline-block" }} />
+            {openStatus.text}
+          </span>
+        </div>
+      )}
+
       {/* Hero — clean / minimal / editorial (IG-matched) */}
       <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
@@ -117,16 +127,6 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(34,21,16,0.14) 0%, rgba(34,21,16,0.30) 40%, rgba(34,21,16,0.90) 100%)" }} />
         {/* Faint warm mocha wash — flat tint (cheap, no blend recompute) */}
         <div style={{ position: "absolute", inset: 0, background: accent, opacity: 0.12, pointerEvents: "none" }} />
-
-        {/* Open status pill — top corner, opposite the lang toggle */}
-        {(business.show_open_status !== false && openStatus) && (
-          <div className="c-pill" style={{ position: "absolute", top: 18, left: 16, zIndex: 2 }}>
-            <span style={{ background: "rgba(255,255,255,0.14)", backdropFilter: "blur(8px)", color: "rgba(255,255,255,0.92)", borderRadius: 9999, padding: "5px 14px", fontSize: 11.5, fontWeight: 500, letterSpacing: "0.04em", display: "inline-flex", alignItems: "center", gap: 7 }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#22c55e" : "#bbb", display: "inline-block" }} />
-              {openStatus.text}
-            </span>
-          </div>
-        )}
 
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", paddingBottom: "calc(28px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 620 }}>
           {/* Wordmark — tracked, bilingual lockup like his logo */}
