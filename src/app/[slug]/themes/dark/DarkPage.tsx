@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Business, Service } from "@/types";
+import { getSocialProof } from "@/lib/social-proof";
 import { FloatingCTA }    from "../../components/FloatingCTA";
 import { SectionGallery }  from "../../components/gallery/SectionGallery";
 import { SectionHours }    from "../../components/SectionHours";
@@ -87,15 +88,7 @@ export function DarkPage({ business, services }: Props) {
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
 
-  const socialProofText = (() => {
-    if (business.stat_rating && business.stat_clients)
-      return isRtl ? `${business.stat_rating} · ${business.stat_clients}+ לקוחות מרוצים` : `${business.stat_rating} · ${business.stat_clients}+ happy clients`;
-    if (business.stat_rating)
-      return isRtl ? `${business.stat_rating} ⭐ גוגל` : `${business.stat_rating} Google rating`;
-    if (business.stat_clients)
-      return isRtl ? `${business.stat_clients}+ לקוחות מרוצים` : `${business.stat_clients}+ happy clients`;
-    return t.social.happyClients;
-  })();
+  const socialProofText = getSocialProof(business, isRtl, t.social.happyClients);
 
   useEffect(() => {
     const onScroll = () => {
@@ -351,6 +344,8 @@ export function DarkPage({ business, services }: Props) {
                     borderColor={D.border}
                     reviewLink={business.google_review_link}
                     leaveReviewLabel={t.reviews.leaveReview}
+                    showMoreLabel={t.reviews.showMore}
+                    showLessLabel={t.reviews.showLess}
                   />
                 </div>
               ) : null;

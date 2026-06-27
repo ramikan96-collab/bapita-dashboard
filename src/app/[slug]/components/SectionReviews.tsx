@@ -23,15 +23,20 @@ interface Props {
   borderColor: string;
   reviewLink?: string | null;
   leaveReviewLabel: string;
+  showMoreLabel?: string;
+  showLessLabel?: string;
 }
 
-export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borderColor, reviewLink, leaveReviewLabel }: Props) {
-  const [visibleCount, setVisibleCount] = useState(3);
+const INITIAL_COUNT = 3;
+
+export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borderColor, reviewLink, leaveReviewLabel, showMoreLabel = "Show more", showLessLabel = "Show less" }: Props) {
+  const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
 
   if (!reviews.length && !reviewLink) return null;
 
   const visible = reviews.slice(0, visibleCount);
   const remaining = reviews.length - visibleCount;
+  const expanded = visibleCount > INITIAL_COUNT;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -69,9 +74,9 @@ export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borde
         </div>
       ))}
 
-      {remaining > 0 && (
+      {(remaining > 0 || expanded) && (
         <button
-          onClick={() => setVisibleCount(c => c + 3)}
+          onClick={() => setVisibleCount(c => (remaining > 0 ? c + INITIAL_COUNT : INITIAL_COUNT))}
           style={{
             width: "100%", height: 40, borderRadius: 10,
             border: `1.5px solid ${accentColor}33`,
@@ -82,7 +87,7 @@ export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borde
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = accentColor + "12"; (e.currentTarget as HTMLElement).style.borderColor = accentColor; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.borderColor = accentColor + "33"; }}
         >
-          +{Math.min(remaining, 3)} more
+          {remaining > 0 ? showMoreLabel : showLessLabel}
         </button>
       )}
 

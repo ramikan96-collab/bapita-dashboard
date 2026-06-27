@@ -115,6 +115,8 @@ export interface Business {
   show_services?:      boolean | null;
   google_reviews?:     GoogleReview[] | null;
   google_place_id?:    string | null;
+  /** Total Google review count, auto-populated server-side from Places API */
+  google_review_count?: number | null;
   show_reviews?:       boolean | null;
   staff_members?:      StaffMember[] | null;
   show_staff?:         boolean | null;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Business, Service } from "@/types";
+import { getSocialProof } from "@/lib/social-proof";
 import { FloatingCTA }    from "../../components/FloatingCTA";
 import { SectionGallery }  from "../../components/gallery/SectionGallery";
 import { SectionHours }    from "../../components/SectionHours";
@@ -68,15 +69,7 @@ export function CleanPage({ business, services }: Props) {
   const showInstaGallery = business.show_gallery !== false && business.gallery_source === "instagram" && !!business.instagram_embed;
   const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
 
-  const socialProofText = (() => {
-    if (business.stat_rating && business.stat_clients)
-      return isRtl ? `${business.stat_rating} · ${business.stat_clients}+ לקוחות מרוצים` : `${business.stat_rating} · ${business.stat_clients}+ happy clients`;
-    if (business.stat_rating)
-      return isRtl ? `${business.stat_rating} ⭐ גוגל` : `${business.stat_rating} Google rating`;
-    if (business.stat_clients)
-      return isRtl ? `${business.stat_clients}+ לקוחות מרוצים` : `${business.stat_clients}+ happy clients`;
-    return t.social.happyClients;
-  })();
+  const socialProofText = getSocialProof(business, isRtl, t.social.happyClients);
   const displayTag   = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
   const displayAbout = (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
@@ -309,6 +302,8 @@ export function CleanPage({ business, services }: Props) {
                       borderColor={P.border}
                       reviewLink={business.google_review_link}
                       leaveReviewLabel={t.reviews.leaveReview}
+                      showMoreLabel={t.reviews.showMore}
+                      showLessLabel={t.reviews.showLess}
                     />
                   </div>
                 </section>

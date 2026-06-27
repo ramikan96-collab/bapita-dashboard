@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import BookingShell from "./BookingShell";
 import type { Business, Service } from "@/types";
-import { fetchPlaceReviews } from "@/lib/google-places";
+import { fetchPlaceData } from "@/lib/google-places";
 
 export const dynamic = "force-dynamic";
 
@@ -45,13 +45,17 @@ export default async function BookPage({ params }: Props) {
     b.gallery_images = b.gallery_images.filter((url) => !hidden.has(url));
   }
 
-  // Merge Google Places reviews (server-side, 1h cache) with manual testimonials
+  // Merge Google Places reviews (server-side, 1h cache) with manual testimonials,
+  // and auto-populate the hero rating + review count straight from Google.
   if (b.google_place_id) {
-    const placeReviews = await fetchPlaceReviews(b.google_place_id);
-    if (placeReviews.length > 0) {
+    const place = await fetchPlaceData(b.google_place_id);
+    if (place.reviews.length > 0) {
       const manual = Array.isArray(b.google_reviews) ? b.google_reviews : [];
-      b.google_reviews = [...placeReviews, ...manual];
+      b.google_reviews = [...place.reviews, ...manual];
     }
+    // Google's live numbers override the manual stat fields when present.
+    if (place.rating != null) b.stat_rating = place.rating.toFixed(1);
+    if (place.total  != null) b.google_review_count = place.total;
   }
 
   const pageUrl = `https://bapita.com/${slug}`;
