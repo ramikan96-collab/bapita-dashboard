@@ -19,7 +19,7 @@ function GoogleIcon() {
 function BapitaMark({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={(size * 90) / 110} viewBox="0 0 110 90" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path d="M8 16 Q8 86 55 86 Q102 86 102 16 Z" fill="#D4622A" />
+      <path d="M8 16 Q8 86 55 86 Q102 86 102 16 Z" fill="#E8920A" />
       <rect x="8" y="6" width="94" height="14" rx="7" fill="#B86800" />
       <path d="M18 34 Q55 52 92 34" stroke="white" strokeWidth="4.5" strokeLinecap="round" fill="none" />
       <path d="M24 56 Q55 72 86 56" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".55" />

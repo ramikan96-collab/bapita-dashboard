@@ -5,16 +5,16 @@
      Book's accent = terracotta (v3 wheel). Old names kept as aliases. */
   --color-dark:        #1C1917;
   --color-dark-footer: #141110;
-  --color-amber:       #D4622A; /* Book primary (terracotta) — legacy name */
-  --color-amber-dark:  #B5511F;
-  --color-amber-hover: #B5511F;
+  --color-amber:       #E8920A;
+  --color-amber-dark:  #B86800;
+  --color-amber-hover: #D4830A;
   --color-cream:       #F8F4EE; /* paper */
   --color-cream-2:     #FDF0E4; /* sand */
   --color-terra:       #D4622A;
   --color-muted:       #6B6259; /* ink-soft */
 
   /* Canonical names (shared with social-ops) */
-  --color-primary:  #D4622A;
+  --color-primary:  #E8920A;
   --color-ink:      #1C1917;
   --color-ink-soft: #6B6259;
   --color-paper:    #F8F4EE;
@@ -42,18 +42,18 @@
 /* HP shell tokens — gradients/shadows used via var() in inline styles */
 :root {
   --line:         #ECE5DA;
-  --amber-soft:   rgba(212,98,42,.10);
-  --wash-amber:   linear-gradient(157deg, #EFA778 0%, #C25520 100%);
+  --amber-soft:   rgba(232,146,10,.10);
+  --wash-amber:   linear-gradient(157deg, #F8DEAE 0%, #E79B22 100%);
   --wash-sand:    linear-gradient(157deg, #F8F0E2 0%, #EAD3AC 100%);
   --shadow-sm:    0 1px 2px rgba(28,25,23,.04), 0 4px 16px rgba(28,25,23,.03);
   --shadow-md:    0 6px 18px rgba(28,25,23,.07), 0 2px 6px rgba(28,25,23,.04);
-  --shadow-amber: 0 12px 30px rgba(212,98,42,.32);
+  --shadow-amber: 0 12px 30px rgba(232,146,10,.32);
   --nav-blur:     saturate(140%) blur(12px);
   --nav-bg:       rgba(248,244,238,.82);
 
   /* Social-ops parity aliases */
-  --primary:   #D4622A;
-  --primary-d: #B5511F;
+  --primary:   #E8920A;
+  --primary-d: #D4830A;
   --accent:    #E8920A;
   --ink:       #1C1917;
   --ink-soft:  #6B6259;
