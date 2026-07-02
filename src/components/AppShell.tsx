@@ -298,9 +298,8 @@ function DrawerItem({
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 rounded-xl mx-4 px-3 text-start text-[14px] transition-colors"
+      className="flex items-center gap-3 rounded-xl px-3 text-start text-[14px] transition-colors"
       style={{
-        width: "calc(100% - 32px)",
         height: 42,
         fontWeight: active ? 700 : 500,
         color: active ? "var(--color-amber)" : "var(--color-dark)",
@@ -317,9 +316,10 @@ function DrawerItem({
   );
 }
 
-// Group header — mono uppercase, matches globals `.label`. Aligns with item text (28px inset).
+// Group header — mono uppercase, matches globals `.label`. Aligns with item text
+// (nav wrapper contributes 12px, this contributes 12px — 24px total, same as DrawerItem's px-3 inside the same nav).
 function DrawerLabel({ children }: { children: React.ReactNode }) {
-  return <p className="label pt-5 pb-2" style={{ paddingInline: 28 }}>{children}</p>;
+  return <p className="label px-3 pt-5 pb-2">{children}</p>;
 }
 
 // ─── Shell ───────────────────────────────────────────────────────────────
@@ -1030,12 +1030,12 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         aria-label="Navigation menu"
       >
         {/* Bapita wordmark */}
-        <div className="flex items-center" style={{ paddingInline: 28, minHeight: 64 }}>
+        <div className="flex items-center" style={{ paddingInline: 20, minHeight: 64 }}>
           <Wordmark />
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 overflow-y-auto pt-1 pb-2">
+        <nav className="flex-1 overflow-y-auto px-3 pt-1 pb-2">
           {/* Primary nav — desktop only; mobile uses bottom nav */}
           <div className="hidden md:block">
             <DrawerLabel>{t("Menu")}</DrawerLabel>
@@ -1080,9 +1080,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Business name + sign out — bottom (no divider line) */}
-        <div style={{ paddingBottom: 12 }}>
+        <div className="px-3" style={{ paddingBottom: 12 }}>
           {/* Business identity */}
-          <div className="flex items-center gap-3 pt-3 pb-3" style={{ paddingInline: 28 }}>
+          <div className="flex items-center gap-3 px-3 pt-3 pb-3">
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-[15px] shrink-0"
               style={{ background: "var(--color-amber)" }}
@@ -1097,8 +1097,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           {/* Sign out — aligned with nav items */}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 mx-4 px-3 rounded-xl text-start text-[14px] font-medium transition-colors hover:bg-[var(--color-cream)]"
-            style={{ width: "calc(100% - 32px)", height: 42, color: "var(--color-cancelled)" }}
+            className="flex items-center gap-3 px-3 rounded-xl text-start text-[14px] font-medium transition-colors hover:bg-[var(--color-cream)]"
+            style={{ height: 42, color: "var(--color-cancelled)" }}
           >
             <IconLogout size={18} />
             {t("Sign out")}
