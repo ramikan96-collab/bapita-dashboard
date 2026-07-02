@@ -298,10 +298,10 @@ function DrawerItem({
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 rounded-xl mx-2 px-3 text-start text-[15px] transition-colors"
+      className="flex items-center gap-3 rounded-xl mx-3 px-3 text-start text-[14px] transition-colors"
       style={{
-        width: "calc(100% - 16px)",
-        height: 44,
+        width: "calc(100% - 24px)",
+        height: 42,
         fontWeight: active ? 700 : 500,
         color: active ? "var(--color-amber)" : "var(--color-dark)",
         background: active ? "var(--color-sand)" : "transparent",
@@ -310,16 +310,16 @@ function DrawerItem({
       onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
     >
       <span className="flex shrink-0" style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
-        <Icon size={20} />
+        <Icon size={18} />
       </span>
       {label}
     </button>
   );
 }
 
-// Group header — mono uppercase, matches globals `.label`
+// Group header — mono uppercase, matches globals `.label`. Aligns with item text (24px inset).
 function DrawerLabel({ children }: { children: React.ReactNode }) {
-  return <p className="label px-4 pt-4 pb-1.5">{children}</p>;
+  return <p className="label pt-5 pb-2" style={{ paddingInline: 24 }}>{children}</p>;
 }
 
 // ─── Shell ───────────────────────────────────────────────────────────────
@@ -464,22 +464,55 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const businessSlug = business?.slug ? `${business.slug}.bapita.com` : "bapita.com";
   const initial = businessName.trim().charAt(0).toUpperCase() || "B";
 
+  // Shared top-strip actions — New booking + notifications, always visible.
+  const topActions = (
+    <div className="flex items-center gap-2 shrink-0">
+      <button
+        onClick={() => router.push("/new-booking")}
+        className="flex items-center gap-1.5 rounded-full transition-transform active:scale-95"
+        style={{
+          height: 36, paddingInline: 16, background: "var(--wash-amber)",
+          color: "#fff", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(232,146,10,0.26)",
+        }}
+        aria-label={t("New booking")}
+      >
+        <IconPlus size={16} />
+        <span className="whitespace-nowrap">{t("New booking")}</span>
+      </button>
+      <button
+        onClick={() => setNotificationsOpen(true)}
+        className="relative flex items-center justify-center rounded-full text-dark hover:bg-[var(--color-cream-2)] active:bg-[var(--color-cream-2)] transition-colors shrink-0"
+        style={{ width: 40, height: 40 }}
+        aria-label={t("Notifications")}
+      >
+        <IconBell size={20} />
+        {unreadCount > 0 && (
+          <span
+            className="absolute flex items-center justify-center rounded-full text-white font-bold"
+            style={{ top: 4, insetInlineEnd: 4, minWidth: 16, height: 16, padding: "0 3px", fontSize: 10, background: "var(--color-amber)", lineHeight: 1 }}
+          >
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+    </div>
+  );
+
   return (
     <LangProvider lang={lang}>
       {/* Root column: nav in normal flow on top, body fills the rest */}
       <div className="flex flex-col h-dvh">
       {/* ─── Desktop Top Nav ─────────────────────────────────────────── */}
       <div
-        className="relative hidden md:flex h-14 shrink-0 items-center border-b z-30"
+        className="relative hidden md:flex h-14 shrink-0 items-center gap-2 border-b z-30"
         style={{
-          paddingInline: 40,
+          paddingInline: 24,
           borderColor: "var(--line)",
-          background: "var(--nav-bg)",
-          backdropFilter: "var(--nav-blur)",
-          WebkitBackdropFilter: "var(--nav-blur)",
+          background: "var(--color-surface)",
         }}
       >
-        {/* Hamburger */}
+        {/* Hamburger — opens drawer (logo + full menu live inside) */}
         <button
           onClick={() => setDrawerOpen(true)}
           className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
@@ -490,7 +523,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
         <div className="flex-1" />
 
-        {/* Print — calendar only, right side */}
+        {/* Print — calendar only */}
         {onCalendar && (
           <button
             onClick={() => window.print()}
@@ -500,47 +533,32 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <IconPrint size={18} />
           </button>
         )}
-        {/* Notifications bell lives in the hamburger drawer only */}
+
+        {topActions}
       </div>
 
       {/* ─── Mobile Top Bar ───────────────────────────────────────────── */}
       <div
         data-noprint
-        className="md:hidden h-16 shrink-0 flex items-center px-4 border-b z-30 relative"
+        className="md:hidden h-16 shrink-0 flex items-center gap-2 border-b z-30 relative"
         style={{
+          paddingInline: 12,
           borderColor: "var(--line)",
-          background: "var(--nav-bg)",
-          backdropFilter: "var(--nav-blur)",
-          WebkitBackdropFilter: "var(--nav-blur)",
+          background: "var(--color-surface)",
         }}
       >
         <button
           onClick={() => setDrawerOpen(true)}
-          className="rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
-          style={{ padding: 14, marginInlineStart: 20 }}
+          className="rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors shrink-0"
+          style={{ padding: 10 }}
           aria-label={t("Open menu")}
         >
           <IconMenu size={24} />
         </button>
 
-        {onCalendar && chrome ? (
-          /* Calendar top bar — just the header label; search/filter live in toolbar */
-          <div className="flex-1 flex items-center justify-center px-2 overflow-hidden">
-            <span className="font-semibold text-[14px] text-dark truncate text-center leading-tight">
-              {chrome.headerLabel}
-            </span>
-          </div>
-        ) : (
-          <>
-            <div className="flex-1 flex justify-center">
-              <Wordmark />
-            </div>
-          </>
-        )}
+        <div className="flex-1" />
 
-        {/* Spacer mirrors the hamburger so the wordmark stays centered.
-            Notifications bell lives in the hamburger drawer only. */}
-        <div className="shrink-0" style={{ width: 24, padding: 14, marginInlineEnd: 20 }} aria-hidden />
+        {topActions}
       </div>
 
       {/* ─── Mobile Calendar Toolbar (calendar-only) ─────────────────── */}
@@ -726,22 +744,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
-
-      {/* ─── FAB → New Booking (calendar-only) ────────────────────────── */}
-      {onCalendar && !drawerOpen && !notificationsOpen && (
-        <button
-          data-noprint
-          onClick={() => router.push("/new-booking")}
-          className="md:hidden fixed end-4 z-40 w-14 h-14 rounded-full bg-amber text-white flex items-center justify-center active:scale-95 transition-transform"
-          style={{
-            bottom: "calc(72px + 16px + env(safe-area-inset-bottom))",
-            boxShadow: "0 4px 16px rgba(232,146,10,0.35)",
-          }}
-          aria-label={t("New booking")}
-        >
-          <IconPlus />
-        </button>
-      )}
 
       {/* ─── Body row: sidebar + main fill remaining height ──────────── */}
       <div className="flex flex-1 min-h-0">
@@ -1027,32 +1029,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         role="dialog"
         aria-label="Navigation menu"
       >
-        {/* Bapita wordmark + bell */}
-        <div className="px-5 border-b flex items-center justify-between" style={{ borderColor: "var(--color-cream-2)", minHeight: 56 }}>
+        {/* Bapita wordmark */}
+        <div className="flex items-center" style={{ paddingInline: 24, minHeight: 64 }}>
           <Wordmark />
-          <button
-            onClick={() => { setDrawerOpen(false); setNotificationsOpen(true); }}
-            className="relative flex items-center justify-center rounded-full text-dark hover:bg-[var(--color-cream-2)] active:bg-[var(--color-cream-2)] transition-colors shrink-0"
-            style={{ width: 44, height: 44, marginInlineEnd: -8 }}
-            aria-label={t("Notifications")}
-          >
-            <IconBell size={20} />
-            {unreadCount > 0 && (
-              <span
-                className="absolute flex items-center justify-center rounded-full text-white font-bold"
-                style={{
-                  top: 6, insetInlineEnd: 6,
-                  minWidth: 16, height: 16,
-                  padding: "0 3px",
-                  fontSize: 10,
-                  background: "var(--color-amber)",
-                  lineHeight: 1,
-                }}
-              >
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </button>
         </div>
 
         {/* Nav items */}
@@ -1100,10 +1079,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           )}
         </nav>
 
-        {/* Business name + sign out — bottom */}
-        <div className="border-t" style={{ borderColor: "var(--color-cream-2)" }}>
+        {/* Business name + sign out — bottom (no divider line) */}
+        <div style={{ paddingBottom: 12 }}>
           {/* Business identity */}
-          <div className="flex items-center gap-3 px-4 pt-5 pb-3">
+          <div className="flex items-center gap-3 pt-3 pb-3" style={{ paddingInline: 24 }}>
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-[15px] shrink-0"
               style={{ background: "var(--color-amber)" }}
@@ -1115,17 +1094,15 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <div className="text-[11px] truncate" style={{ color: "var(--color-muted)" }}>{businessSlug}</div>
             </div>
           </div>
-          {/* Sign out */}
-          <div className="px-2 pb-2">
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 rounded-xl text-start text-[15px] font-medium transition-colors hover:bg-[var(--color-cream)]"
-              style={{ height: 44, color: "var(--color-cancelled)" }}
-            >
-              <IconLogout />
-              {t("Sign out")}
-            </button>
-          </div>
+          {/* Sign out — aligned with nav items */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 mx-3 px-3 rounded-xl text-start text-[14px] font-medium transition-colors hover:bg-[var(--color-cream)]"
+            style={{ width: "calc(100% - 24px)", height: 42, color: "var(--color-cancelled)" }}
+          >
+            <IconLogout size={18} />
+            {t("Sign out")}
+          </button>
         </div>
       </div>
 

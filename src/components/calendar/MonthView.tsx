@@ -81,7 +81,7 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
       </div>
 
       {/* Framed month grid — unified hairline grid (social look) */}
-      <div className="shrink-0 px-0 md:px-6 md:pb-2">
+      <div className="shrink-0 px-0 pt-1 md:px-6 md:pt-2 md:pb-2">
         <div
           className="overflow-hidden md:rounded-2xl md:border"
           style={{ borderColor: "var(--line)", boxShadow: "var(--shadow-sm)" }}
@@ -97,7 +97,7 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
                   fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
                   fontSize: 11, fontWeight: 600, letterSpacing: "0.06em",
                   color: "var(--color-muted)", textTransform: "uppercase",
-                  paddingBlock: 8,
+                  paddingBlock: 11,
                 }}
               >
                 {t(d)}
@@ -120,8 +120,8 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
                   className="flex flex-col items-stretch text-start overflow-hidden transition-colors"
                   style={{
                     background: inMonth ? "var(--color-surface)" : "var(--color-cream)",
-                    minHeight: 96,
-                    padding: "6px 6px 4px",
+                    minHeight: 100,
+                    padding: "8px 8px 6px",
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = inMonth ? "var(--color-surface)" : "var(--color-cream)"; }}
