@@ -267,23 +267,24 @@ function WeekDayColumn({
             key={b.id}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onSelectBooking(b); }}
-            className="absolute rounded-[6px] overflow-hidden text-start border-s-[3px] transition-opacity active:opacity-70"
+            className="absolute rounded-lg overflow-hidden text-start border-s-[3px] transition-opacity active:opacity-70"
             style={{
               top, height,
               insetInlineStart: `calc(${lane * widthPct}% + 2px)`,
               width: `calc(${widthPct}% - 4px)`,
               borderColor: borderColor,
-              background: `${statusColor}14`,
-              padding: "4px 6px",
+              background: `${statusColor}1f`,
+              boxShadow: "0 1px 2px rgba(28,25,23,0.06)",
+              padding: "5px 8px",
               zIndex: 6,
-              opacity: isPast ? 0.4 : 1,
+              opacity: isPast ? 0.45 : 1,
             }}
           >
-            <div className="text-[11px] font-semibold leading-tight truncate" style={{ color: "var(--color-dark)" }}>
+            <div className="text-[12px] font-semibold leading-tight truncate" style={{ color: "var(--color-dark)" }}>
               {firstName(b.customer_name)}
             </div>
             {tall && b.service?.name && (
-              <div className="text-[10px] leading-tight truncate" style={{ color: "var(--color-muted)" }}>
+              <div className="text-[11px] leading-tight truncate mt-0.5" style={{ color: "var(--color-muted)" }}>
                 {b.service.name}
               </div>
             )}

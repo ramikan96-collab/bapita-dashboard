@@ -6,6 +6,10 @@ export type DashboardLang = "en" | "he";
 
 export const HE: Record<string, string> = {
   // Nav + drawer
+  "Menu": "תפריט",
+  "Manage": "ניהול",
+  "Account": "חשבון",
+  "more": "נוספים",
   "Calendar": "יומן",
   "Clients": "לקוחות",
   "Insights": "תובנות",

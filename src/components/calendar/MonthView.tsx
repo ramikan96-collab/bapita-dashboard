@@ -37,15 +37,11 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
     bookings.forEach((b) => {
       (map[b.appointment_date] ??= []).push(b);
     });
-    // keep each day sorted by time
     Object.values(map).forEach((list) =>
       list.sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
     );
     return map;
   }, [bookings]);
-
-  const weeks: Date[][] = [];
-  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
 
   return (
     <div
@@ -55,81 +51,88 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
       onTouchEnd={swipe.onTouchEnd}
     >
       {/* Month nav header */}
-      <div
-        className="shrink-0 flex items-center"
-        style={{ height: 48, borderBottom: "1px solid var(--color-cream-2)", background: "var(--color-cream)" }}
-      >
+      <div className="shrink-0 flex items-center justify-center gap-1 px-3 md:px-6" style={{ height: 56 }}>
         <button
           onClick={onPrev}
-          style={{ width: 48, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", cursor: "pointer", color: "var(--color-muted)", flexShrink: 0 }}
+          className="flex items-center justify-center rounded-full transition-colors hover:bg-[var(--color-cream-2)]"
+          style={{ width: 36, height: 36, color: "var(--color-muted)" }}
           aria-label="Previous month"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <div style={{ flex: 1, textAlign: "center", fontSize: 15, fontWeight: 700, color: "var(--color-dark)" }}>
+        <div
+          className="text-center"
+          style={{ minWidth: 168, fontSize: 17, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--color-dark)" }}
+        >
           {format(date, "MMMM yyyy", { locale: dateLocale })}
         </div>
         <button
           onClick={onNext}
-          style={{ width: 48, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", cursor: "pointer", color: "var(--color-muted)", flexShrink: 0 }}
+          className="flex items-center justify-center rounded-full transition-colors hover:bg-[var(--color-cream-2)]"
+          style={{ width: 36, height: 36, color: "var(--color-muted)" }}
           aria-label="Next month"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
       </div>
 
-      {/* Weekday header row */}
-      <div className="grid grid-cols-7 shrink-0" style={{ borderBottom: "1px solid var(--color-cream-2)" }}>
-        {DAYS.map((d) => (
-          <div
-            key={d}
-            className="text-center"
-            style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", paddingBlock: 6, textTransform: "uppercase", letterSpacing: 0.4 }}
-          >
-            {t(d)}
-          </div>
-        ))}
-      </div>
+      {/* Framed month grid — unified hairline grid (social look) */}
+      <div className="shrink-0 px-0 md:px-6 md:pb-2">
+        <div
+          className="overflow-hidden md:rounded-2xl md:border"
+          style={{ borderColor: "var(--line)", boxShadow: "var(--shadow-sm)" }}
+        >
+          <div className="grid grid-cols-7 gap-px" style={{ background: "var(--line)" }}>
+            {/* Weekday header cells */}
+            {DAYS.map((d) => (
+              <div
+                key={d}
+                className="text-center"
+                style={{
+                  background: "var(--color-surface)",
+                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                  fontSize: 11, fontWeight: 600, letterSpacing: "0.06em",
+                  color: "var(--color-muted)", textTransform: "uppercase",
+                  paddingBlock: 8,
+                }}
+              >
+                {t(d)}
+              </div>
+            ))}
 
-      {/* Month grid — fixed 80px per week row */}
-      <div className="shrink-0 grid" style={{ gridTemplateRows: `repeat(${weeks.length}, 80px)` }}>
-        {weeks.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7">
-            {week.map((day) => {
+            {/* Day cells */}
+            {days.map((day) => {
               const key     = format(day, "yyyy-MM-dd");
               const dayBkgs = byDay[key] ?? [];
               const isToday = isSameDay(day, today);
               const inMonth = isSameMonth(day, date);
-
-              const chips = dayBkgs.slice(0, MAX_CHIPS);
-              const extra = dayBkgs.length - chips.length;
+              const chips   = dayBkgs.slice(0, MAX_CHIPS);
+              const extra   = dayBkgs.length - chips.length;
 
               return (
                 <button
                   key={key}
                   onClick={() => onSelectDay(day)}
-                  className="flex flex-col items-stretch text-start overflow-hidden transition-colors hover:bg-white/40"
+                  className="flex flex-col items-stretch text-start overflow-hidden transition-colors"
                   style={{
-                    borderInlineStart: "1px solid var(--color-cream-2)",
-                    borderBottom: "1px solid var(--color-cream-2)",
-                    background: inMonth ? "transparent" : "rgba(107,96,82,0.03)",
-                    paddingTop: 4,
-                    paddingInline: 4,
+                    background: inMonth ? "var(--color-surface)" : "var(--color-cream)",
+                    minHeight: 96,
+                    padding: "6px 6px 4px",
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = inMonth ? "var(--color-surface)" : "var(--color-cream)"; }}
                 >
                   {/* Day number */}
                   <div className="flex justify-center md:justify-start">
                     <div
                       className="flex items-center justify-center rounded-full"
                       style={{
-                        width: 24,
-                        height: 24,
-                        fontSize: 13,
-                        fontWeight: isToday ? 800 : 500,
+                        width: 26, height: 26, fontSize: 13,
+                        fontWeight: isToday ? 700 : 500,
                         background: isToday ? "var(--color-amber)" : "transparent",
                         color: isToday ? "#fff" : inMonth ? "var(--color-dark)" : "var(--color-muted)",
                       }}
@@ -139,30 +142,26 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
                   </div>
 
                   {/* Event chips */}
-                  <div className="flex flex-col gap-0.5 mt-0.5 w-full">
+                  <div className="flex flex-col gap-1 mt-1 w-full">
                     {chips.map((b) => {
                       const color = STATUS_COLOR[b.status];
                       return (
                         <div
                           key={b.id}
-                          className="rounded-[4px] truncate"
-                          style={{
-                            fontSize: 10,
-                            lineHeight: "15px",
-                            paddingInline: 4,
-                            color: "var(--color-dark)",
-                            background: `${color}1f`,
-                            borderInlineStart: `2px solid ${color}`,
-                          }}
+                          className="flex items-center gap-1.5 truncate"
+                          style={{ fontSize: 11, lineHeight: "15px", color: "var(--color-dark)" }}
                         >
-                          <span style={{ fontWeight: 600 }}>{b.appointment_time.slice(0, 5)}</span>{" "}
-                          {firstName(b.customer_name)}
+                          <span className="shrink-0 rounded-full" style={{ width: 6, height: 6, background: color }} />
+                          <span className="truncate">
+                            <span style={{ fontWeight: 600 }}>{b.appointment_time.slice(0, 5)}</span>{" "}
+                            <span style={{ color: "var(--color-muted)" }}>{firstName(b.customer_name)}</span>
+                          </span>
                         </div>
                       );
                     })}
                     {extra > 0 && (
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", paddingInline: 4 }}>
-                        +{extra} more
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", paddingInlineStart: 12 }}>
+                        +{extra} {t("more")}
                       </div>
                     )}
                   </div>
@@ -170,11 +169,11 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
               );
             })}
           </div>
-        ))}
+        </div>
       </div>
 
       {/* Agenda section below grid */}
-      <div className="shrink-0 border-t" style={{ borderColor: "var(--color-cream-2)" }}>
+      <div className="shrink-0 mt-2">
         <AgendaList
           bookings={bookings}
           onSelectBooking={onSelectBooking}

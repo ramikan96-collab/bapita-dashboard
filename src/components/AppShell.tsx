@@ -286,6 +286,42 @@ const filterOptions: { value: BookingStatus; label: string }[] = filterStatuses.
   (s) => ({ value: s, label: STATUS_LABEL[s] })
 );
 
+// ─── Drawer nav item (social pill style) ────────────────────────────────────
+function DrawerItem({
+  Icon, label, active, onClick,
+}: {
+  Icon: (p: IconProps) => React.ReactElement;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-3 rounded-xl mx-2 px-3 text-start text-[15px] transition-colors"
+      style={{
+        width: "calc(100% - 16px)",
+        height: 44,
+        fontWeight: active ? 700 : 500,
+        color: active ? "var(--color-amber)" : "var(--color-dark)",
+        background: active ? "var(--color-sand)" : "transparent",
+      }}
+      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--color-cream)"; }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+    >
+      <span className="flex shrink-0" style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
+        <Icon size={20} />
+      </span>
+      {label}
+    </button>
+  );
+}
+
+// Group header — mono uppercase, matches globals `.label`
+function DrawerLabel({ children }: { children: React.ReactNode }) {
+  return <p className="label px-4 pt-4 pb-1.5">{children}</p>;
+}
+
 // ─── Shell ───────────────────────────────────────────────────────────────
 
 function AppShellInner({ children }: { children: React.ReactNode }) {
@@ -678,14 +714,14 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <span
                 className="flex items-center justify-center rounded-full transition-colors"
                 style={{
-                  width: 44,
-                  height: 28,
+                  width: 46,
+                  height: 30,
                   background: active ? "var(--amber-soft)" : "transparent",
                 }}
               >
                 <Icon />
               </span>
-              <span className="text-[10px] font-medium">{t(item.label)}</span>
+              <span className="text-[11px]" style={{ fontWeight: active ? 700 : 500 }}>{t(item.label)}</span>
             </button>
           );
         })}
@@ -712,7 +748,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       {/* ─── Left Sidebar (Calendar only) ────────────────────────────── */}
       {onCalendar && chrome && (
         <aside
-          className="hidden md:flex flex-col w-56 shrink-0 overflow-y-auto"
+          className="hidden md:flex flex-col w-60 shrink-0 overflow-y-auto"
           style={{
             background: "var(--color-cream)",
             borderInlineEnd: "1px solid var(--color-cream-2)",
@@ -813,12 +849,14 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     onClick={() => chrome.setView(v.value)}
                     style={{
                       width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                      padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "left",
+                      padding: "8px 10px", borderRadius: 10, fontSize: 13.5, textAlign: "left",
+                      fontWeight: active ? 700 : 500,
                       color: active ? "var(--color-amber)" : "var(--color-dark)",
-                      background: "transparent", border: "none", cursor: "pointer", transition: "background 0.12s",
+                      background: active ? "var(--color-sand)" : "transparent",
+                      border: "none", cursor: "pointer", transition: "background 0.12s",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--color-cream-2)"; }}
+                    onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                   >
                     {t(v.label)}
                     {active && <IconCheck size={12} />}
@@ -1018,93 +1056,47 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 overflow-y-auto pt-3 pb-2">
-          {/* Primary nav — Calendar, Clients, Insights (desktop only; mobile uses bottom nav) */}
+        <nav className="flex-1 overflow-y-auto pt-1 pb-2">
+          {/* Primary nav — desktop only; mobile uses bottom nav */}
           <div className="hidden md:block">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.path);
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => go(item.path)}
-                  className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
-                  style={{
-                    height: 48,
-                    background: active ? "rgba(232,146,10,0.05)" : "transparent",
-                    borderInlineStart: active ? "3px solid var(--color-amber)" : "3px solid transparent",
-                  }}
-                >
-                  <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
-                    <Icon />
-                  </span>
-                  {t(item.label)}
-                </button>
-              );
-            })}
-            <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
+            <DrawerLabel>{t("Menu")}</DrawerLabel>
+            {navItems.map((item) => (
+              <DrawerItem
+                key={item.path}
+                Icon={item.icon}
+                label={t(item.label)}
+                active={isActive(item.path)}
+                onClick={() => go(item.path)}
+              />
+            ))}
           </div>
-          {drawerItemsTop.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            return (
-              <button
-                key={item.path}
-                onClick={() => go(item.path)}
-                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
-                style={{
-                  height: 48,
-                  background: active ? "rgba(232,146,10,0.05)" : "transparent",
-                  borderInlineStart: active ? "3px solid var(--color-amber)" : "3px solid transparent",
-                }}
-              >
-                <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
-                  <Icon />
-                </span>
-                {t(item.label)}
-              </button>
-            );
-          })}
-          <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
-          {drawerItemsBottom.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            return (
-              <button
-                key={item.path}
-                onClick={() => go(item.path)}
-                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
-                style={{
-                  height: 48,
-                  background: active ? "rgba(232,146,10,0.05)" : "transparent",
-                  borderInlineStart: active ? "3px solid var(--color-amber)" : "3px solid transparent",
-                }}
-              >
-                <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
-                  <Icon />
-                </span>
-                {t(item.label)}
-              </button>
-            );
-          })}
+          <DrawerLabel>{t("Manage")}</DrawerLabel>
+          {drawerItemsTop.map((item) => (
+            <DrawerItem
+              key={item.path}
+              Icon={item.icon}
+              label={t(item.label)}
+              active={isActive(item.path)}
+              onClick={() => go(item.path)}
+            />
+          ))}
+          <DrawerLabel>{t("Account")}</DrawerLabel>
+          {drawerItemsBottom.map((item) => (
+            <DrawerItem
+              key={item.path}
+              Icon={item.icon}
+              label={t(item.label)}
+              active={isActive(item.path)}
+              onClick={() => go(item.path)}
+            />
+          ))}
           {isAdmin && (
-            <>
-              <div className="mx-4 my-1" style={{ height: 1, background: "var(--color-cream-2)" }} />
-              <button
-                onClick={() => go("/admin/businesses")}
-                className="w-full flex items-center gap-3 px-4 text-start text-[15px] text-dark transition-colors"
-                style={{
-                  height: 48,
-                  background: isActive("/admin") ? "rgba(232,146,10,0.05)" : "transparent",
-                  borderInlineStart: isActive("/admin") ? "3px solid var(--color-amber)" : "3px solid transparent",
-                }}
-              >
-                <span style={{ color: isActive("/admin") ? "var(--color-amber)" : "var(--color-muted)" }}>
-                  <IconAdmin />
-                </span>
-                {t("Admin")}
-              </button>
-            </>
+            <DrawerItem
+              Icon={IconAdmin}
+              label={t("Admin")}
+              active={isActive("/admin")}
+              onClick={() => go("/admin/businesses")}
+            />
           )}
         </nav>
 

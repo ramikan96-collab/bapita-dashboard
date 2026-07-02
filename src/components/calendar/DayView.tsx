@@ -182,23 +182,24 @@ export default function DayView({
                 key={b.id}
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => { e.stopPropagation(); onSelectBooking(b); }}
-                className="absolute rounded-[6px] overflow-hidden text-start border-s-[3px] transition-opacity active:opacity-70"
+                className="absolute rounded-lg overflow-hidden text-start border-s-[3px] transition-opacity active:opacity-70"
                 style={{
                   top, height,
                   insetInlineStart: `calc(${lane * widthPct}% + 4px)`,
                   width: `calc(${widthPct}% - 6px)`,
                   borderColor: borderColor,
-                  background: `${statusColor}14`,
-                  padding: "4px 8px",
+                  background: `${statusColor}1f`,
+                  boxShadow: "0 1px 2px rgba(28,25,23,0.06)",
+                  padding: "6px 10px",
                   zIndex: 6,
-                  opacity: isPast ? 0.4 : 1,
+                  opacity: isPast ? 0.45 : 1,
                 }}
               >
-                <div className="text-[12px] font-semibold leading-tight truncate" style={{ color: "var(--color-dark)" }}>
+                <div className="text-[13px] font-semibold leading-tight truncate" style={{ color: "var(--color-dark)" }}>
                   {b.customer_name}
                 </div>
                 {tall && (
-                  <div className="text-[11px] leading-tight truncate" style={{ color: "var(--color-muted)" }}>
+                  <div className="text-[11px] leading-tight truncate mt-0.5" style={{ color: "var(--color-muted)" }}>
                     {b.service?.name ? `${b.service.name} · ` : ""}{formatRange(b.appointment_time, duration)}
                   </div>
                 )}
