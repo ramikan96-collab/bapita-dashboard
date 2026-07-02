@@ -1,16 +1,27 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Bapita brand colors */
-  --color-dark:        #1E1A14;
-  --color-dark-footer: #16120D;
-  --color-amber:       #E8920A;
-  --color-amber-dark:  #B86800;
-  --color-amber-hover: #D4830A;
-  --color-cream:       #FAF5EC;
-  --color-cream-2:     #F5EFE3;
+  /* Bapita shared identity — warm paper base, per-product accent.
+     Book's accent = terracotta (v3 wheel). Old names kept as aliases. */
+  --color-dark:        #1C1917;
+  --color-dark-footer: #141110;
+  --color-amber:       #D4622A; /* Book primary (terracotta) — legacy name */
+  --color-amber-dark:  #B5511F;
+  --color-amber-hover: #B5511F;
+  --color-cream:       #F8F4EE; /* paper */
+  --color-cream-2:     #FDF0E4; /* sand */
   --color-terra:       #D4622A;
-  --color-muted:       #6B6052;
+  --color-muted:       #6B6259; /* ink-soft */
+
+  /* Canonical names (shared with social-ops) */
+  --color-primary:  #D4622A;
+  --color-ink:      #1C1917;
+  --color-ink-soft: #6B6259;
+  --color-paper:    #F8F4EE;
+  --color-sand:     #FDF0E4;
+  --color-line:     #ECE5DA;
+  --color-ok:       #3C7A52;
+  --color-fail:     #C2452D;
 
   /* Semantic */
   --color-background: var(--color-cream);
@@ -30,16 +41,66 @@
 
 /* HP shell tokens — gradients/shadows used via var() in inline styles */
 :root {
-  --line:         rgba(30,26,20,.09);
-  --amber-soft:   rgba(232,146,10,.10);
-  --wash-amber:   linear-gradient(157deg, #F8DEAE 0%, #E79B22 100%);
-  --wash-sand:    linear-gradient(157deg, #F6EEDF 0%, #E6CB9E 100%);
-  --shadow-sm:    0 2px 6px rgba(30,26,20,.05), 0 1px 2px rgba(30,26,20,.04);
-  --shadow-md:    0 6px 18px rgba(30,26,20,.07), 0 2px 6px rgba(30,26,20,.04);
-  --shadow-amber: 0 12px 30px rgba(232,146,10,.32);
+  --line:         #ECE5DA;
+  --amber-soft:   rgba(212,98,42,.10);
+  --wash-amber:   linear-gradient(157deg, #EFA778 0%, #C25520 100%);
+  --wash-sand:    linear-gradient(157deg, #F8F0E2 0%, #EAD3AC 100%);
+  --shadow-sm:    0 1px 2px rgba(28,25,23,.04), 0 4px 16px rgba(28,25,23,.03);
+  --shadow-md:    0 6px 18px rgba(28,25,23,.07), 0 2px 6px rgba(28,25,23,.04);
+  --shadow-amber: 0 12px 30px rgba(212,98,42,.32);
   --nav-blur:     saturate(140%) blur(12px);
-  --nav-bg:       rgba(250,245,236,.82);
+  --nav-bg:       rgba(248,244,238,.82);
+
+  /* Social-ops parity aliases */
+  --primary:   #D4622A;
+  --primary-d: #B5511F;
+  --accent:    #E8920A;
+  --ink:       #1C1917;
+  --ink-soft:  #6B6259;
+  --paper:     #F8F4EE;
+  --sand:      #FDF0E4;
+  --card:      #FFFFFF;
+  --ok:        #3C7A52;
+  --fail:      #C2452D;
 }
+
+/* ── Shared primitives (same vocabulary as social-ops) ─────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-soft);
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 12px; padding: 10px 16px;
+  font-weight: 600; font-size: 14px; cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.btn-primary { background: var(--primary); color: #fff; border: 1px solid var(--primary); }
+.btn-primary:hover { background: var(--primary-d); border-color: var(--primary-d); }
+.btn-ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+.btn-ghost:hover { background: var(--sand); color: var(--ink); }
+.field {
+  width: 100%; background: var(--card);
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 12px; font-size: 15px; color: var(--ink);
+}
+.field:focus { outline: 2px solid var(--primary); outline-offset: 0; border-color: var(--primary); }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  border-radius: 999px; padding: 2px 10px;
+  font-size: 12px; font-weight: 600;
+}
+.badge-scheduled { background: #FCEFD9; color: #9A5B00; }
+.badge-posted    { background: #E2F0E7; color: #2C6342; }
+.badge-failed    { background: #F7DEDA; color: #9A2E1C; }
+.badge-draft     { background: #ECE9E4; color: #6B6259; }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 

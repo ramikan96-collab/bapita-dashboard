@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Manage your bookings, clients, and business",
     start_url: "/",
     display: "standalone",
-    background_color: "#FAF5EC",
-    theme_color: "#E8920A",
+    background_color: "#F8F4EE",
+    theme_color: "#D4622A",
     icons: [
       {
         src: "/apple-icon.png",

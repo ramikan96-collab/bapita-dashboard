@@ -71,7 +71,7 @@ export default function AdminLeadsPage() {
                 Leads
               </h1>
               {pending > 0 && (
-                <span style={{ background: "#E8920A", color: "#fff", fontSize: 12, fontWeight: 700, borderRadius: 99, padding: "2px 8px" }}>
+                <span style={{ background: "var(--color-amber)", color: "#fff", fontSize: 12, fontWeight: 700, borderRadius: 99, padding: "2px 8px" }}>
                   {pending} new
                 </span>
               )}
