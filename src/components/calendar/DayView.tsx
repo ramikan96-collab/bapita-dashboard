@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useEffect } from "react";
 import { isSameDay, format } from "date-fns";
+import { useLang } from "@/i18n";
 import type { Booking, BlockedTime } from "@/types";
 import { STATUS_COLOR } from "@/types";
 import {
@@ -27,6 +28,7 @@ export default function DayView({
   date, bookings, blocked, openHour,
   onSelectBooking, onCreateAt, onLongPressAt, onBlockClick, onPrev, onNext,
 }: Props) {
+  const { t, dateLocale } = useLang();
   const scrollRef = useRef<HTMLDivElement>(null);
   const now = new Date();
   const isToday = isSameDay(date, now);
@@ -82,11 +84,11 @@ export default function DayView({
         </button>
         <div style={{ flex: 1, textAlign: "center" }}>
           <span style={{ fontSize: 15, fontWeight: 600, color: "var(--color-dark)" }}>
-            {format(date, "EEE, MMM d")}
+            {format(date, "EEE, MMM d", { locale: dateLocale })}
           </span>
           {isToday && (
             <span style={{ marginInlineStart: 8, fontSize: 11, fontWeight: 700, background: "var(--color-amber)", color: "#fff", padding: "1px 7px", borderRadius: 99 }}>
-              Today
+              {t("Today")}
             </span>
           )}
         </div>
@@ -217,7 +219,7 @@ export default function DayView({
       {bookings.length === 0 && blocked.length === 0 && (
         <div className="pointer-events-none sticky bottom-6 flex justify-center">
           <span className="text-[12px] px-3 py-1.5 rounded-full" style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}>
-            Tap a slot to book · {format(date, "EEE d MMM")}
+            {t("Tap a slot to book")} · {format(date, "EEE d MMM", { locale: dateLocale })}
           </span>
         </div>
       )}

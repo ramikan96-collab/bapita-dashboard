@@ -101,6 +101,7 @@ export interface Business {
   plan_renewal_date?:  string | null;
   plan_notes?:         string | null;
   default_lang?:       string | null;
+  dashboard_lang?:     string | null; // dashboard UI language ('en' | 'he')
   notification_email?: string | null;
   buffer_minutes?: number | null;
   advance_days?: number | null;

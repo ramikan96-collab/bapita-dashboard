@@ -6,6 +6,7 @@ import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/components/Toast";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
 import { FontPicker } from "@/components/FontPicker";
+import { useLang } from "@/i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -155,11 +156,12 @@ function InputField({
 }
 
 function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
+  const { t } = useLang();
   return (
     <div style={{ background: "var(--color-surface)", borderRadius: 16, boxShadow: "var(--shadow-sm)", border: "1px solid var(--color-cream-2)", overflow: "hidden" }}>
       {title && (
         <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid var(--color-cream-2)" }}>
-          <h3 style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em", margin: 0 }}>{title}</h3>
+          <h3 style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.07em", margin: 0 }}>{t(title)}</h3>
         </div>
       )}
       <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>{children}</div>
@@ -168,6 +170,7 @@ function SectionCard({ title, children }: { title?: string; children: React.Reac
 }
 
 function SaveButton({ onClick, saving, dirty }: { onClick: () => void; saving: boolean; dirty: boolean }) {
+  const { t } = useLang();
   return (
     <button
       onClick={onClick}
@@ -186,7 +189,7 @@ function SaveButton({ onClick, saving, dirty }: { onClick: () => void; saving: b
         transition: "background 0.15s, box-shadow 0.15s, color 0.15s",
       }}
     >
-      {saving ? "Saving…" : dirty ? "Save changes" : "No changes"}
+      {saving ? t("Saving…") : dirty ? t("Save changes") : t("No changes")}
     </button>
   );
 }
@@ -2051,10 +2054,67 @@ function OnboardingChecklist({
   );
 }
 
+// ─── Dashboard language card ──────────────────────────────────────────────────
+
+function DashboardLanguageCard({
+  business,
+  supabase,
+}: {
+  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
+  supabase: ReturnType<typeof createClient>;
+}) {
+  const { showToast } = useToast();
+  const { t } = useLang();
+  const [value, setValue] = useState<"en" | "he">(business.dashboard_lang === "he" ? "he" : "en");
+  const [saving, setSaving] = useState(false);
+
+  async function setLang(l: "en" | "he") {
+    if (l === value || saving) return;
+    const prev = value;
+    setValue(l);
+    setSaving(true);
+    const { error } = await supabase.from("businesses").update({ dashboard_lang: l }).eq("id", business.id);
+    setSaving(false);
+    if (error) {
+      setValue(prev);
+      showToast(getErrorMessage(error), "error");
+      return;
+    }
+    // All useBusiness instances (AppShell included) refetch — UI switches instantly.
+    window.dispatchEvent(new Event("bapita:business-updated"));
+    showToast(t("Saved"), "success");
+  }
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <SectionCard title="Dashboard language">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>{t("Dashboard language")}</div>
+            <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>{t("The language this dashboard is shown in")}</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", borderRadius: 9999, padding: "3px", gap: 2, background: "var(--color-cream-2)", flexShrink: 0 }}>
+            {(["en", "he"] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => setLang(l)}
+                style={{ padding: "6px 16px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: value === l ? "var(--color-amber)" : "transparent", color: value === l ? "#fff" : "var(--color-muted)" }}
+              >
+                {l === "en" ? "EN" : "עב"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const { business, loading: bizLoading, refresh, isAdmin } = useBusiness();
+  const { t } = useLang();
   const supabase = createClient();
   const [activeSection, setActiveSection] = useState<Section>("business");
   const dirtyRef = useRef(false);
@@ -2096,7 +2156,7 @@ export default function SettingsPage() {
       {/* Header + chip tabs */}
       <div style={{ flexShrink: 0, background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)", padding: "26px 24px 0" }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: "0 0 16px" }}>
-          Settings
+          {t("Settings")}
         </h1>
         <div style={{ display: "flex", gap: 8, paddingBottom: 18, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" }}>
           {SECTIONS.map((s) => {
@@ -2118,7 +2178,7 @@ export default function SettingsPage() {
                   color: active ? "#fff" : "var(--color-muted)",
                 }}
               >
-                {s.label}
+                {t(s.label)}
               </button>
             );
           })}
@@ -2133,6 +2193,9 @@ export default function SettingsPage() {
             supabase={supabase}
             onNavigate={(section) => handleSectionChange(section as Section)}
           />
+          {activeSection === "business" && (
+            <DashboardLanguageCard business={business!} supabase={supabase} />
+          )}
           {renderSection()}
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useMemo, useRef, useEffect, useCallback } from "react";
 import {
   addDays, eachDayOfInterval, isSameDay, format,
 } from "date-fns";
+import { useLang } from "@/i18n";
 import type { Booking, BlockedTime } from "@/types";
 import { STATUS_COLOR } from "@/types";
 import {
@@ -29,6 +30,7 @@ export default function WeekView({
   date, bookings, blocked, openHour,
   onSelectBooking, onCreateAt, onLongPressAt, onBlockClick, onSelectDay, onPrev, onNext,
 }: Props) {
+  const { dateLocale } = useLang();
   const scrollRef = useRef<HTMLDivElement>(null);
   const weekStart = date;
   const weekEnd   = addDays(date, 6);
@@ -114,7 +116,7 @@ export default function WeekView({
               className="flex-1 flex flex-col items-center justify-center gap-0.5"
             >
               <span style={{ fontSize: 11, fontWeight: 500, color: "var(--color-muted)" }}>
-                {format(day, "EEE")}
+                {format(day, "EEE", { locale: dateLocale })}
               </span>
               <span
                 className="flex items-center justify-center rounded-full"

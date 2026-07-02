@@ -1,6 +1,7 @@
 "use client";
 
 import { parseISO, isSameDay, format } from "date-fns";
+import { useLang } from "@/i18n";
 import type { Booking } from "@/types";
 import AgendaCard from "./AgendaCard";
 
@@ -15,11 +16,12 @@ export default function AgendaList({
   onSelectBooking,
   emptyMessage = "No appointments",
 }: Props) {
+  const { t, dateLocale } = useLang();
   if (bookings.length === 0) {
     return (
       <div className="flex items-center justify-center py-6 px-4">
         <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>
-          {emptyMessage}
+          {t(emptyMessage)}
         </span>
       </div>
     );
@@ -59,7 +61,7 @@ export default function AgendaList({
                 className="text-[13px] font-semibold"
                 style={{ color: isToday ? "var(--color-amber)" : "var(--color-dark)" }}
               >
-                {isToday ? `Today · ${format(day, "EEE, MMM d")}` : format(day, "EEEE, MMMM d")}
+                {isToday ? `${t("Today")} · ${format(day, "EEE, MMM d", { locale: dateLocale })}` : format(day, "EEEE, MMMM d", { locale: dateLocale })}
               </span>
               <span className="text-[12px] ms-auto" style={{ color: "var(--color-muted)" }}>
                 {list.length} appt{list.length !== 1 ? "s" : ""}

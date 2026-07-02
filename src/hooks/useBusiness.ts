@@ -63,5 +63,13 @@ export function useBusiness() {
     fetchBusiness();
   }, [fetchBusiness]);
 
+  // Any part of the app can broadcast that the business row changed
+  // (e.g. Settings saving dashboard_lang) — every instance refetches.
+  useEffect(() => {
+    const onUpdated = () => { fetchBusiness(); };
+    window.addEventListener("bapita:business-updated", onUpdated);
+    return () => window.removeEventListener("bapita:business-updated", onUpdated);
+  }, [fetchBusiness]);
+
   return { business, loading, refresh, isAdmin };
 }

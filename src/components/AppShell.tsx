@@ -12,6 +12,8 @@ import {
 } from "@/components/calendar/CalendarChrome";
 import CalendarSelectorPanel from "@/components/calendar/CalendarSelectorPanel";
 import { STATUS_LABEL, type BookingStatus } from "@/types";
+import { LangProvider } from "@/i18n";
+import { translate, type DashboardLang } from "@/i18n/dict";
 import { useNotifications } from "@/hooks/useNotifications";
 import { enablePush, disablePush, usePushStatus } from "@/components/PushInit";
 
@@ -234,7 +236,7 @@ function timeAgo(iso: string): string {
 function BapitaMark({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={(size * 90) / 110} viewBox="0 0 110 90" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path d="M8 16 Q8 86 55 86 Q102 86 102 16 Z" fill="#E8920A" />
+      <path d="M8 16 Q8 86 55 86 Q102 86 102 16 Z" fill="#D4622A" />
       <rect x="8" y="6" width="94" height="14" rx="7" fill="#B86800" />
       <path d="M18 34 Q55 52 92 34" stroke="white" strokeWidth="4.5" strokeLinecap="round" fill="none" />
       <path d="M24 56 Q55 72 86 56" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".55" />
@@ -329,9 +331,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   async function handleEnablePush() {
     const result = await enablePush();
     if (result === "ok") {
-      showToast("Push notifications enabled", "success");
+      showToast(t("Push notifications enabled"), "success");
     } else if (result === "denied") {
-      showToast("Notifications blocked — enable them in your browser settings", "error");
+      showToast(t("Notifications blocked — enable them in your browser settings"), "error");
     } else if (result === "needs-install") {
       showToast("Add Bapita to your home screen first, then enable notifications", "info");
     } else if (result === "unsupported") {
@@ -346,7 +348,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     if (pushStatus === "enabled") {
       const result = await disablePush();
       showToast(
-        result === "ok" ? "Push notifications turned off" : "Couldn't turn off notifications",
+        result === "ok" ? t("Push notifications turned off") : t("Couldn't turn off notifications"),
         result === "ok" ? "info" : "error"
       );
       refreshPushStatus();
@@ -410,7 +412,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       window.location.href = "https://bapita.com";
     } catch (error) {
       console.error("Logout error:", error);
-      showToast("Failed to sign out", "error");
+      showToast(t("Failed to sign out"), "error");
     }
   }
 
@@ -419,12 +421,15 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     router.push(path);
   }
 
-  const businessName = business?.name ?? "My Business";
+  const lang: DashboardLang = business?.dashboard_lang === "he" ? "he" : "en";
+  const t = (key: string) => translate(lang, key);
+
+  const businessName = business?.name ?? t("My Business");
   const businessSlug = business?.slug ? `${business.slug}.bapita.com` : "bapita.com";
   const initial = businessName.trim().charAt(0).toUpperCase() || "B";
 
   return (
-    <>
+    <LangProvider lang={lang}>
       {/* Root column: nav in normal flow on top, body fills the rest */}
       <div className="flex flex-col h-dvh">
       {/* ─── Desktop Top Nav ─────────────────────────────────────────── */}
@@ -442,7 +447,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         <button
           onClick={() => setDrawerOpen(true)}
           className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
-          aria-label="Open menu"
+          aria-label={t("Open menu")}
         >
           <IconMenu size={20} />
         </button>
@@ -454,7 +459,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => window.print()}
             className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
-            aria-label="Print"
+            aria-label={t("Print")}
           >
             <IconPrint size={18} />
           </button>
@@ -477,7 +482,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           onClick={() => setDrawerOpen(true)}
           className="rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
           style={{ padding: 14, marginInlineStart: 20 }}
-          aria-label="Open menu"
+          aria-label={t("Open menu")}
         >
           <IconMenu size={24} />
         </button>
@@ -523,7 +528,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <input
                 autoFocus
                 type="search"
-                placeholder="Search clients…"
+                placeholder={t("Search clients…")}
                 value={searchInput}
                 onChange={(e) => {
                   setSearchInput(e.target.value);
@@ -545,7 +550,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 className="shrink-0 text-[14px] font-semibold transition-opacity active:opacity-60"
                 style={{ color: "var(--color-amber)" }}
               >
-                Cancel
+                {t("Cancel")}
               </button>
             </>
           ) : (
@@ -585,10 +590,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 }}
               >
                 {chrome.statusFilter.length === 0
-                  ? "All"
+                  ? t("All")
                   : chrome.statusFilter.length === 1
-                    ? STATUS_LABEL[chrome.statusFilter[0]]
-                    : `${chrome.statusFilter.length} filters`}
+                    ? t(STATUS_LABEL[chrome.statusFilter[0]])
+                    : `${chrome.statusFilter.length} ${t("filters")}`}
                 <IconChevronDown size={14} />
               </button>
 
@@ -608,7 +613,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 }}
               >
                 <IconSearch size={14} />
-                Search
+                {t("Search")}
               </button>
 
               <div className="flex-1" />
@@ -629,7 +634,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Today
+                  {t("Today")}
                 </button>
               )}
 
@@ -638,7 +643,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 onClick={() => window.print()}
                 className="rounded-full text-dark active:bg-[var(--color-cream-2)] transition-colors"
                 style={{ padding: 10 }}
-                aria-label="Print"
+                aria-label={t("Print")}
               >
                 <IconPrint size={18} />
               </button>
@@ -680,7 +685,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               >
                 <Icon />
               </span>
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-[10px] font-medium">{t(item.label)}</span>
             </button>
           );
         })}
@@ -696,7 +701,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             bottom: "calc(72px + 16px + env(safe-area-inset-bottom))",
             boxShadow: "0 4px 16px rgba(232,146,10,0.35)",
           }}
-          aria-label="New booking"
+          aria-label={t("New booking")}
         >
           <IconPlus />
         </button>
@@ -728,7 +733,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(232,146,10,0.26)"; }}
             >
               <IconPlus size={16} />
-              New Booking
+              {t("New booking")}
             </button>
           </div>
 
@@ -744,7 +749,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <IconSearch size={14} />
               <input
                 type="search"
-                placeholder="Search clients…"
+                placeholder={t("Search clients…")}
                 value={searchInput}
                 onChange={(e) => {
                   setSearchInput(e.target.value);
@@ -793,7 +798,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               border: "none", cursor: "pointer",
             }}
           >
-            View
+            {t("View")}
             <span style={{ transform: viewSectionOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", display: "flex" }}>
               <IconChevronDown size={12} />
             </span>
@@ -815,7 +820,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                   >
-                    {v.label}
+                    {t(v.label)}
                     {active && <IconCheck size={12} />}
                   </button>
                 );
@@ -834,7 +839,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               border: "none", cursor: "pointer",
             }}
           >
-            Filter
+            {t("Filter")}
             <span style={{ transform: viewMenuOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", display: "flex" }}>
               <IconChevronDown size={12} />
             </span>
@@ -854,7 +859,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                 >
-                  Clear filters
+                  {t("Clear filters")}
                 </button>
               )}
               {filterOptions.map((opt) => {
@@ -888,7 +893,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     >
                       {active && <IconCheck size={9} />}
                     </span>
-                    {opt.label}
+                    {t(opt.label)}
                   </button>
                 );
               })}
@@ -906,7 +911,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               border: "none", cursor: "pointer",
             }}
           >
-            Calendars
+            {t("Calendars")}
             <span style={{ transform: calendarsSectionOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", display: "flex" }}>
               <IconChevronDown size={12} />
             </span>
@@ -919,7 +924,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 setCalendarFilter={chrome.setCalendarFilter}
               />
               <button
-                onClick={() => showToast("Multiple calendars coming soon", "info")}
+                onClick={() => showToast(t("Multiple calendars coming soon"), "info")}
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 8,
                   padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "left",
@@ -931,7 +936,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 <IconPlus size={13} />
-                Add calendar
+                {t("Add calendar")}
                 <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "var(--color-cream-2)", padding: "2px 6px", borderRadius: 4, color: "var(--color-muted)", letterSpacing: "0.04em" }}>
                   SOON
                 </span>
@@ -953,7 +958,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
-                Jump to today
+                {t("Jump to today")}
               </button>
             </>
           )}
@@ -991,7 +996,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             onClick={() => { setDrawerOpen(false); setNotificationsOpen(true); }}
             className="relative flex items-center justify-center rounded-full text-dark hover:bg-[var(--color-cream-2)] active:bg-[var(--color-cream-2)] transition-colors shrink-0"
             style={{ width: 44, height: 44, marginInlineEnd: -8 }}
-            aria-label="Notifications"
+            aria-label={t("Notifications")}
           >
             <IconBell size={20} />
             {unreadCount > 0 && (
@@ -1033,7 +1038,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
                     <Icon />
                   </span>
-                  {item.label}
+                  {t(item.label)}
                 </button>
               );
             })}
@@ -1056,7 +1061,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
                   <Icon />
                 </span>
-                {item.label}
+                {t(item.label)}
               </button>
             );
           })}
@@ -1078,7 +1083,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 <span style={{ color: active ? "var(--color-amber)" : "var(--color-muted)" }}>
                   <Icon />
                 </span>
-                {item.label}
+                {t(item.label)}
               </button>
             );
           })}
@@ -1097,7 +1102,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 <span style={{ color: isActive("/admin") ? "var(--color-amber)" : "var(--color-muted)" }}>
                   <IconAdmin />
                 </span>
-                Admin
+                {t("Admin")}
               </button>
             </>
           )}
@@ -1126,7 +1131,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               style={{ height: 44, color: "var(--color-cancelled)" }}
             >
               <IconLogout />
-              Sign out
+              {t("Sign out")}
             </button>
           </div>
         </div>
@@ -1149,7 +1154,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
             {/* Section label */}
             <div style={{ padding: "0 24px 10px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)" }}>
-              Filter by status
+              {t("Filter by status")}
             </div>
 
             {/* Options card */}
@@ -1160,7 +1165,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     onClick={() => chrome.setStatusFilter([])}
                     style={{ width: "100%", display: "flex", alignItems: "center", padding: "0 18px", height: 48, fontSize: 14, fontWeight: 700, textAlign: "left", background: "var(--color-surface)", border: "none", cursor: "pointer", color: "var(--color-amber)" }}
                   >
-                    Clear all filters
+                    {t("Clear all filters")}
                   </button>
                   <div style={{ height: 1, background: "var(--color-cream-2)" }} />
                 </>
@@ -1179,7 +1184,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                       }}
                       style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 18px", height: 52, fontSize: 15, textAlign: "left", background: "var(--color-surface)", border: "none", cursor: "pointer", color: active ? "var(--color-amber)" : "var(--color-dark)" }}
                     >
-                      {opt.label}
+                      {t(opt.label)}
                       {active && <IconCheck />}
                     </button>
                   </div>
@@ -1194,14 +1199,14 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   onClick={() => { chrome.onToday(); setFilterSheetOpen(false); }}
                   style={{ width: "100%", display: "flex", alignItems: "center", padding: "0 18px", height: 52, fontSize: 15, fontWeight: 600, textAlign: "left", background: "var(--color-surface)", border: "none", cursor: "pointer", color: "var(--color-amber)" }}
                 >
-                  Jump to today
+                  {t("Jump to today")}
                 </button>
               </div>
             )}
 
             {/* Calendars */}
             <div style={{ padding: "4px 24px 10px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)" }}>
-              Calendars
+              {t("Calendars")}
             </div>
             <div style={{ margin: "0 16px 16px", borderRadius: 16, overflow: "hidden", border: "1px solid var(--color-cream-2)" }}>
               <CalendarSelectorPanel
@@ -1243,14 +1248,14 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px 10px" }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-dark)" }}>Notifications</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-dark)" }}>{t("Notifications")}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllRead}
                     style={{ fontSize: 13, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                   >
-                    Mark all read
+                    {t("Mark all read")}
                   </button>
                 )}
                 {notifications.length > 0 && (
@@ -1258,7 +1263,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     onClick={deleteAll}
                     style={{ fontSize: 13, fontWeight: 600, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                   >
-                    Clear all
+                    {t("Clear all")}
                   </button>
                 )}
               </div>
@@ -1274,7 +1279,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <IconBell size={18} />
                 <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>
-                  Push on this device
+                  {t("Push on this device")}
                 </span>
                 {/* ? help */}
                 <button
@@ -1323,7 +1328,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <div style={{ overflowY: "auto", flex: 1 }}>
               {notifications.length === 0 ? (
                 <div style={{ padding: "32px 24px", textAlign: "center", color: "var(--color-muted)", fontSize: 14 }}>
-                  No notifications yet
+                  {t("No notifications yet")}
                 </div>
               ) : (
                 <div style={{ margin: "0 16px 16px", borderRadius: 16, overflow: "hidden", border: "1px solid var(--color-cream-2)" }}>
@@ -1418,7 +1423,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
             {/* Label */}
             <div style={{ padding: "0 24px 10px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)" }}>
-              View
+              {t("View")}
             </div>
 
             {/* Options card */}
@@ -1432,7 +1437,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                       onClick={() => { chrome.setView(v.value); setViewSheetOpen(false); }}
                       style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 18px", height: 52, fontSize: 15, textAlign: "left", background: "var(--color-surface)", border: "none", cursor: "pointer", color: active ? "var(--color-amber)" : "var(--color-dark)" }}
                     >
-                      {v.label}
+                      {t(v.label)}
                       {active && <IconCheck />}
                     </button>
                   </div>
@@ -1442,7 +1447,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           </div>
         </>
       )}
-    </>
+    </LangProvider>
   );
 }
 

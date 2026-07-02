@@ -5,6 +5,7 @@ import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, isSameMonth, isSameDay, format,
 } from "date-fns";
+import { useLang } from "@/i18n";
 import type { Booking } from "@/types";
 import { STATUS_COLOR } from "@/types";
 import { firstName, useSwipe } from "./grid";
@@ -23,6 +24,7 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MAX_CHIPS = 3;
 
 export default function MonthView({ date, bookings, onSelectDay, onSelectBooking, onPrev, onNext }: Props) {
+  const { t, dateLocale } = useLang();
   const today = new Date();
   const swipe = useSwipe(onNext, onPrev);
 
@@ -67,7 +69,7 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
           </svg>
         </button>
         <div style={{ flex: 1, textAlign: "center", fontSize: 15, fontWeight: 700, color: "var(--color-dark)" }}>
-          {format(date, "MMMM yyyy")}
+          {format(date, "MMMM yyyy", { locale: dateLocale })}
         </div>
         <button
           onClick={onNext}
@@ -88,7 +90,7 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
             className="text-center"
             style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", paddingBlock: 6, textTransform: "uppercase", letterSpacing: 0.4 }}
           >
-            {d}
+            {t(d)}
           </div>
         ))}
       </div>
