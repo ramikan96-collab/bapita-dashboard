@@ -31,6 +31,8 @@ export interface Booking {
   service: BookingService | null;
   label_id?: string | null;
   label?: Label | null;
+  staff_id?: string | null;
+  staff?: StaffMember | null;
 }
 
 export interface DayHours {
@@ -121,6 +123,7 @@ export interface Business {
   show_reviews?:       boolean | null;
   staff_members?:      StaffMember[] | null;
   show_staff?:         boolean | null;
+  allow_staff_choice?: boolean | null;
   // fonts (null = theme default) + Instagram feed
   heading_font?:       string | null;
   body_font?:          string | null;
@@ -133,6 +136,8 @@ export interface StaffMember {
   name:      string;
   role:      string;
   photo_url?: string | null;
+  color?:     string | null;
+  active?:    boolean;
 }
 
 export interface GoogleReview {
@@ -175,6 +180,7 @@ export interface Service {
   description?: string | null;
   description_he?: string | null;
   active: boolean;
+  staff_ids?: string[] | null;
   display_order: number;
   created_at?: string;
 }

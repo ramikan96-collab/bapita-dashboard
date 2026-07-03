@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from "react";
 
-export function useSlots(businessId: string, date: string | null, duration: number | null) {
+export function useSlots(
+  businessId: string,
+  date: string | null,
+  duration: number | null,
+  serviceId: string | null = null,
+  staffId: string | null = null,
+) {
   const [slots, setSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +21,11 @@ export function useSlots(businessId: string, date: string | null, duration: numb
     setSlots([]);
     setError(null);
 
-    fetch(`/api/public/slots?businessId=${businessId}&date=${date}&duration=${duration}`)
+    let url = `/api/public/slots?businessId=${businessId}&date=${date}&duration=${duration}`;
+    if (serviceId) url += `&serviceId=${serviceId}`;
+    if (staffId)   url += `&staffId=${staffId}`;
+
+    fetch(url)
       .then(r => r.json())
       .then(data => {
         if (!cancelled) { setSlots(data.slots || []); setLoading(false); }
@@ -25,7 +35,7 @@ export function useSlots(businessId: string, date: string | null, duration: numb
       });
 
     return () => { cancelled = true; };
-  }, [businessId, date, duration]);
+  }, [businessId, date, duration, serviceId, staffId]);
 
   return { slots, loading, error };
 }

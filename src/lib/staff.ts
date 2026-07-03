@@ -6,9 +6,8 @@ type Client = ReturnType<typeof createClient>;
 /**
  * Reconcile the public.staff table for a business with an editor's current list.
  * Upserts each member (preserving its id so existing references stay valid),
- * then deletes rows that were removed. The `color`/`active` columns are omitted,
- * so they default on insert and are left untouched on update. Throws the
- * Supabase error on failure.
+ * then deletes rows that were removed. Persists `color`/`active` (color defaults
+ * to null, active defaults to true when unset). Throws the Supabase error on failure.
  */
 export async function syncStaffTable(
   supabase: Client,
@@ -22,6 +21,8 @@ export async function syncStaffTable(
       name:        m.name.trim(),
       role:        (m.role || "").trim(),
       photo_url:   m.photo_url || null,
+      color:       m.color || null,
+      active:      m.active !== false,
       sort_order:  i,
     }));
     const { error } = await supabase.from("staff").upsert(rows, { onConflict: "id" });
@@ -39,8 +40,19 @@ export async function syncStaffTable(
 export async function loadStaff(supabase: Client, businessId: string): Promise<StaffMember[]> {
   const { data } = await supabase
     .from("staff")
-    .select("id, name, role, photo_url")
+    .select("id, name, role, photo_url, color, active")
     .eq("business_id", businessId)
+    .order("sort_order");
+  return (data || []) as StaffMember[];
+}
+
+/** Load only active staff (ordered) — for calendar filtering and booking assignment. */
+export async function loadActiveStaff(supabase: Client, businessId: string): Promise<StaffMember[]> {
+  const { data } = await supabase
+    .from("staff")
+    .select("id, name, role, photo_url, color, active")
+    .eq("business_id", businessId)
+    .neq("active", false)
     .order("sort_order");
   return (data || []) as StaffMember[];
 }

@@ -116,6 +116,22 @@ export const HE: Record<string, string> = {
   // Dashboard language card
   "Dashboard language": "שפת הממשק",
   "The language this dashboard is shown in": "השפה שבה מוצג הממשק",
+
+  // Team section
+  "Team": "צוות",
+  "Add team member": "הוסף איש צוות",
+  "Name": "שם",
+  "Role": "תפקיד",
+  "Calendar color": "צבע ביומן",
+  "Active": "פעיל",
+  "Remove": "הסרה",
+  "Let customers choose their professional": "אפשר ללקוחות לבחור איש צוות",
+  "Adds a \"choose your professional\" step to your booking page": "מוסיף שלב \"בחירת איש צוות\" לעמוד ההזמנות שלך",
+  "Add the people who work at your business — you'll be able to assign bookings to them and filter your calendar.": "הוסיפו את אנשי הצוות שעובדים אצלכם — תוכלו לשייך אליהם תורים ולסנן את היומן לפיהם.",
+  "Failed to upload photo": "העלאת התמונה נכשלה",
+  "Couldn't save. Please try again.": "לא הצלחנו לשמור. נסו שוב.",
+  "Who performs this": "מי נותן שירות זה",
+  "Any": "כל אחד",
 };
 
 export function translate(lang: DashboardLang, key: string): string {

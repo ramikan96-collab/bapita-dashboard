@@ -1047,6 +1047,14 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                           style={inputStyle}
                         />
                       </div>
+                      {/* Calendar color */}
+                      <input
+                        type="color"
+                        value={member.color || "#E8920A"}
+                        onChange={e => { setDirty(true); setStaffMembers(ms => ms.map((m, i) => i === idx ? { ...m, color: e.target.value } : m)); }}
+                        style={{ width:32, height:32, border:"none", background:"transparent", cursor:"pointer", flexShrink:0, marginTop:2 }}
+                        aria-label="Calendar color"
+                      />
                       {/* Remove */}
                       <button
                         type="button"
@@ -1058,7 +1066,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 </div>
                 <button
                   type="button"
-                  onClick={() => { setDirty(true); setStaffMembers(ms => [...ms, { id: crypto.randomUUID(), name: "", role: "", photo_url: null }]); }}
+                  onClick={() => { setDirty(true); setStaffMembers(ms => [...ms, { id: crypto.randomUUID(), name: "", role: "", photo_url: null, color: "#E8920A", active: true }]); }}
                   style={{ marginTop: staffMembers.length > 0 ? 8 : 0, width:"100%", height:38, borderRadius:10, border:"1.5px dashed var(--color-cream-2)", background:"transparent", color:"var(--color-muted)", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"border-color 0.15s, color 0.15s" }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor="var(--color-amber)"; e.currentTarget.style.color="var(--color-amber)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor="var(--color-cream-2)"; e.currentTarget.style.color="var(--color-muted)"; }}

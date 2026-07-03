@@ -72,3 +72,17 @@ export function getAvailableSlots(
 
   return slots;
 }
+
+/**
+ * Filter existing bookings to a single staff member.
+ * When staffId is null (customer chose "Any available"), returns all rows unchanged —
+ * the caller computes union availability across eligible staff.
+ * TODO(phase3): merge each staff member's Google Calendar busy blocks here.
+ */
+export function bookingsForStaff<T extends { staff_id?: string | null }>(
+  rows: T[],
+  staffId: string | null,
+): T[] {
+  if (!staffId) return rows;
+  return rows.filter((r) => r.staff_id === staffId);
+}

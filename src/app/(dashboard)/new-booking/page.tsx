@@ -6,8 +6,10 @@ import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/components/Toast";
+import { useLang } from "@/i18n";
 import { getAvailableSlots, type TimeSlot } from "@/lib/availability";
-import type { Service, Customer } from "@/types";
+import { loadActiveStaff } from "@/lib/staff";
+import type { Service, Customer, StaffMember } from "@/types";
 
 type Step = "client" | "service" | "datetime" | "confirm";
 const STEP_ORDER: Step[] = ["client", "service", "datetime", "confirm"];
@@ -155,6 +157,7 @@ function NewBookingInner() {
   const clientIdParam = searchParams.get("clientId");
   const { business, loading: bizLoading } = useBusiness();
   const { showToast } = useToast();
+  const { t } = useLang();
   const supabase = createClient();
 
   const [step,        setStep]        = useState<Step>("client");
@@ -173,6 +176,9 @@ function NewBookingInner() {
 
   const [services,         setServices]         = useState<Service[]>([]);
   const [selectedService,  setSelectedService]  = useState<Service | null>(null);
+
+  const [staff,            setStaff]            = useState<StaffMember[]>([]);
+  const [selectedStaffId,  setSelectedStaffId]  = useState<string | null>(null);
 
   const [selectedDate, setSelectedDate] = useState<Date>(dateParam ? parseISO(dateParam) : new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(timeParam ?? null);
@@ -225,9 +231,15 @@ function NewBookingInner() {
   useEffect(() => {
     if (!business) return;
     (async () => {
-      const { data } = await supabase.from("services").select("id, name, name_he, duration, price, active, display_order, business_id").eq("business_id", business.id).eq("active", true).order("display_order");
+      const { data } = await supabase.from("services").select("id, name, name_he, duration, price, active, display_order, business_id, staff_ids").eq("business_id", business.id).eq("active", true).order("display_order");
       setServices(data || []);
     })();
+  }, [business, supabase]);
+
+  // ─── Active staff ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!business) return;
+    loadActiveStaff(supabase, business.id).then(setStaff);
   }, [business, supabase]);
 
   // ─── Available slots ────────────────────────────────────────────────────
@@ -295,7 +307,7 @@ function NewBookingInner() {
       }
     }
 
-    const { error } = await supabase.from("bookings").insert({ business_id: business.id, customer_id: selectedClient.id, service_id: selectedService.id, customer_name: selectedClient.name, customer_phone: selectedClient.phone || null, customer_email: selectedClient.email || null, appointment_date: format(selectedDate, "yyyy-MM-dd"), appointment_time: selectedTime, status: "confirmed", payment_status: markAsPaid ? "cash" : "none", notes: notes.trim() || null });
+    const { error } = await supabase.from("bookings").insert({ business_id: business.id, customer_id: selectedClient.id, service_id: selectedService.id, staff_id: selectedStaffId, customer_name: selectedClient.name, customer_phone: selectedClient.phone || null, customer_email: selectedClient.email || null, appointment_date: format(selectedDate, "yyyy-MM-dd"), appointment_time: selectedTime, status: "confirmed", payment_status: markAsPaid ? "cash" : "none", notes: notes.trim() || null });
     if (error) { showToast("Couldn't create the booking. Please try again.", "error"); setSubmitting(false); return; }
     if (selectedClient.email && sendEmail) {
       fetch("/api/send-confirmation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ customerName: selectedClient.name, customerEmail: selectedClient.email, businessName: business.name || "", serviceName: selectedService.name || "", date: format(selectedDate, "yyyy-MM-dd"), time: selectedTime, businessId: business.id }) }).catch(console.error);
@@ -307,6 +319,7 @@ function NewBookingInner() {
   const resetWizard = useCallback(() => {
     setSuccess(false);
     setSelectedService(null);
+    setSelectedStaffId(null);
     setSelectedTime(timeParam ?? null);
     setSelectedDate(dateParam ? parseISO(dateParam) : new Date());
     setNotes("");
@@ -554,7 +567,7 @@ function NewBookingInner() {
                 return (
                   <button
                     key={service.id}
-                    onClick={() => { setSelectedService(service); setStep("datetime"); }}
+                    onClick={() => { setSelectedService(service); setSelectedStaffId(null); setStep("datetime"); }}
                     style={{
                       width: "100%",
                       textAlign: "start",
@@ -605,6 +618,51 @@ function NewBookingInner() {
                   onBlur={onBlurCream}
                 />
               </div>
+
+              {staff.length > 0 && (() => {
+                const eligibleStaff =
+                  selectedService.staff_ids && selectedService.staff_ids.length > 0
+                    ? staff.filter((s) => selectedService.staff_ids!.includes(s.id))
+                    : staff;
+                return (
+                  <div>
+                    <label style={labelStyle}>{t("Staff")}</label>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStaffId(null)}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
+                          border: `1.5px solid ${selectedStaffId === null ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+                          background: selectedStaffId === null ? "var(--amber-soft)" : "transparent", cursor: "pointer", fontSize: 13,
+                          color: "var(--color-dark)", fontFamily: "inherit",
+                        }}
+                      >
+                        {t("Any")}
+                      </button>
+                      {eligibleStaff.map((s) => {
+                        const on = selectedStaffId === s.id;
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setSelectedStaffId(s.id)}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
+                              border: `1.5px solid ${on ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+                              background: on ? "var(--amber-soft)" : "transparent", cursor: "pointer", fontSize: 13,
+                              color: "var(--color-dark)", fontFamily: "inherit",
+                            }}
+                          >
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.color || "var(--color-amber)" }} />
+                            {s.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div>
                 <label style={{ ...labelStyle, marginBottom: 10 }}>

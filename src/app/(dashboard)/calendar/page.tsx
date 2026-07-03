@@ -19,7 +19,8 @@ import BookingDrawer from "@/components/calendar/BookingDrawer";
 import BlockTimeSheet, { type BlockDraft } from "@/components/calendar/BlockTimeSheet";
 import { openHourFor, minsToTime } from "@/components/calendar/grid";
 import { CalendarSkeleton } from "@/components/LoadingSkeleton";
-import type { Booking, BlockedTime, BookingStatus } from "@/types";
+import { loadActiveStaff } from "@/lib/staff";
+import type { Booking, BlockedTime, BookingStatus, StaffMember } from "@/types";
 
 function applyPatch(bookings: Booking[], id: string, patch: Partial<Booking>): Booking[] {
   return bookings.map((b) => (b.id === id ? { ...b, ...patch } : b));
@@ -48,6 +49,7 @@ function CalendarPageInner() {
   const [blockDraft, setBlockDraft] = useState<BlockDraft | null>(null);
   const [statusFilter, setStatusFilter] = useState<BookingStatus[]>([]);
   const [calendarFilter, setCalendarFilter] = useState<string[]>([]);
+  const [staff, setStaff]         = useState<StaffMember[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Booking[] | null>(null);
   const dateInputRef              = useRef<HTMLInputElement>(null);
@@ -61,7 +63,7 @@ function CalendarPageInner() {
 
     const { data } = await supabase
       .from("bookings")
-      .select("*, service:services(name, duration, price), label:labels(id,name,color)")
+      .select("*, service:services(name, duration, price), label:labels(id,name,color), staff:staff(id,name,color)")
       .eq("business_id", business.id)
       .gte("appointment_date", format(s, "yyyy-MM-dd"))
       .lte("appointment_date", format(e, "yyyy-MM-dd"))
@@ -90,6 +92,11 @@ function CalendarPageInner() {
 
   useEffect(() => {
     if (!business) return;
+    loadActiveStaff(supabase, business.id).then(setStaff);
+  }, [business, supabase]);
+
+  useEffect(() => {
+    if (!business) return;
     const channel = supabase
       .channel("bookings-realtime")
       .on(
@@ -115,7 +122,7 @@ function CalendarPageInner() {
     if (!bookingParam) return;
     createClient()
       .from("bookings")
-      .select("*, service:services(name, duration, price), label:labels(id,name,color)")
+      .select("*, service:services(name, duration, price), label:labels(id,name,color), staff:staff(id,name,color)")
       .eq("id", bookingParam)
       .single()
       .then(({ data }) => {
@@ -158,10 +165,11 @@ function CalendarPageInner() {
       setStatusFilter,
       calendarFilter,
       setCalendarFilter,
+      staff,
       searchQuery,
       setSearchQuery,
     });
-  }, [date, view, statusFilter, isTodaySelected, headerLabel, setChrome]);
+  }, [date, view, statusFilter, isTodaySelected, headerLabel, setChrome, staff]);
 
   // Clear the top bar when leaving the calendar.
   useEffect(() => () => setChrome(null), [setChrome]);
@@ -176,7 +184,7 @@ function CalendarPageInner() {
     const timer = setTimeout(async () => {
       const { data } = await supabase
         .from("bookings")
-        .select("*, service:services(name, duration, price), label:labels(id,name,color)")
+        .select("*, service:services(name, duration, price), label:labels(id,name,color), staff:staff(id,name,color)")
         .eq("business_id", business.id)
         .ilike("customer_name", `%${q}%`)
         .order("appointment_date", { ascending: false })
@@ -300,8 +308,12 @@ function CalendarPageInner() {
 
   const openHour = openHourFor(business, view === "day" ? date : undefined);
 
-  const visibleBookings =
+  const byStatus =
     statusFilter.length === 0 ? bookings : bookings.filter((b) => statusFilter.includes(b.status));
+  const visibleBookings =
+    calendarFilter.length === 0
+      ? byStatus
+      : byStatus.filter((b) => b.staff_id != null && calendarFilter.includes(b.staff_id));
 
   return (
     <div className="flex flex-col h-full">

@@ -1,9 +1,12 @@
 "use client";
 
+import type { StaffMember } from "@/types";
+
 interface Props {
   ownerName: string;
   calendarFilter: string[];
   setCalendarFilter: (ids: string[]) => void;
+  staff: StaffMember[];
 }
 
 function Checkbox({ checked }: { checked: boolean }) {
@@ -30,6 +33,7 @@ export default function CalendarSelectorPanel({
   ownerName,
   calendarFilter,
   setCalendarFilter,
+  staff,
 }: Props) {
   const allChecked = calendarFilter.length === 0;
   const ownerChecked = allChecked || calendarFilter.includes("owner");
@@ -64,6 +68,20 @@ export default function CalendarSelectorPanel({
         />
         {ownerName}
       </button>
+      {staff.map((s) => {
+        const on = calendarFilter.includes(s.id);
+        return (
+          <button key={s.id}
+            onClick={() => setCalendarFilter(on ? calendarFilter.filter(id => id !== s.id) : [...calendarFilter.filter(id => id !== "owner"), s.id])}
+            style={{ ...rowStyle, color: on ? "var(--color-amber)" : "var(--color-dark)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+            <Checkbox checked={on} />
+            <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: s.color || "var(--color-amber)" }} />
+            {s.name}
+          </button>
+        );
+      })}
     </div>
   );
 }
