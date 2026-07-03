@@ -870,6 +870,20 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
           {/* ── LABEL ──────────────────────────────────────────────────── */}
           <Section label="Label">{renderLabel()}</Section>
 
+          {/* ── STAFF ──────────────────────────────────────────────────────── */}
+          <Section label="Staff">
+            {current.staff_id && current.staff ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--color-dark)" }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: current.staff.color || "var(--color-amber)" }} />
+                {current.staff.name}
+              </span>
+            ) : (
+              <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 999, background: "var(--color-cream-2)", color: "var(--color-muted)" }}>
+                Unassigned
+              </span>
+            )}
+          </Section>
+
           {/* ── CONTACT ────────────────────────────────────────────────── */}
           <Section label="Contact">{renderContact()}</Section>
 

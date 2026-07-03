@@ -6,8 +6,10 @@ import { ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/components/Toast";
+import { useLang } from "@/i18n";
 import { getAvailableSlots } from "@/lib/availability";
-import type { Booking, Service } from "@/types";
+import { loadActiveStaff } from "@/lib/staff";
+import type { Booking, Service, StaffMember } from "@/types";
 
 interface Props {
   booking: Booking;
@@ -27,19 +29,26 @@ function Spinner() {
 export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
   const { business } = useBusiness();
   const { showToast } = useToast();
+  const { t } = useLang();
   const supabase = createClient();
 
   const [serviceId, setServiceId] = useState<string>(booking.service_id);
   const [date, setDate] = useState<Date>(parseISO(booking.appointment_date));
   const [time, setTime] = useState<string | null>(booking.appointment_time.slice(0, 5));
   const [notes, setNotes] = useState<string>(booking.notes ?? "");
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(booking.staff_id ?? null);
 
   const [services, setServices] = useState<Service[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [slots, setSlots] = useState<{ time: string; available: boolean }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
+  const eligibleStaff =
+    selectedService?.staff_ids && selectedService.staff_ids.length > 0
+      ? staff.filter((s) => selectedService.staff_ids!.includes(s.id))
+      : staff;
 
   // ─── Load services ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -47,12 +56,19 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
     (async () => {
       const { data } = await supabase
         .from("services")
-        .select("id, name, duration, price, active, display_order, business_id")
+        .select("id, name, duration, price, active, display_order, business_id, staff_ids")
         .eq("business_id", business.id)
         .eq("active", true)
         .order("display_order");
       setServices((data as Service[]) || []);
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [business]);
+
+  // ─── Load active staff ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (!business) return;
+    loadActiveStaff(supabase, business.id).then(setStaff);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [business]);
 
@@ -96,6 +112,7 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
       appointment_date: dateStr,
       appointment_time: time,
       notes: notes.trim() || null,
+      staff_id: selectedStaffId,
     };
     const { error } = await supabase
       .from("bookings")
@@ -106,11 +123,14 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
       setSaving(false);
       return;
     }
+    const selectedStaff = staff.find((s) => s.id === selectedStaffId) ?? null;
     onSaved({
       service_id: serviceId,
       appointment_date: dateStr,
       appointment_time: time,
       notes: notes.trim() || null,
+      staff_id: selectedStaffId,
+      staff: selectedStaff,
       ...(selectedService
         ? {
             service: {
@@ -227,6 +247,48 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
               </div>
             )}
           </div>
+
+          {/* Staff */}
+          {staff.length > 0 && (
+            <div style={{ marginBottom: 18 }}>
+              <label className="block text-xs font-bold uppercase tracking-wide" style={{ color: "var(--color-muted)", marginBottom: 8 }}>
+                {t("Staff")}
+              </label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStaffId(null)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
+                    border: `1.5px solid ${selectedStaffId === null ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+                    background: selectedStaffId === null ? "var(--amber-soft)" : "transparent", cursor: "pointer", fontSize: 13,
+                    color: "var(--color-dark)", fontFamily: "inherit",
+                  }}
+                >
+                  {t("Any")}
+                </button>
+                {eligibleStaff.map((s) => {
+                  const on = selectedStaffId === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setSelectedStaffId(s.id)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
+                        border: `1.5px solid ${on ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+                        background: on ? "var(--amber-soft)" : "transparent", cursor: "pointer", fontSize: 13,
+                        color: "var(--color-dark)", fontFamily: "inherit",
+                      }}
+                    >
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.color || "var(--color-amber)" }} />
+                      {s.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Notes */}
           <div style={{ marginBottom: 4 }}>

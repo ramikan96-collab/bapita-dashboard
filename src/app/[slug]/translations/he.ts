@@ -24,6 +24,7 @@ export const he = {
   overlay: { stepOf: (n: number, t: number) => `${n} מתוך ${t}` },
   steps: {
     service: { title: "בחר שירות" },
+    staff: { title: "בחר איש צוות", any: "כל אחד פנוי" },
     date: { title: "בחר תאריך" },
     time: { title: "בחר שעה", noSlots: "אין זמנים פנויים" },
     contact: {

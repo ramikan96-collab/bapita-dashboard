@@ -7,10 +7,11 @@ import { useToast } from "@/components/Toast";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
 import { FontPicker } from "@/components/FontPicker";
 import { useLang } from "@/i18n";
+import { loadStaff, syncStaffTable } from "@/lib/staff";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Section = "business" | "services" | "hours" | "website" | "content";
+type Section = "business" | "services" | "hours" | "team" | "website" | "content";
 
 interface BookingSettings {
   buffer_minutes: number;
@@ -68,6 +69,7 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: "business", label: "Business" },
   { id: "services", label: "Services" },
   { id: "hours",    label: "Hours" },
+  { id: "team",     label: "Team" },
   { id: "website",  label: "Website" },
   { id: "content",  label: "Content" },
 ];
@@ -481,8 +483,10 @@ function ServicesSection({
   supabase: ReturnType<typeof createClient>;
   refresh: () => Promise<void>;
 }) {
+  const { t } = useLang();
   const { showToast } = useToast();
   const [services, setServices] = useState<Service[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
@@ -491,6 +495,7 @@ function ServicesSection({
   const [newDescHe, setNewDescHe] = useState("");
   const [newDuration, setNewDuration] = useState(30);
   const [newPrice, setNewPrice] = useState(100);
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   // Drag-to-reorder state
@@ -503,9 +508,11 @@ function ServicesSection({
   }, [business.id, supabase]);
 
   useEffect(() => { loadServices(); }, [loadServices]);
+  useEffect(() => { loadStaff(supabase, business.id).then(setStaff); }, [business.id, supabase]);
 
   function resetForm() {
     setNewName(""); setNewNameHe(""); setNewDescHe(""); setNewDuration(30); setNewPrice(100);
+    setSelectedStaffIds([]);
     setShowForm(false); setEditingId(null);
   }
 
@@ -516,6 +523,7 @@ function ServicesSection({
     setNewDescHe(s.description_he || "");
     setNewDuration(s.duration);
     setNewPrice(s.price);
+    setSelectedStaffIds(s.staff_ids ?? []);
     setShowForm(false);
   }
 
@@ -527,12 +535,14 @@ function ServicesSection({
         name: newName.trim(), name_he: newNameHe.trim() || null,
         description_he: newDescHe.trim() || null,
         duration: newDuration, price: newPrice,
+        staff_ids: selectedStaffIds,
       }).eq("id", editingId);
     } else {
       await supabase.from("services").insert({
         business_id: business.id, name: newName.trim(),
         name_he: newNameHe.trim() || null, description_he: newDescHe.trim() || null,
         duration: newDuration, price: newPrice, active: true, display_order: services.length,
+        staff_ids: selectedStaffIds,
       });
     }
     await loadServices();
@@ -656,6 +666,32 @@ function ServicesSection({
           />
         </div>
       </div>
+      {staff.length > 0 && (
+        <div>
+          <label style={svcLabel}>{t("Who performs this")}</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {staff.map((s) => {
+              const on = selectedStaffIds.includes(s.id);
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setSelectedStaffIds((ids) => (on ? ids.filter((x) => x !== s.id) : [...ids, s.id]))}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
+                    border: `1.5px solid ${on ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+                    background: on ? "var(--amber-soft)" : "transparent", cursor: "pointer", fontSize: 13,
+                    color: "var(--color-dark)", fontFamily: "inherit",
+                  }}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.color || "var(--color-amber)" }} />
+                  {s.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div style={{ display: "flex", gap: 10 }}>
         <button
           onClick={saveService}
@@ -1067,6 +1103,183 @@ function HoursSection({
             ))}
           </div>
         )}
+      </SectionCard>
+
+      <SaveButton onClick={save} saving={saving} dirty={dirty} />
+    </div>
+  );
+}
+
+// ─── Team section (staff table — scheduling source of truth) ─────────────────
+
+function TeamSection({
+  business,
+  supabase,
+  refresh,
+}: {
+  business: NonNullable<ReturnType<typeof useBusiness>["business"]>;
+  supabase: ReturnType<typeof createClient>;
+  refresh: () => Promise<void>;
+}) {
+  const { t } = useLang();
+  const { showToast } = useToast();
+  const [staff, setStaff]           = useState<StaffMember[]>([]);
+  const [origStaff, setOrigStaff]   = useState<StaffMember[]>([]);
+  const [staffUploading, setStaffUploading] = useState<Record<string, boolean>>({});
+  const [allowChoice, setAllowChoice] = useState(!!business.allow_staff_choice);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadStaff(supabase, business.id).then((rows) => { setStaff(rows); setOrigStaff(rows); });
+  }, [business.id, supabase]);
+
+  const dirty = JSON.stringify(staff) !== JSON.stringify(origStaff);
+
+  async function uploadStaffPhoto(memberId: string, memberIdx: number, file: File) {
+    setStaffUploading((s) => ({ ...s, [memberId]: true }));
+    const ext  = file.name.split(".").pop();
+    const path = `profiles/staff/${business.id}/${memberId}.${ext}`;
+    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data } = supabase.storage.from("business-images").getPublicUrl(path);
+      setStaff((ms) => ms.map((m, i) => i === memberIdx ? { ...m, photo_url: data.publicUrl } : m));
+    } else {
+      showToast(t("Failed to upload photo"), "error");
+    }
+    setStaffUploading((s) => ({ ...s, [memberId]: false }));
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      await syncStaffTable(supabase, business.id, staff);
+      // keep the public "meet the team" JSON (Website section) in sync
+      await supabase.from("businesses").update({ staff_members: staff }).eq("id", business.id);
+      setOrigStaff(staff);
+      await refresh();
+      showToast(t("Saved"), "success");
+    } catch {
+      showToast(t("Couldn't save. Please try again."), "error");
+    }
+    setSaving(false);
+  }
+
+  async function toggleAllowChoice() {
+    const next = !allowChoice;
+    setAllowChoice(next);
+    const { error } = await supabase.from("businesses").update({ allow_staff_choice: next }).eq("id", business.id);
+    if (error) {
+      setAllowChoice(!next);
+      showToast(t("Couldn't save. Please try again."), "error");
+    } else {
+      await refresh();
+    }
+  }
+
+  const svcLabel: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" };
+  const svcInput: React.CSSProperties = { height: 38, padding: "0 12px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", fontSize: 13, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <SectionCard title="Team">
+        {staff.length === 0 && (
+          <p style={{ fontSize: 13, color: "var(--color-muted)", margin: 0 }}>{t("Add the people who work at your business — you'll be able to assign bookings to them and filter your calendar.")}</p>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {staff.map((member, idx) => (
+            <div key={member.id} style={{ background: "var(--color-cream)", border: "1.5px solid var(--color-cream-2)", borderRadius: 12, padding: "12px 14px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+              {/* Photo */}
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "var(--color-cream-2)", border: "1.5px solid var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {member.photo_url
+                    ? <img src={member.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <span style={{ fontSize: 20 }}>👤</span>
+                  }
+                </div>
+                <label style={{ position: "absolute", bottom: -2, right: -2, width: 20, height: 20, borderRadius: "50%", background: "var(--color-amber)", border: "2px solid var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: staffUploading[member.id] ? "default" : "pointer", opacity: staffUploading[member.id] ? 0.6 : 1 }}>
+                  {staffUploading[member.id]
+                    ? <div style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid #fff", borderTopColor: "transparent", animation: "spin 0.7s linear infinite" }} />
+                    : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  }
+                  <input
+                    type="file" accept="image/*" style={{ display: "none" }}
+                    disabled={staffUploading[member.id]}
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) uploadStaffPhoto(member.id, idx, f); }}
+                  />
+                </label>
+              </div>
+
+              {/* Name + Role + Color + Active */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+                <div>
+                  <label style={svcLabel}>{t("Name")}</label>
+                  <input
+                    value={member.name}
+                    onChange={(e) => setStaff((ms) => ms.map((m, i) => i === idx ? { ...m, name: e.target.value } : m))}
+                    placeholder={t("Name")}
+                    style={svcInput}
+                  />
+                </div>
+                <div>
+                  <label style={svcLabel}>{t("Role")}</label>
+                  <input
+                    value={member.role}
+                    onChange={(e) => setStaff((ms) => ms.map((m, i) => i === idx ? { ...m, role: e.target.value } : m))}
+                    placeholder="e.g. Hairstylist"
+                    style={svcInput}
+                  />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <label style={{ ...svcLabel, marginBottom: 0 }}>{t("Calendar color")}</label>
+                    <input
+                      type="color"
+                      value={member.color || "#E8920A"}
+                      onChange={(e) => setStaff((ms) => ms.map((m, i) => i === idx ? { ...m, color: e.target.value } : m))}
+                      style={{ width: 28, height: 28, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}
+                      aria-label={t("Calendar color")}
+                    />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-muted)" }}>{t("Active")}</span>
+                    <Toggle
+                      on={member.active !== false}
+                      onChange={() => setStaff((ms) => ms.map((m, i) => i === idx ? { ...m, active: m.active === false } : m))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Remove */}
+              <button
+                type="button"
+                onClick={() => setStaff((ms) => ms.filter((_, i) => i !== idx))}
+                style={{ height: 32, width: 32, borderRadius: 8, border: "1.5px solid #FCA5A5", background: "transparent", color: "#991B1B", cursor: "pointer", fontSize: 16, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 2 }}
+                aria-label={t("Remove")}
+              >×</button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setStaff((ms) => [...ms, { id: crypto.randomUUID(), name: "", role: "", photo_url: null, color: "#E8920A", active: true }])}
+          style={{ marginTop: staff.length > 0 ? 8 : 0, width: "100%", height: 46, borderRadius: 12, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "var(--color-surface)", border: "1.5px dashed var(--color-cream-2)", color: "var(--color-dark)", cursor: "pointer", transition: "border-color 0.15s, color 0.15s, background 0.15s", boxShadow: "var(--shadow-sm)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; e.currentTarget.style.background = "var(--amber-soft)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-dark)"; e.currentTarget.style.background = "var(--color-surface)"; }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          {t("Add team member")}
+        </button>
+      </SectionCard>
+
+      <SectionCard>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>{t("Let customers choose their professional")}</div>
+            <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>{t("Adds a \"choose your professional\" step to your booking page")}</div>
+          </div>
+          <Toggle on={allowChoice} onChange={toggleAllowChoice} />
+        </div>
       </SectionCard>
 
       <SaveButton onClick={save} saving={saving} dirty={dirty} />
@@ -2146,6 +2359,7 @@ export default function SettingsPage() {
       case "business": return <BusinessSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} />;
       case "services": return <ServicesSection business={business!} supabase={supabase} refresh={refresh} />;
       case "hours":    return <HoursSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} />;
+      case "team":     return <TeamSection business={business!} supabase={supabase} refresh={refresh} />;
       case "website":  return <WebsiteSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} which="website" />;
       case "content":  return <WebsiteSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} which="content" />;
     }

@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import type { Service } from "@/types";
 
-export type BookingStep = "service" | "date" | "time" | "contact" | "success";
+export type BookingStep = "service" | "staff" | "date" | "time" | "contact" | "success";
 
 export interface ContactInfo {
   name: string;
@@ -14,6 +14,7 @@ export interface ContactInfo {
 export interface BookingState {
   step: BookingStep;
   service: Service | null;
+  staffId: string | null;
   date: string | null;
   time: string | null;
   contact: ContactInfo;
@@ -23,10 +24,11 @@ export interface BookingState {
 
 const EMPTY_CONTACT: ContactInfo = { name: "", phone: "", email: "" };
 
-export function useBookingFlow(initialService?: Service | null) {
+export function useBookingFlow(initialService?: Service | null, staffChoice = false) {
   const [state, setState] = useState<BookingState>({
-    step: initialService ? "date" : "service",
+    step: initialService ? (staffChoice ? "staff" : "date") : "service",
     service: initialService ?? null,
+    staffId: null,
     date: null,
     time: null,
     contact: EMPTY_CONTACT,
@@ -39,7 +41,11 @@ export function useBookingFlow(initialService?: Service | null) {
   stateRef.current = state;
 
   const setService = useCallback((service: Service) => {
-    setState(s => ({ ...s, service, step: "date", date: null, time: null }));
+    setState(s => ({ ...s, service, step: staffChoice ? "staff" : "date", staffId: null, date: null, time: null }));
+  }, [staffChoice]);
+
+  const setStaff = useCallback((staffId: string | null) => {
+    setState(s => ({ ...s, staffId, step: "date", date: null, time: null }));
   }, []);
 
   const setDate = useCallback((date: string) => {
@@ -58,10 +64,11 @@ export function useBookingFlow(initialService?: Service | null) {
     setState(s => {
       if (s.step === "contact") return { ...s, step: "time" };
       if (s.step === "time")    return { ...s, step: "date", time: null };
-      if (s.step === "date")    return { ...s, step: "service", date: null };
+      if (s.step === "date")    return { ...s, step: staffChoice ? "staff" : "service", date: null };
+      if (s.step === "staff")   return { ...s, step: "service", staffId: null };
       return s;
     });
-  }, []);
+  }, [staffChoice]);
 
   const submit = useCallback(async (businessId: string, businessName: string, lang?: string) => {
     const s = stateRef.current;
@@ -81,6 +88,7 @@ export function useBookingFlow(initialService?: Service | null) {
           servicePrice: s.service!.price,
           date: s.date,
           time: s.time,
+          staffId: s.staffId,
           customerName: s.contact.name,
           customerPhone: s.contact.phone,
           customerEmail: s.contact.email || null,
@@ -98,5 +106,5 @@ export function useBookingFlow(initialService?: Service | null) {
     }
   }, []);
 
-  return { state, setService, setDate, setTime, setContact, goBack, submit };
+  return { state, setService, setStaff, setDate, setTime, setContact, goBack, submit };
 }

@@ -963,6 +963,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 ownerName={businessName}
                 calendarFilter={chrome.calendarFilter}
                 setCalendarFilter={chrome.setCalendarFilter}
+                staff={chrome.staff ?? []}
               />
               <button
                 onClick={() => showToast(t("Multiple calendars coming soon"), "info")}
@@ -1183,6 +1184,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 ownerName={businessName}
                 calendarFilter={chrome.calendarFilter}
                 setCalendarFilter={chrome.setCalendarFilter}
+                staff={chrome.staff ?? []}
               />
             </div>
           </div>

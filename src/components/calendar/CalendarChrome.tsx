@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
-import type { BookingStatus } from "@/types";
+import type { BookingStatus, StaffMember } from "@/types";
 
 export type CalView = "day" | "week" | "month" | "agenda";
 
@@ -18,6 +18,7 @@ export interface CalendarChrome {
   setStatusFilter: (s: BookingStatus[]) => void;
   calendarFilter: string[];
   setCalendarFilter: (ids: string[]) => void;
+  staff: StaffMember[];
   searchQuery: string;
   setSearchQuery: (q: string) => void;
 }

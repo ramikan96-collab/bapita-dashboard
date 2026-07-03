@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import type { Business, Service } from "@/types";
 import { useBookingFlow } from "../hooks/useBookingFlow";
 import { useSlots }       from "../hooks/useSlots";
+import { StaffStep }      from "./steps/StaffStep";
 import { DateStep }       from "./steps/DateStep";
 import { TimeStep }       from "./steps/TimeStep";
 import { ContactStep }    from "./steps/ContactStep";
@@ -35,12 +36,22 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
   const localizedServices = services.map(localize);
   const localizedInitial = initialService ? localize(initialService) : null;
 
-  const { state, setService, setDate, setTime, setContact, goBack, submit } = useBookingFlow(localizedInitial);
+  const staffMembers = business.staff_members ?? [];
+  const staffChoice = !!business.allow_staff_choice && staffMembers.length > 0;
+
+  const { state, setService, setStaff, setDate, setTime, setContact, goBack, submit } = useBookingFlow(localizedInitial, staffChoice);
   const { slots, loading: slotsLoading } = useSlots(
     business.id,
     state.date,
-    state.service?.duration ?? null
+    state.service?.duration ?? null,
+    state.service?.id ?? null,
+    state.staffId
   );
+
+  // Staff eligible for the chosen service (empty staff_ids = anyone).
+  const eligibleStaff = state.service?.staff_ids?.length
+    ? staffMembers.filter(m => state.service!.staff_ids!.includes(m.id))
+    : staffMembers;
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -54,12 +65,14 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
   }, [onClose]);
 
   const fromCard   = !!initialService;
-  const totalSteps = fromCard ? 3 : 4;
-  const STEP_NUM: Record<string, number> = fromCard
-    ? { date:1, time:2, contact:3, success:3 }
-    : { service:1, date:2, time:3, contact:4, success:4 };
-  const stepNum = STEP_NUM[state.step] ?? 1;
-  const isFirst = fromCard ? state.step === "date" : state.step === "service";
+  const stepOrder: string[] = [
+    ...(fromCard ? [] : ["service"]),
+    ...(staffChoice ? ["staff"] : []),
+    "date", "time", "contact",
+  ];
+  const totalSteps = stepOrder.length;
+  const stepNum = state.step === "success" ? totalSteps : (stepOrder.indexOf(state.step) + 1 || 1);
+  const isFirst = stepOrder[0] === state.step;
 
   return (
     <>
@@ -166,6 +179,16 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
                 </button>
               ))}
             </div>
+          )}
+
+          {state.step === "staff" && state.service && (
+            <StaffStep
+              staff={eligibleStaff}
+              onSelect={setStaff}
+              accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
+              stepTitle={t.steps.staff.title}
+              anyLabel={t.steps.staff.any}
+            />
           )}
 
           {state.step === "date" && state.service && (

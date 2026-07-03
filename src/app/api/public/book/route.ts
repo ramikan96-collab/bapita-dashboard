@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { bookingsForStaff } from "@/lib/availability";
 import nodemailer from "nodemailer";
+
+interface ExistingBookingRow {
+  appointment_time: string;
+  staff_id: string | null;
+  service: { duration: number } | { duration: number }[] | null;
+}
+
+function toMins(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
 
 function esc(s: unknown): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -89,7 +101,7 @@ export async function POST(req: NextRequest) {
     serviceId, serviceName, serviceDuration, servicePrice,
     date, time,
     customerName, customerPhone, customerEmail,
-    lang,
+    lang, staffId,
   } = await req.json();
 
   if (!businessId || !serviceId || !date || !time || !customerName || !customerPhone) {
@@ -127,26 +139,80 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Conflict check — prevent double-booking race conditions
+  // Load same-day bookings for conflict checking + staff resolution.
   const { data: existingBookings } = await supabase
     .from("bookings")
-    .select("appointment_time, service:services(duration)")
+    .select("appointment_time, staff_id, service:services(duration)")
     .eq("business_id", businessId)
     .eq("appointment_date", date)
-    .in("status", ["confirmed", "pending"]);
+    .in("status", ["confirmed", "pending"]) as { data: ExistingBookingRow[] | null };
 
-  if (existingBookings && serviceDuration) {
-    const toMins = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-    const newStart = toMins(time);
-    const newEnd = newStart + serviceDuration;
-    const conflict = existingBookings.some((b: { appointment_time: string; service: { duration: number } | { duration: number }[] | null }) => {
-      const bStart = toMins(b.appointment_time);
-      const bDur = Array.isArray(b.service) ? (b.service[0]?.duration || 30) : (b.service?.duration || 30);
-      return newStart < bStart + bDur && newEnd > bStart;
-    });
-    if (conflict) {
-      return NextResponse.json({ error: "This time slot was just taken. Please go back and choose another time." }, { status: 409 });
+  const bookedRows = existingBookings || [];
+  const newStart = serviceDuration ? toMins(time) : 0;
+  const newEnd = newStart + (serviceDuration || 0);
+  const overlaps = (rows: ExistingBookingRow[]) => rows.some((b) => {
+    const bStart = toMins(b.appointment_time);
+    const bDur = Array.isArray(b.service) ? (b.service[0]?.duration || 30) : (b.service?.duration || 30);
+    return newStart < bStart + bDur && newEnd > bStart;
+  });
+  const takenErr = () => NextResponse.json(
+    { error: "This time slot was just taken. Please go back and choose another time." },
+    { status: 409 }
+  );
+
+  // Staff assignment only applies when the business enabled customer staff choice.
+  // OFF → identical to pre-staff behavior: global overlap guard, staff_id stays null
+  //       (the owner assigns in the dashboard).
+  // ON  → conflicts are scoped per staff, so two different staff can be booked concurrently.
+  const { data: bizChoice } = await supabase
+    .from("businesses")
+    .select("allow_staff_choice")
+    .eq("id", businessId)
+    .single();
+  const staffChoice = !!bizChoice?.allow_staff_choice;
+
+  let assignedStaffId: string | null = null;
+
+  if (!staffChoice) {
+    // Global double-booking guard (pre-staff behavior).
+    if (serviceDuration && overlaps(bookedRows)) return takenErr();
+  } else {
+    // Resolve the eligible staff pool: service.staff_ids, else all active staff.
+    let eligibleStaffIds: string[] = [];
+    if (serviceId) {
+      const { data: service } = await supabase
+        .from("services")
+        .select("staff_ids")
+        .eq("id", serviceId)
+        .single();
+      eligibleStaffIds = (service?.staff_ids as string[] | null) || [];
     }
+    if (eligibleStaffIds.length === 0) {
+      const { data: activeStaff } = await supabase
+        .from("staff")
+        .select("id")
+        .eq("business_id", businessId)
+        .neq("active", false);
+      eligibleStaffIds = (activeStaff || []).map((s) => s.id as string);
+    }
+
+    const explicit = typeof staffId === "string" && staffId ? staffId : null;
+    if (explicit) {
+      // Per-staff overlap guard for the chosen professional.
+      if (serviceDuration && overlaps(bookingsForStaff(bookedRows, explicit))) return takenErr();
+      assignedStaffId = explicit;
+    } else if (eligibleStaffIds.length > 0) {
+      // "Any available" — pick the first eligible staff free at this time.
+      if (serviceDuration) {
+        for (const sid of eligibleStaffIds) {
+          if (!overlaps(bookingsForStaff(bookedRows, sid))) { assignedStaffId = sid; break; }
+        }
+        if (!assignedStaffId) return takenErr(); // every eligible staff is busy
+      } else {
+        assignedStaffId = eligibleStaffIds[0];
+      }
+    }
+    // else: choice enabled but no staff configured → leave null (defensive; UI hides the step).
   }
 
   // Upsert customer by phone + business
@@ -167,6 +233,7 @@ export async function POST(req: NextRequest) {
   const { error: bookingError } = await supabase.from("bookings").insert({
     business_id: businessId,
     service_id: serviceId,
+    staff_id: assignedStaffId,
     customer_id: customer.id,
     customer_name: customerName,
     customer_phone: customerPhone,

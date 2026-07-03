@@ -24,6 +24,7 @@ export const en = {
   overlay: { stepOf: (n: number, t: number) => `${n} of ${t}` },
   steps: {
     service: { title: "Choose a service" },
+    staff: { title: "Choose your professional", any: "Any available" },
     date: { title: "Choose a date" },
     time: { title: "Choose a time", noSlots: "No available times" },
     contact: {
