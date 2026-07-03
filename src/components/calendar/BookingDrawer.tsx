@@ -59,12 +59,13 @@ function ActionBtn({
     <button
       onClick={onClick}
       disabled={loading}
-      className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold transition-opacity disabled:opacity-50"
+      className="flex-1 rounded-2xl text-[14px] font-bold transition-opacity disabled:opacity-50"
       style={{
         background: primary ? color : `${color}22`,
         border: primary ? "none" : `1.5px solid ${color}40`,
         color: primary ? "#fff" : color,
         minWidth: 0,
+        padding: "13px 8px",
       }}
     >
       {label}
@@ -81,10 +82,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-8">
+    <div style={{ marginBottom: 26 }}>
       <p
-        className="text-[10px] font-bold uppercase tracking-wider mb-3 px-1"
-        style={{ color: "var(--color-muted)" }}
+        className="text-[10px] font-bold uppercase tracking-wider"
+        style={{ color: "var(--color-muted)", marginBottom: 10, paddingInlineStart: 4 }}
       >
         {label}
       </p>
@@ -118,17 +119,20 @@ function StatusSheet({
     >
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="relative w-full max-w-md rounded-t-2xl px-5 pt-3 pb-10"
-        style={{ background: "var(--color-surface)" }}
+        className="relative w-full max-w-md rounded-t-2xl"
+        style={{
+          background: "var(--color-surface)",
+          padding: "12px 20px calc(28px + env(safe-area-inset-bottom))",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="w-10 h-1 rounded-full mx-auto mb-4"
-          style={{ background: "var(--color-cream-2)" }}
+          className="w-10 h-1 rounded-full mx-auto"
+          style={{ background: "var(--color-cream-2)", marginBottom: 16 }}
         />
         <p
-          className="text-center text-xs font-bold uppercase tracking-widest mb-4"
-          style={{ color: "var(--color-muted)" }}
+          className="text-center text-xs font-bold uppercase tracking-widest"
+          style={{ color: "var(--color-muted)", marginBottom: 16 }}
         >
           Change status
         </p>
@@ -137,10 +141,11 @@ function StatusSheet({
             <button
               key={s}
               onClick={() => onSelect(s)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-opacity"
+              className="flex items-center gap-3 rounded-xl transition-opacity"
               style={{
                 background: s === current ? STATUS_BG[s] : "var(--color-cream)",
                 border: `1.5px solid ${s === current ? STATUS_COLOR[s] : "transparent"}`,
+                padding: "12px 16px",
               }}
             >
               <span
@@ -210,23 +215,26 @@ function CheckoutModal({ booking, onDone, onClose }: CheckoutProps) {
     >
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-md rounded-t-2xl px-6 pt-6 pb-10 shadow-2xl"
-        style={{ background: "var(--color-surface)" }}
+        className="relative w-full max-w-md rounded-t-2xl shadow-2xl"
+        style={{
+          background: "var(--color-surface)",
+          padding: "20px 24px calc(28px + env(safe-area-inset-bottom))",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="w-10 h-1 rounded-full mx-auto mb-5"
-          style={{ background: "var(--color-cream-2)" }}
+          className="w-10 h-1 rounded-full mx-auto"
+          style={{ background: "var(--color-cream-2)", marginBottom: 20 }}
         />
         <p
-          className="text-center font-black text-lg mb-1"
-          style={{ color: "var(--color-dark)" }}
+          className="text-center font-black text-lg"
+          style={{ color: "var(--color-dark)", marginBottom: 4 }}
         >
           How did they pay?
         </p>
         <p
-          className="text-center text-xs mb-6"
-          style={{ color: "var(--color-muted)" }}
+          className="text-center text-xs"
+          style={{ color: "var(--color-muted)", marginBottom: 22 }}
         >
           {booking.customer_name} · {booking.service?.name}
         </p>
@@ -236,10 +244,11 @@ function CheckoutModal({ booking, onDone, onClose }: CheckoutProps) {
               key={key}
               disabled={saving}
               onClick={() => handlePay(key)}
-              className="flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all disabled:opacity-50"
+              className="flex flex-col items-center gap-2 rounded-2xl border-2 transition-all disabled:opacity-50"
               style={{
                 borderColor: "var(--color-cream-2)",
                 background: "var(--color-cream)",
+                padding: "16px 8px",
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.borderColor =
@@ -450,11 +459,12 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
     return (
       <button
         onClick={() => setShowLabelPicker(true)}
-        className="flex items-center gap-3 w-full px-5 py-4 rounded-2xl text-start"
+        className="flex items-center gap-3 w-full rounded-2xl text-start"
         style={{
           background: "var(--color-surface)",
           border: "1px solid var(--color-cream-2)",
-          boxShadow: "0 2px 8px rgba(30,26,20,0.06)",
+          boxShadow: "0 1px 3px rgba(30,26,20,0.05)",
+          padding: "15px 18px",
         }}
       >
         {label ? (
@@ -511,17 +521,18 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
         style={{
           background: "var(--color-surface)",
           border: "1px solid var(--color-cream-2)",
-          boxShadow: "0 2px 8px rgba(30,26,20,0.06)",
+          boxShadow: "0 1px 3px rgba(30,26,20,0.05)",
         }}
       >
         {current.customer_phone ? (
           <button
             onClick={() => copyText(current.customer_phone!, setCopiedPhone)}
-            className="flex items-center gap-4 px-5 py-4 w-full text-start"
+            className="flex items-center gap-4 w-full text-start"
             style={{
               background: "none",
               border: "none",
               cursor: "pointer",
+              padding: "14px 18px",
               borderBottom: current.customer_email
                 ? "1px solid var(--color-cream-2)"
                 : "none",
@@ -540,8 +551,9 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
           </button>
         ) : (
           <div
-            className="flex items-center gap-4 px-5 py-4"
+            className="flex items-center gap-4"
             style={{
+              padding: "14px 18px",
               borderBottom: current.customer_email
                 ? "1px solid var(--color-cream-2)"
                 : "none",
@@ -556,8 +568,8 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
         {current.customer_email ? (
           <button
             onClick={() => copyText(current.customer_email!, setCopiedEmail)}
-            className="flex items-center gap-4 px-5 py-4 w-full text-start"
-            style={{ background: "none", border: "none", cursor: "pointer" }}
+            className="flex items-center gap-4 w-full text-start"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "14px 18px" }}
           >
             <Mail size={16} strokeWidth={2} className="shrink-0" style={{ color: "var(--color-dark)" }} />
             <span className="text-[15px] font-semibold flex-1 truncate" style={{ color: "var(--color-dark)" }}>
@@ -571,7 +583,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
             </span>
           </button>
         ) : (
-          <div className="flex items-center gap-4 px-5 py-4">
+          <div className="flex items-center gap-4" style={{ padding: "14px 18px" }}>
             <Mail size={16} strokeWidth={2} className="shrink-0 opacity-30" style={{ color: "var(--color-muted)" }} />
             <span className="text-[15px]" style={{ color: "var(--color-muted)" }}>
               No email
@@ -600,12 +612,12 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
           style={{
             background: "var(--color-surface)",
             border: "1px solid var(--color-cream-2)",
-            boxShadow: "0 2px 8px rgba(30,26,20,0.06)",
+            boxShadow: "0 1px 3px rgba(30,26,20,0.05)",
           }}
         >
           <div
-            className="flex items-center justify-between px-5 py-4"
-            style={{ borderBottom: "1px solid var(--color-cream-2)" }}
+            className="flex items-center justify-between"
+            style={{ padding: "14px 18px", borderBottom: "1px solid var(--color-cream-2)" }}
           >
             <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>
               Service price
@@ -617,7 +629,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
               {price != null ? `₪${price}` : "—"}
             </span>
           </div>
-          <div className="flex items-center justify-between px-5 py-4">
+          <div className="flex items-center justify-between" style={{ padding: "14px 18px" }}>
             <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>
               Payment
             </span>
@@ -635,8 +647,8 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
         {ps === "none" && (
           <button
             onClick={() => setShowCheckout(true)}
-            className="w-full py-4 rounded-2xl text-[15px] font-bold"
-            style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)" }}
+            className="w-full rounded-2xl text-[15px] font-bold"
+            style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)", padding: "15px 0" }}
           >
             Mark as paid →
           </button>
@@ -667,7 +679,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
   function renderHistory() {
     if (!current.customer_id) {
       return (
-        <div className="rounded-2xl px-5 py-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)" }}>
+        <div className="rounded-2xl" style={{ padding: "14px 18px", background: "var(--color-surface)", border: "1px solid var(--color-cream-2)" }}>
           <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>No client profile linked.</p>
         </div>
       );
@@ -686,7 +698,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
     }
     if (prevBooking === null) {
       return (
-        <div className="rounded-2xl px-5 py-4" style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)" }}>
+        <div className="rounded-2xl" style={{ padding: "14px 18px", background: "var(--color-surface)", border: "1px solid var(--color-cream-2)" }}>
           <p className="text-[14px]" style={{ color: "var(--color-muted)" }}>No previous bookings.</p>
         </div>
       );
@@ -695,11 +707,12 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
     return (
       <div className="flex flex-col gap-3">
         <div
-          className="rounded-2xl px-5 py-4 flex flex-col gap-1"
+          className="rounded-2xl flex flex-col gap-1"
           style={{
+            padding: "15px 18px",
             background: "var(--color-surface)",
             border: "1px solid var(--color-cream-2)",
-            boxShadow: "0 2px 8px rgba(30,26,20,0.06)",
+            boxShadow: "0 1px 3px rgba(30,26,20,0.05)",
           }}
         >
           <p className="text-[15px] font-bold" style={{ color: "var(--color-dark)" }}>
@@ -723,11 +736,12 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
         </div>
         <a
           href={`/clients/${current.customer_id}`}
-          className="flex items-center justify-center py-4 rounded-2xl text-[14px] font-bold"
+          className="flex items-center justify-center rounded-2xl text-[14px] font-bold"
           style={{
+            padding: "15px 0",
             background: "var(--color-surface)",
             border: "1px solid var(--color-cream-2)",
-            boxShadow: "0 2px 8px rgba(30,26,20,0.06)",
+            boxShadow: "0 1px 3px rgba(30,26,20,0.05)",
             color: "var(--color-amber)",
           }}
         >
@@ -755,18 +769,23 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
         onClick={(e) => e.stopPropagation()}
       >
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-6 pb-8">
+        <div
+          className="overflow-y-auto flex-1"
+          style={{ padding: "0 20px 20px" }}
+        >
           {/* Drag handle — mobile only */}
           <div
-            className="w-10 h-1 rounded-full mx-auto mt-3 mb-1 md:hidden"
-            style={{ background: "var(--color-cream-2)" }}
+            className="w-10 h-1 rounded-full mx-auto md:hidden"
+            style={{ background: "var(--color-cream-2)", marginTop: 10, marginBottom: 2 }}
           />
 
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 end-4 w-8 h-8 flex items-center justify-center rounded-full"
+            className="absolute w-8 h-8 flex items-center justify-center rounded-full z-10"
             style={{
+              top: 14,
+              insetInlineEnd: 14,
               background: "var(--color-cream-2)",
               color: "var(--color-muted)",
               fontSize: 14,
@@ -777,16 +796,16 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
           </button>
 
           {/* ── HEADER ─────────────────────────────────────────────────── */}
-          <div className="pt-8 pb-7 md:pt-6">
+          <div style={{ paddingTop: 28, paddingBottom: 24 }}>
             {/* Avatar + name + status */}
-            <div className="flex items-start gap-4 mb-4">
+            <div className="flex items-start gap-4" style={{ marginBottom: 18 }}>
               <div
                 className="w-14 h-14 rounded-full flex items-center justify-center text-[18px] font-black shrink-0"
                 style={{ background: "var(--color-amber)", color: "#fff" }}
               >
                 {initials(current.customer_name)}
               </div>
-              <div className="flex-1 min-w-0 pt-1">
+              <div className="flex-1 min-w-0" style={{ paddingTop: 2 }}>
                 <p
                   className="font-black leading-tight truncate"
                   style={{ fontSize: 22, color: "var(--color-dark)" }}
@@ -795,8 +814,8 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
                 </p>
                 <button
                   onClick={() => setShowStatusSheet(true)}
-                  className="mt-2 px-3 py-1 rounded-full text-[12px] font-bold inline-flex items-center gap-1"
-                  style={{ background: statusBg, color }}
+                  className="rounded-full text-[12px] font-bold inline-flex items-center gap-1"
+                  style={{ background: statusBg, color, marginTop: 8, padding: "4px 12px" }}
                   title="Tap to change status"
                 >
                   {STATUS_LABEL[current.status]}
@@ -807,15 +826,17 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
 
             {/* Date + time card */}
             <div
-              className="rounded-2xl px-5 py-4"
+              className="rounded-2xl"
               style={{
+                padding: "16px 18px",
                 background: "var(--color-surface)",
                 border: "1px solid var(--color-cream-2)",
+                boxShadow: "0 1px 3px rgba(30,26,20,0.05)",
               }}
             >
               <p
-                className="text-[13px] font-medium mb-1"
-                style={{ color: "var(--color-muted)" }}
+                className="text-[13px] font-medium"
+                style={{ color: "var(--color-muted)", marginBottom: 4 }}
               >
                 {format(date, "EEEE, d MMM yyyy")}
               </p>
@@ -834,8 +855,8 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
               </p>
               {current.service?.name && (
                 <p
-                  className="mt-1 text-[14px]"
-                  style={{ color: "var(--color-muted)" }}
+                  className="text-[14px]"
+                  style={{ color: "var(--color-muted)", marginTop: 4 }}
                 >
                   {current.service.name}
                 </p>
@@ -844,7 +865,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
           </div>
 
           {/* ── ACTIONS ────────────────────────────────────────────────── */}
-          <div className="mb-9">{renderActions()}</div>
+          <div style={{ marginBottom: 28 }}>{renderActions()}</div>
 
           {/* ── LABEL ──────────────────────────────────────────────────── */}
           <Section label="Label">{renderLabel()}</Section>
@@ -864,8 +885,12 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
 
         {/* Sticky footer */}
         <div
-          className="shrink-0 px-6 py-4 border-t"
-          style={{ borderColor: "var(--color-cream-2)", background: "var(--color-surface)" }}
+          className="shrink-0 border-t"
+          style={{
+            borderColor: "var(--color-cream-2)",
+            background: "var(--color-surface)",
+            padding: "14px 20px calc(14px + env(safe-area-inset-bottom))",
+          }}
         >
           {showDeleteConfirm ? (
             <div className="flex flex-col gap-2">
@@ -876,16 +901,16 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={deleting}
-                  className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold"
-                  style={{ background: "var(--color-cream-2)", color: "var(--color-dark)" }}
+                  className="flex-1 rounded-2xl text-[14px] font-bold"
+                  style={{ background: "var(--color-cream-2)", color: "var(--color-dark)", padding: "13px 0" }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold disabled:opacity-50"
-                  style={{ background: "#EF4444", color: "#fff" }}
+                  className="flex-1 rounded-2xl text-[14px] font-bold disabled:opacity-50"
+                  style={{ background: "#EF4444", color: "#fff", padding: "13px 0" }}
                 >
                   {deleting ? "Deleting…" : "Yes, delete"}
                 </button>
@@ -895,15 +920,15 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
             <div className="flex gap-3">
               <button
                 onClick={() => setShowEdit(true)}
-                className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold"
-                style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)" }}
+                className="flex-1 rounded-2xl text-[14px] font-bold"
+                style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)", padding: "13px 0" }}
               >
                 Edit
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="flex-1 py-3.5 rounded-2xl text-[14px] font-bold"
-                style={{ background: "#FEE2E2", color: "#EF4444" }}
+                className="flex-1 rounded-2xl text-[14px] font-bold"
+                style={{ background: "#FEE2E2", color: "#EF4444", padding: "13px 0" }}
               >
                 Delete
               </button>
