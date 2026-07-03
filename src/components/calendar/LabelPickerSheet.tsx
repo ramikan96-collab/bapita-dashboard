@@ -121,26 +121,26 @@ export default function LabelPickerSheet({
     >
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="relative w-full max-w-md rounded-t-2xl px-5 pt-3 pb-10 max-h-[80vh] flex flex-col"
-        style={{ background: "#fff" }}
+        className="relative w-full max-w-md rounded-t-2xl max-h-[80vh] flex flex-col"
+        style={{ background: "#fff", padding: "12px 20px calc(28px + env(safe-area-inset-bottom))" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}
         <div
-          className="w-10 h-1 rounded-full mx-auto mb-4 shrink-0"
-          style={{ background: "var(--color-cream-2)" }}
+          className="w-10 h-1 rounded-full mx-auto shrink-0"
+          style={{ background: "var(--color-cream-2)", marginBottom: 16 }}
         />
 
         <p
-          className="text-center text-xs font-bold uppercase tracking-widest mb-4 shrink-0"
-          style={{ color: "var(--color-muted)" }}
+          className="text-center text-xs font-bold uppercase tracking-widest shrink-0"
+          style={{ color: "var(--color-muted)", marginBottom: 16 }}
         >
           Label
         </p>
 
         <div className="overflow-y-auto flex-1 flex flex-col gap-1">
           {fetchLoading ? (
-            <p className="text-sm text-center py-4" style={{ color: "var(--color-muted)" }}>
+            <p className="text-sm text-center" style={{ color: "var(--color-muted)", padding: "16px 0" }}>
               Loading…
             </p>
           ) : (
@@ -149,8 +149,9 @@ export default function LabelPickerSheet({
               <button
                 onClick={() => handleSelect(null)}
                 disabled={applying}
-                className="flex items-center gap-3 px-3 py-3 rounded-xl text-start transition-opacity active:opacity-70 disabled:opacity-50"
+                className="flex items-center gap-3 rounded-xl text-start transition-opacity active:opacity-70 disabled:opacity-50"
                 style={{
+                  padding: "12px 12px",
                   background: !currentLabelId ? "var(--color-cream)" : "transparent",
                 }}
               >
@@ -174,8 +175,9 @@ export default function LabelPickerSheet({
                   <button
                     onClick={() => handleSelect(label)}
                     disabled={applying}
-                    className="flex-1 flex items-center gap-3 px-3 py-3 rounded-xl text-start transition-opacity active:opacity-70 disabled:opacity-50"
+                    className="flex-1 flex items-center gap-3 rounded-xl text-start transition-opacity active:opacity-70 disabled:opacity-50"
                     style={{
+                      padding: "12px 12px",
                       background:
                         currentLabelId === label.id ? "var(--color-cream)" : "transparent",
                     }}
@@ -196,24 +198,24 @@ export default function LabelPickerSheet({
                   </button>
                   <button
                     onClick={() => openEdit(label)}
-                    className="px-2.5 py-1.5 text-xs rounded-lg font-semibold"
-                    style={{ color: "var(--color-muted)", background: "var(--color-cream)" }}
+                    className="text-xs rounded-lg font-semibold shrink-0"
+                    style={{ color: "var(--color-muted)", background: "var(--color-cream)", padding: "6px 10px" }}
                   >
                     Edit
                   </button>
                   {deleteConfirm === label.id ? (
                     <button
                       onClick={() => handleDelete(label.id)}
-                      className="px-2.5 py-1.5 text-xs rounded-lg font-bold"
-                      style={{ color: "#EF4444", background: "rgba(239,68,68,0.1)" }}
+                      className="text-xs rounded-lg font-bold shrink-0"
+                      style={{ color: "#EF4444", background: "rgba(239,68,68,0.1)", padding: "6px 10px" }}
                     >
                       Delete?
                     </button>
                   ) : (
                     <button
                       onClick={() => setDeleteConfirm(label.id)}
-                      className="px-2.5 py-1.5 text-xs rounded-lg"
-                      style={{ color: "var(--color-muted)", background: "var(--color-cream)" }}
+                      className="text-xs rounded-lg shrink-0"
+                      style={{ color: "var(--color-muted)", background: "var(--color-cream)", padding: "6px 10px" }}
                     >
                       ✕
                     </button>
@@ -224,8 +226,10 @@ export default function LabelPickerSheet({
               {/* Inline create/edit form */}
               {form && (
                 <div
-                  className="mt-3 rounded-xl p-4 flex flex-col gap-3"
+                  className="rounded-xl flex flex-col gap-3"
                   style={{
+                    marginTop: 12,
+                    padding: 16,
                     background: "var(--color-cream)",
                     border: "1px solid var(--color-cream-2)",
                   }}
@@ -243,8 +247,9 @@ export default function LabelPickerSheet({
                     placeholder="Label name (max 16 chars)"
                     maxLength={16}
                     autoFocus
-                    className="w-full rounded-xl px-3.5 py-2.5 text-sm border outline-none"
+                    className="w-full rounded-xl text-sm border outline-none"
                     style={{
+                      padding: "10px 14px",
                       borderColor: "var(--color-cream-2)",
                       background: "#fff",
                       color: "var(--color-dark)",
@@ -273,16 +278,16 @@ export default function LabelPickerSheet({
                   <div className="flex gap-2">
                     <button
                       onClick={() => setForm(null)}
-                      className="flex-1 py-2.5 rounded-xl text-sm font-bold"
-                      style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}
+                      className="flex-1 rounded-xl text-sm font-bold"
+                      style={{ background: "var(--color-cream-2)", color: "var(--color-muted)", padding: "11px 0" }}
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSave}
                       disabled={!formName.trim() || saving}
-                      className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
-                      style={{ background: "var(--color-amber)", color: "#fff" }}
+                      className="flex-1 rounded-xl text-sm font-bold disabled:opacity-50"
+                      style={{ background: "var(--color-amber)", color: "#fff", padding: "11px 0" }}
                     >
                       {saving ? "Saving…" : "Save"}
                     </button>
@@ -293,8 +298,8 @@ export default function LabelPickerSheet({
               {!form && (
                 <button
                   onClick={openNew}
-                  className="mt-2 w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
-                  style={{ background: "var(--color-cream)", color: "var(--color-amber)" }}
+                  className="w-full rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+                  style={{ background: "var(--color-cream)", color: "var(--color-amber)", marginTop: 8, padding: "12px 0" }}
                 >
                   + New label
                 </button>
