@@ -169,7 +169,7 @@ function CalendarPageInner() {
       searchQuery,
       setSearchQuery,
     });
-  }, [date, view, statusFilter, isTodaySelected, headerLabel, setChrome, staff]);
+  }, [date, view, statusFilter, calendarFilter, isTodaySelected, headerLabel, setChrome, staff]);
 
   // Clear the top bar when leaving the calendar.
   useEffect(() => () => setChrome(null), [setChrome]);
