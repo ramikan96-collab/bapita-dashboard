@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { bookingsForStaff } from "@/lib/availability";
+import type { BusinessHours } from "@/types";
 import nodemailer from "nodemailer";
 
 interface ExistingBookingRow {
@@ -13,6 +14,8 @@ function toMins(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
 }
+
+const DAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
 
 function esc(s: unknown): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -160,13 +163,25 @@ export async function POST(req: NextRequest) {
     { status: 409 }
   );
 
+  // Intra-day blocks for this date (business-wide when staff_id null, else per staff).
+  const { data: blockRows } = await supabase
+    .from("blocked_times")
+    .select("start_time, end_time, staff_id")
+    .eq("business_id", businessId)
+    .eq("block_date", date) as { data: { start_time: string; end_time: string; staff_id: string | null }[] | null };
+  const blocks = blockRows || [];
+  const blockOverlaps = (sid: string | null) => blocks.some((b) => {
+    if (!(b.staff_id == null || sid == null || b.staff_id === sid)) return false;
+    return newStart < toMins(b.end_time) && newEnd > toMins(b.start_time);
+  });
+
   // Staff assignment only applies when the business enabled customer staff choice.
   // OFF → identical to pre-staff behavior: global overlap guard, staff_id stays null
   //       (the owner assigns in the dashboard).
   // ON  → conflicts are scoped per staff, so two different staff can be booked concurrently.
   const { data: bizChoice } = await supabase
     .from("businesses")
-    .select("allow_staff_choice")
+    .select("allow_staff_choice, business_hours")
     .eq("id", businessId)
     .single();
   const staffChoice = !!bizChoice?.allow_staff_choice;
@@ -174,9 +189,27 @@ export async function POST(req: NextRequest) {
   let assignedStaffId: string | null = null;
 
   if (!staffChoice) {
-    // Global double-booking guard (pre-staff behavior).
-    if (serviceDuration && overlaps(bookedRows)) return takenErr();
+    // Global double-booking guard (pre-staff behavior) + blocked time.
+    if (serviceDuration && (overlaps(bookedRows) || blockOverlaps(null))) return takenErr();
   } else {
+    // Per-staff hours: own working_hours override business hours; used to reject assigning a
+    // booking to a staff member who isn't scheduled at this time (mirrors the slots route).
+    const bizHours = (bizChoice?.business_hours as BusinessHours | null) || null;
+    const { data: staffRows } = await supabase
+      .from("staff")
+      .select("id, working_hours")
+      .eq("business_id", businessId)
+      .neq("active", false) as { data: { id: string; working_hours: BusinessHours | null }[] | null };
+    const hoursFor = (sid: string): BusinessHours | null =>
+      ((staffRows || []).find((r) => r.id === sid)?.working_hours as BusinessHours | null) || bizHours;
+    const dayKey = DAY_NAMES[new Date(date + "T12:00:00").getDay()];
+    const withinHours = (sid: string) => {
+      if (!serviceDuration) return true;
+      const dh = hoursFor(sid)?.[dayKey];
+      if (!dh?.open) return false;
+      return newStart >= toMins(dh.start) && newEnd <= toMins(dh.end);
+    };
+
     // Resolve the eligible staff pool: service.staff_ids, else all active staff.
     let eligibleStaffIds: string[] = [];
     if (serviceId) {
@@ -188,26 +221,21 @@ export async function POST(req: NextRequest) {
       eligibleStaffIds = (service?.staff_ids as string[] | null) || [];
     }
     if (eligibleStaffIds.length === 0) {
-      const { data: activeStaff } = await supabase
-        .from("staff")
-        .select("id")
-        .eq("business_id", businessId)
-        .neq("active", false);
-      eligibleStaffIds = (activeStaff || []).map((s) => s.id as string);
+      eligibleStaffIds = (staffRows || []).map((r) => r.id);
     }
 
     const explicit = typeof staffId === "string" && staffId ? staffId : null;
     if (explicit) {
-      // Per-staff overlap guard for the chosen professional.
-      if (serviceDuration && overlaps(bookingsForStaff(bookedRows, explicit))) return takenErr();
+      // Chosen professional must be working + free (bookings + their blocks).
+      if (serviceDuration && (!withinHours(explicit) || overlaps(bookingsForStaff(bookedRows, explicit)) || blockOverlaps(explicit))) return takenErr();
       assignedStaffId = explicit;
     } else if (eligibleStaffIds.length > 0) {
-      // "Any available" — pick the first eligible staff free at this time.
+      // "Any available" — first eligible staff who is working + free at this time.
       if (serviceDuration) {
         for (const sid of eligibleStaffIds) {
-          if (!overlaps(bookingsForStaff(bookedRows, sid))) { assignedStaffId = sid; break; }
+          if (withinHours(sid) && !overlaps(bookingsForStaff(bookedRows, sid)) && !blockOverlaps(sid)) { assignedStaffId = sid; break; }
         }
-        if (!assignedStaffId) return takenErr(); // every eligible staff is busy
+        if (!assignedStaffId) return takenErr(); // every eligible staff is busy or off
       } else {
         assignedStaffId = eligibleStaffIds[0];
       }

@@ -94,54 +94,67 @@ export async function GET(req: NextRequest) {
     }));
 
   const bufferMinutes = (business?.buffer_minutes as number | null) ?? 0;
-  const hours = business?.business_hours as BusinessHours | null;
+  const bizHours = business?.business_hours as BusinessHours | null;
   const allBookings = existingBookings || [];
-
-  // Staff-scoped availability only applies when the business enabled customer staff choice.
-  // Otherwise behaviour is identical to pre-staff: global booking overlap, staff ignored.
   const staffChoice = !!business?.allow_staff_choice;
+
+  // Intra-day time blocks for this date. staff_id null = whole-business (holiday/owner);
+  // set = that staff's own block (break/vacation).
+  const { data: blockRows } = await supabase
+    .from("blocked_times")
+    .select("start_time, end_time, staff_id")
+    .eq("business_id", businessId)
+    .eq("block_date", date) as { data: { start_time: string; end_time: string; staff_id: string | null }[] | null };
+  const allBlocks = blockRows || [];
+
+  const blockToBusy = (b: { start_time: string; end_time: string }) => {
+    const [sh, sm] = b.start_time.split(":").map(Number);
+    const [eh, em] = b.end_time.split(":").map(Number);
+    return { appointment_time: b.start_time, duration: Math.max(0, (eh * 60 + em) - (sh * 60 + sm)) };
+  };
+  // Blocks applying to a scope: business-wide (null) always apply; staff-specific apply to that
+  // staff. sid null (no staff scoping) = every block applies.
+  const blocksFor = (sid: string | null) =>
+    allBlocks.filter((b) => b.staff_id == null || sid == null || b.staff_id === sid).map(blockToBusy);
 
   let slots: string[];
 
   if (!staffChoice) {
-    slots = getSlots(requestedDate, duration, hours, toBooked(allBookings), bufferMinutes);
-  } else if (staffId) {
-    // A specific staff member was chosen — availability is scoped to their bookings only.
-    const staffBookings = bookingsForStaff(allBookings, staffId);
-    slots = getSlots(requestedDate, duration, hours, toBooked(staffBookings), bufferMinutes);
+    // Pre-staff behavior + business-wide blocks. Staff-specific blocks also apply (single calendar).
+    slots = getSlots(requestedDate, duration, bizHours, [...toBooked(allBookings), ...blocksFor(null)], bufferMinutes);
   } else {
-    // "Any available" — determine the eligible staff pool (service.staff_ids, or all active staff).
-    let eligibleStaffIds: string[] = [];
-    if (serviceId) {
-      const { data: service } = await supabase
-        .from("services")
-        .select("staff_ids")
-        .eq("id", serviceId)
-        .single();
-      eligibleStaffIds = (service?.staff_ids as string[] | null) || [];
-    }
-    if (eligibleStaffIds.length === 0) {
-      const { data: activeStaff } = await supabase
-        .from("staff")
-        .select("id")
-        .eq("business_id", businessId)
-        .neq("active", false);
-      eligibleStaffIds = (activeStaff || []).map((s) => s.id as string);
-    }
+    // Load active staff with their own hours (working_hours overrides business hours when set).
+    const { data: staffRows } = await supabase
+      .from("staff")
+      .select("id, working_hours")
+      .eq("business_id", businessId)
+      .neq("active", false) as { data: { id: string; working_hours: BusinessHours | null }[] | null };
+    const hoursFor = (sid: string) =>
+      ((staffRows || []).find((r) => r.id === sid)?.working_hours as BusinessHours | null) || bizHours;
+    const busyFor = (sid: string) => [...toBooked(bookingsForStaff(allBookings, sid)), ...blocksFor(sid)];
 
-    if (eligibleStaffIds.length === 0) {
-      // No staff configured for this business — identical to pre-staff behavior.
-      slots = getSlots(requestedDate, duration, hours, toBooked(allBookings), bufferMinutes);
+    if (staffId) {
+      slots = getSlots(requestedDate, duration, hoursFor(staffId), busyFor(staffId), bufferMinutes);
     } else {
-      // Union: a slot is offered if at least one eligible staff member is free at it.
-      const union = new Set<string>();
-      for (const sid of eligibleStaffIds) {
-        const staffBookings = bookingsForStaff(allBookings, sid);
-        for (const s of getSlots(requestedDate, duration, hours, toBooked(staffBookings), bufferMinutes)) {
-          union.add(s);
-        }
+      // "Any available" — eligible staff pool = service.staff_ids, else all active staff.
+      let eligibleStaffIds: string[] = [];
+      if (serviceId) {
+        const { data: service } = await supabase.from("services").select("staff_ids").eq("id", serviceId).single();
+        eligibleStaffIds = (service?.staff_ids as string[] | null) || [];
       }
-      slots = Array.from(union).sort();
+      if (eligibleStaffIds.length === 0) {
+        eligibleStaffIds = (staffRows || []).map((r) => r.id);
+      }
+      if (eligibleStaffIds.length === 0) {
+        slots = getSlots(requestedDate, duration, bizHours, [...toBooked(allBookings), ...blocksFor(null)], bufferMinutes);
+      } else {
+        // A slot is offered if at least one eligible staff member is free at it (own hours + own blocks).
+        const union = new Set<string>();
+        for (const sid of eligibleStaffIds) {
+          for (const s of getSlots(requestedDate, duration, hoursFor(sid), busyFor(sid), bufferMinutes)) union.add(s);
+        }
+        slots = Array.from(union).sort();
+      }
     }
   }
 

@@ -138,6 +138,8 @@ export interface StaffMember {
   photo_url?: string | null;
   color?:     string | null;
   active?:    boolean;
+  /** null/undefined = inherit business hours; set = this staff's own weekly schedule */
+  working_hours?: BusinessHours | null;
 }
 
 export interface GoogleReview {
@@ -155,6 +157,8 @@ export interface BlockedTime {
   start_time: string;  // "HH:MM[:SS]"
   end_time: string;    // "HH:MM[:SS]"
   label: string | null;
+  /** null = blocks the whole business (holiday/owner); set = blocks just that staff */
+  staff_id?: string | null;
 }
 
 export interface Customer {

@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
-import type { BlockedTime } from "@/types";
+import { useLang } from "@/i18n";
+import { loadActiveStaff } from "@/lib/staff";
+import type { BlockedTime, StaffMember } from "@/types";
 
 export interface BlockDraft {
   id?: string;            // present → existing block (remove mode)
@@ -12,6 +14,8 @@ export interface BlockDraft {
   start_time: string;     // HH:MM
   end_time: string;       // HH:MM
   label?: string | null;
+  /** null/undefined = whole business; set = block just that staff member */
+  staff_id?: string | null;
 }
 
 interface Props {
@@ -23,10 +27,13 @@ interface Props {
 const hhmm = (t: string) => t.slice(0, 5);
 
 export default function BlockTimeSheet({ draft, onClose, onSaved }: Props) {
+  const { t } = useLang();
   const existing = Boolean(draft.id);
   const [start, setStart] = useState(hhmm(draft.start_time));
   const [end, setEnd] = useState(hhmm(draft.end_time));
   const [label, setLabel] = useState(draft.label ?? "");
+  const [staffId, setStaffId] = useState<string | null>(draft.staff_id ?? null);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
@@ -37,8 +44,13 @@ export default function BlockTimeSheet({ draft, onClose, onSaved }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  useEffect(() => {
+    loadActiveStaff(supabase, draft.business_id).then(setStaff);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.business_id]);
+
   async function handleBlock() {
-    if (end <= start) { setError("End time must be after start time"); return; }
+    if (end <= start) { setError(t("End time must be after start time")); return; }
     setSaving(true);
     setError(null);
     const { error } = await supabase.from("blocked_times").insert({
@@ -47,9 +59,10 @@ export default function BlockTimeSheet({ draft, onClose, onSaved }: Props) {
       start_time: start,
       end_time: end,
       label: label.trim() || null,
+      staff_id: staffId ?? null,
     } satisfies Omit<BlockedTime, "id">);
     setSaving(false);
-    if (error) { setError("Couldn't block time"); return; }
+    if (error) { setError(t("Couldn't block time")); return; }
     onSaved();
     onClose();
   }
@@ -58,13 +71,14 @@ export default function BlockTimeSheet({ draft, onClose, onSaved }: Props) {
     setSaving(true);
     const { error } = await supabase.from("blocked_times").delete().eq("id", draft.id!);
     setSaving(false);
-    if (error) { setError("Couldn't remove block"); return; }
+    if (error) { setError(t("Couldn't remove block")); return; }
     onSaved();
     onClose();
   }
 
   const dateLabel = format(parseISO(draft.block_date), "EEEE, d MMM");
   const presets = ["Lunch", "Break", "Personal"];
+  const blockedStaff = staff.find((s) => s.id === draft.staff_id);
 
   return (
     <>
@@ -94,6 +108,14 @@ export default function BlockTimeSheet({ draft, onClose, onSaved }: Props) {
               <p className="text-[13px] mt-1" style={{ color: "var(--color-muted)" }}>
                 {hhmm(draft.start_time)} – {hhmm(draft.end_time)}
               </p>
+              <div className="flex items-center gap-1.5 mt-2">
+                {blockedStaff && (
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: blockedStaff.color || "var(--color-amber)" }} />
+                )}
+                <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
+                  {blockedStaff ? blockedStaff.name : t("Whole business")}
+                </p>
+              </div>
             </div>
           ) : (
             <>
@@ -145,6 +167,47 @@ export default function BlockTimeSheet({ draft, onClose, onSaved }: Props) {
                   ))}
                 </div>
               </div>
+
+              {staff.length > 0 && (
+                <div className="mt-4">
+                  <label className="block text-xs font-bold uppercase tracking-wide" style={{ color: "var(--color-muted)", marginBottom: 8 }}>
+                    {t("Who")}
+                  </label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setStaffId(null)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
+                        border: `1.5px solid ${staffId === null ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+                        background: staffId === null ? "var(--amber-soft)" : "transparent", cursor: "pointer", fontSize: 13,
+                        color: "var(--color-dark)", fontFamily: "inherit",
+                      }}
+                    >
+                      {t("Whole business")}
+                    </button>
+                    {staff.map((s) => {
+                      const on = staffId === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => setStaffId(s.id)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 999,
+                            border: `1.5px solid ${on ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+                            background: on ? "var(--amber-soft)" : "transparent", cursor: "pointer", fontSize: 13,
+                            color: "var(--color-dark)", fontFamily: "inherit",
+                          }}
+                        >
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.color || "var(--color-amber)" }} />
+                          {s.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
           )}
 

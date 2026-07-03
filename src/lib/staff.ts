@@ -23,6 +23,7 @@ export async function syncStaffTable(
       photo_url:   m.photo_url || null,
       color:       m.color || null,
       active:      m.active !== false,
+      working_hours: m.working_hours ?? null,
       sort_order:  i,
     }));
     const { error } = await supabase.from("staff").upsert(rows, { onConflict: "id" });
@@ -40,7 +41,7 @@ export async function syncStaffTable(
 export async function loadStaff(supabase: Client, businessId: string): Promise<StaffMember[]> {
   const { data } = await supabase
     .from("staff")
-    .select("id, name, role, photo_url, color, active")
+    .select("id, name, role, photo_url, color, active, working_hours")
     .eq("business_id", businessId)
     .order("sort_order");
   return (data || []) as StaffMember[];
@@ -50,7 +51,7 @@ export async function loadStaff(supabase: Client, businessId: string): Promise<S
 export async function loadActiveStaff(supabase: Client, businessId: string): Promise<StaffMember[]> {
   const { data } = await supabase
     .from("staff")
-    .select("id, name, role, photo_url, color, active")
+    .select("id, name, role, photo_url, color, active, working_hours")
     .eq("business_id", businessId)
     .neq("active", false)
     .order("sort_order");

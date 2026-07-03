@@ -291,6 +291,7 @@ function CalendarPageInner() {
       start_time: minsToTime(mins),
       end_time: minsToTime(mins + 60),
       label: null,
+      staff_id: calendarFilter.length === 1 ? calendarFilter[0] : null,
     });
   }
 
@@ -303,6 +304,7 @@ function CalendarPageInner() {
       start_time: bl.start_time,
       end_time: bl.end_time,
       label: bl.label,
+      staff_id: bl.staff_id ?? null,
     });
   }
 
@@ -314,6 +316,10 @@ function CalendarPageInner() {
     calendarFilter.length === 0
       ? byStatus
       : byStatus.filter((b) => b.staff_id != null && calendarFilter.includes(b.staff_id));
+  const visibleBlocked =
+    calendarFilter.length === 0
+      ? blocked
+      : blocked.filter((bl) => bl.staff_id == null || calendarFilter.includes(bl.staff_id));
 
   return (
     <div className="flex flex-col h-full">
@@ -360,7 +366,7 @@ function CalendarPageInner() {
           <DayView
             date={date}
             bookings={visibleBookings}
-            blocked={blocked}
+            blocked={visibleBlocked}
             openHour={openHour}
             onSelectBooking={setSelected}
             onCreateAt={handleCreateAt}
@@ -374,7 +380,7 @@ function CalendarPageInner() {
           <WeekView
             date={date}
             bookings={visibleBookings}
-            blocked={blocked}
+            blocked={visibleBlocked}
             openHour={openHour}
             onSelectBooking={setSelected}
             onCreateAt={handleCreateAt}

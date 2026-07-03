@@ -336,6 +336,23 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     }
   }
 
+  function toggleStaffCustomHours(idx: number) {
+    setDirty(true);
+    setStaffMembers(ms => ms.map((m, i) => {
+      if (i !== idx) return m;
+      if (m.working_hours) return { ...m, working_hours: null };
+      return { ...m, working_hours: hours };
+    }));
+  }
+
+  function setStaffDay(idx: number, key: DayKey, patch: Partial<BusinessHours[DayKey]>) {
+    setDirty(true);
+    setStaffMembers(ms => ms.map((m, i) => {
+      if (i !== idx || !m.working_hours) return m;
+      return { ...m, working_hours: { ...m.working_hours, [key]: { ...m.working_hours[key], ...patch } } };
+    }));
+  }
+
   function toggleAddon(key: string) {
     setForm(f => ({
       ...f,
@@ -998,7 +1015,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 </div>
                 <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                   {staffMembers.map((member, idx) => (
-                    <div key={member.id} style={{ background:"var(--color-cream)", border:"1.5px solid var(--color-cream-2)", borderRadius:12, padding:"12px 14px", display:"flex", gap:12, alignItems:"flex-start" }}>
+                    <div key={member.id} style={{ background:"var(--color-cream)", border:"1.5px solid var(--color-cream-2)", borderRadius:12, padding:"12px 14px", display:"flex", flexDirection:"column", gap:10 }}>
+                    <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
                       {/* Photo */}
                       <div style={{ position:"relative", flexShrink:0 }}>
                         <div style={{ width:52, height:52, borderRadius:"50%", overflow:"hidden", background:"var(--color-cream-2)", border:"1.5px solid var(--color-cream-2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -1062,6 +1080,68 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                         style={{ height:32, width:32, borderRadius:8, border:"1.5px solid #FCA5A5", background:"transparent", color:"#991B1B", cursor:"pointer", fontSize:16, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", marginTop:2 }}
                       >×</button>
                     </div>
+
+                    {/* Working hours — inherit business hours, or set a custom weekly schedule */}
+                    <div style={{ borderTop:"1px solid var(--color-cream-2)", paddingTop:8, display:"flex", flexDirection:"column", gap:8 }}>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+                        <div>
+                          <span style={{ fontSize:12, fontWeight:600, color:"var(--color-dark)" }}>Custom hours</span>
+                          {!member.working_hours && (
+                            <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:2 }}>Uses business hours</div>
+                          )}
+                        </div>
+                        <div
+                          onClick={() => toggleStaffCustomHours(idx)}
+                          style={{ width:36, height:20, borderRadius:10, position:"relative", cursor:"pointer", background: member.working_hours ? "var(--color-amber)" : "var(--color-cream-2)", transition:"background 0.2s", flexShrink:0 }}
+                        >
+                          <div style={{ position:"absolute", top:2, width:16, height:16, borderRadius:8, background:"#fff", transition:"left 0.2s", left: member.working_hours ? 18 : 2, boxShadow:"0 1px 3px rgba(0,0,0,0.15)" }} />
+                        </div>
+                      </div>
+
+                      {member.working_hours && (
+                        <div style={{ border:"1px solid var(--color-cream-2)", borderRadius:9, overflow:"hidden" }}>
+                          {DAYS.map(({ key, label }, dIdx) => {
+                            const day = member.working_hours![key];
+                            return (
+                              <div
+                                key={key}
+                                style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 10px", background:"var(--color-surface)", borderBottom: dIdx < DAYS.length - 1 ? "1px solid var(--color-cream-2)" : "none" }}
+                              >
+                                <label style={{ display:"flex", alignItems:"center", gap:6, width:76, flexShrink:0, cursor:"pointer" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={day.open}
+                                    onChange={e => setStaffDay(idx, key, { open: e.target.checked })}
+                                    style={{ accentColor:"var(--color-amber)" }}
+                                  />
+                                  <span style={{ fontSize:12, fontWeight:600, color:"var(--color-dark)" }}>{label.slice(0, 3)}</span>
+                                </label>
+                                {day.open ? (
+                                  <div style={{ display:"flex", alignItems:"center", gap:6, flex:1 }}>
+                                    <input
+                                      type="time"
+                                      value={day.start}
+                                      onChange={e => setStaffDay(idx, key, { start: e.target.value })}
+                                      style={{ height:30, padding:"0 8px", borderRadius:7, border:"1.5px solid var(--color-cream-2)", fontSize:12, color:"var(--color-dark)", outline:"none", background:"var(--color-surface)", fontFamily:"inherit", width:"100%", boxSizing:"border-box" }}
+                                    />
+                                    <span style={{ fontSize:12, color:"var(--color-muted)" }}>–</span>
+                                    <input
+                                      type="time"
+                                      value={day.end}
+                                      onChange={e => setStaffDay(idx, key, { end: e.target.value })}
+                                      style={{ height:30, padding:"0 8px", borderRadius:7, border:"1.5px solid var(--color-cream-2)", fontSize:12, color:"var(--color-dark)", outline:"none", background:"var(--color-surface)", fontFamily:"inherit", width:"100%", boxSizing:"border-box" }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <span style={{ fontSize:12, color:"var(--color-muted)", flex:1 }}>—</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   ))}
                 </div>
                 <button

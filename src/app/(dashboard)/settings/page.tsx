@@ -1176,8 +1176,24 @@ function TeamSection({
     }
   }
 
+  function toggleStaffCustomHours(idx: number) {
+    setStaff((ms) => ms.map((m, i) => {
+      if (i !== idx) return m;
+      if (m.working_hours) return { ...m, working_hours: null };
+      return { ...m, working_hours: business.business_hours ?? DEFAULT_HOURS };
+    }));
+  }
+
+  function setStaffDay(idx: number, key: DayKey, patch: Partial<BusinessHours[DayKey]>) {
+    setStaff((ms) => ms.map((m, i) => {
+      if (i !== idx || !m.working_hours) return m;
+      return { ...m, working_hours: { ...m.working_hours, [key]: { ...m.working_hours[key], ...patch } } };
+    }));
+  }
+
   const svcLabel: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" };
   const svcInput: React.CSSProperties = { height: 38, padding: "0 12px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", fontSize: 13, color: "var(--color-dark)", outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box" };
+  const staffTimeInput: React.CSSProperties = { height: 30, padding: "0 8px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", fontSize: 12, color: "var(--color-dark)", outline: "none", background: "var(--color-surface)", fontFamily: "inherit", width: "100%", boxSizing: "border-box" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -1247,6 +1263,62 @@ function TeamSection({
                       onChange={() => setStaff((ms) => ms.map((m, i) => i === idx ? { ...m, active: m.active === false } : m))}
                     />
                   </div>
+                </div>
+
+                {/* Working hours — inherit business hours, or set a custom weekly schedule */}
+                <div style={{ borderTop: "1px solid var(--color-cream-2)", paddingTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <div>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-dark)" }}>{t("Custom hours")}</span>
+                      {!member.working_hours && (
+                        <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 2 }}>{t("Uses business hours")}</div>
+                      )}
+                    </div>
+                    <Toggle on={!!member.working_hours} onChange={() => toggleStaffCustomHours(idx)} />
+                  </div>
+
+                  {member.working_hours && (
+                    <div style={{ border: "1px solid var(--color-cream-2)", borderRadius: 9, overflow: "hidden" }}>
+                      {DAYS.map(({ key, label }, dIdx) => {
+                        const day = member.working_hours![key];
+                        return (
+                          <div
+                            key={key}
+                            style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "var(--color-surface)", borderBottom: dIdx < DAYS.length - 1 ? "1px solid var(--color-cream-2)" : "none" }}
+                          >
+                            <label style={{ display: "flex", alignItems: "center", gap: 6, width: 76, flexShrink: 0, cursor: "pointer" }}>
+                              <input
+                                type="checkbox"
+                                checked={day.open}
+                                onChange={(e) => setStaffDay(idx, key, { open: e.target.checked })}
+                                style={{ accentColor: "var(--color-amber)" }}
+                              />
+                              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-dark)" }}>{label.slice(0, 3)}</span>
+                            </label>
+                            {day.open ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+                                <input
+                                  type="time"
+                                  value={day.start}
+                                  onChange={(e) => setStaffDay(idx, key, { start: e.target.value })}
+                                  style={staffTimeInput}
+                                />
+                                <span style={{ fontSize: 12, color: "var(--color-muted)" }}>–</span>
+                                <input
+                                  type="time"
+                                  value={day.end}
+                                  onChange={(e) => setStaffDay(idx, key, { end: e.target.value })}
+                                  style={staffTimeInput}
+                                />
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: 12, color: "var(--color-muted)", flex: 1 }}>—</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
