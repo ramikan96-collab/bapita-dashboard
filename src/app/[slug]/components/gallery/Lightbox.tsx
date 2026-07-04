@@ -91,6 +91,7 @@ export function Lightbox({ photos, index, onIndexChange, onClose, altLabel }: Li
         <button aria-label="Next" onClick={(e) => { e.stopPropagation(); go(1); }} style={arrowStyle("right")}>›</button>
       )}
 
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={photos[index]}
         alt={`${altLabel ?? "Gallery"} — photo ${index + 1}`}

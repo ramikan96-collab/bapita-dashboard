@@ -31,6 +31,7 @@ export function UniformGrid({ photos, cols, rowHeight, gap, borderRadius, focal,
                 key={idx}
                 style={{ flex: "1 1 0", minWidth: 0, height: rowHeight, borderRadius, overflow: "hidden", position: "relative" }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photo}
                   alt={`${altLabel ?? "Gallery"} — photo ${idx + 1}`}

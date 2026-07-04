@@ -165,6 +165,7 @@ export function DarkPage({ business, services }: Props) {
       {/* Hero */}
       <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={heroImage} alt="" className="dk-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: heroFocal, transformOrigin: "center center" }} />
         </div>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(13,13,13,0.6) 0%, rgba(13,13,13,0.1) 30%, rgba(13,13,13,0.1) 55%, rgba(13,13,13,0.88) 100%)" }} />
@@ -290,6 +291,7 @@ export function DarkPage({ business, services }: Props) {
                       <div key={member.id} style={{ background: D.surface, border: `1px solid ${D.border}`, borderInlineStart: `3px solid ${accent}60`, borderRadius: 2, padding: "16px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
                         <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", background: D.raised, border: `2px solid ${accent}55`, flexShrink: 0 }}>
                           {member.photo_url
+                            /* eslint-disable-next-line @next/next/no-img-element */
                             ? <img src={member.photo_url} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: D.muted }}>👤</div>
                           }
@@ -312,6 +314,7 @@ export function DarkPage({ business, services }: Props) {
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 16 }}>
                       {(business.profile_image_url || business.hero_image_url) && (
                         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={business.profile_image_url || business.hero_image_url || ""} alt={displayName} style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", border: `2px solid ${accent}`, flexShrink: 0 }} />
                           <span style={{ fontFamily: headingFont, fontSize: 13, color: accent, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>{displayName}</span>
                         </div>

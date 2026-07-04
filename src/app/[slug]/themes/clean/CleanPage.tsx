@@ -194,6 +194,7 @@ export function CleanPage({ business, services }: Props) {
 
         {/* Right — photo */}
         <div className="cl-hero-photo">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={heroImage} alt="" className="cl-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: heroFocal, display: "block" }} />
         </div>
       </section>
@@ -251,6 +252,7 @@ export function CleanPage({ business, services }: Props) {
                   <SectionTitle title={t.about.title} accent={accent} headingFont={headingFont} />
                   {(business.profile_image_url || business.hero_image_url) && (
                     <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={business.profile_image_url || business.hero_image_url || ""} alt={displayName} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${P.border}`, flexShrink: 0 }} />
                       <span style={{ fontSize: 14, fontWeight: 700, color: P.text }}>{displayName}</span>
                     </div>
@@ -267,6 +269,7 @@ export function CleanPage({ business, services }: Props) {
                       <div key={member.id} style={{ background: P.bg, border: `1px solid ${P.border}`, borderRadius: 10, padding: "16px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
                         <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: P.surface, border: `2px solid ${P.border}`, flexShrink: 0 }}>
                           {member.photo_url
+                            /* eslint-disable-next-line @next/next/no-img-element */
                             ? <img src={member.photo_url} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: P.muted }}>👤</div>
                           }

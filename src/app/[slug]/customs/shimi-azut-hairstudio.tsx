@@ -119,6 +119,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
       {/* Hero — clean / minimal / editorial (IG-matched) */}
       <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={heroImage} alt="" className="c-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: heroFocal, transformOrigin: "center center" }} />
         </div>
         {/* Soft bottom-weighted scrim — keeps the photo bright and airy */}
@@ -222,6 +223,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
                   <div className="about-row" style={{ marginTop: 20 }}>
                     {(business.profile_image_url || business.hero_image_url) && (
                       <div style={{ textAlign: "center", flexShrink: 0 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={business.profile_image_url || business.hero_image_url || ""} alt={displayName} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: `3px solid ${accent}`, display: "block", margin: "0 auto 6px" }} />
                         <span style={{ fontSize: 11, fontVariant: "small-caps", color: accent, fontWeight: 700, letterSpacing: "0.06em" }}>{displayName}</span>
                       </div>
@@ -239,6 +241,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
                       <div key={member.id} style={{ background: "#fff", borderRadius: 10, padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center", boxShadow: "0 1px 4px rgba(34,21,16,0.06)", borderInlineStart: `3px solid ${accent}` }}>
                         <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: C.cream2, border: `2px solid ${accent}`, flexShrink: 0 }}>
                           {member.photo_url
+                            /* eslint-disable-next-line @next/next/no-img-element */
                             ? <img src={member.photo_url} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: C.dark, opacity: 0.4 }}>👤</div>
                           }
