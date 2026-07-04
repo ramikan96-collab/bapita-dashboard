@@ -300,3 +300,22 @@ The whole live walkthrough rendered **English, LTR** even though `<html lang="he
 
 ---
 
+# Hotfix — N5 regression: RLS broke for authenticated + anon (2026-07-05, Opus/Sonnet)
+
+**Reported by Rami:** dashboard language toggle failed with `permission denied for function is_admin`.
+
+**Root cause:** Batch S3's N5 fix (`REVOKE EXECUTE ... FROM public, anon, authenticated` on `is_admin()`/`my_business_id()`) was based on a wrong assumption in that batch's own notes — "RLS policies still evaluate them (policy-driven invocation needs no caller EXECUTE)". That's false: Postgres requires the *querying* role to hold `EXECUTE` on any function called inside its own RLS policy expression, not just the function owner. Both functions are called inside:
+- `businesses: admin full access` (and the same-pattern policy on `services`, `addon_requests`, `addons`, `availability`, `blocked_dates`, `blocked_times`, `bookings`, `customers`, `labels`, `messages_log`, `notifications`, `push_subscriptions`) — `USING is_admin()`, role `authenticated`.
+- `staff_admin_all` — `USING is_admin()`, role **`public`** (i.e. `anon` too — meaning the public booking page's staff step was also at risk).
+- Every `<table>: tenant select/insert/update/delete` policy on `addons`, `availability`, `blocked_dates`, `bookings`, `customers`, `messages_log`, `services` — `USING/WITH CHECK my_business_id()`, role `authenticated`.
+
+So since Batch S3 shipped, **any authenticated dashboard read/write touching those tables', and any anon read of `staff`, risked the same "permission denied for function ..." error** — not just the language toggle Rami happened to hit first.
+
+**Fix (DB-only, no app deploy):** migration `fix_n5_regression_restore_execute_for_rls` — `GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated;` and same for `my_business_id()`. Verified via `get_advisors`: the two N5 advisor warnings (`anon_security_definer_function_executable` / `authenticated_security_definer_function_executable`) are back for both functions — **expected and accepted**, since both functions only return a boolean/uuid derived from the caller's own JWT; calling them directly via RPC gains an attacker nothing (same conclusion the original Phase-1 audit reached when downgrading this to P2/N5 in the first place). Only `auth_leaked_password_protection` (N7, manual) remains open otherwise.
+
+**Not re-broken:** N1 (bookings anon-insert block), N2 (businesses column-level PII revoke), N3/N6/N8 — none of those depend on `is_admin()`/`my_business_id()` EXECUTE, untouched by this fix.
+
+**Lesson for future EXECUTE revokes on functions used inside RLS policies:** grep `pg_policies.qual`/`with_check` for the function name across ALL tables before revoking — a function can be simultaneously "the N5 RPC-surface problem" and "load-bearing for RLS" at the same time, and the fix for one is not automatically safe for the other.
+
+---
+
