@@ -263,7 +263,14 @@ function NewBookingInner() {
 
   async function createNewClient(): Promise<Customer | null> {
     if (!business) return null;
-    const { data, error } = await supabase.from("customers").insert({ business_id: business.id, name: newClientName.trim(), phone: newClientPhone.trim(), email: newClientEmail.trim() || null, total_visits: 0 }).select().single();
+    const { data, error } = await supabase
+      .from("customers")
+      .upsert(
+        { business_id: business.id, name: newClientName.trim(), phone: newClientPhone.trim(), email: newClientEmail.trim() || null },
+        { onConflict: "business_id,phone", ignoreDuplicates: false }
+      )
+      .select()
+      .single();
     if (error) { console.error("[createNewClient] Supabase error:", error); showToast(`Couldn't save the client: ${error.message}`, "error"); return null; }
     return data;
   }
