@@ -1,6 +1,7 @@
 // Dashboard UI dictionary. Keys are the English strings as written in the UI;
 // t() falls back to the key itself, so untranslated strings render in English.
-// Layout stays LTR — only the words change (decision with Rami, 2026-07-02).
+// dir flips to rtl for lang="he" (LangProvider effect, since 2026-07-04) —
+// logical CSS props (start/end) are load-bearing now, not decorative.
 
 export type DashboardLang = "en" | "he";
 
@@ -139,6 +140,59 @@ export const HE: Record<string, string> = {
   "Couldn't save. Please try again.": "לא הצלחנו לשמור. נסו שוב.",
   "Who performs this": "מי נותן שירות זה",
   "Any": "כל אחד",
+
+  // Clients page
+  "First name": "שם פרטי",
+  "Last name": "שם משפחה",
+  "Phone": "טלפון",
+  "Email": "אימייל",
+  "Visits": "ביקורים",
+  "Last visit": "ביקור אחרון",
+  "Add client": "הוספת לקוח",
+  "Search by name, phone or email…": "חיפוש לפי שם, טלפון או אימייל…",
+  "Show": "הצגה",
+  "Label": "תווית",
+  "labels": "תוויות",
+  "Filters": "מסננים",
+  "Apply": "החלה",
+  "Custom range": "טווח מותאם",
+  "New": "חדש",
+  "Canceled": "בוטל",
+  "Clear filter": "ניקוי הסינון",
+  "Columns": "עמודות",
+  "Visible columns": "עמודות גלויות",
+  "Download CSV": "הורדת CSV",
+  "No results for": "אין תוצאות עבור",
+  "Try a different name, phone or email": "נסו שם, טלפון או אימייל אחר",
+  "No clients yet": "אין לקוחות עדיין",
+  "Add your first client to get started": "הוסיפו את הלקוח הראשון שלכם כדי להתחיל",
+  "Add your first client": "הוספת הלקוח הראשון",
+  "Sort by": "מיון לפי",
+  "Show period": "תקופת הצגה",
+  "All their booking history will be permanently deleted. This can't be undone.": "כל היסטוריית התורים שלהם תימחק לצמיתות. לא ניתן לבטל פעולה זו.",
+  "Recent": "אחרונים",
+  "A to Z": "א-ת",
+  "Most booked": "המוזמנים ביותר",
+  "Past 30 days": "30 הימים האחרונים",
+  "3 months": "3 חודשים",
+  "1 year": "שנה אחת",
+  "Filter by label": "סינון לפי תווית",
+  "Done": "סיום",
+
+  // Calendar onboarding / empty states
+  "Welcome to Bapita": "ברוכים הבאים ל-Bapita",
+  "Set up your business and your calendar comes to life. Takes about two minutes.": "הגדירו את העסק שלכם והיומן קם לתחייה. לוקח בערך שתי דקות.",
+  "Business info": "פרטי העסק",
+  "Name, phone, address": "שם, טלפון, כתובת",
+  "Business hours": "שעות פעילות",
+  "When you're open": "מתי אתם פתוחים",
+  "What you offer + prices": "מה אתם מציעים + מחירים",
+  "Set up your business": "הגדרת העסק",
+  "No results": "אין תוצאות",
+  "No bookings matching": "אין תורים תואמים",
+
+  // Settings — hours editor
+  "Tap a day to toggle it on or off": "הקישו על יום כדי להפעיל או לכבות אותו",
 };
 
 export function translate(lang: DashboardLang, key: string): string {

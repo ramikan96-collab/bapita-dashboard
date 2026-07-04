@@ -244,3 +244,22 @@ The whole live walkthrough rendered **English, LTR** even though `<html lang="he
 
 ---
 
+# Batch 1 — i18n / RTL — EXECUTION LOG (2026-07-05, Sonnet)
+
+**Status: DONE.** App-code only, no DB touch. `npm run lint` + `npm run build` both pass. No live-auth browser pass this batch (skipped by Rami — no test creds handed over); verify visually after deploy.
+
+| # | Status | What shipped |
+|---|--------|--------------|
+| **U1a** | ✅ done | `src/i18n/index.tsx` — `LangProvider` now runs a `useEffect` that sets `document.documentElement.dir = lang === "he" ? "rtl" : "ltr"` and `.lang = lang`. Single place, no SSR flash-guessing (root `<html>` stays static; this corrects post-mount). Eyeballed + fixed logical-prop breaks that would misplace under `dir=rtl`: `AppShell.tsx` (`marginLeft`→`marginInlineStart`, `textAlign:"left"`→`"start"`), `clients/page.tsx` (14 spots — dropdown `left`/`right`→`insetInlineStart`/`insetInlineEnd`, search-icon + input padding, sticky actions column, checkmark margins, `text-align: left`→`start` in the CSS block), `settings/page.tsx` (6 spots — avatar edit badge, gallery Cover/Hidden tags, hide/delete photo buttons). Stale file comment in `dict.ts` ("Layout stays LTR — decision with Rami 2026-07-02") updated to reflect the reversal. |
+| **U1b** | ✅ done | Routed hardcoded strings through `t()` + added ~45 new `HE` dict keys. Scoped per plan: **clients page** (title, Add client, search placeholder, Show/Label/Sort/Filters headers, sort/show/label/column option lists, empty states, delete-confirm modal, mobile filter sheet, row action tooltips — the full `clients/page.tsx:34,35,593,608,637,692,741,847,967,980,1002,1021,1048,1061` audit list plus the option arrays rendered alongside them); **calendar onboarding/empty** (`Welcome to Bapita` + 3 setup steps at `:227-239`, search "No results" at `:359`); **settings** (`HoursSection`/`TeamSection` weekday abbreviations at two `DAYS.map` call sites — dict already had `Mon`/`Tue`/etc keys, just weren't wired — + the "Tap a day to toggle" hint). Settings tab labels (Business/Services/Hours/Team/Website/Content) and most of Settings were **already** wired to `t()` from earlier work — verified, not touched. Not 100% coverage by design: dynamic composed strings (visit counts, "Last {date}") left English per plan. |
+| **U2** | ✅ done | New tenants default to Hebrew everywhere a business row gets created: `settings/page.tsx` `createBusiness()` (owner self-serve setup) now inserts `dashboard_lang: "he", default_lang: "he"`; `BusinessForm.tsx` (admin tool, both insert paths) now also sets `dashboard_lang` from the same `form.default_lang` value the admin already picks (was previously only setting `default_lang`); `api/admin/intake/route.ts` (AI intake) now sets `dashboard_lang: lang` alongside the existing `default_lang: lang` (`lang` already defaulted `"he"`). |
+| **U3** | ✅ done | `AppShell.tsx` — added an EN/עב pill toggle in the hamburger drawer (business-identity block, one tap from anywhere, above Sign out) — no longer buried 3 taps deep in Settings. Reuses the same `businesses.dashboard_lang` update + `bapita:business-updated` event-dispatch pattern as the existing Settings → Business toggle, so both stay in sync and every `useBusiness()` consumer refetches instantly. |
+
+**F18/F19 folded in:** weekday labels (F18) and clients-page English labels (F19) both resolved as part of U1b — same root cause, no separate fix needed.
+
+**Verification:** `npm run lint` clean, `npm run build` clean (TypeScript + all 39 routes). Live browser/auth pass **not done this session** — Rami declined to hand over test creds; flip the account to עב after deploy to confirm the dir/RTL/string changes render as expected on real data.
+
+**Carried forward (not in this batch):** deeper logical-prop sweep of components not touched here (DayView/WeekView/MonthView/AgendaView, BookingDrawer, BlockTimeSheet, new-booking, login) — only the files this batch's strings/positioning touched were eyeballed. Batch U-B (F21 tap targets, U4 login localize) and Batch U-C (polish) remain queued per Phase-2 batching, unchanged.
+
+---
+

@@ -427,6 +427,17 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/");
 
+  const [langSaving, setLangSaving] = useState(false);
+
+  async function setDashboardLang(l: DashboardLang) {
+    if (!business || l === lang || langSaving) return;
+    setLangSaving(true);
+    const { error } = await supabase.from("businesses").update({ dashboard_lang: l }).eq("id", business.id);
+    setLangSaving(false);
+    if (error) { showToast(error.message || t("Couldn't save. Please try again."), "error"); return; }
+    window.dispatchEvent(new Event("bapita:business-updated"));
+  }
+
   async function handleLogout() {
     setDrawerOpen(false);
     try {
@@ -954,7 +965,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 onClick={() => showToast(t("Multiple calendars coming soon"), "info")}
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 8,
-                  padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "left",
+                  padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "start",
                   color: "var(--color-muted)", background: "transparent", border: "none",
                   cursor: "pointer", marginTop: 4, transition: "background 0.12s, color 0.12s",
                   opacity: 0.6,
@@ -964,7 +975,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               >
                 <IconPlus size={13} />
                 {t("Add calendar")}
-                <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "var(--color-cream-2)", padding: "2px 6px", borderRadius: 4, color: "var(--color-muted)", letterSpacing: "0.04em" }}>
+                <span style={{ marginInlineStart: "auto", fontSize: 10, fontWeight: 700, background: "var(--color-cream-2)", padding: "2px 6px", borderRadius: 4, color: "var(--color-muted)", letterSpacing: "0.04em" }}>
                   SOON
                 </span>
               </button>
@@ -1081,6 +1092,23 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <div className="text-[11px] truncate" style={{ color: "var(--color-muted)" }}>{businessSlug}</div>
             </div>
           </div>
+          {/* Dashboard language — one tap from anywhere, not buried in Settings */}
+          <div className="flex items-center justify-between" style={{ paddingInline: 12, paddingBottom: 8 }}>
+            <span className="text-[13px] font-medium" style={{ color: "var(--color-muted)" }}>{t("Dashboard language")}</span>
+            <div style={{ display: "flex", alignItems: "center", borderRadius: 9999, padding: 3, gap: 2, background: "var(--color-cream-2)", flexShrink: 0, opacity: langSaving ? 0.6 : 1 }}>
+              {(["en", "he"] as const).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setDashboardLang(l)}
+                  disabled={langSaving}
+                  style={{ padding: "4px 12px", borderRadius: 9999, fontSize: 12, fontWeight: 700, border: "none", cursor: langSaving ? "default" : "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: lang === l ? "var(--color-amber)" : "transparent", color: lang === l ? "#fff" : "var(--color-muted)" }}
+                >
+                  {l === "en" ? "EN" : "עב"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Sign out — aligned with nav items */}
           <button
             onClick={handleLogout}

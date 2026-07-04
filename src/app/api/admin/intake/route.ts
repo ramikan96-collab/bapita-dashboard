@@ -176,6 +176,7 @@ ${raw}`;
     accent_color:       BRAND_ACCENT,
     template_style:     (parsed.template_style as string) || "classic",
     default_lang:       lang,
+    dashboard_lang:     lang,
     google_reviews:     Array.isArray(parsed.google_reviews) ? parsed.google_reviews.map((r: Record<string,unknown>) => ({
       id:     crypto.randomUUID(),
       author: r.author,

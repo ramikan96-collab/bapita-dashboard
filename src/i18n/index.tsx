@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useCallback } from "react";
+import { createContext, useContext, useCallback, useEffect } from "react";
 import { he as dfnsHe, enUS as dfnsEn } from "date-fns/locale";
 import type { Locale } from "date-fns";
 import { translate, type DashboardLang } from "./dict";
@@ -14,6 +14,13 @@ export function LangProvider({
   lang: DashboardLang;
   children: React.ReactNode;
 }) {
+  // Single place that flips the document to RTL. No SSR flash-guessing —
+  // the root <html> stays a static default and this corrects it post-mount.
+  useEffect(() => {
+    document.documentElement.dir = lang === "he" ? "rtl" : "ltr";
+    document.documentElement.lang = lang;
+  }, [lang]);
+
   return <LangContext.Provider value={lang}>{children}</LangContext.Provider>;
 }
 

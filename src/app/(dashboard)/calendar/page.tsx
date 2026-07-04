@@ -10,6 +10,7 @@ import {
 
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
+import { useLang } from "@/i18n";
 import { useCalendarChrome, type CalView } from "@/components/calendar/CalendarChrome";
 import DayView from "@/components/calendar/DayView";
 import WeekView from "@/components/calendar/WeekView";
@@ -39,6 +40,7 @@ function rangeFor(view: CalView, date: Date): [Date, Date] {
 
 function CalendarPageInner() {
   const { business, loading: bizLoading } = useBusiness();
+  const { t } = useLang();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [view, setView]           = useState<CalView>("week");
@@ -225,18 +227,18 @@ function CalendarPageInner() {
           </div>
 
           <h1 className="text-[22px] font-extrabold leading-snug" style={{ color: "var(--color-dark)" }}>
-            Welcome to Bapita
+            {t("Welcome to Bapita")}
           </h1>
           <p className="text-[15px] mt-1.5 leading-relaxed" style={{ color: "var(--color-muted)" }}>
-            Set up your business and your calendar comes to life. Takes about two minutes.
+            {t("Set up your business and your calendar comes to life. Takes about two minutes.")}
           </p>
 
           {/* Steps */}
           <div className="flex flex-col gap-3 mt-6">
             {[
-              { n: 1, title: "Business info", desc: "Name, phone, address" },
-              { n: 2, title: "Services", desc: "What you offer + prices" },
-              { n: 3, title: "Business hours", desc: "When you're open" },
+              { n: 1, title: t("Business info"), desc: t("Name, phone, address") },
+              { n: 2, title: t("Services"), desc: t("What you offer + prices") },
+              { n: 3, title: t("Business hours"), desc: t("When you're open") },
             ].map((s) => (
               <div key={s.n} className="flex items-center gap-3">
                 <div
@@ -263,7 +265,7 @@ function CalendarPageInner() {
             onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(232,146,10,0.38)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(232,146,10,0.28)"; }}
           >
-            Set up your business
+            {t("Set up your business")}
           </Link>
         </div>
       </div>
@@ -356,9 +358,9 @@ function CalendarPageInner() {
               </div>
             ) : searchResults.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 gap-2 px-6 text-center">
-                <p className="text-[15px] font-bold" style={{ color: "var(--color-dark)" }}>No results</p>
+                <p className="text-[15px] font-bold" style={{ color: "var(--color-dark)" }}>{t("No results")}</p>
                 <p className="text-[13px]" style={{ color: "var(--color-muted)" }}>
-                  No bookings matching &ldquo;{searchQuery.trim()}&rdquo;
+                  {t("No bookings matching")} &ldquo;{searchQuery.trim()}&rdquo;
                 </p>
               </div>
             ) : (

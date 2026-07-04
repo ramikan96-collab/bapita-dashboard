@@ -205,6 +205,7 @@ function SetupForm({
     const { error } = await supabase.from("businesses").insert({
       owner_id: user.id, name: name.trim(),
       phone: phone.trim() || null, address: address.trim() || null, slug: finalSlug,
+      dashboard_lang: "he", default_lang: "he",
     });
     if (error) { showToast(error.message, "error"); setSaving(false); return; }
     localStorage.setItem("bapita_onboarding", "1");
@@ -816,6 +817,7 @@ function HoursSection({
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { showToast } = useToast();
+  const { t } = useLang();
   const [hours, setHours] = useState<BusinessHours>(
     business.business_hours ?? DEFAULT_HOURS
   );
@@ -917,12 +919,12 @@ function HoursSection({
                   : { background: "var(--color-cream-2)", color: "var(--color-muted)" }
                 }
               >
-                {label.slice(0, 3)}
+                {t(label.slice(0, 3))}
               </button>
             );
           })}
         </div>
-        <p className="text-[12px] text-muted">Tap a day to toggle it on or off</p>
+        <p className="text-[12px] text-muted">{t("Tap a day to toggle it on or off")}</p>
       </SectionCard>
 
       {/* Hours per open day */}
@@ -1185,7 +1187,7 @@ function TeamSection({
                     : <span style={{ fontSize: 20 }}>👤</span>
                   }
                 </div>
-                <label style={{ position: "absolute", bottom: -2, right: -2, width: 20, height: 20, borderRadius: "50%", background: "var(--color-amber)", border: "2px solid var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: staffUploading[member.id] ? "default" : "pointer", opacity: staffUploading[member.id] ? 0.6 : 1 }}>
+                <label style={{ position: "absolute", bottom: -2, insetInlineEnd: -2, width: 20, height: 20, borderRadius: "50%", background: "var(--color-amber)", border: "2px solid var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: staffUploading[member.id] ? "default" : "pointer", opacity: staffUploading[member.id] ? 0.6 : 1 }}>
                   {staffUploading[member.id]
                     ? <div style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid #fff", borderTopColor: "transparent", animation: "spin 0.7s linear infinite" }} />
                     : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1945,15 +1947,15 @@ function WebsiteSection({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt={`Gallery ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: isHidden ? 0.45 : 1, filter: isHidden ? "grayscale(0.6)" : "none", transition: "opacity 0.15s, filter 0.15s" }} />
                 {i === 0 && (
-                  <div style={{ position: "absolute", top: 4, left: 4, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Cover</div>
+                  <div style={{ position: "absolute", top: 4, insetInlineStart: 4, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Cover</div>
                 )}
                 {isHidden && i !== 0 && (
-                  <div style={{ position: "absolute", top: 4, left: 4, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Hidden</div>
+                  <div style={{ position: "absolute", top: 4, insetInlineStart: 4, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Hidden</div>
                 )}
                 <button
                   onClick={() => toggleHidden(url)}
                   title={isHidden ? "Show in gallery" : "Hide from gallery"}
-                  style={{ position: "absolute", top: 4, right: 32, width: 24, height: 24, borderRadius: 6, background: isHidden ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.9)", border: "none", color: isHidden ? "#fff" : "var(--color-dark)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  style={{ position: "absolute", top: 4, insetInlineEnd: 32, width: 24, height: 24, borderRadius: 6, background: isHidden ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.9)", border: "none", color: isHidden ? "#fff" : "var(--color-dark)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
                   {isHidden ? (
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -1963,7 +1965,7 @@ function WebsiteSection({
                 </button>
                 <button
                   onClick={() => removeImage(url)}
-                  style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: 6, background: "rgba(239,68,68,0.85)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  style={{ position: "absolute", top: 4, insetInlineEnd: 4, width: 24, height: 24, borderRadius: 6, background: "rgba(239,68,68,0.85)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
@@ -2030,7 +2032,7 @@ function WebsiteSection({
                     : <span style={{ fontSize: 20 }}>👤</span>
                   }
                 </div>
-                <label style={{ position: "absolute", bottom: -2, right: -2, width: 20, height: 20, borderRadius: "50%", background: "var(--color-amber)", border: "2px solid var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: staffUploading[member.id] ? "default" : "pointer", opacity: staffUploading[member.id] ? 0.6 : 1 }}>
+                <label style={{ position: "absolute", bottom: -2, insetInlineEnd: -2, width: 20, height: 20, borderRadius: "50%", background: "var(--color-amber)", border: "2px solid var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: staffUploading[member.id] ? "default" : "pointer", opacity: staffUploading[member.id] ? 0.6 : 1 }}>
                   {staffUploading[member.id]
                     ? <div style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid #fff", borderTopColor: "transparent", animation: "spin 0.7s linear infinite" }} />
                     : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>

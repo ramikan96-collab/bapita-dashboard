@@ -8,6 +8,7 @@ import { useBusiness } from "@/hooks/useBusiness";
 import { ClientsSkeleton } from "@/components/LoadingSkeleton";
 import AddCustomerSheet from "@/components/AddCustomerSheet";
 import { useToast } from "@/components/Toast";
+import { useLang } from "@/i18n";
 import type { Customer } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -334,6 +335,7 @@ export default function ClientsPage() {
   const router = useRouter();
   const { business, loading: bizLoading } = useBusiness();
   const { showToast } = useToast();
+  const { t } = useLang();
   const supabase = useMemo(() => createClient(), []);
 
   const [search, setSearch] = useState("");
@@ -457,10 +459,10 @@ export default function ClientsPage() {
   const isLabelFilterActive = labelFilter.size > 0;
   const activeFilterCount = [isSortActive, isLabelFilterActive, isFilterActive, isColumnsChanged].filter(Boolean).length;
   const labelFilterBtnText = labelFilter.size === 0
-    ? "Label"
+    ? t("Label")
     : labelFilter.size === 1
-      ? ALL_LABEL_OPTIONS.find((o) => labelFilter.has(o.value))?.text ?? "Label"
-      : `${labelFilter.size} labels`;
+      ? t(ALL_LABEL_OPTIONS.find((o) => labelFilter.has(o.value))?.text ?? "Label")
+      : `${labelFilter.size} ${t("labels")}`;
 
   function toggleLabelFilter(value: string) {
     setLabelFilter((prev) => {
@@ -502,7 +504,7 @@ export default function ClientsPage() {
           border: 1.5px solid transparent;
           box-shadow: 0 1px 3px rgba(30,26,20,0.06);
           cursor: pointer;
-          text-align: left;
+          text-align: start;
           transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
         }
         .client-row:hover {
@@ -519,7 +521,7 @@ export default function ClientsPage() {
         .row-action-btn.delete:hover { border-color: #EF4444; color: #EF4444; background: #FEF2F2; }
         .col-check { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--color-cream-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.12s; }
         .col-check.checked { background: var(--color-amber); border-color: var(--color-amber); color: white; }
-        .dd-menu-item { width: 100%; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--color-dark); background: transparent; border: none; cursor: pointer; text-align: left; transition: background 0.1s; }
+        .dd-menu-item { width: 100%; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--color-dark); background: transparent; border: none; cursor: pointer; text-align: start; transition: background 0.1s; }
         .dd-menu-item:hover { background: var(--color-cream); }
         .dd-menu-item.selected { font-weight: 700; color: var(--color-amber); }
         .dd-menu-item.selected-bg { background: var(--amber-soft); }
@@ -539,7 +541,7 @@ export default function ClientsPage() {
         .toolbar-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: nowrap; }
         .filters-btn-mobile { display: none; }
         /* Sticky actions column for desktop horizontal scroll */
-        .sticky-actions-col { position: sticky; right: 0; background: white; z-index: 2; box-shadow: -4px 0 8px rgba(30,26,20,0.04); }
+        .sticky-actions-col { position: sticky; inset-inline-end: 0; background: white; z-index: 2; box-shadow: -4px 0 8px rgba(30,26,20,0.04); }
         .client-row:hover .sticky-actions-col { background: white; }
         /* ── Mobile ────────────────────────────────────────────────────────── */
         @media (max-width: 639px) {
@@ -575,7 +577,7 @@ export default function ClientsPage() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                 <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", lineHeight: 1.1, margin: 0 }}>
-                  Clients
+                  {t("Clients")}
                 </h1>
                 {!loading && (
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-muted)", background: "var(--color-cream-2)", padding: "2px 8px", borderRadius: 20 }}>
@@ -590,7 +592,7 @@ export default function ClientsPage() {
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 14px rgba(232,146,10,0.28)"; }}
               >
                 <IconPlus />
-                Add client
+                {t("Add client")}
               </button>
             </div>
 
@@ -598,15 +600,15 @@ export default function ClientsPage() {
             <div className="toolbar-row">
               {/* Search */}
               <div className="toolbar-search">
-                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--color-muted)", display: "flex", pointerEvents: "none" }}>
+                <span style={{ position: "absolute", insetInlineStart: 10, top: "50%", transform: "translateY(-50%)", color: "var(--color-muted)", display: "flex", pointerEvents: "none" }}>
                   <IconSearch />
                 </span>
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by name, phone or email…"
-                  style={{ width: "100%", height: 34, paddingLeft: 32, paddingRight: 10, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", fontSize: 13, color: "var(--color-dark)", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
+                  placeholder={t("Search by name, phone or email…")}
+                  style={{ width: "100%", height: 34, paddingInlineStart: 32, paddingInlineEnd: 10, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", fontSize: 13, color: "var(--color-dark)", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
                 />
@@ -618,7 +620,7 @@ export default function ClientsPage() {
                 onClick={() => setShowFiltersSheet(true)}
               >
                 <IconSliders />
-                Filters
+                {t("Filters")}
                 {activeFilterCount > 0 && (
                   <span style={{ minWidth: 18, height: 18, borderRadius: 99, background: "var(--color-amber)", color: "white", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
                     {activeFilterCount}
@@ -634,26 +636,26 @@ export default function ClientsPage() {
                     onClick={() => { setShowFilterDropdown(!showFilterDropdown); setShowSortDropdown(false); setShowColumnsDropdown(false); setShowPrintDropdown(false); }}
                     style={dropdownBtnStyle(isFilterActive)}
                   >
-                    <span style={{ color: "var(--color-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Show</span>
-                    <span>{currentShowLabel}</span>
+                    <span style={{ color: "var(--color-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("Show")}</span>
+                    <span>{t(currentShowLabel)}</span>
                     <span style={{ color: "inherit", opacity: 0.6, display: "flex" }}><IconChevronDown /></span>
                   </button>
 
                   {showFilterDropdown && (
-                    <div style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", width: 170, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
+                    <div style={{ position: "absolute", insetInlineStart: 0, top: "calc(100% + 6px)", width: 170, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
                       {SHOW_OPTIONS.filter((o) => o.value !== "custom").map((option) => (
                         <button
                           key={option.value}
                           onClick={() => { setShowFilter(option.value); setShowFilterDropdown(false); }}
                           className={`dd-menu-item${showFilter === option.value ? " selected selected-bg" : ""}`}
                         >
-                          {option.label}
-                          {showFilter === option.value && <span style={{ marginLeft: "auto", color: "var(--color-amber)" }}><IconCheck /></span>}
+                          {t(option.label)}
+                          {showFilter === option.value && <span style={{ marginInlineStart: "auto", color: "var(--color-amber)" }}><IconCheck /></span>}
                         </button>
                       ))}
                       {/* Custom range */}
                       <div style={{ borderTop: "1px solid var(--color-cream-2)", padding: "10px 12px" }}>
-                        <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-muted)", marginBottom: 8 }}>Custom range</p>
+                        <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-muted)", marginBottom: 8 }}>{t("Custom range")}</p>
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                           <input
                             type="date"
@@ -675,7 +677,7 @@ export default function ClientsPage() {
                             onClick={() => setShowFilterDropdown(false)}
                             style={{ height: 28, borderRadius: 7, background: "var(--color-amber)", color: "white", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                           >
-                            Apply
+                            {t("Apply")}
                           </button>
                         </div>
                       </div>
@@ -689,15 +691,15 @@ export default function ClientsPage() {
                     onClick={() => { setShowLabelDropdown(!showLabelDropdown); setShowFilterDropdown(false); setShowSortDropdown(false); setShowColumnsDropdown(false); setShowPrintDropdown(false); }}
                     style={dropdownBtnStyle(isLabelFilterActive)}
                   >
-                    <span style={{ color: "var(--color-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Label</span>
+                    <span style={{ color: "var(--color-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("Label")}</span>
                     {isLabelFilterActive && <span>{labelFilterBtnText}</span>}
                     <span style={{ color: "inherit", opacity: 0.6, display: "flex" }}><IconChevronDown /></span>
                   </button>
 
                   {showLabelDropdown && (
-                    <div style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", width: 190, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
+                    <div style={{ position: "absolute", insetInlineStart: 0, top: "calc(100% + 6px)", width: 190, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
                       <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)", padding: "4px 12px 8px" }}>
-                        Filter by label
+                        {t("Filter by label")}
                       </p>
                       {ALL_LABEL_OPTIONS.map((opt) => {
                         const on = labelFilter.has(opt.value);
@@ -713,7 +715,7 @@ export default function ClientsPage() {
                               {on && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={opt.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
                             </span>
                             <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: opt.bg, color: opt.color }}>
-                              {opt.text}
+                              {t(opt.text)}
                             </span>
                           </button>
                         );
@@ -724,7 +726,7 @@ export default function ClientsPage() {
                             onClick={() => { setLabelFilter(new Set()); setShowLabelDropdown(false); }}
                             style={{ fontSize: 12, fontWeight: 600, color: "var(--color-muted)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
                           >
-                            Clear filter
+                            {t("Clear filter")}
                           </button>
                         </div>
                       )}
@@ -738,21 +740,21 @@ export default function ClientsPage() {
                     onClick={() => { setShowSortDropdown(!showSortDropdown); setShowFilterDropdown(false); setShowColumnsDropdown(false); setShowPrintDropdown(false); }}
                     style={dropdownBtnStyle(isSortActive)}
                   >
-                    <span style={{ color: "var(--color-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Sort</span>
-                    <span>{currentSortLabel}</span>
+                    <span style={{ color: "var(--color-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t("Sort")}</span>
+                    <span>{t(currentSortLabel)}</span>
                     <span style={{ color: "inherit", opacity: 0.6, display: "flex" }}><IconChevronDown /></span>
                   </button>
 
                   {showSortDropdown && (
-                    <div style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", width: 160, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
+                    <div style={{ position: "absolute", insetInlineStart: 0, top: "calc(100% + 6px)", width: 160, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
                       {SORT_OPTIONS.map((option) => (
                         <button
                           key={option.value}
                           onClick={() => { setSortBy(option.value); setShowSortDropdown(false); }}
                           className={`dd-menu-item${sortBy === option.value ? " selected selected-bg" : ""}`}
                         >
-                          {option.label}
-                          {sortBy === option.value && <span style={{ marginLeft: "auto", color: "var(--color-amber)" }}><IconCheck /></span>}
+                          {t(option.label)}
+                          {sortBy === option.value && <span style={{ marginInlineStart: "auto", color: "var(--color-amber)" }}><IconCheck /></span>}
                         </button>
                       ))}
                     </div>
@@ -767,13 +769,13 @@ export default function ClientsPage() {
                     style={{ height: 34, padding: "0 10px", borderRadius: 9, border: `1.5px solid ${showColumnsDropdown ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showColumnsDropdown ? "var(--amber-soft)" : "white", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: showColumnsDropdown ? "var(--color-amber)" : "var(--color-muted)", cursor: "pointer", transition: "all 0.15s" }}
                   >
                     <IconColumns />
-                    Columns
+                    {t("Columns")}
                   </button>
 
                   {showColumnsDropdown && (
-                    <div style={{ position: "absolute", left: 0, top: "calc(100% + 6px)", width: 180, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
+                    <div style={{ position: "absolute", insetInlineStart: 0, top: "calc(100% + 6px)", width: 180, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", padding: "6px 0", zIndex: 30 }}>
                       <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-muted)", padding: "4px 12px 8px" }}>
-                        Visible columns
+                        {t("Visible columns")}
                       </p>
                       {ALL_COLUMNS.map((col) => {
                         const on = visibleColumns.has(col.key);
@@ -781,14 +783,14 @@ export default function ClientsPage() {
                           <button
                             key={col.key}
                             onClick={() => toggleColumn(col.key)}
-                            style={{ width: "100%", padding: "7px 12px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: on ? 600 : 400, color: "var(--color-dark)", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
+                            style={{ width: "100%", padding: "7px 12px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: on ? 600 : 400, color: "var(--color-dark)", background: "transparent", border: "none", cursor: "pointer", textAlign: "start", transition: "background 0.1s" }}
                             onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)")}
                             onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
                           >
                             <span className={`col-check${on ? " checked" : ""}`}>
                               {on && <IconCheck />}
                             </span>
-                            {col.label}
+                            {t(col.label)}
                           </button>
                         );
                       })}
@@ -809,20 +811,20 @@ export default function ClientsPage() {
                   </button>
 
                   {showPrintDropdown && (
-                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", width: 160, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
+                    <div style={{ position: "absolute", insetInlineEnd: 0, top: "calc(100% + 6px)", width: 160, background: "white", borderRadius: 12, boxShadow: "0 8px 32px rgba(30,26,20,0.12), 0 1px 2px rgba(30,26,20,0.06)", border: "1px solid var(--color-cream-2)", overflow: "hidden", zIndex: 30 }}>
                       <button
                         onClick={() => { window.print(); setShowPrintDropdown(false); }}
                         className="dd-menu-item"
                       >
                         <IconPrint />
-                        Print
+                        {t("Print")}
                       </button>
                       <button
                         onClick={() => { downloadCSV(clients, orderedCols); setShowPrintDropdown(false); }}
                         className="dd-menu-item"
                       >
                         <IconDownload />
-                        Download CSV
+                        {t("Download CSV")}
                       </button>
                     </div>
                   )}
@@ -844,18 +846,18 @@ export default function ClientsPage() {
                 </div>
                 {debouncedSearch ? (
                   <>
-                    <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 6 }}>No results for &quot;{debouncedSearch}&quot;</p>
-                    <p style={{ fontSize: 13, color: "var(--color-muted)" }}>Try a different name, phone or email</p>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 6 }}>{t("No results for")} &quot;{debouncedSearch}&quot;</p>
+                    <p style={{ fontSize: 13, color: "var(--color-muted)" }}>{t("Try a different name, phone or email")}</p>
                   </>
                 ) : (
                   <>
-                    <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 6 }}>No clients yet</p>
-                    <p style={{ fontSize: 13, color: "var(--color-muted)", marginBottom: 20 }}>Add your first client to get started</p>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 6 }}>{t("No clients yet")}</p>
+                    <p style={{ fontSize: 13, color: "var(--color-muted)", marginBottom: 20 }}>{t("Add your first client to get started")}</p>
                     <button
                       onClick={() => setShowAdd(true)}
                       style={{ height: 36, padding: "0 18px", borderRadius: 9, background: "var(--color-amber)", color: "white", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)" }}
                     >
-                      Add your first client
+                      {t("Add your first client")}
                     </button>
                   </>
                 )}
@@ -871,7 +873,7 @@ export default function ClientsPage() {
                     <div />
                     {orderedCols.map((key) => (
                       <span key={key} style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--color-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {ALL_COLUMNS.find((c) => c.key === key)?.label}
+                        {t(ALL_COLUMNS.find((c) => c.key === key)?.label ?? "")}
                       </span>
                     ))}
                     <div className="sticky-actions-col" />
@@ -928,22 +930,22 @@ export default function ClientsPage() {
               style={{ width: "100%", maxWidth: 360, background: "var(--color-surface)", borderRadius: 20, padding: "24px", border: "1px solid var(--color-cream-2)", boxShadow: "0 8px 48px rgba(30,26,20,0.16)" }}
               onClick={(e) => e.stopPropagation()}
             >
-              <p style={{ fontSize: 16, fontWeight: 800, color: "var(--color-dark)", margin: "0 0 6px" }}>Delete {deleteTarget.name}?</p>
-              <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>All their booking history will be permanently deleted. This can&apos;t be undone.</p>
+              <p style={{ fontSize: 16, fontWeight: 800, color: "var(--color-dark)", margin: "0 0 6px" }}>{t("Delete")} {deleteTarget.name}?</p>
+              <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>{t("All their booking history will be permanently deleted. This can't be undone.")}</p>
               <div style={{ display: "flex", gap: 10 }}>
                 <button
                   onClick={() => setDeleteTarget(null)}
                   disabled={deleting}
                   style={{ flex: 1, height: 42, borderRadius: 12, border: "1.5px solid var(--color-cream-2)", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer" }}
                 >
-                  Cancel
+                  {t("Cancel")}
                 </button>
                 <button
                   onClick={() => deleteClient(deleteTarget)}
                   disabled={deleting}
                   style={{ flex: 1, height: 42, borderRadius: 12, border: "none", background: "#EF4444", color: "white", fontSize: 14, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}
                 >
-                  {deleting ? "Deleting…" : "Delete"}
+                  {deleting ? t("Deleting…") : t("Delete")}
                 </button>
               </div>
             </div>
@@ -964,7 +966,7 @@ export default function ClientsPage() {
               </div>
               {/* header */}
               <div style={{ padding: "4px 20px 14px", borderBottom: "1px solid var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)" }}>Filters</span>
+                <span style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)" }}>{t("Filters")}</span>
                 <button
                   onClick={() => setShowFiltersSheet(false)}
                   style={{ width: 30, height: 30, borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-muted)", cursor: "pointer" }}
@@ -977,7 +979,7 @@ export default function ClientsPage() {
               <div style={{ flex: 1, overflowY: "auto", padding: "18px 20px 8px" }}>
 
                 {/* Sort */}
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>Sort by</p>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>{t("Sort by")}</p>
                 <div style={{ display: "flex", flexDirection: "column" as const, gap: 6, marginBottom: 20 }}>
                   {SORT_OPTIONS.map((opt) => {
                     const active = sortBy === opt.value;
@@ -985,12 +987,12 @@ export default function ClientsPage() {
                       <button
                         key={opt.value}
                         onClick={() => setSortBy(opt.value)}
-                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: active ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "left" as const }}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: active ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "start" as const }}
                       >
                         <span style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           {active && <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--color-amber)", display: "block" }} />}
                         </span>
-                        <span style={{ fontSize: 14, fontWeight: active ? 700 : 400, color: active ? "var(--color-amber)" : "var(--color-dark)" }}>{opt.label}</span>
+                        <span style={{ fontSize: 14, fontWeight: active ? 700 : 400, color: active ? "var(--color-amber)" : "var(--color-dark)" }}>{t(opt.label)}</span>
                       </button>
                     );
                   })}
@@ -999,7 +1001,7 @@ export default function ClientsPage() {
                 <div style={{ borderTop: "1px solid var(--color-cream-2)", marginBottom: 20 }} />
 
                 {/* Label */}
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>Label</p>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>{t("Label")}</p>
                 <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8, marginBottom: 20 }}>
                   {ALL_LABEL_OPTIONS.map((opt) => {
                     const on = labelFilter.has(opt.value);
@@ -1009,7 +1011,7 @@ export default function ClientsPage() {
                         onClick={() => toggleLabelFilter(opt.value)}
                         style={{ padding: "7px 16px", borderRadius: 20, border: `1.5px solid ${on ? opt.color : "var(--color-cream-2)"}`, background: on ? opt.bg : "white", color: on ? opt.color : "var(--color-muted)", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.12s" }}
                       >
-                        {opt.text}
+                        {t(opt.text)}
                       </button>
                     );
                   })}
@@ -1018,7 +1020,7 @@ export default function ClientsPage() {
                 <div style={{ borderTop: "1px solid var(--color-cream-2)", marginBottom: 20 }} />
 
                 {/* Show period */}
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>Show period</p>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>{t("Show period")}</p>
                 <div style={{ display: "flex", flexDirection: "column" as const, gap: 6, marginBottom: showFilter === "custom" ? 10 : 20 }}>
                   {SHOW_OPTIONS.filter((o) => o.value !== "custom").map((opt) => {
                     const active = showFilter === opt.value;
@@ -1026,12 +1028,12 @@ export default function ClientsPage() {
                       <button
                         key={opt.value}
                         onClick={() => setShowFilter(opt.value)}
-                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: active ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "left" as const }}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: active ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "start" as const }}
                       >
                         <span style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           {active && <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--color-amber)", display: "block" }} />}
                         </span>
-                        <span style={{ fontSize: 14, fontWeight: active ? 700 : 400, color: active ? "var(--color-amber)" : "var(--color-dark)" }}>{opt.label}</span>
+                        <span style={{ fontSize: 14, fontWeight: active ? 700 : 400, color: active ? "var(--color-amber)" : "var(--color-dark)" }}>{t(opt.label)}</span>
                       </button>
                     );
                   })}
@@ -1040,15 +1042,15 @@ export default function ClientsPage() {
                 <div style={{ marginBottom: 20, display: "flex", flexDirection: "column" as const, gap: 8 }}>
                   <button
                     onClick={() => setShowFilter("custom")}
-                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${showFilter === "custom" ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showFilter === "custom" ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "left" as const }}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${showFilter === "custom" ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showFilter === "custom" ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "start" as const }}
                   >
                     <span style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${showFilter === "custom" ? "var(--color-amber)" : "var(--color-cream-2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {showFilter === "custom" && <span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--color-amber)", display: "block" }} />}
                     </span>
-                    <span style={{ fontSize: 14, fontWeight: showFilter === "custom" ? 700 : 400, color: showFilter === "custom" ? "var(--color-amber)" : "var(--color-dark)" }}>Custom range</span>
+                    <span style={{ fontSize: 14, fontWeight: showFilter === "custom" ? 700 : 400, color: showFilter === "custom" ? "var(--color-amber)" : "var(--color-dark)" }}>{t("Custom range")}</span>
                   </button>
                   {showFilter === "custom" && (
-                    <div style={{ display: "flex", gap: 8, paddingLeft: 4 }}>
+                    <div style={{ display: "flex", gap: 8, paddingInlineStart: 4 }}>
                       <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} style={{ flex: 1, height: 40, padding: "0 10px", borderRadius: 10, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 13, color: "var(--color-dark)", outline: "none" }} onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")} onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")} />
                       <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} style={{ flex: 1, height: 40, padding: "0 10px", borderRadius: 10, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 13, color: "var(--color-dark)", outline: "none" }} onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")} onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")} />
                     </div>
@@ -1058,7 +1060,7 @@ export default function ClientsPage() {
                 <div style={{ borderTop: "1px solid var(--color-cream-2)", marginBottom: 20 }} />
 
                 {/* Columns */}
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>Visible columns</p>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "var(--color-muted)", margin: "0 0 10px" }}>{t("Visible columns")}</p>
                 <div style={{ display: "flex", flexDirection: "column" as const, gap: 6, marginBottom: 8 }}>
                   {ALL_COLUMNS.map((col) => {
                     const on = visibleColumns.has(col.key);
@@ -1066,10 +1068,10 @@ export default function ClientsPage() {
                       <button
                         key={col.key}
                         onClick={() => toggleColumn(col.key)}
-                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${on ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: on ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "left" as const }}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${on ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: on ? "var(--amber-soft)" : "white", cursor: "pointer", textAlign: "start" as const }}
                       >
                         <span className={`col-check${on ? " checked" : ""}`}>{on && <IconCheck />}</span>
-                        <span style={{ fontSize: 14, fontWeight: on ? 600 : 400, color: on ? "var(--color-amber)" : "var(--color-dark)" }}>{col.label}</span>
+                        <span style={{ fontSize: 14, fontWeight: on ? 600 : 400, color: on ? "var(--color-amber)" : "var(--color-dark)" }}>{t(col.label)}</span>
                       </button>
                     );
                   })}
@@ -1082,13 +1084,13 @@ export default function ClientsPage() {
                   onClick={() => { setSortBy("recent"); setLabelFilter(new Set()); setShowFilter("all"); setVisibleColumns(new Set(DEFAULT_COLUMNS)); }}
                   style={{ flex: 1, height: 46, borderRadius: 13, border: "1.5px solid var(--color-cream-2)", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--color-muted)", cursor: "pointer" }}
                 >
-                  Clear all
+                  {t("Clear all")}
                 </button>
                 <button
                   onClick={() => setShowFiltersSheet(false)}
                   style={{ flex: 2, height: 46, borderRadius: 13, border: "none", background: "var(--color-amber)", color: "white", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)" }}
                 >
-                  Done
+                  {t("Done")}
                 </button>
               </div>
             </div>
@@ -1120,6 +1122,8 @@ function ClientRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useLang();
+
   function renderCell(key: ColumnKey) {
     switch (key) {
       case "firstName":
@@ -1207,8 +1211,8 @@ function ClientRow({
           {mobileSub2 && <span className="row-mobile-sub" style={{ fontSize: 11 }}>{mobileSub2}</span>}
         </div>
         <div className="row-actions" onClick={(e) => e.stopPropagation()}>
-          <button className="row-action-btn" title="Edit" onClick={onEdit}><IconEdit /></button>
-          <button className="row-action-btn delete" title="Delete" onClick={onDelete}><IconTrash /></button>
+          <button className="row-action-btn" title={t("Edit")} onClick={onEdit}><IconEdit /></button>
+          <button className="row-action-btn delete" title={t("Delete")} onClick={onDelete}><IconTrash /></button>
         </div>
       </div>
 
