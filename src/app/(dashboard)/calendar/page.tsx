@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   format, startOfMonth, endOfMonth,
@@ -86,6 +87,8 @@ function CalendarPageInner() {
   }, [business, view, date, supabase]);
 
   useEffect(() => {
+    // Initial + range-change loads from Supabase; setState runs post-fetch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBookings();
     fetchBlocked();
   }, [fetchBookings, fetchBlocked]);
@@ -169,6 +172,9 @@ function CalendarPageInner() {
       searchQuery,
       setSearchQuery,
     });
+    // searchQuery/setters intentionally omitted — republishing chrome on every
+    // keystroke would thrash the top bar; the values are read via the stable setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, view, statusFilter, calendarFilter, isTodaySelected, headerLabel, setChrome, staff]);
 
   // Clear the top bar when leaving the calendar.
@@ -178,6 +184,8 @@ function CalendarPageInner() {
   useEffect(() => {
     const q = searchQuery.trim();
     if (!q || !business) {
+      // Clearing results when the query is empty (debounced input sync).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchResults(null);
       return;
     }
@@ -245,7 +253,7 @@ function CalendarPageInner() {
             ))}
           </div>
 
-          <a
+          <Link
             href="/settings"
             className="mt-6 w-full flex items-center justify-center text-[15px] font-bold transition-all"
             style={{
@@ -256,7 +264,7 @@ function CalendarPageInner() {
             onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(232,146,10,0.28)"; }}
           >
             Set up your business
-          </a>
+          </Link>
         </div>
       </div>
     );

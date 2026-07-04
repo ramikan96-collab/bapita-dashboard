@@ -283,6 +283,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
       setLoading(false);
     })();
+  // Loads business data on mount / id change; supabase client excluded intentionally.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId, mode]);
 
   useEffect(() => {
@@ -1002,6 +1004,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                       <div style={{ position:"relative", flexShrink:0 }}>
                         <div style={{ width:52, height:52, borderRadius:"50%", overflow:"hidden", background:"var(--color-cream-2)", border:"1.5px solid var(--color-cream-2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                           {member.photo_url
+                            /* eslint-disable-next-line @next/next/no-img-element */
                             ? <img src={member.photo_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                             : <span style={{ fontSize:20 }}>👤</span>
                           }
@@ -1232,6 +1235,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   )}
                 </Row>
               </SectionCard>
+              {/* stableId holds a render-stable value; reading .current here is intentional */}
+              {/* eslint-disable-next-line react-hooks/refs */}
               <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} focal={form.image_focal} setFocal={f => set("image_focal", f)} profileImageUrl={profileImageUrl} setProfileImageUrl={setProfileImageUrl} />
             </div>
           )}
@@ -1861,6 +1866,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
       <div style={{ display:"flex", alignItems:"center", gap:16 }}>
         <div style={{ width:72, height:72, borderRadius:"50%", overflow:"hidden", background:"var(--color-cream-2)", flexShrink:0, border:"2px solid var(--color-cream-2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
           {profileImageUrl
+            /* eslint-disable-next-line @next/next/no-img-element */
             ? <img src={profileImageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
             : <span style={{ fontSize:24 }}>👤</span>
           }
@@ -1911,6 +1917,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
               }}
             >
               {item.url && (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition: focal[item.url] || "center", display:"block", pointerEvents:"none", opacity: item.hidden ? 0.45 : 1, filter: item.hidden ? "grayscale(0.6)" : "none" }} />
               )}
               {item.uploading && (
@@ -2041,6 +2048,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
                 onClick={e => onFocalClick(e, url)}
                 style={{ position:"relative", width:"100%", maxHeight:"46vh", aspectRatio:"4 / 3", borderRadius:12, overflow:"hidden", cursor:"crosshair", background:"var(--color-cream-2)" }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", pointerEvents:"none" }} />
                 <div style={{
                   position:"absolute", left:`${fx}%`, top:`${fy}%`, transform:"translate(-50%,-50%)",
@@ -2053,12 +2061,14 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
               <div style={{ display:"flex", gap:12, marginTop:14, alignItems:"flex-start" }}>
                 <div>
                   <div style={{ width:90, aspectRatio:"9 / 16", borderRadius:8, overflow:"hidden", border:"1px solid var(--color-cream-2)" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:pos, display:"block" }} />
                   </div>
                   <p style={{ fontSize:11, color:"var(--color-muted)", textAlign:"center", margin:"4px 0 0" }}>Phone</p>
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ width:"100%", aspectRatio:"16 / 9", borderRadius:8, overflow:"hidden", border:"1px solid var(--color-cream-2)" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:pos, display:"block" }} />
                   </div>
                   <p style={{ fontSize:11, color:"var(--color-muted)", textAlign:"center", margin:"4px 0 0" }}>Wide</p>

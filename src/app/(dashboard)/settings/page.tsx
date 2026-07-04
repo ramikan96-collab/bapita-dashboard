@@ -477,6 +477,8 @@ function ServicesSection({
     setServices(data || []);
   }, [business.id, supabase]);
 
+  // Initial load from Supabase; setState runs after the query resolves.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadServices(); }, [loadServices]);
   useEffect(() => { loadStaff(supabase, business.id).then(setStaff); }, [business.id, supabase]);
 
@@ -970,7 +972,7 @@ function HoursSection({
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
-              Apply first day's hours to all open days
+              Apply first day&apos;s hours to all open days
             </button>
           )}
         </SectionCard>
@@ -1002,7 +1004,7 @@ function HoursSection({
       </SectionCard>
 
       <SectionCard title="How far ahead clients can book">
-        <p className="text-[12px] text-muted -mt-1">Clients won't see availability beyond this window</p>
+        <p className="text-[12px] text-muted -mt-1">Clients won&apos;t see availability beyond this window</p>
         <div className="flex gap-2 flex-wrap">
           {[7, 14, 30, 60, 90].map((opt) => (
             <button
@@ -1178,6 +1180,7 @@ function TeamSection({
               <div style={{ position: "relative", flexShrink: 0 }}>
                 <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "var(--color-cream-2)", border: "1.5px solid var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {member.photo_url
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     ? <img src={member.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : <span style={{ fontSize: 20 }}>👤</span>
                   }
@@ -1872,6 +1875,7 @@ function WebsiteSection({
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: "var(--color-cream-2)", flexShrink: 0, border: "2px solid var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {profileImageUrl
+              /* eslint-disable-next-line @next/next/no-img-element */
               ? <img src={profileImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               : <span style={{ fontSize: 24 }}>👤</span>
             }
@@ -1938,6 +1942,7 @@ function WebsiteSection({
               const isHidden = hidden.includes(url);
               return (
               <div key={url} style={{ position: "relative", borderRadius: 10, overflow: "hidden", aspectRatio: "1" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt={`Gallery ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: isHidden ? 0.45 : 1, filter: isHidden ? "grayscale(0.6)" : "none", transition: "opacity 0.15s, filter 0.15s" }} />
                 {i === 0 && (
                   <div style={{ position: "absolute", top: 4, left: 4, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Cover</div>
@@ -2020,6 +2025,7 @@ function WebsiteSection({
               <div style={{ position: "relative", flexShrink: 0 }}>
                 <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "var(--color-cream-2)", border: "1.5px solid var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {member.photo_url
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     ? <img src={member.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : <span style={{ fontSize: 20 }}>👤</span>
                   }
@@ -2139,6 +2145,8 @@ function OnboardingChecklist({
 
   // Reveal checklist on client if the onboarding flag is present
   useEffect(() => {
+    // One-time mount read of localStorage to reveal the onboarding checklist.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (localStorage.getItem("bapita_onboarding") === "1") setDismissed(false);
   }, []);
 
@@ -2151,11 +2159,12 @@ function OnboardingChecklist({
       .eq("business_id", business.id)
       .eq("active", true)
       .then(({ count }) => setServiceCount(count ?? 0));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dismissed, business, supabase]);
 
   // Auto-dismiss with celebration when all required steps done
   useEffect(() => {
+    // Syncing visibility to a derived boolean gate before the celebration timer.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!allRequiredDone) { setAllDoneVisible(false); return; }
     setAllDoneVisible(true);
     const t = setTimeout(() => {

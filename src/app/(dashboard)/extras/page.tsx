@@ -798,6 +798,8 @@ export default function ExtrasPage() {
           <h1 style={{ fontSize: 26, fontWeight: 700, color: "var(--color-dark)", margin: "0 0 14px" }}>Extras</h1>
           {/* Scroll-anchor tabs */}
           <div style={{ display: "flex", marginBottom: -1 }}>
+            {/* refs are read inside the onClick handlers, not during render */}
+            {/* eslint-disable-next-line react-hooks/refs */}
             {[
               { label: "Recurring", onClick: () => recurringRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) },
               { label: "One-time",  onClick: () => onetimeRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) },

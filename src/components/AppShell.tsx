@@ -383,10 +383,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("notifications") === "1") {
+      // One-time mount sync from the URL query param; no external system to loop on.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNotificationsOpen(true);
       window.history.replaceState(null, "", window.location.pathname);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // BroadcastChannel from SW notificationclick — more reliable than client.postMessage
@@ -420,6 +421,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
       setIsAdmin(ADMIN_EMAILS.includes(user?.email ?? ""));
     });
+  // Runs once on mount; supabase client is recreated each render so excluding it is intentional.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/");
@@ -428,7 +431,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     setDrawerOpen(false);
     try {
       await supabase.auth.signOut();
-      window.location.href = "https://bapita.com";
+      window.location.assign("https://bapita.com");
     } catch (error) {
       console.error("Logout error:", error);
       showToast(t("Failed to sign out"), "error");

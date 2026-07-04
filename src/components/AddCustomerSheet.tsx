@@ -32,7 +32,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
 
   const [name, setName] = useState(clientToEdit?.name ?? "");
   const [phone, setPhone] = useState(clientToEdit?.phone ?? "");
-  const [email, setEmail] = useState((clientToEdit as any)?.email ?? "");
+  const [email, setEmail] = useState((clientToEdit as { email?: string } | null)?.email ?? "");
   const [notes, setNotes] = useState(clientToEdit?.notes ?? "");
   const [label, setLabel] = useState<string>(clientToEdit?.label ?? "");
   const [lastVisit, setLastVisit] = useState(
@@ -64,6 +64,8 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
 
   useEffect(() => {
     if (!attach || !service) {
+      // Clearing stale slots when the booking form is collapsed/incomplete.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSlots([]);
       return;
     }

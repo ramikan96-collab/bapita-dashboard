@@ -184,13 +184,16 @@ export default function AdminPage() {
   function downloadBusinessesCSV() {
     const rows = businesses.map(b => ({
       Name: b.name, Slug: b.slug ?? "", Template: b.template_style ?? "",
-      Status: (b as any).status ?? "", Phone: b.phone ?? "", Address: b.address ?? "",
+      Status: b.status ?? "", Phone: b.phone ?? "", Address: b.address ?? "",
     }));
     csvDownload(rows, "bapita-businesses.csv");
   }
 
   // ── Load on mount / tab switch ────────────────────────────────────────────
+  // Initial + tab-switch loads from Supabase; setState runs post-fetch.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadBusinesses(); }, [loadBusinesses]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (tab === "leads" && !leadsLoaded) loadLeads(); }, [tab, leadsLoaded, loadLeads]);
 
   const pendingCount    = leads.filter(l => l.status === "pending").length;
@@ -202,7 +205,7 @@ export default function AdminPage() {
     ? businesses.filter(b =>
         b.name.toLowerCase().includes(q) ||
         (b.slug ?? "").toLowerCase().includes(q) ||
-        ((b as any).status ?? "draft").toLowerCase().includes(q) ||
+        (b.status ?? "draft").toLowerCase().includes(q) ||
         (b.template_style ?? "").toLowerCase().includes(q)
       )
     : businesses;
@@ -347,7 +350,7 @@ export default function AdminPage() {
               )}
               {!bizLoading && businesses.length > 0 && filteredBusinesses.length === 0 && (
                 <div style={{ textAlign: "center", padding: "40px 0" }}>
-                  <p style={{ fontSize: 14, color: "var(--color-muted)" }}>No businesses match "{searchQuery}"</p>
+                  <p style={{ fontSize: 14, color: "var(--color-muted)" }}>No businesses match &quot;{searchQuery}&quot;</p>
                   <button onClick={() => setSearchQuery("")} style={{ marginTop: 8, height: 30, padding: "0 14px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Clear search</button>
                 </div>
               )}
@@ -572,11 +575,11 @@ function BusinessRow({ business: b, serviceCount, deleting, confirmDelete, onEdi
   });
   const template = b.template_style || "classic";
   const color    = TEMPLATE_COLORS[template] || "#B8862A";
-  const status   = (b as any).status || "draft";
-  const hasHero     = !!((b as any).hero_image_url);
-  const hasGallery  = ((b as any).gallery_images?.length || 0) > 0;
-  const hasWhatsApp = !!((b as any).whatsapp_number);
-  const hasAbout    = !!((b as any).about_text);
+  const status   = b.status || "draft";
+  const hasHero     = !!b.hero_image_url;
+  const hasGallery  = (b.gallery_images?.length || 0) > 0;
+  const hasWhatsApp = !!b.whatsapp_number;
+  const hasAbout    = !!b.about_text;
   const checks = [
     { label: `${serviceCount} service${serviceCount !== 1 ? "s" : ""}`, ok: serviceCount > 0 },
     { label: "Hero",     ok: hasHero     },
