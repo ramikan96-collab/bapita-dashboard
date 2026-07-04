@@ -111,15 +111,77 @@ export function InsightsSkeleton() {
 }
 
 export function FinancialsSkeleton() {
+  const cardShadow = "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)";
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
-      <div className="shrink-0 px-4 pt-5 pb-4 border-b bg-white animate-pulse" style={{ borderColor: "var(--color-cream-2)" }}>
-        <div className="h-8 rounded w-28" style={{ background: "var(--color-cream-2)" }}></div>
+      {/* Header */}
+      <div className="shrink-0 animate-pulse" style={{ background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)" }}>
+        <div className="mx-auto w-full" style={{ maxWidth: 760, padding: "26px 24px 14px" }}>
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="h-[26px] rounded w-28" style={{ background: "var(--color-cream-2)" }} />
+            <div className="h-[34px] w-28 rounded-[9px]" style={{ background: "var(--color-cream-2)" }} />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1.5">
+              <div className="h-[30px] w-[84px] rounded-full" style={{ background: "var(--color-cream-2)" }} />
+              <div className="h-[30px] w-[74px] rounded-full" style={{ background: "var(--color-cream)" }} />
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-7 h-7 rounded-[7px]" style={{ background: "var(--color-cream-2)" }} />
+              <div className="h-3.5 rounded w-16 mx-1" style={{ background: "var(--color-cream-2)" }} />
+              <div className="w-7 h-7 rounded-[7px]" style={{ background: "var(--color-cream-2)" }} />
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="p-4 space-y-4 animate-pulse">
-        <div className="h-32 rounded-2xl bg-white" style={{ boxShadow: "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)" }}></div>
-        <div className="h-40 rounded-2xl bg-white" style={{ boxShadow: "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)" }}></div>
-        <div className="h-56 rounded-2xl bg-white" style={{ boxShadow: "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)" }}></div>
+
+      {/* Body */}
+      <div className="flex-1 overflow-hidden">
+        <div className="mx-auto w-full animate-pulse" style={{ maxWidth: 760, padding: "20px 24px 0" }}>
+          {/* KPI grid */}
+          <div className="grid grid-cols-2 gap-2.5 mb-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-[14px] bg-white" style={{ padding: "14px 16px", boxShadow: cardShadow }}>
+                <div className="h-2.5 rounded w-16 mb-2.5" style={{ background: "var(--color-cream-2)" }} />
+                <div className="h-6 rounded w-20" style={{ background: "var(--color-cream-2)" }} />
+              </div>
+            ))}
+          </div>
+
+          {/* Filter + sort bar */}
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <div className="flex gap-1.5 flex-1">
+              {[64, 56, 76, 80].map((w, i) => (
+                <div key={i} className="h-[30px] rounded-full" style={{ width: w, background: "var(--color-cream-2)" }} />
+              ))}
+            </div>
+            <div className="h-[30px] w-32 rounded-[9px]" style={{ background: "var(--color-cream-2)" }} />
+          </div>
+
+          {/* Transaction table */}
+          <div className="rounded-2xl bg-white overflow-hidden" style={{ boxShadow: cardShadow }}>
+            <div className="grid gap-x-3 px-4 py-2.5 border-b" style={{ gridTemplateColumns: "100px 70px 1fr 80px", borderColor: "var(--color-cream-2)" }}>
+              {["w-12", "w-10", "w-24", "w-14"].map((w, i) => (
+                <div key={i} className={`h-2.5 rounded ${w}`} style={{ background: "var(--color-cream-2)" }} />
+              ))}
+            </div>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="grid gap-x-3 px-4 items-center"
+                style={{ gridTemplateColumns: "100px 70px 1fr 80px", padding: "12px 16px", borderBottom: i < 4 ? "1px solid var(--color-cream-2)" : undefined }}
+              >
+                <div className="h-4 w-14 rounded-full" style={{ background: "var(--color-cream-2)" }} />
+                <div className="h-3 w-10 rounded" style={{ background: "var(--color-cream)" }} />
+                <div>
+                  <div className="h-3 rounded w-28 mb-1" style={{ background: "var(--color-cream-2)" }} />
+                  <div className="h-2.5 rounded w-20" style={{ background: "var(--color-cream)" }} />
+                </div>
+                <div className="h-3.5 rounded w-12" style={{ background: "var(--color-cream-2)" }} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
