@@ -1032,9 +1032,16 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       <div
         data-noprint
         className={`fixed top-0 bottom-0 start-0 z-50 flex flex-col transition-transform duration-200 ease-out w-[80vw] max-w-[240px] md:w-60 md:max-w-none ${
-          drawerOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
+          drawerOpen ? "" : "pointer-events-none"
         }`}
-        style={{ background: "var(--color-surface)", boxShadow: "4px 0 24px rgba(30,26,20,0.12)" }}
+        style={{
+          background: "var(--color-surface)",
+          boxShadow: "4px 0 24px rgba(30,26,20,0.12)",
+          // start-0 anchors this to the left in LTR, right in RTL — the closed-state
+          // transform must slide off whichever edge it's actually anchored to, not
+          // always left, or in RTL it slides toward center instead of off-screen.
+          transform: drawerOpen ? "translateX(0)" : lang === "he" ? "translateX(100%)" : "translateX(-100%)",
+        }}
         role="dialog"
         aria-label="Navigation menu"
       >
