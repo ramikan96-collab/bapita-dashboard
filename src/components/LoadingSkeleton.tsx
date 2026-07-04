@@ -125,6 +125,76 @@ export function FinancialsSkeleton() {
   );
 }
 
+function ExtrasCardSkeleton({ accent = false }: { accent?: boolean }) {
+  return (
+    <div
+      className="rounded-2xl"
+      style={{
+        padding: "18px 20px",
+        background: "var(--color-surface)",
+        border: accent ? "1.5px solid var(--color-amber)" : "1.5px solid var(--color-cream-2)",
+      }}
+    >
+      <div className="flex items-start gap-3.5">
+        <div className="w-[38px] h-[38px] rounded-xl shrink-0" style={{ background: "var(--color-cream-2)" }} />
+        <div className="flex-1 min-w-0 flex items-start justify-between gap-2.5">
+          <div className="flex-1 min-w-0">
+            <div className="h-3.5 rounded w-32 mb-2" style={{ background: "var(--color-cream-2)" }} />
+            <div className="h-3 rounded w-full mb-1" style={{ background: "var(--color-cream)" }} />
+            <div className="h-3 rounded w-4/5" style={{ background: "var(--color-cream)" }} />
+          </div>
+          <div className="h-8 w-20 rounded-full shrink-0" style={{ background: "var(--color-cream-2)" }} />
+        </div>
+      </div>
+      <div className="mt-4.5 pt-3.5" style={{ borderTop: "1px solid var(--color-cream-2)" }}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="h-2.5 rounded w-24" style={{ background: "var(--color-cream-2)" }} />
+          <div className="h-2.5 rounded w-16" style={{ background: "var(--color-cream-2)" }} />
+        </div>
+        <div className="h-1 rounded-full w-full" style={{ background: "var(--color-cream-2)" }} />
+      </div>
+    </div>
+  );
+}
+
+export function ExtrasSkeleton() {
+  return (
+    <div className="flex flex-col h-full animate-pulse" style={{ background: "var(--color-cream)" }}>
+      {/* White header strip */}
+      <div className="shrink-0" style={{ background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)" }}>
+        <div className="mx-auto w-full" style={{ maxWidth: 600, padding: "26px 24px 0" }}>
+          <div className="h-7 rounded w-24 mb-4" style={{ background: "var(--color-cream-2)" }} />
+          <div className="flex gap-6 pb-3">
+            <div className="h-4 rounded w-20" style={{ background: "var(--color-cream-2)" }} />
+            <div className="h-4 rounded w-16" style={{ background: "var(--color-cream-2)" }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-hidden">
+        <div className="mx-auto w-full flex flex-col gap-4" style={{ maxWidth: 600, padding: "24px 24px 0" }}>
+          <ExtrasCardSkeleton accent />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <ExtrasCardSkeleton key={i} />
+          ))}
+          <ExtrasCardSkeleton />
+          <div
+            className="rounded-2xl flex items-center gap-3.5"
+            style={{ padding: "14px 18px", background: "var(--color-surface)", border: "1.5px solid var(--color-cream-2)" }}
+          >
+            <div className="w-9 h-9 rounded-[10px] shrink-0" style={{ background: "var(--color-cream-2)" }} />
+            <div className="flex-1 min-w-0">
+              <div className="h-3 rounded w-36 mb-1.5" style={{ background: "var(--color-cream-2)" }} />
+              <div className="h-2.5 rounded w-44" style={{ background: "var(--color-cream)" }} />
+            </div>
+            <div className="h-6 w-20 rounded-full shrink-0" style={{ background: "var(--color-cream-2)" }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SettingsSkeleton() {
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>

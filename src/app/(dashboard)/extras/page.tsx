@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
+import { ExtrasSkeleton } from "@/components/LoadingSkeleton";
 
 type AddonType = "whatsapp" | "stripe" | "google" | "ads" | "google_business";
 
@@ -777,11 +778,7 @@ export default function ExtrasPage() {
   }, [business, supabase]);
 
   if (bizLoading || (business && loading)) {
-    return (
-      <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", background: "var(--color-cream)" }}>
-        <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid var(--color-amber)", borderTopColor: "transparent", animation: "spin 0.7s linear infinite" }} />
-      </div>
-    );
+    return <ExtrasSkeleton />;
   }
 
   function get(type: AddonType): Addon {
