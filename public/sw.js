@@ -22,7 +22,7 @@ self.addEventListener("notificationclick", (event) => {
         const bc = new BroadcastChannel("bapita_push");
         bc.postMessage({ type: "OPEN_NOTIFICATIONS" });
         bc.close();
-      } catch (_) {}
+      } catch {}
 
       const windowClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
       const appClient = windowClients.find((c) => c.url.includes(self.location.origin));
