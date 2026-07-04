@@ -195,6 +195,52 @@ export function ExtrasSkeleton() {
   );
 }
 
+export function ProfileSkeleton() {
+  return (
+    <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
+      {/* Header */}
+      <div className="shrink-0 animate-pulse" style={{ background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)" }}>
+        <div className="mx-auto w-full" style={{ maxWidth: 480, padding: "26px 24px 20px" }}>
+          <div className="h-[26px] rounded w-24" style={{ background: "var(--color-cream-2)" }} />
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 overflow-hidden">
+        <div className="mx-auto w-full animate-pulse" style={{ maxWidth: 480, padding: "24px 24px 0" }}>
+
+          {/* Email card */}
+          <div className="rounded-2xl mb-3" style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "var(--shadow-sm)", padding: "18px 20px" }}>
+            <div className="h-2.5 rounded w-16 mb-2" style={{ background: "var(--color-cream-2)" }} />
+            <div className="h-3.5 rounded w-40" style={{ background: "var(--color-cream)" }} />
+          </div>
+
+          {/* Change password card */}
+          <div className="rounded-2xl mb-3" style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "var(--shadow-sm)", padding: "18px 20px" }}>
+            <div className="h-4 rounded w-36 mb-4" style={{ background: "var(--color-cream-2)" }} />
+            <div className="h-2.5 rounded w-24 mb-2" style={{ background: "var(--color-cream-2)" }} />
+            <div className="h-[42px] rounded-[11px] mb-3" style={{ background: "var(--color-cream)" }} />
+            <div className="h-2.5 rounded w-28 mb-2" style={{ background: "var(--color-cream-2)" }} />
+            <div className="h-[42px] rounded-[11px] mb-4" style={{ background: "var(--color-cream)" }} />
+            <div className="h-11 rounded-xl" style={{ background: "var(--color-cream-2)" }} />
+          </div>
+
+          {/* Delete account */}
+          <div className="rounded-2xl mb-3" style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "var(--shadow-sm)", padding: "14px 20px" }}>
+            <div className="h-[42px] rounded-[11px]" style={{ background: "var(--color-cream-2)" }} />
+          </div>
+
+          {/* Sign out */}
+          <div className="rounded-2xl" style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", boxShadow: "var(--shadow-sm)", padding: "14px 20px" }}>
+            <div className="h-[42px] rounded-[11px]" style={{ background: "var(--color-cream-2)" }} />
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SettingsSkeleton() {
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>

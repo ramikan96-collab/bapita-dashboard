@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
+import { ProfileSkeleton } from "@/components/LoadingSkeleton";
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -36,6 +37,7 @@ export default function ProfilePage() {
   const [newPassword,        setNewPassword]        = useState("");
   const [confirmPassword,    setConfirmPassword]    = useState("");
   const [loading,            setLoading]            = useState(false);
+  const [pageLoading,        setPageLoading]        = useState(true);
   const [showNew,            setShowNew]            = useState(false);
   const [showConfirm,        setShowConfirm]        = useState(false);
   const [showDeleteConfirm,  setShowDeleteConfirm]  = useState(false);
@@ -44,8 +46,11 @@ export default function ProfilePage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user?.email) setEmail(data.user.email);
+      setPageLoading(false);
     });
   }, [supabase]);
+
+  if (pageLoading) return <ProfileSkeleton />;
 
   async function updatePassword() {
     if (newPassword !== confirmPassword) { showToast("Passwords don't match", "error"); return; }
