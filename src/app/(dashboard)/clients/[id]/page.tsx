@@ -361,7 +361,7 @@ export default function ClientProfilePage() {
 
   const notesDirty = notes !== savedNotes;
   const isNew = !client.total_visits || client.total_visits === 0;
-  const email = (client as any).email as string | undefined;
+  const email = client.email ?? undefined;
 
   return (
     <>
