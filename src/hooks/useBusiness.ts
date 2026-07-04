@@ -60,6 +60,9 @@ export function useBusiness() {
   }, [fetchBusiness]);
 
   useEffect(() => {
+    // Initial data load from Supabase (external system) — the setState inside
+    // fetchBusiness runs after the async fetch resolves, not synchronously.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBusiness();
   }, [fetchBusiness]);
 

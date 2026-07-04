@@ -49,6 +49,8 @@ export default function AdminLeadsPage() {
     setLoading(false);
   }, [supabase]);
 
+  // Initial load from Supabase (external system); setState runs post-fetch.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   async function updateStatus(id: string, status: Lead["status"]) {

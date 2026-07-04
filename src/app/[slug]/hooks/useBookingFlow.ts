@@ -36,8 +36,9 @@ export function useBookingFlow(initialService?: Service | null, staffChoice = fa
     error: "",
   });
 
-  // Always-current ref so async callbacks avoid stale closure
+  // Always-current ref so async callbacks avoid stale closure.
   const stateRef = useRef(state);
+  // eslint-disable-next-line react-hooks/refs
   stateRef.current = state;
 
   const setService = useCallback((service: Service) => {

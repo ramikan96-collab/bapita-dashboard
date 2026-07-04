@@ -36,6 +36,8 @@ export function useNotifications() {
 
   // initial fetch + 60s poll as fallback if Realtime drops
   useEffect(() => {
+    // Fetching from an external API; setState runs after the response resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refetch();
     intervalRef.current = setInterval(refetch, 60_000);
     return () => {

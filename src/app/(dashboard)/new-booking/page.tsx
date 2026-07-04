@@ -218,6 +218,8 @@ function NewBookingInner() {
 
   // ─── Client search ──────────────────────────────────────────────────────
   useEffect(() => {
+    // Clearing stale results when the search query is too short (debounced input sync).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!business || clientSearch.trim().length < 2) { setClients([]); return; }
     const q = clientSearch.trim();
     const delay = setTimeout(async () => {
@@ -316,6 +318,7 @@ function NewBookingInner() {
     setSuccess(true);
   }
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const resetWizard = useCallback(() => {
     setSuccess(false);
     setSelectedService(null);

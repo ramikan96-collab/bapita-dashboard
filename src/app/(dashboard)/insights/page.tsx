@@ -189,6 +189,8 @@ export default function InsightsPage() {
     setLoading(false);
   }, [business, supabase, rangeKey, customStart, customEnd]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fetches bookings from Supabase; setState runs after the query resolves.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchData(); }, [fetchData]);
 
   if (bizLoading || (business && loading)) return <InsightsSkeleton />;

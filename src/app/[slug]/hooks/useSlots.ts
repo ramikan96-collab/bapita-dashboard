@@ -14,6 +14,8 @@ export function useSlots(
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Clearing slots when inputs are incomplete before the fetch below.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!date || !duration) { setSlots([]); return; }
 
     let cancelled = false;

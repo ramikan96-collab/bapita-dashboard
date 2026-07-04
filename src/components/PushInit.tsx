@@ -167,6 +167,8 @@ export function usePushStatus() {
   }, []);
 
   useEffect(() => {
+    // Probes the ServiceWorker/Push external APIs; setState runs after async resolve.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
   }, [refresh]);
 

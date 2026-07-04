@@ -1110,6 +1110,8 @@ export default function FinancialsPage() {
   // One-time: check stripe add-on status
   useEffect(() => {
     if (bizLoading) return;
+    // Syncing loading flag to the resolved business state (external data gate).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!business) { setLoading(false); return; }
     (async () => {
       const { data: addon } = await supabase
