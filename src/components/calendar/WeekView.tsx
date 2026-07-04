@@ -105,9 +105,9 @@ export default function WeekView({
           const isToday    = isSameDay(day, today);
           const isSelected = isSameDay(day, date);
           const pill = isToday
-            ? { background: "var(--color-amber)", color: "#fff" }
+            ? { background: "var(--color-amber)", color: "var(--color-surface)" }
             : isSelected
-              ? { background: "var(--color-dark)", color: "#fff" }
+              ? { background: "var(--color-dark)", color: "var(--color-surface)" }
               : { background: "transparent", color: "var(--color-dark)" };
           return (
             <button

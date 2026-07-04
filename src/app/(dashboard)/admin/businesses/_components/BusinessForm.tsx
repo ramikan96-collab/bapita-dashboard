@@ -586,7 +586,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
               <button
                 onClick={handleClone}
                 disabled={saving}
-                style={{ height:32, padding:"0 16px", borderRadius:9, border:"none", flexShrink:0, background:"var(--color-amber)", color:"#fff", fontSize:13, fontWeight:700, cursor:saving?"not-allowed":"pointer", opacity:saving?0.7:1, fontFamily:"inherit", boxShadow:"0 2px 8px rgba(232,146,10,0.25)" }}
+                style={{ height:32, padding:"0 16px", borderRadius:9, border:"none", flexShrink:0, background:"var(--color-amber)", color:"var(--color-surface)", fontSize:13, fontWeight:700, cursor:saving?"not-allowed":"pointer", opacity:saving?0.7:1, fontFamily:"inherit", boxShadow:"0 2px 8px rgba(232,146,10,0.25)" }}
               >
                 {saving ? "Creating…" : `Create ${variants.length > 1 ? `${variants.length} Copies` : "Copy"}`}
               </button>
@@ -637,8 +637,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 disabled={saving}
                 style={{
                   height:32, padding:"0 16px", borderRadius:9, border:"none", flexShrink:0,
-                  background: saved ? "#16A34A" : "var(--color-amber)",
-                  color:"#fff", fontSize:13, fontWeight:700,
+                  background: saved ? "var(--color-success)" : "var(--color-amber)",
+                  color:"var(--color-surface)", fontSize:13, fontWeight:700,
                   cursor: saving ? "not-allowed" : "pointer",
                   opacity: saving ? 0.7 : 1, transition:"background 0.3s",
                   fontFamily:"inherit", boxShadow:"0 2px 8px rgba(232,146,10,0.25)",
@@ -726,7 +726,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                         <div style={{ display:"flex", gap:8, flexShrink:0 }}>
                           <button
                             onClick={() => { setConfirmClone(false); setCloning(true); setVariants([{ slug: "", template: form.template_style || "classic" }]); }}
-                            style={{ height:30, padding:"0 14px", borderRadius:8, border:"none", background:"var(--color-amber)", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}
+                            style={{ height:30, padding:"0 14px", borderRadius:8, border:"none", background:"var(--color-amber)", color:"var(--color-surface)", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}
                           >Yes, Clone</button>
                           <button
                             onClick={() => setConfirmClone(false)}
@@ -800,7 +800,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                             <button
                               type="button"
                               onClick={() => copy(claudePrompt, 99)}
-                              style={{ height: 32, padding: "0 14px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                              style={{ height: 32, padding: "0 14px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "var(--color-surface)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                             >
                               {copiedStep === 99 ? "Copied!" : "Copy Claude Code prompt"}
                             </button>
@@ -995,7 +995,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     onClick={() => toggleSection("show_staff")}
                     style={{ width:40, height:22, borderRadius:11, position:"relative", cursor:"pointer", background: form.show_staff ? "var(--color-amber)" : "var(--color-cream-2)", transition:"background 0.2s", flexShrink:0 }}
                   >
-                    <div style={{ position:"absolute", top:3, width:16, height:16, borderRadius:8, background:"#fff", transition:"left 0.2s", left: form.show_staff ? 21 : 3, boxShadow:"0 1px 3px rgba(0,0,0,0.15)" }} />
+                    <div style={{ position:"absolute", top:3, width:16, height:16, borderRadius:8, background:"var(--color-surface)", transition:"left 0.2s", left: form.show_staff ? 21 : 3, boxShadow:"0 1px 3px rgba(0,0,0,0.15)" }} />
                   </div>
                 </div>
                 <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -1013,8 +1013,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                         </div>
                         <label style={{ position:"absolute", bottom:-2, right:-2, width:20, height:20, borderRadius:"50%", background:"var(--color-amber)", border:"2px solid var(--color-surface)", display:"flex", alignItems:"center", justifyContent:"center", cursor: staffUploading[member.id] ? "default" : "pointer", opacity: staffUploading[member.id] ? 0.6 : 1 }}>
                           {staffUploading[member.id]
-                            ? <div style={{ width:8, height:8, borderRadius:"50%", border:"1.5px solid #fff", borderTopColor:"transparent", animation:"spin 0.7s linear infinite" }} />
-                            : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            ? <div style={{ width:8, height:8, borderRadius:"50%", border:"1.5px solid var(--color-surface)", borderTopColor:"transparent", animation:"spin 0.7s linear infinite" }} />
+                            : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--color-surface)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                           }
                           <input
                             type="file" accept="image/*" style={{ display:"none" }}
@@ -1080,7 +1080,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                           onClick={() => toggleStaffCustomHours(idx)}
                           style={{ width:36, height:20, borderRadius:10, position:"relative", cursor:"pointer", background: member.working_hours ? "var(--color-amber)" : "var(--color-cream-2)", transition:"background 0.2s", flexShrink:0 }}
                         >
-                          <div style={{ position:"absolute", top:2, width:16, height:16, borderRadius:8, background:"#fff", transition:"left 0.2s", left: member.working_hours ? 18 : 2, boxShadow:"0 1px 3px rgba(0,0,0,0.15)" }} />
+                          <div style={{ position:"absolute", top:2, width:16, height:16, borderRadius:8, background:"var(--color-surface)", transition:"left 0.2s", left: member.working_hours ? 18 : 2, boxShadow:"0 1px 3px rgba(0,0,0,0.15)" }} />
                         </div>
                       </div>
 
@@ -1170,7 +1170,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                       >
                         <div style={{
                           position:"absolute", top:3, width:16, height:16, borderRadius:8,
-                          background:"#fff", transition:"left 0.2s",
+                          background:"var(--color-surface)", transition:"left 0.2s",
                           left: form[key] ? 21 : 3,
                           boxShadow:"0 1px 3px rgba(0,0,0,0.15)",
                         }} />
@@ -1264,7 +1264,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                           padding:"8px 16px", borderRadius:12, border:"none", cursor:"pointer",
                           fontSize:14, fontWeight:600, fontFamily:"inherit", transition:"all 0.15s",
                           background: on ? "var(--color-amber)" : "var(--color-cream-2)",
-                          color:      on ? "#fff"               : "var(--color-muted)",
+                          color:      on ? "var(--color-surface)"               : "var(--color-muted)",
                         }}
                       >
                         {label.slice(0, 3)}
@@ -1514,10 +1514,10 @@ function GooglePlaceIdSection({
           {looking ? "Searching…" : "Find on Google Maps"}
         </button>
       </div>
-      {lookErr && <p style={{ fontSize: 12, color: "#EF4444", margin: 0 }}>{lookErr}</p>}
+      {lookErr && <p style={{ fontSize: 12, color: "var(--color-danger)", margin: 0 }}>{lookErr}</p>}
       {match && (
         <div style={{
-          background: "#F0FDF4", border: "1.5px solid #86EFAC", borderRadius: 10,
+          background: "var(--color-success-bg)", border: "1.5px solid #86EFAC", borderRadius: 10,
           padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8,
         }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#166534" }}>Found: {match.name}</div>
@@ -1526,7 +1526,7 @@ function GooglePlaceIdSection({
           <div style={{ display: "flex", gap: 8 }}>
             <button
               onClick={acceptMatch}
-              style={{ height: 32, padding: "0 16px", borderRadius: 8, border: "none", background: "#16A34A", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+              style={{ height: 32, padding: "0 16px", borderRadius: 8, border: "none", background: "var(--color-success)", color: "var(--color-surface)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
             >
               Use this Place ID
             </button>
@@ -1618,7 +1618,7 @@ function AdminReviewsPanel({
               </div>
               <div style={{ display:"flex", gap:6 }}>
                 <button onClick={() => startEdit(r)} style={{ fontSize:12, fontWeight:600, color:"var(--color-amber)", background:"none", border:"none", cursor:"pointer" }}>Edit</button>
-                <button onClick={() => deleteReview(r.id)} style={{ fontSize:12, fontWeight:600, color:"#EF4444", background:"none", border:"none", cursor:"pointer" }}>Delete</button>
+                <button onClick={() => deleteReview(r.id)} style={{ fontSize:12, fontWeight:600, color:"var(--color-danger)", background:"none", border:"none", cursor:"pointer" }}>Delete</button>
               </div>
             </div>
             <p style={{ fontSize:13, color:"var(--color-dark)", opacity:0.75, margin:0, lineHeight:1.5 }}>{r.text}</p>
@@ -1627,7 +1627,7 @@ function AdminReviewsPanel({
 
         {showForm && (
           <div style={{ border:"1.5px solid var(--color-amber)", borderRadius:11, padding:"14px", display:"flex", flexDirection:"column", gap:12 }}>
-            {err && <p style={{ fontSize:12, color:"#EF4444", margin:0 }}>{err}</p>}
+            {err && <p style={{ fontSize:12, color:"var(--color-danger)", margin:0 }}>{err}</p>}
             <Field label="Client name">
               <input value={author} onChange={e => setAuthor(e.target.value)} placeholder="e.g. David Cohen" style={inputStyle} />
             </Field>
@@ -1645,7 +1645,7 @@ function AdminReviewsPanel({
               <input value={date} onChange={e => setDate(e.target.value)} placeholder="e.g. June 2025" style={inputStyle} />
             </Field>
             <div style={{ display:"flex", gap:8 }}>
-              <button onClick={saveReview} disabled={saving} style={{ flex:1, height:36, borderRadius:9, border:"none", background:"var(--color-amber)", color:"#fff", fontSize:13, fontWeight:700, cursor:saving?"not-allowed":"pointer", opacity:saving?0.6:1, fontFamily:"inherit" }}>
+              <button onClick={saveReview} disabled={saving} style={{ flex:1, height:36, borderRadius:9, border:"none", background:"var(--color-amber)", color:"var(--color-surface)", fontSize:13, fontWeight:700, cursor:saving?"not-allowed":"pointer", opacity:saving?0.6:1, fontFamily:"inherit" }}>
                 {saving ? "Saving…" : editingId ? "Update" : "Add review"}
               </button>
               <button onClick={resetForm} style={{ height:36, padding:"0 14px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"transparent", fontSize:13, fontWeight:600, color:"var(--color-muted)", cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
@@ -1932,7 +1932,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
               {i === 0 && !item.uploading && (
                 <div style={{
                   position:"absolute", top:6, insetInlineStart:6,
-                  background:"var(--color-amber)", color:"#fff",
+                  background:"var(--color-amber)", color:"var(--color-surface)",
                   fontSize:9, fontWeight:800, padding:"2px 6px", borderRadius:20, letterSpacing:"0.05em",
                 }}>
                   ★ HERO
@@ -1943,7 +1943,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
               {item.hidden && i !== 0 && !item.uploading && (
                 <div style={{
                   position:"absolute", top:6, insetInlineStart:6,
-                  background:"rgba(34,21,16,0.7)", color:"#fff",
+                  background:"rgba(34,21,16,0.7)", color:"var(--color-surface)",
                   fontSize:9, fontWeight:800, padding:"2px 6px", borderRadius:20, letterSpacing:"0.05em",
                 }}>
                   HIDDEN
@@ -1959,7 +1959,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
                         onClick={() => setAsHero(i)}
                         style={{
                           background:"rgba(34,21,16,0.7)", border:"none",
-                          borderRadius:6, color:"#fff", fontSize:9, fontWeight:700, padding:"3px 7px",
+                          borderRadius:6, color:"var(--color-surface)", fontSize:9, fontWeight:700, padding:"3px 7px",
                           cursor:"pointer", fontFamily:"inherit",
                         }}
                       >
@@ -1971,7 +1971,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
                         onClick={() => setFocalEditUrl(item.url)}
                         style={{
                           background:"rgba(34,21,16,0.7)", border:"none",
-                          borderRadius:6, color:"#fff", fontSize:9, fontWeight:700, padding:"3px 7px",
+                          borderRadius:6, color:"var(--color-surface)", fontSize:9, fontWeight:700, padding:"3px 7px",
                           cursor:"pointer", fontFamily:"inherit",
                         }}
                       >
@@ -1983,7 +1983,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
                         onClick={() => toggleHidden(i)}
                         style={{
                           background:"rgba(34,21,16,0.7)", border:"none",
-                          borderRadius:6, color:"#fff", fontSize:9, fontWeight:700, padding:"3px 7px",
+                          borderRadius:6, color:"var(--color-surface)", fontSize:9, fontWeight:700, padding:"3px 7px",
                           cursor:"pointer", fontFamily:"inherit",
                         }}
                       >
@@ -1996,7 +1996,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
                     style={{
                       alignSelf:"flex-end", width:24, height:24, borderRadius:6,
                       background:"rgba(239,68,68,0.9)", border:"none",
-                      color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer",
+                      color:"var(--color-surface)", fontSize:13, fontWeight:700, cursor:"pointer",
                       display:"flex", alignItems:"center", justifyContent:"center",
                     }}
                   >
@@ -2039,7 +2039,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
             onClick={() => setFocalEditUrl(null)}
             style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
           >
-            <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:16, padding:20, maxWidth:560, width:"100%", maxHeight:"90vh", overflowY:"auto" }}>
+            <div onClick={e => e.stopPropagation()} style={{ background:"var(--color-surface)", borderRadius:16, padding:20, maxWidth:560, width:"100%", maxHeight:"90vh", overflowY:"auto" }}>
               <p style={{ fontSize:15, fontWeight:700, color:"var(--color-dark)", margin:"0 0 4px" }}>Set focal point</p>
               <p style={{ fontSize:13, color:"var(--color-muted)", margin:"0 0 14px" }}>
                 Click the part of the photo that should always stay visible when it&apos;s cropped.
@@ -2054,7 +2054,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
                 <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", pointerEvents:"none" }} />
                 <div style={{
                   position:"absolute", left:`${fx}%`, top:`${fy}%`, transform:"translate(-50%,-50%)",
-                  width:26, height:26, borderRadius:"50%", border:"3px solid #fff",
+                  width:26, height:26, borderRadius:"50%", border:"3px solid var(--color-surface)",
                   boxShadow:"0 0 0 2px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.4)", pointerEvents:"none",
                 }} />
               </div>
@@ -2086,7 +2086,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
                 </button>
                 <button
                   onClick={() => setFocalEditUrl(null)}
-                  style={{ background:"var(--color-amber)", border:"none", borderRadius:8, padding:"9px 22px", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit" }}
+                  style={{ background:"var(--color-amber)", border:"none", borderRadius:8, padding:"9px 22px", fontSize:13, fontWeight:700, color:"var(--color-surface)", cursor:"pointer", fontFamily:"inherit" }}
                 >
                   Done
                 </button>
@@ -2169,11 +2169,11 @@ function ServicesPanel({ businessId, services, setServices }: {
             {deleteId === s.id ? (
               <div style={{ display:"flex", gap:4, alignItems:"center" }}>
                 <span style={{ fontSize:11, color:"var(--color-muted)" }}>Sure?</span>
-                <button onClick={() => confirmDelete(s.id)} style={{ ...ghostBtn, color:"#EF4444", fontSize:11 }}>Yes</button>
+                <button onClick={() => confirmDelete(s.id)} style={{ ...ghostBtn, color:"var(--color-danger)", fontSize:11 }}>Yes</button>
                 <button onClick={() => setDeleteId(null)} style={{ ...ghostBtn, fontSize:11 }}>No</button>
               </div>
             ) : (
-              <button onClick={() => setDeleteId(s.id)} style={{ ...ghostBtn, color:"#EF4444" }}>✕</button>
+              <button onClick={() => setDeleteId(s.id)} style={{ ...ghostBtn, color:"var(--color-danger)" }}>✕</button>
             )}
           </div>
         ))}
@@ -2194,7 +2194,7 @@ function ServicesPanel({ businessId, services, setServices }: {
             </div>
             <div><label style={labelStyle}>Name (HE) — שם בעברית</label><input value={nameHe} onChange={e => setNameHe(e.target.value)} placeholder="תספורת" dir="rtl" style={inputStyle} /></div>
             <div style={{ display:"flex", gap:8 }}>
-              <button onClick={saveService} disabled={saving} style={{ height:34, padding:"0 16px", borderRadius:9, border:"none", background:"var(--color-amber)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+              <button onClick={saveService} disabled={saving} style={{ height:34, padding:"0 16px", borderRadius:9, border:"none", background:"var(--color-amber)", color:"var(--color-surface)", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                 {saving ? "Saving…" : editing ? "Update" : "Add Service"}
               </button>
               <button onClick={cancelAdd} style={{ height:34, padding:"0 16px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"transparent", color:"var(--color-muted)", fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>

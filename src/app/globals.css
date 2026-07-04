@@ -35,6 +35,14 @@
   --color-cancelled: #EF4444;
   --color-no-show:   #EF4444;
 
+  /* Dashboard-wide semantic (error/success text + tint backgrounds — same
+     values as --color-cancelled/--completed, named for non-booking UI use:
+     delete buttons, form errors, confirm-toasts, empty-state chips) */
+  --color-danger:     #EF4444;
+  --color-danger-bg:  #FEF2F2;
+  --color-success:    #16A34A;
+  --color-success-bg: #F0FDF4;
+
   /* Typography */
   --font-sans: 'Heebo', system-ui, sans-serif;
 }

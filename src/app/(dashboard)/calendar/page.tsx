@@ -259,7 +259,7 @@ function CalendarPageInner() {
             href="/settings"
             className="mt-6 w-full flex items-center justify-center text-[15px] font-bold transition-all"
             style={{
-              height: 48, borderRadius: 14, background: "var(--wash-amber)", color: "#fff",
+              height: 48, borderRadius: 14, background: "var(--wash-amber)", color: "var(--color-surface)",
               boxShadow: "0 4px 14px rgba(232,146,10,0.28)",
             }}
             onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(232,146,10,0.38)"; }}

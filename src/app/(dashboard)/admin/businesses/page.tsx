@@ -256,7 +256,7 @@ export default function AdminPage() {
               {/* Add Business — always full label */}
               <button
                 onClick={() => router.push("/admin/businesses/new")}
-                style={{ height: 34, padding: "0 12px", borderRadius: 9, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)", transition: "transform 0.15s, box-shadow 0.15s", fontFamily: "inherit", whiteSpace: "nowrap" }}
+                style={{ height: 34, padding: "0 12px", borderRadius: 9, border: "none", background: "var(--color-amber)", color: "var(--color-surface)", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)", transition: "transform 0.15s, box-shadow 0.15s", fontFamily: "inherit", whiteSpace: "nowrap" }}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,146,10,0.36)"; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(232,146,10,0.28)"; }}
               >
@@ -317,7 +317,7 @@ export default function AdminPage() {
             >
               {t.label}
               {t.badge !== undefined && (
-                <span style={{ background: "var(--color-amber)", color: "#fff", fontSize: 11, fontWeight: 700, borderRadius: 99, padding: "1px 6px" }}>
+                <span style={{ background: "var(--color-amber)", color: "var(--color-surface)", fontSize: 11, fontWeight: 700, borderRadius: 99, padding: "1px 6px" }}>
                   {t.badge}
                 </span>
               )}
@@ -343,7 +343,7 @@ export default function AdminPage() {
                 <div style={{ textAlign: "center", padding: "60px 0" }}>
                   <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 6 }}>No businesses yet</p>
                   <p style={{ fontSize: 13, color: "var(--color-muted)", marginBottom: 20 }}>Add your first barber to get started.</p>
-                  <button onClick={() => router.push("/admin/businesses/new")} style={{ height: 36, padding: "0 18px", borderRadius: 9, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  <button onClick={() => router.push("/admin/businesses/new")} style={{ height: 36, padding: "0 18px", borderRadius: 9, border: "none", background: "var(--color-amber)", color: "var(--color-surface)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                     Add First Business
                   </button>
                 </div>
@@ -394,7 +394,7 @@ export default function AdminPage() {
                           height: 28, padding: "0 12px", borderRadius: 20,
                           border: active ? "none" : "1.5px solid var(--color-cream-2)",
                           background: active ? "var(--color-amber)" : "var(--color-surface)",
-                          color: active ? "#fff" : "var(--color-muted)",
+                          color: active ? "var(--color-surface)" : "var(--color-muted)",
                           fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                           display: "flex", alignItems: "center", gap: 5,
                         }}
@@ -416,7 +416,7 @@ export default function AdminPage() {
                   <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                     <button
                       onClick={() => router.push("/admin/businesses/new")}
-                      style={{ height: 28, padding: "0 12px", borderRadius: 7, border: "none", background: "#065F46", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                      style={{ height: 28, padding: "0 12px", borderRadius: 7, border: "none", background: "#065F46", color: "var(--color-surface)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                     >
                       + Create business →
                     </button>
@@ -469,11 +469,11 @@ export default function AdminPage() {
                         {!isEditing && (confirmDelete ? (
                           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                             <span style={{ fontSize: 11, color: "var(--color-muted)" }}>Delete?</span>
-                            <button onClick={() => handleLeadDelete(lead.id)} disabled={isDeleting} style={{ height: 26, padding: "0 9px", borderRadius: 6, border: "none", background: "#EF4444", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{isDeleting ? "…" : "Yes"}</button>
+                            <button onClick={() => handleLeadDelete(lead.id)} disabled={isDeleting} style={{ height: 26, padding: "0 9px", borderRadius: 6, border: "none", background: "var(--color-danger)", color: "var(--color-surface)", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{isDeleting ? "…" : "Yes"}</button>
                             <button onClick={() => setConfirmDeleteLeadId(null)} style={{ height: 26, padding: "0 9px", borderRadius: 6, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>No</button>
                           </div>
                         ) : (
-                          <button onClick={() => setConfirmDeleteLeadId(lead.id)} style={{ height: 28, padding: "0 10px", borderRadius: 7, border: "1.5px solid transparent", background: "transparent", color: "#EF4444", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Delete</button>
+                          <button onClick={() => setConfirmDeleteLeadId(lead.id)} style={{ height: 28, padding: "0 10px", borderRadius: 7, border: "1.5px solid transparent", background: "transparent", color: "var(--color-danger)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Delete</button>
                         ))}
                       </div>
                     </div>
@@ -490,7 +490,7 @@ export default function AdminPage() {
                         </div>
                         <div><label style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)", display: "block", marginBottom: 3 }}>Message</label><textarea style={{ ...inp, height: 64, padding: "8px 10px", resize: "vertical" }} value={editDraft.message ?? ""} onChange={e => setEditDraft(d => ({ ...d, message: e.target.value || null }))} /></div>
                         <div style={{ display: "flex", gap: 8 }}>
-                          <button onClick={() => handleLeadSave(lead.id)} disabled={savingLead} style={{ height: 30, padding: "0 14px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: savingLead ? "not-allowed" : "pointer", opacity: savingLead ? 0.6 : 1, fontFamily: "inherit" }}>{savingLead ? "Saving…" : "Save"}</button>
+                          <button onClick={() => handleLeadSave(lead.id)} disabled={savingLead} style={{ height: 30, padding: "0 14px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "var(--color-surface)", fontSize: 12, fontWeight: 700, cursor: savingLead ? "not-allowed" : "pointer", opacity: savingLead ? 0.6 : 1, fontFamily: "inherit" }}>{savingLead ? "Saving…" : "Save"}</button>
                           <button onClick={() => { setEditingLeadId(null); setEditDraft({}); }} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
                         </div>
                       </div>
@@ -509,7 +509,7 @@ export default function AdminPage() {
                             <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "contacted")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", color: "var(--color-dark)", fontSize: 12, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>Mark contacted</button>
                           )}
                           {lead.status !== "converted" && (
-                            <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "converted")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>Convert → client</button>
+                            <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "converted")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "var(--color-surface)", fontSize: 12, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>Convert → client</button>
                           )}
                           {lead.status !== "rejected" && (
                             <button disabled={busy} onClick={() => updateLeadStatus(lead.id, "rejected")} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 12, fontWeight: 600, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}>Reject</button>
@@ -654,11 +654,11 @@ function BusinessRow({ business: b, serviceCount, deleting, confirmDelete, onEdi
           {confirmDelete ? (
             <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
               <span style={{ fontSize: 11, color: "var(--color-muted)" }}>Delete?</span>
-              <button onClick={onDeleteConfirm} disabled={deleting} style={{ height: 28, padding: "0 10px", borderRadius: 7, border: "none", background: "#EF4444", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{deleting ? "…" : "Yes"}</button>
+              <button onClick={onDeleteConfirm} disabled={deleting} style={{ height: 28, padding: "0 10px", borderRadius: 7, border: "none", background: "var(--color-danger)", color: "var(--color-surface)", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{deleting ? "…" : "Yes"}</button>
               <button onClick={onDeleteCancel} style={{ height: 28, padding: "0 10px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: "transparent", color: "var(--color-muted)", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>No</button>
             </div>
           ) : (
-            <button onClick={onDeleteRequest} style={{ height: 32, padding: "0 12px", borderRadius: 8, cursor: "pointer", background: "transparent", border: "1.5px solid transparent", fontSize: 13, fontWeight: 600, color: "#EF4444", fontFamily: "inherit", transition: "border-color 0.15s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = "#EF4444"; }} onMouseLeave={e => { e.currentTarget.style.borderColor = "transparent"; }}>Delete</button>
+            <button onClick={onDeleteRequest} style={{ height: 32, padding: "0 12px", borderRadius: 8, cursor: "pointer", background: "transparent", border: "1.5px solid transparent", fontSize: 13, fontWeight: 600, color: "var(--color-danger)", fontFamily: "inherit", transition: "border-color 0.15s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--color-danger)"; }} onMouseLeave={e => { e.currentTarget.style.borderColor = "transparent"; }}>Delete</button>
           )}
         </div>
       </div>

@@ -159,7 +159,7 @@ export default function BlockTimeSheet({ draft, onClose, onSaved }: Props) {
                       className="px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors"
                       style={{
                         background: label === p ? "var(--color-amber)" : "var(--color-cream-2)",
-                        color: label === p ? "#fff" : "var(--color-muted)",
+                        color: label === p ? "var(--color-surface)" : "var(--color-muted)",
                       }}
                     >
                       {p}

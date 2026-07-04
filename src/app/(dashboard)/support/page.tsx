@@ -141,7 +141,7 @@ export default function SupportPage() {
                 borderRadius: 12,
                 border: "none",
                 background: canSend ? "var(--wash-amber)" : "var(--color-cream-2)",
-                color: canSend ? "#fff" : "var(--color-muted)",
+                color: canSend ? "var(--color-surface)" : "var(--color-muted)",
                 fontSize: 14,
                 fontWeight: 700,
                 cursor: canSend ? "pointer" : "not-allowed",

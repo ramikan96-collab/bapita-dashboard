@@ -118,7 +118,7 @@ export default function LoginPage() {
     boxSizing: "border-box",
   };
 
-  const errorBorder: React.CSSProperties = error ? { borderColor: "#EF4444" } : {};
+  const errorBorder: React.CSSProperties = error ? { borderColor: "var(--color-danger)" } : {};
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 16px", background: "var(--color-cream)" }}>
@@ -163,13 +163,13 @@ export default function LoginPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="you@example.com"
-                    style={{ ...inputStyle, ...(error ? { borderColor: "#EF4444" } : {}) }}
+                    style={{ ...inputStyle, ...(error ? { borderColor: "var(--color-danger)" } : {}) }}
                     onFocus={(e) => { if (!error) e.currentTarget.style.borderColor = "var(--color-amber)"; }}
                     onBlur={(e)  => { if (!error) e.currentTarget.style.borderColor = "var(--color-cream-2)"; }}
                   />
                 </div>
-                {error && <p style={{ fontSize: 12, color: "#EF4444", marginTop: -4 }}>{error}</p>}
-                <button type="submit" disabled={loading} style={{ width: "100%", height: 44, borderRadius: 12, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, boxShadow: "0 4px 14px rgba(232,146,10,0.30)" }}>
+                {error && <p style={{ fontSize: 12, color: "var(--color-danger)", marginTop: -4 }}>{error}</p>}
+                <button type="submit" disabled={loading} style={{ width: "100%", height: 44, borderRadius: 12, border: "none", background: "var(--wash-amber)", color: "var(--color-surface)", fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, boxShadow: "0 4px 14px rgba(232,146,10,0.30)" }}>
                   {loading ? t("Sending…") : t("Send reset link")}
                 </button>
                 <button type="button" onClick={() => switchTab("login")} style={{ fontSize: 13, fontWeight: 600, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer" }}>
@@ -216,7 +216,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <p style={{ fontSize: 12, color: "#EF4444", marginTop: -4 }}>{error}</p>
+                <p style={{ fontSize: 12, color: "var(--color-danger)", marginTop: -4 }}>{error}</p>
               )}
 
               <button
@@ -228,7 +228,7 @@ export default function LoginPage() {
                   borderRadius: 12,
                   border: "none",
                   background: "var(--wash-amber)",
-                  color: "#fff",
+                  color: "var(--color-surface)",
                   fontSize: 15,
                   fontWeight: 700,
                   cursor: loading ? "not-allowed" : "pointer",

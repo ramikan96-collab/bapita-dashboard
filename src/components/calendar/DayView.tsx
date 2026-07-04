@@ -87,7 +87,7 @@ export default function DayView({
             {format(date, "EEE, MMM d", { locale: dateLocale })}
           </span>
           {isToday && (
-            <span style={{ marginInlineStart: 8, fontSize: 11, fontWeight: 700, background: "var(--color-amber)", color: "#fff", padding: "1px 7px", borderRadius: 99 }}>
+            <span style={{ marginInlineStart: 8, fontSize: 11, fontWeight: 700, background: "var(--color-amber)", color: "var(--color-surface)", padding: "1px 7px", borderRadius: 99 }}>
               {t("Today")}
             </span>
           )}

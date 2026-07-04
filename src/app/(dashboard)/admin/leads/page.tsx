@@ -73,7 +73,7 @@ export default function AdminLeadsPage() {
                 Leads
               </h1>
               {pending > 0 && (
-                <span style={{ background: "var(--color-amber)", color: "#fff", fontSize: 12, fontWeight: 700, borderRadius: 99, padding: "2px 8px" }}>
+                <span style={{ background: "var(--color-amber)", color: "var(--color-surface)", fontSize: 12, fontWeight: 700, borderRadius: 99, padding: "2px 8px" }}>
                   {pending} new
                 </span>
               )}
@@ -176,7 +176,7 @@ export default function AdminLeadsPage() {
                     <button
                       disabled={busy}
                       onClick={() => updateStatus(lead.id, "converted")}
-                      style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}
+                      style={{ height: 30, padding: "0 12px", borderRadius: 8, border: "none", background: "var(--color-amber)", color: "var(--color-surface)", fontSize: 12, fontWeight: 700, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1, fontFamily: "inherit" }}
                     >
                       Convert → client
                     </button>

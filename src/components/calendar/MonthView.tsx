@@ -134,7 +134,7 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
                         width: 26, height: 26, fontSize: 13,
                         fontWeight: isToday ? 700 : 500,
                         background: isToday ? "var(--color-amber)" : "transparent",
-                        color: isToday ? "#fff" : inMonth ? "var(--color-dark)" : "var(--color-muted)",
+                        color: isToday ? "var(--color-surface)" : inMonth ? "var(--color-dark)" : "var(--color-muted)",
                       }}
                     >
                       {format(day, "d")}

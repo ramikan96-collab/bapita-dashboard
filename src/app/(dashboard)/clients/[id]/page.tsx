@@ -446,8 +446,8 @@ export default function ClientProfilePage() {
 
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              style={{ height: 34, padding: "0 12px", borderRadius: 9, background: "white", color: "#EF4444", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid rgba(239,68,68,0.3)", cursor: "pointer", transition: "all 0.15s ease" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#FEF2F2"; }}
+              style={{ height: 34, padding: "0 12px", borderRadius: 9, background: "white", color: "var(--color-danger)", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, border: "1.5px solid rgba(239,68,68,0.3)", cursor: "pointer", transition: "all 0.15s ease" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--color-danger-bg)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "white"; }}
             >
               <IconTrash />
@@ -679,7 +679,7 @@ export default function ClientProfilePage() {
               <button
                 onClick={deleteClient}
                 disabled={deleting}
-                style={{ flex: 1, height: 42, borderRadius: 12, border: "none", background: "#EF4444", color: "white", fontSize: 14, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}
+                style={{ flex: 1, height: 42, borderRadius: 12, border: "none", background: "var(--color-danger)", color: "white", fontSize: 14, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}
               >
                 {deleting ? "Deleting…" : "Delete"}
               </button>

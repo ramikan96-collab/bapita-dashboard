@@ -154,7 +154,7 @@ function SaveButton({ onClick, saving, dirty }: { onClick: () => void; saving: b
         borderRadius: 14,
         border: "none",
         background: dirty ? "var(--wash-amber)" : "var(--color-cream-2)",
-        color: dirty ? "#fff" : "var(--color-muted)",
+        color: dirty ? "var(--color-surface)" : "var(--color-muted)",
         fontSize: 15,
         fontWeight: 700,
         cursor: dirty ? "pointer" : "not-allowed",
@@ -246,7 +246,7 @@ function SetupForm({
           <button
             onClick={createBusiness}
             disabled={saving || !name.trim()}
-            style={{ width: "100%", height: 48, borderRadius: 14, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: saving || !name.trim() ? "not-allowed" : "pointer", opacity: saving || !name.trim() ? 0.5 : 1, boxShadow: "0 4px 14px rgba(232,146,10,0.26)" }}
+            style={{ width: "100%", height: 48, borderRadius: 14, border: "none", background: "var(--wash-amber)", color: "var(--color-surface)", fontSize: 15, fontWeight: 700, cursor: saving || !name.trim() ? "not-allowed" : "pointer", opacity: saving || !name.trim() ? 0.5 : 1, boxShadow: "0 4px 14px rgba(232,146,10,0.26)" }}
           >
             {saving ? "Creating your page…" : "Create my page"}
           </button>
@@ -328,7 +328,7 @@ function NoBusinessScreen() {
             </div>
             <button
               onClick={send} disabled={!canSend}
-              style={{ width: "100%", height: 44, borderRadius: 12, border: "none", background: canSend ? "var(--wash-amber)" : "var(--color-cream-2)", color: canSend ? "#fff" : "var(--color-muted)", fontSize: 14, fontWeight: 700, cursor: canSend ? "pointer" : "not-allowed", transition: "background 0.15s, color 0.15s", boxShadow: canSend ? "0 4px 14px rgba(232,146,10,0.28)" : "none" }}
+              style={{ width: "100%", height: 44, borderRadius: 12, border: "none", background: canSend ? "var(--wash-amber)" : "var(--color-cream-2)", color: canSend ? "var(--color-surface)" : "var(--color-muted)", fontSize: 14, fontWeight: 700, cursor: canSend ? "pointer" : "not-allowed", transition: "background 0.15s, color 0.15s", boxShadow: canSend ? "0 4px 14px rgba(232,146,10,0.28)" : "none" }}
             >
               {sending ? "Sending…" : "Send message"}
             </button>
@@ -670,7 +670,7 @@ function ServicesSection({
         <button
           onClick={saveService}
           disabled={saving || !newName.trim()}
-          style={{ flex: 1, height: 44, borderRadius: 12, border: "none", background: saving || !newName.trim() ? "var(--color-cream-2)" : "var(--wash-amber)", color: saving || !newName.trim() ? "var(--color-muted)" : "#fff", fontSize: 14, fontWeight: 700, cursor: saving || !newName.trim() ? "not-allowed" : "pointer" }}
+          style={{ flex: 1, height: 44, borderRadius: 12, border: "none", background: saving || !newName.trim() ? "var(--color-cream-2)" : "var(--wash-amber)", color: saving || !newName.trim() ? "var(--color-muted)" : "var(--color-surface)", fontSize: 14, fontWeight: 700, cursor: saving || !newName.trim() ? "not-allowed" : "pointer" }}
         >
           {saving ? "Saving…" : editingId ? "Save changes" : "Add service"}
         </button>
@@ -757,8 +757,8 @@ function ServicesSection({
                       style={{
                         minWidth: 32,
                         padding: pendingDelete === service.id ? "0 8px" : "0",
-                        color: pendingDelete === service.id ? "#fff" : "#EF4444",
-                        background: pendingDelete === service.id ? "#EF4444" : "transparent",
+                        color: pendingDelete === service.id ? "var(--color-surface)" : "var(--color-danger)",
+                        background: pendingDelete === service.id ? "var(--color-danger)" : "transparent",
                       }}
                       aria-label={pendingDelete === service.id ? "Tap again to confirm delete" : "Remove service"}
                     >
@@ -1055,8 +1055,8 @@ function HoursSection({
                   fontSize: 13,
                   fontWeight: isBlocked ? 700 : 400,
                   cursor: isPast ? "default" : "pointer",
-                  background: isBlocked ? "#EF4444" : "transparent",
-                  color: isBlocked ? "#fff" : isPast ? "var(--color-cream-2)" : "var(--color-dark)",
+                  background: isBlocked ? "var(--color-danger)" : "transparent",
+                  color: isBlocked ? "var(--color-surface)" : isPast ? "var(--color-cream-2)" : "var(--color-dark)",
                   transition: "background 0.1s",
                 }}
               >
@@ -1073,7 +1073,7 @@ function HoursSection({
                 <span style={{ fontSize: 13, color: "var(--color-dark)" }}>
                   {new Date(d + "T12:00:00").toLocaleDateString("en-IL", { weekday: "short", day: "numeric", month: "short" })}
                 </span>
-                <button onClick={() => toggleBlockedDate(d)} style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", fontSize: 13, fontWeight: 600 }}>Remove</button>
+                <button onClick={() => toggleBlockedDate(d)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-danger)", fontSize: 13, fontWeight: 600 }}>Remove</button>
               </div>
             ))}
           </div>
@@ -1190,8 +1190,8 @@ function TeamSection({
                 </div>
                 <label style={{ position: "absolute", bottom: -2, insetInlineEnd: -2, width: 20, height: 20, borderRadius: "50%", background: "var(--color-amber)", border: "2px solid var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: staffUploading[member.id] ? "default" : "pointer", opacity: staffUploading[member.id] ? 0.6 : 1 }}>
                   {staffUploading[member.id]
-                    ? <div style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid #fff", borderTopColor: "transparent", animation: "spin 0.7s linear infinite" }} />
-                    : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    ? <div style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid var(--color-surface)", borderTopColor: "transparent", animation: "spin 0.7s linear infinite" }} />
+                    : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--color-surface)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   }
                   <input
                     type="file" accept="image/*" style={{ display: "none" }}
@@ -1427,7 +1427,7 @@ function ReviewsSection({
               </div>
               <div style={{ display: "flex", gap: 6 }}>
                 <button onClick={() => startEdit(r)} style={{ fontSize: 12, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>Edit</button>
-                <button onClick={() => deleteReview(r.id)} style={{ fontSize: 12, fontWeight: 600, color: "#EF4444", background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>Delete</button>
+                <button onClick={() => deleteReview(r.id)} style={{ fontSize: 12, fontWeight: 600, color: "var(--color-danger)", background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>Delete</button>
               </div>
             </div>
             <p style={{ fontSize: 13, color: "var(--color-dark)", opacity: 0.75, margin: 0, lineHeight: 1.5 }}>{r.text}</p>
@@ -1458,7 +1458,7 @@ function ReviewsSection({
             </div>
             <InputField label="Date (optional)" value={date} onChange={setDate} placeholder="e.g. June 2025" />
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={saveReview} disabled={saving} style={{ flex: 1, height: 40, borderRadius: 11, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>
+              <button onClick={saveReview} disabled={saving} style={{ flex: 1, height: 40, borderRadius: 11, border: "none", background: "var(--wash-amber)", color: "var(--color-surface)", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>
                 {saving ? "Saving…" : editingId ? "Update review" : "Add review"}
               </button>
               <button onClick={resetForm} style={{ height: 40, padding: "0 16px", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "transparent", fontSize: 13, fontWeight: 600, color: "var(--color-muted)", cursor: "pointer" }}>Cancel</button>
@@ -1565,7 +1565,7 @@ function GooglePlaceIdCard({
             <button
               onClick={save}
               disabled={saving || !placeId.trim() || !dirty}
-              style={{ flex: 1, height: 40, borderRadius: 11, border: "none", background: placeId.trim() && dirty ? "var(--color-amber)" : "var(--color-cream-2)", color: placeId.trim() && dirty ? "#fff" : "var(--color-muted)", fontSize: 13, fontWeight: 700, cursor: placeId.trim() && dirty ? "pointer" : "not-allowed", fontFamily: "inherit", transition: "background 0.15s, color 0.15s" }}
+              style={{ flex: 1, height: 40, borderRadius: 11, border: "none", background: placeId.trim() && dirty ? "var(--color-amber)" : "var(--color-cream-2)", color: placeId.trim() && dirty ? "var(--color-surface)" : "var(--color-muted)", fontSize: 13, fontWeight: 700, cursor: placeId.trim() && dirty ? "pointer" : "not-allowed", fontFamily: "inherit", transition: "background 0.15s, color 0.15s" }}
             >
               {saving ? "Saving…" : "Connect"}
             </button>
@@ -1830,7 +1830,7 @@ function WebsiteSection({
               <button
                 key={l}
                 onClick={() => setDefaultLang(l)}
-                style={{ padding: "6px 16px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: defaultLang === l ? "var(--color-amber)" : "transparent", color: defaultLang === l ? "#fff" : "var(--color-muted)" }}
+                style={{ padding: "6px 16px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: defaultLang === l ? "var(--color-amber)" : "transparent", color: defaultLang === l ? "var(--color-surface)" : "var(--color-muted)" }}
               >
                 {l === "en" ? "EN" : "עב"}
               </button>
@@ -1920,7 +1920,7 @@ function WebsiteSection({
               <button
                 key={s}
                 onClick={() => setGallerySource(s)}
-                style={{ padding: "6px 12px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: gallerySource === s ? "var(--color-amber)" : "transparent", color: gallerySource === s ? "#fff" : "var(--color-muted)" }}
+                style={{ padding: "6px 12px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: gallerySource === s ? "var(--color-amber)" : "transparent", color: gallerySource === s ? "var(--color-surface)" : "var(--color-muted)" }}
               >
                 {s === "images" ? "Gallery images" : "Instagram feed"}
               </button>
@@ -1948,15 +1948,15 @@ function WebsiteSection({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt={`Gallery ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: isHidden ? 0.45 : 1, filter: isHidden ? "grayscale(0.6)" : "none", transition: "opacity 0.15s, filter 0.15s" }} />
                 {i === 0 && (
-                  <div style={{ position: "absolute", top: 4, insetInlineStart: 4, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Cover</div>
+                  <div style={{ position: "absolute", top: 4, insetInlineStart: 4, background: "rgba(0,0,0,0.6)", color: "var(--color-surface)", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Cover</div>
                 )}
                 {isHidden && i !== 0 && (
-                  <div style={{ position: "absolute", top: 4, insetInlineStart: 4, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Hidden</div>
+                  <div style={{ position: "absolute", top: 4, insetInlineStart: 4, background: "rgba(0,0,0,0.6)", color: "var(--color-surface)", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Hidden</div>
                 )}
                 <button
                   onClick={() => toggleHidden(url)}
                   title={isHidden ? "Show in gallery" : "Hide from gallery"}
-                  style={{ position: "absolute", top: 4, insetInlineEnd: 32, width: 24, height: 24, borderRadius: 6, background: isHidden ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.9)", border: "none", color: isHidden ? "#fff" : "var(--color-dark)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  style={{ position: "absolute", top: 4, insetInlineEnd: 32, width: 24, height: 24, borderRadius: 6, background: isHidden ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.9)", border: "none", color: isHidden ? "var(--color-surface)" : "var(--color-dark)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
                   {isHidden ? (
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -1966,7 +1966,7 @@ function WebsiteSection({
                 </button>
                 <button
                   onClick={() => removeImage(url)}
-                  style={{ position: "absolute", top: 4, insetInlineEnd: 4, width: 24, height: 24, borderRadius: 6, background: "rgba(239,68,68,0.85)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  style={{ position: "absolute", top: 4, insetInlineEnd: 4, width: 24, height: 24, borderRadius: 6, background: "rgba(239,68,68,0.85)", border: "none", color: "var(--color-surface)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
@@ -2035,8 +2035,8 @@ function WebsiteSection({
                 </div>
                 <label style={{ position: "absolute", bottom: -2, insetInlineEnd: -2, width: 20, height: 20, borderRadius: "50%", background: "var(--color-amber)", border: "2px solid var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", cursor: staffUploading[member.id] ? "default" : "pointer", opacity: staffUploading[member.id] ? 0.6 : 1 }}>
                   {staffUploading[member.id]
-                    ? <div style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid #fff", borderTopColor: "transparent", animation: "spin 0.7s linear infinite" }} />
-                    : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    ? <div style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid var(--color-surface)", borderTopColor: "transparent", animation: "spin 0.7s linear infinite" }} />
+                    : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--color-surface)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   }
                   <input
                     type="file" accept="image/*" style={{ display: "none" }}
@@ -2223,7 +2223,7 @@ function OnboardingChecklist({
         <div style={{
           height: "100%",
           width: `${pct}%`,
-          background: allRequiredDone ? "#16A34A" : "var(--color-amber)",
+          background: allRequiredDone ? "var(--color-success)" : "var(--color-amber)",
           borderRadius: 9999,
           transition: "width 0.4s ease, background 0.3s ease",
         }} />
@@ -2268,7 +2268,7 @@ function OnboardingChecklist({
             }}>
               {step.done ? (
                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                  <polyline points="2,6 5,9 10,3" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <polyline points="2,6 5,9 10,3" stroke="var(--color-success)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               ) : (
                 <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-cream-2)" }} />
@@ -2365,7 +2365,7 @@ function DashboardLanguageCard({
               <button
                 key={l}
                 onClick={() => setLang(l)}
-                style={{ padding: "6px 16px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: value === l ? "var(--color-amber)" : "transparent", color: value === l ? "#fff" : "var(--color-muted)" }}
+                style={{ padding: "6px 16px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: value === l ? "var(--color-amber)" : "transparent", color: value === l ? "var(--color-surface)" : "var(--color-muted)" }}
               >
                 {l === "en" ? "EN" : "עב"}
               </button>
@@ -2437,7 +2437,7 @@ export default function SettingsPage() {
                   border: "none",
                   transition: "all 0.15s",
                   background: active ? "var(--color-amber)" : "var(--color-cream-2)",
-                  color: active ? "#fff" : "var(--color-muted)",
+                  color: active ? "var(--color-surface)" : "var(--color-muted)",
                 }}
               >
                 {t(s.label)}

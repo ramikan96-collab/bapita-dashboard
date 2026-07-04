@@ -149,7 +149,7 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
       <div className="absolute inset-0 bg-black/50" />
       <div
         className="relative w-full max-w-md rounded-t-2xl md:rounded-2xl flex flex-col"
-        style={{ background: "#fff", maxHeight: "92vh", boxShadow: "0 -4px 24px rgba(30,26,20,0.12)" }}
+        style={{ background: "var(--color-surface)", maxHeight: "92vh", boxShadow: "0 -4px 24px rgba(30,26,20,0.12)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-10 h-1 rounded-full mx-auto shrink-0 md:hidden" style={{ background: "var(--color-cream-2)", marginTop: 10, marginBottom: 2 }} />
@@ -228,7 +228,7 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
                     className="rounded-xl text-sm font-semibold border transition-colors"
                     style={
                       time === slot.time
-                        ? { padding: "12px 0", background: "var(--color-amber)", color: "#fff", borderColor: "var(--color-amber)" }
+                        ? { padding: "12px 0", background: "var(--color-amber)", color: "var(--color-surface)", borderColor: "var(--color-amber)" }
                         : slot.available
                         ? { padding: "12px 0", background: "var(--color-cream)", color: "var(--color-dark)", borderColor: "var(--color-cream-2)" }
                         : {
@@ -325,7 +325,7 @@ export default function EditBookingSheet({ booking, onSaved, onClose }: Props) {
             disabled={!time || saving}
             onClick={handleSave}
             className="flex-1 rounded-2xl text-sm font-bold disabled:opacity-50"
-            style={{ background: "var(--color-amber)", color: "#fff", padding: "13px 0" }}
+            style={{ background: "var(--color-amber)", color: "var(--color-surface)", padding: "13px 0" }}
           >
             {saving ? "Saving…" : "Confirm"}
           </button>

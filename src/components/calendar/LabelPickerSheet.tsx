@@ -7,7 +7,7 @@ import type { Label } from "@/types";
 const LABEL_COLORS = [
   "#E53E3E", "#ED64A6", "#ED8936", "#ECC94B", "#F6E05E",
   "#9AE6B4", "#276749", "#63B3ED", "#3182CE",
-  "#805AD5", "#B794F4", "#1A202C", "#718096", "#FFFFFF",
+  "#805AD5", "#B794F4", "#1A202C", "#718096", "var(--color-surface)",
 ];
 
 interface Props {
@@ -122,7 +122,7 @@ export default function LabelPickerSheet({
       <div className="absolute inset-0 bg-black/50" />
       <div
         className="relative w-full max-w-md rounded-t-2xl max-h-[80vh] flex flex-col"
-        style={{ background: "#fff", padding: "12px 20px calc(28px + env(safe-area-inset-bottom))" }}
+        style={{ background: "var(--color-surface)", padding: "12px 20px calc(28px + env(safe-area-inset-bottom))" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}
@@ -184,7 +184,7 @@ export default function LabelPickerSheet({
                   >
                     <span
                       className="w-5 h-5 rounded-full shrink-0"
-                      style={{ background: label.color, border: label.color === "#FFFFFF" ? "1px solid var(--color-cream-2)" : "none" }}
+                      style={{ background: label.color, border: label.color === "var(--color-surface)" ? "1px solid var(--color-cream-2)" : "none" }}
                     />
                     <span
                       className="flex-1 text-sm font-semibold"
@@ -207,7 +207,7 @@ export default function LabelPickerSheet({
                     <button
                       onClick={() => handleDelete(label.id)}
                       className="text-xs rounded-lg font-bold shrink-0"
-                      style={{ color: "#EF4444", background: "rgba(239,68,68,0.1)", padding: "6px 10px" }}
+                      style={{ color: "var(--color-danger)", background: "rgba(239,68,68,0.1)", padding: "6px 10px" }}
                     >
                       Delete?
                     </button>
@@ -251,7 +251,7 @@ export default function LabelPickerSheet({
                     style={{
                       padding: "10px 14px",
                       borderColor: "var(--color-cream-2)",
-                      background: "#fff",
+                      background: "var(--color-surface)",
                       color: "var(--color-dark)",
                     }}
                     onFocus={(e) => (e.target.style.borderColor = "var(--color-amber)")}
@@ -268,7 +268,7 @@ export default function LabelPickerSheet({
                           border:
                             formColor === c
                               ? "3px solid var(--color-dark)"
-                              : c === "#FFFFFF"
+                              : c === "var(--color-surface)"
                               ? "2px solid var(--color-cream-2)"
                               : "2px solid transparent",
                         }}
@@ -287,7 +287,7 @@ export default function LabelPickerSheet({
                       onClick={handleSave}
                       disabled={!formName.trim() || saving}
                       className="flex-1 rounded-xl text-sm font-bold disabled:opacity-50"
-                      style={{ background: "var(--color-amber)", color: "#fff", padding: "11px 0" }}
+                      style={{ background: "var(--color-amber)", color: "var(--color-surface)", padding: "11px 0" }}
                     >
                       {saving ? "Saving…" : "Save"}
                     </button>

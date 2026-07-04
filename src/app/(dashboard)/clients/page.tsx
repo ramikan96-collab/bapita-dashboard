@@ -68,18 +68,18 @@ const COL_MIN_PX: Record<ColumnKey, number> = {
 type LabelValue = "completed" | "no_show" | "canceled";
 
 const LABEL_CONFIG: Record<LabelValue, { text: string; bg: string; color: string }> = {
-  completed: { text: "Completed", bg: "#F0FDF4", color: "#16A34A" },
+  completed: { text: "Completed", bg: "var(--color-success-bg)", color: "var(--color-success)" },
   no_show:   { text: "No show",   bg: "#FFF7ED", color: "#EA580C" },
-  canceled:  { text: "Canceled",  bg: "#FEF2F2", color: "#DC2626" },
+  canceled:  { text: "Canceled",  bg: "var(--color-danger-bg)", color: "#DC2626" },
 };
 
 const NEW_CHIP = { text: "New", bg: "#EFF6FF", color: "#2563EB" };
 
 const ALL_LABEL_OPTIONS = [
   { value: "new",       text: "New",       bg: "#EFF6FF", color: "#2563EB" },
-  { value: "completed", text: "Completed", bg: "#F0FDF4", color: "#16A34A" },
+  { value: "completed", text: "Completed", bg: "var(--color-success-bg)", color: "var(--color-success)" },
   { value: "no_show",   text: "No show",   bg: "#FFF7ED", color: "#EA580C" },
-  { value: "canceled",  text: "Canceled",  bg: "#FEF2F2", color: "#DC2626" },
+  { value: "canceled",  text: "Canceled",  bg: "var(--color-danger-bg)", color: "#DC2626" },
 ] as const;
 
 function getEffectiveLabel(client: Customer): { text: string; bg: string; color: string } | null {
@@ -520,7 +520,7 @@ export default function ClientsPage() {
         .row-actions { opacity: 0; display: flex; gap: 4px; transition: opacity 0.15s ease; }
         .row-action-btn { height: 44px; width: 44px; border-radius: 12px; border: 1.5px solid var(--color-cream-2); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-muted); transition: all 0.12s; flex-shrink: 0; }
         .row-action-btn:hover { border-color: var(--color-amber); color: var(--color-amber); background: var(--amber-soft); }
-        .row-action-btn.delete:hover { border-color: #EF4444; color: #EF4444; background: #FEF2F2; }
+        .row-action-btn.delete:hover { border-color: var(--color-danger); color: var(--color-danger); background: var(--color-danger-bg); }
         .col-check { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--color-cream-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.12s; }
         .col-check.checked { background: var(--color-amber); border-color: var(--color-amber); color: white; }
         .dd-menu-item { width: 100%; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--color-dark); background: transparent; border: none; cursor: pointer; text-align: start; transition: background 0.1s; }
@@ -945,7 +945,7 @@ export default function ClientsPage() {
                 <button
                   onClick={() => deleteClient(deleteTarget)}
                   disabled={deleting}
-                  style={{ flex: 1, height: 42, borderRadius: 12, border: "none", background: "#EF4444", color: "white", fontSize: 14, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}
+                  style={{ flex: 1, height: 42, borderRadius: 12, border: "none", background: "var(--color-danger)", color: "white", fontSize: 14, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}
                 >
                   {deleting ? t("Deleting…") : t("Delete")}
                 </button>

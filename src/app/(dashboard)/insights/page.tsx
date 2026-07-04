@@ -368,12 +368,12 @@ function OverviewTab({ stats, empty, hasDelta, deltaPct, deltaUp, hasRevenue, ma
         <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.70)", marginBottom: 12 }}>
           Earnings
         </p>
-        <p className="earnings-val font-black" style={{ color: "#fff" }}>
+        <p className="earnings-val font-black" style={{ color: "var(--color-surface)" }}>
           ₪{stats.revenue.toLocaleString()}
         </p>
         {hasDelta && (
           <span
-            style={{ marginTop: 16, padding: "6px 14px", background: "rgba(255,255,255,0.22)", color: "#fff", backdropFilter: "blur(4px)", display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 99, fontSize: 13, fontWeight: 600 }}
+            style={{ marginTop: 16, padding: "6px 14px", background: "rgba(255,255,255,0.22)", color: "var(--color-surface)", backdropFilter: "blur(4px)", display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 99, fontSize: 13, fontWeight: 600 }}
           >
             {deltaUp ? "↑" : "↓"}{Math.abs(deltaPct).toFixed(0)}%
             <span style={{ opacity: 0.75 }}>vs previous period</span>
@@ -384,7 +384,7 @@ function OverviewTab({ stats, empty, hasDelta, deltaPct, deltaUp, hasRevenue, ma
       {/* 4 stat cards 2×2 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
         <StatCard label="Bookings"   value={stats.bookings}                             icon={<IconCal />}   iconBg="rgba(107,96,82,0.10)"      iconColor="var(--color-muted)" />
-        <StatCard label="Completed"  value={stats.completed}                            icon={<IconCheck />} iconBg="rgba(34,197,94,0.12)"       iconColor="#16A34A"            valueColor="#16A34A" />
+        <StatCard label="Completed"  value={stats.completed}                            icon={<IconCheck />} iconBg="rgba(34,197,94,0.12)"       iconColor="var(--color-success)"            valueColor="var(--color-success)" />
         <StatCard label="No shows"   value={stats.noShow}                               icon={<IconXCirc />} iconBg={stats.noShow > 0 ? "rgba(239,68,68,0.10)" : "rgba(107,96,82,0.08)"} iconColor={stats.noShow > 0 ? "#DC2626" : "var(--color-muted)"} valueColor={stats.noShow > 0 ? "#DC2626" : undefined} />
         <StatCard label="Avg ticket" value={`₪${stats.avgTicket.toLocaleString()}`}    icon={<IconTag />}   iconBg="rgba(232,146,10,0.12)"      iconColor="var(--color-amber)" />
       </div>
@@ -406,7 +406,7 @@ function OverviewTab({ stats, empty, hasDelta, deltaPct, deltaUp, hasRevenue, ma
               {stats.topServices.map((svc, idx) => (
                 <div key={svc.name} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                   <span
-                    style={{ width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 10, fontWeight: 700, marginTop: 1, ...(idx === 0 ? { background: "var(--color-amber)", color: "#fff" } : { background: "var(--amber-soft)", color: "var(--color-amber)" }) }}
+                    style={{ width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 10, fontWeight: 700, marginTop: 1, ...(idx === 0 ? { background: "var(--color-amber)", color: "var(--color-surface)" } : { background: "var(--amber-soft)", color: "var(--color-amber)" }) }}
                   >
                     {idx + 1}
                   </span>
@@ -448,7 +448,7 @@ function OverviewTab({ stats, empty, hasDelta, deltaPct, deltaUp, hasRevenue, ma
         </div>
         <button
           onClick={() => window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MSG)}`, "_blank")}
-          style={{ flexShrink: 0, fontSize: 13, fontWeight: 700, color: "#fff", padding: "10px 16px", borderRadius: 12, background: "var(--wash-amber)", boxShadow: "var(--shadow-amber)", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
+          style={{ flexShrink: 0, fontSize: 13, fontWeight: 700, color: "var(--color-surface)", padding: "10px 16px", borderRadius: 12, background: "var(--wash-amber)", boxShadow: "var(--shadow-amber)", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
         >
           Turn on
         </button>
@@ -644,7 +644,7 @@ function RevenueTab({ bookings, label }: { bookings: BookingRow[]; label: string
       <div className="ins-grid-2">
         <div className="rounded-2xl" style={{ padding: "20px 24px", background: "var(--wash-amber)", boxShadow: "var(--shadow-amber)" }}>
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.70)", marginBottom: 10 }}>Total earned</p>
-          <p style={{ fontSize: 36, fontWeight: 900, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>₪{totalEarned.toLocaleString()}</p>
+          <p style={{ fontSize: 36, fontWeight: 900, color: "var(--color-surface)", letterSpacing: "-0.02em", lineHeight: 1 }}>₪{totalEarned.toLocaleString()}</p>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 8 }}>{earned.length} completed</p>
         </div>
         <div className="rounded-2xl" style={{ padding: "20px 24px", background: "var(--color-surface)", boxShadow: "var(--shadow-md)" }}>

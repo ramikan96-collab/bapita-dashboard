@@ -63,7 +63,7 @@ function ActionBtn({
       style={{
         background: primary ? color : `${color}22`,
         border: primary ? "none" : `1.5px solid ${color}40`,
-        color: primary ? "#fff" : color,
+        color: primary ? "var(--color-surface)" : color,
         minWidth: 0,
         padding: "13px 8px",
       }}
@@ -404,7 +404,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
     const s = current.status;
     const AMBER = "#E8920A";
     const GREEN = STATUS_COLOR.completed;
-    const RED = "#EF4444";
+    const RED = "var(--color-danger)";
     const SLATE = STATUS_COLOR.pending;
 
     if (s === "pending") {
@@ -474,7 +474,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
               style={{
                 background: label.color,
                 border:
-                  label.color === "#FFFFFF"
+                  label.color === "var(--color-surface)"
                     ? "1px solid var(--color-cream-2)"
                     : "none",
               }}
@@ -637,7 +637,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
               className="text-[15px] font-bold"
               style={{
                 color:
-                  ps === "none" ? "#EF4444" : STATUS_COLOR.completed,
+                  ps === "none" ? "var(--color-danger)" : STATUS_COLOR.completed,
               }}
             >
               {paymentLabel[ps]}
@@ -801,7 +801,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
             <div className="flex items-start gap-4" style={{ marginBottom: 18 }}>
               <div
                 className="w-14 h-14 rounded-full flex items-center justify-center text-[18px] font-black shrink-0"
-                style={{ background: "var(--color-amber)", color: "#fff" }}
+                style={{ background: "var(--color-amber)", color: "var(--color-surface)" }}
               >
                 {initials(current.customer_name)}
               </div>
@@ -924,7 +924,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
                   onClick={handleDelete}
                   disabled={deleting}
                   className="flex-1 rounded-2xl text-[14px] font-bold disabled:opacity-50"
-                  style={{ background: "#EF4444", color: "#fff", padding: "13px 0" }}
+                  style={{ background: "var(--color-danger)", color: "var(--color-surface)", padding: "13px 0" }}
                 >
                   {deleting ? "Deleting…" : "Yes, delete"}
                 </button>
@@ -942,7 +942,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 className="flex-1 rounded-2xl text-[14px] font-bold"
-                style={{ background: "#FEE2E2", color: "#EF4444", padding: "13px 0" }}
+                style={{ background: "#FEE2E2", color: "var(--color-danger)", padding: "13px 0" }}
               >
                 Delete
               </button>

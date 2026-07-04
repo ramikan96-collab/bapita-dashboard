@@ -291,9 +291,9 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
                 {([
                   { value: "",          text: "None",      bg: "var(--color-cream)",  color: "var(--color-muted)" },
                   { value: "new",       text: "New",       bg: "#EFF6FF",             color: "#2563EB" },
-                  { value: "completed", text: "Completed", bg: "#F0FDF4",             color: "#16A34A" },
+                  { value: "completed", text: "Completed", bg: "var(--color-success-bg)",             color: "var(--color-success)" },
                   { value: "no_show",   text: "No show",   bg: "#FFF7ED",             color: "#EA580C" },
-                  { value: "canceled",  text: "Canceled",  bg: "#FEF2F2",             color: "#DC2626" },
+                  { value: "canceled",  text: "Canceled",  bg: "var(--color-danger-bg)",             color: "#DC2626" },
                 ] as const).map(({ value, text, bg, color }) => {
                   const active = label === value;
                   return (
@@ -412,7 +412,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
                               onClick={() => slot.available && setTime(slot.time)}
                               disabled={!slot.available}
                               style={active
-                                ? { padding: "10px 0", borderRadius: 11, border: "1.5px solid var(--color-amber)", background: "var(--color-amber)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }
+                                ? { padding: "10px 0", borderRadius: 11, border: "1.5px solid var(--color-amber)", background: "var(--color-amber)", color: "var(--color-surface)", fontSize: 13, fontWeight: 600, cursor: "pointer" }
                                 : slot.available
                                 ? { padding: "10px 0", borderRadius: 11, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", color: "var(--color-dark)", fontSize: 13, fontWeight: 600, cursor: "pointer" }
                                 : { padding: "10px 0", borderRadius: 11, border: "1.5px solid transparent", background: "var(--color-cream-2)", color: "var(--color-muted)", fontSize: 13, fontWeight: 600, cursor: "not-allowed", textDecoration: "line-through" }
@@ -444,7 +444,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
           <button
             onClick={handleSave}
             disabled={submitting}
-            style={{ flex: 1, height: 46, borderRadius: 13, border: "none", background: submitting ? "var(--color-cream-2)" : "var(--wash-amber)", color: submitting ? "var(--color-muted)" : "#fff", fontSize: 14, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer", boxShadow: submitting ? "none" : "0 4px 14px rgba(232,146,10,0.28)", transition: "all 0.15s" }}
+            style={{ flex: 1, height: 46, borderRadius: 13, border: "none", background: submitting ? "var(--color-cream-2)" : "var(--wash-amber)", color: submitting ? "var(--color-muted)" : "var(--color-surface)", fontSize: 14, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer", boxShadow: submitting ? "none" : "0 4px 14px rgba(232,146,10,0.28)", transition: "all 0.15s" }}
           >
             {submitting ? "Saving…" : isEdit ? "Save changes" : attach ? "Save & book" : "Save client"}
           </button>

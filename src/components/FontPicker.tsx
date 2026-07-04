@@ -66,7 +66,7 @@ export function FontPicker({ value, onChange }: Props) {
         <div
           style={{
             position: "absolute", top: 48, left: 0, right: 0, zIndex: 50,
-            background: "#fff", border: "1.5px solid var(--color-cream-2)", borderRadius: 11,
+            background: "var(--color-surface)", border: "1.5px solid var(--color-cream-2)", borderRadius: 11,
             boxShadow: "0 8px 28px rgba(0,0,0,0.12)", padding: 5, maxHeight: 320, overflowY: "auto",
           }}
         >

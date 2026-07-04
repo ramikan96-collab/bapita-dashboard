@@ -475,7 +475,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         className="flex items-center gap-1.5 rounded-full transition-transform active:scale-95"
         style={{
           height: 36, paddingInline: 16, background: "var(--wash-amber)",
-          color: "#fff", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer",
+          color: "var(--color-surface)", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer",
           boxShadow: "0 2px 8px rgba(232,146,10,0.26)",
         }}
         aria-label={t("New booking")}
@@ -642,7 +642,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   border: `1.5px solid ${chrome.statusFilter.length > 0 ? "var(--color-amber)" : "var(--color-cream-2)"}`,
                   fontSize: 13,
                   fontWeight: 600,
-                  color: chrome.statusFilter.length > 0 ? "#fff" : "var(--color-dark)",
+                  color: chrome.statusFilter.length > 0 ? "var(--color-surface)" : "var(--color-dark)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -1112,7 +1112,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   key={l}
                   onClick={() => setDashboardLang(l)}
                   disabled={langSaving}
-                  style={{ padding: "4px 12px", borderRadius: 9999, fontSize: 12, fontWeight: 700, border: "none", cursor: langSaving ? "default" : "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: lang === l ? "var(--color-amber)" : "transparent", color: lang === l ? "#fff" : "var(--color-muted)" }}
+                  style={{ padding: "4px 12px", borderRadius: 9999, fontSize: 12, fontWeight: 700, border: "none", cursor: langSaving ? "default" : "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: lang === l ? "var(--color-amber)" : "transparent", color: lang === l ? "var(--color-surface)" : "var(--color-muted)" }}
                 >
                   {l === "en" ? "EN" : "עב"}
                 </button>
@@ -1306,7 +1306,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     transition: "background 0.15s",
                   }}
                 >
-                  <span style={{ width: 20, height: 20, borderRadius: 999, background: "#fff" }} />
+                  <span style={{ width: 20, height: 20, borderRadius: 999, background: "var(--color-surface)" }} />
                 </button>
               </div>
               {pushHelpOpen && (
@@ -1332,7 +1332,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     const isUnread = !n.read_at;
                     const iconColor =
                       n.type === "booking_created" ? "var(--color-amber)" :
-                      n.type === "booking_cancelled" ? "#EF4444" :
+                      n.type === "booking_cancelled" ? "var(--color-danger)" :
                       "var(--color-muted)";
                     const Icon =
                       n.type === "booking_created" ? IconCalendar :

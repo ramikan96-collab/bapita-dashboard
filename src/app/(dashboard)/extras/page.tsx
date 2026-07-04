@@ -174,8 +174,8 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
           flexShrink: 0,
         }}
       >
-        <span style={{ color: "#16A34A", display: "flex" }}><IconCheck size={10} /></span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: "#16A34A", whiteSpace: "nowrap" }}>Active</span>
+        <span style={{ color: "var(--color-success)", display: "flex" }}><IconCheck size={10} /></span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-success)", whiteSpace: "nowrap" }}>Active</span>
       </div>
     );
   }
@@ -195,7 +195,7 @@ function Toggle({ active, onEnable }: { active: boolean; onEnable: () => void })
         borderRadius: 99,
         border: "1.5px solid var(--color-amber)",
         background: hovered ? "var(--color-amber)" : "var(--amber-soft)",
-        color: hovered ? "#fff" : "var(--color-amber)",
+        color: hovered ? "var(--color-surface)" : "var(--color-amber)",
         fontSize: 12,
         fontWeight: 700,
         cursor: "pointer",
@@ -446,7 +446,7 @@ function RequestForm({
       <button
         onClick={onSubmit}
         disabled={!canSubmit}
-        style={{ width: "100%", height: 46, borderRadius: 14, border: "none", background: canSubmit ? "var(--wash-amber)" : "var(--color-cream-2)", color: canSubmit ? "#fff" : "var(--color-muted)", fontSize: 14, fontWeight: 700, cursor: canSubmit ? "pointer" : "not-allowed", boxShadow: canSubmit ? "0 6px 18px rgba(232,146,10,0.28)" : "none", transition: "all 0.15s", marginTop: 2 }}
+        style={{ width: "100%", height: 46, borderRadius: 14, border: "none", background: canSubmit ? "var(--wash-amber)" : "var(--color-cream-2)", color: canSubmit ? "var(--color-surface)" : "var(--color-muted)", fontSize: 14, fontWeight: 700, cursor: canSubmit ? "pointer" : "not-allowed", boxShadow: canSubmit ? "0 6px 18px rgba(232,146,10,0.28)" : "none", transition: "all 0.15s", marginTop: 2 }}
       >
         {submitting ? "Sending…" : submitLabel}
       </button>
@@ -459,7 +459,7 @@ function RequestForm({
 function SuccessView({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
-      <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(34,197,94,0.12)", color: "#16A34A", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24 }}>✓</div>
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(34,197,94,0.12)", color: "var(--color-success)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24 }}>✓</div>
       <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", margin: "0 0 6px" }}>Request received!</p>
       <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>We&apos;ll reach out via your preferred contact method soon.</p>
       <button
@@ -628,8 +628,8 @@ function EmailCard({ selectedTag, onTagClick }: { selectedTag: string | null; on
             </div>
             {/* Always-active indicator */}
             <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 99, background: "rgba(34,197,94,0.10)", border: "1.5px solid rgba(34,197,94,0.22)", flexShrink: 0 }}>
-              <span style={{ color: "#16A34A", display: "flex" }}><IconCheck size={10} /></span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#16A34A", whiteSpace: "nowrap" }}>Active</span>
+              <span style={{ color: "var(--color-success)", display: "flex" }}><IconCheck size={10} /></span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-success)", whiteSpace: "nowrap" }}>Active</span>
             </div>
           </div>
         </div>

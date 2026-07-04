@@ -210,7 +210,7 @@ function RequestForm({ state, onChange, submitting, onSubmit }: {
         <label style={labelStyle}>Notes (optional)</label>
         <textarea value={state.notes} placeholder="Any questions or details…" rows={2} onChange={(e) => onChange({ notes: e.target.value })} style={{ ...inputStyle, height: "auto", padding: "10px 13px", resize: "none" as const, lineHeight: 1.5 }} onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")} onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")} />
       </div>
-      <button onClick={onSubmit} disabled={!canSubmit} style={{ width: "100%", height: 46, borderRadius: 14, border: "none", background: canSubmit ? "var(--wash-amber)" : "var(--color-cream-2)", color: canSubmit ? "#fff" : "var(--color-muted)", fontSize: 14, fontWeight: 700, cursor: canSubmit ? "pointer" : "not-allowed", boxShadow: canSubmit ? "0 6px 18px rgba(232,146,10,0.28)" : "none", transition: "all 0.15s", marginTop: 2 }}>
+      <button onClick={onSubmit} disabled={!canSubmit} style={{ width: "100%", height: 46, borderRadius: 14, border: "none", background: canSubmit ? "var(--wash-amber)" : "var(--color-cream-2)", color: canSubmit ? "var(--color-surface)" : "var(--color-muted)", fontSize: 14, fontWeight: 700, cursor: canSubmit ? "pointer" : "not-allowed", boxShadow: canSubmit ? "0 6px 18px rgba(232,146,10,0.28)" : "none", transition: "all 0.15s", marginTop: 2 }}>
         {submitting ? "Sending…" : "Send request"}
       </button>
     </div>
@@ -220,7 +220,7 @@ function RequestForm({ state, onChange, submitting, onSubmit }: {
 function SuccessView({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
-      <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(34,197,94,0.12)", color: "#16A34A", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24 }}>✓</div>
+      <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(34,197,94,0.12)", color: "var(--color-success)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24 }}>✓</div>
       <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", margin: "0 0 6px" }}>Request received!</p>
       <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>We&apos;ll reach out via your preferred contact method soon.</p>
       <button onClick={onClose} style={{ height: 42, padding: "0 24px", borderRadius: 12, border: "none", background: "var(--color-amber)", color: "white", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)" }}>Done</button>
@@ -357,7 +357,7 @@ function LockedInvoicesPreview() {
   const rows = [
     { status: "Paid", color: "#22C55E", date: "Jun 10", id: "#001", client: "Alex K.", amount: "₪250" },
     { status: "Pending", color: "#94A3B8", date: "Jun 8", id: "#002", client: "David M.", amount: "₪180" },
-    { status: "Refunded", color: "#EF4444", date: "Jun 5", id: "#003", client: "Yoni T.", amount: "₪120" },
+    { status: "Refunded", color: "var(--color-danger)", date: "Jun 5", id: "#003", client: "Yoni T.", amount: "₪120" },
   ];
 
   const cols = "90px 70px 50px 1fr 80px";

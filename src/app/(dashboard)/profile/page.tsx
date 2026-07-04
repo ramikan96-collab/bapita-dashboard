@@ -176,7 +176,7 @@ export default function ProfilePage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repeat new password"
-                  style={{ ...inputStyle, ...(mismatch ? { borderColor: "#EF4444" } : {}) }}
+                  style={{ ...inputStyle, ...(mismatch ? { borderColor: "var(--color-danger)" } : {}) }}
                   onFocus={(e)  => { if (!mismatch) e.currentTarget.style.borderColor = "var(--color-amber)"; }}
                   onBlur={(e)   => { if (!mismatch) e.currentTarget.style.borderColor = "var(--color-cream-2)"; }}
                 />
@@ -189,7 +189,7 @@ export default function ProfilePage() {
                 </button>
               </div>
               {mismatch && (
-                <p style={{ fontSize: 12, color: "#EF4444", marginTop: 5 }}>Passwords don&apos;t match</p>
+                <p style={{ fontSize: 12, color: "var(--color-danger)", marginTop: 5 }}>Passwords don&apos;t match</p>
               )}
             </div>
 
@@ -202,7 +202,7 @@ export default function ProfilePage() {
                 borderRadius: 12,
                 border: "none",
                 background: canSave ? "var(--wash-amber)" : "var(--color-cream-2)",
-                color: canSave ? "#fff" : "var(--color-muted)",
+                color: canSave ? "var(--color-surface)" : "var(--color-muted)",
                 fontSize: 14,
                 fontWeight: 700,
                 cursor: canSave ? "pointer" : "not-allowed",
@@ -251,7 +251,7 @@ export default function ProfilePage() {
                 borderRadius: 11,
                 border: "1.5px solid rgba(239,68,68,0.28)",
                 background: "transparent",
-                color: "#EF4444",
+                color: "var(--color-danger)",
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: "pointer",

@@ -110,7 +110,7 @@ function PrimaryBtn({
         borderRadius: 14,
         border: "none",
         background: disabled ? "var(--color-cream-2)" : "var(--wash-amber)",
-        color: disabled ? "var(--color-muted)" : "#fff",
+        color: disabled ? "var(--color-muted)" : "var(--color-surface)",
         fontSize: 15,
         fontWeight: 700,
         cursor: disabled ? "not-allowed" : "pointer",
@@ -360,7 +360,7 @@ function NewBookingInner() {
   if (success) {
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100%", alignItems: "center", justifyContent: "center", padding: "0 32px", textAlign: "center", background: "var(--color-cream)" }}>
-        <div style={{ width: 60, height: 60, borderRadius: "50%", background: "var(--color-amber)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, boxShadow: "0 6px 24px rgba(232,146,10,0.36)" }}>
+        <div style={{ width: 60, height: 60, borderRadius: "50%", background: "var(--color-amber)", color: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, boxShadow: "0 6px 24px rgba(232,146,10,0.36)" }}>
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
@@ -373,7 +373,7 @@ function NewBookingInner() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 280, marginTop: 32 }}>
           <button
             onClick={() => router.push("/calendar")}
-            style={{ width: "100%", height: 48, borderRadius: 14, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)" }}
+            style={{ width: "100%", height: 48, borderRadius: 14, border: "none", background: "var(--wash-amber)", color: "var(--color-surface)", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)" }}
           >
             Go to calendar
           </button>
@@ -598,7 +598,7 @@ function NewBookingInner() {
                 <div style={{ ...cardStyle, padding: "40px 24px", textAlign: "center" }}>
                   <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 6 }}>No services yet</p>
                   <p style={{ fontSize: 13, color: "var(--color-muted)", marginBottom: 20 }}>Add a service in Settings before you can book.</p>
-                  <button onClick={() => router.push("/settings")} style={{ height: 40, padding: "0 20px", borderRadius: 11, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                  <button onClick={() => router.push("/settings")} style={{ height: 40, padding: "0 20px", borderRadius: 11, border: "none", background: "var(--wash-amber)", color: "var(--color-surface)", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                     Go to Settings
                   </button>
                 </div>
@@ -698,7 +698,7 @@ function NewBookingInner() {
                             cursor: slot.available ? "pointer" : "not-allowed",
                             transition: "all 0.12s",
                             ...(active
-                              ? { background: "var(--color-amber)", color: "#fff", borderColor: "var(--color-amber)" }
+                              ? { background: "var(--color-amber)", color: "var(--color-surface)", borderColor: "var(--color-amber)" }
                               : slot.available
                               ? { background: "var(--color-surface)", color: "var(--color-dark)", borderColor: "var(--color-cream-2)" }
                               : { background: "var(--color-cream)", color: "var(--color-muted)", borderColor: "transparent", textDecoration: "line-through" }),
@@ -781,7 +781,7 @@ function NewBookingInner() {
                           width: 18,
                           height: 18,
                           borderRadius: "50%",
-                          background: "#fff",
+                          background: "var(--color-surface)",
                           boxShadow: "0 1px 3px rgba(30,26,20,0.2)",
                           transition: "transform 0.18s",
                           transform: hasEmail && sendEmail ? "translateX(18px)" : "translateX(0)",
@@ -821,7 +821,7 @@ function NewBookingInner() {
                       width: 18,
                       height: 18,
                       borderRadius: "50%",
-                      background: "#fff",
+                      background: "var(--color-surface)",
                       boxShadow: "0 1px 3px rgba(30,26,20,0.2)",
                       transition: "transform 0.18s",
                       transform: markAsPaid ? "translateX(18px)" : "translateX(0)",
