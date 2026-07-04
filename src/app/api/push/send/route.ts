@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { sendPush } from "@/lib/push";
 
+// Constant-time secret compare — avoids the timing leak of `!==` on the webhook secret.
+function secretOk(provided: string, expected: string): boolean {
+  if (!expected) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get("x-push-secret");
-  if (secret !== process.env.PUSH_WEBHOOK_SECRET) {
+  const secret = req.headers.get("x-push-secret") ?? "";
+  if (!secretOk(secret, process.env.PUSH_WEBHOOK_SECRET ?? "")) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

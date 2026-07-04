@@ -100,8 +100,8 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(req: NextRequest) {
   const {
-    businessId, businessName,
-    serviceId, serviceName, serviceDuration, servicePrice,
+    businessId,
+    serviceId,
     date, time,
     customerName, customerPhone, customerEmail,
     lang, staffId,
@@ -142,6 +142,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Server-fetch service fields — never trust client for booking logic (duration gates the
+  // overlap guard) or email content (name/price). Scope to businessId to block cross-tenant serviceId.
+  const { data: svc, error: svcError } = await supabase
+    .from("services")
+    .select("duration, name, price, staff_ids")
+    .eq("id", serviceId)
+    .eq("business_id", businessId)
+    .single();
+  if (svcError || !svc) {
+    return NextResponse.json({ error: "invalid service" }, { status: 400 });
+  }
+  const svcDuration = Number(svc.duration) || 0;
+  const svcName = (svc.name as string | null) ?? "";
+  const svcPrice = Number(svc.price) || 0;
+  const svcStaffIds = (svc.staff_ids as string[] | null) || [];
+
   // Load same-day bookings for conflict checking + staff resolution.
   const { data: existingBookings } = await supabase
     .from("bookings")
@@ -151,8 +167,8 @@ export async function POST(req: NextRequest) {
     .in("status", ["confirmed", "pending"]) as { data: ExistingBookingRow[] | null };
 
   const bookedRows = existingBookings || [];
-  const newStart = serviceDuration ? toMins(time) : 0;
-  const newEnd = newStart + (serviceDuration || 0);
+  const newStart = svcDuration ? toMins(time) : 0;
+  const newEnd = newStart + svcDuration;
   const overlaps = (rows: ExistingBookingRow[]) => rows.some((b) => {
     const bStart = toMins(b.appointment_time);
     const bDur = Array.isArray(b.service) ? (b.service[0]?.duration || 30) : (b.service?.duration || 30);
@@ -181,16 +197,17 @@ export async function POST(req: NextRequest) {
   // ON  → conflicts are scoped per staff, so two different staff can be booked concurrently.
   const { data: bizChoice } = await supabase
     .from("businesses")
-    .select("allow_staff_choice, business_hours")
+    .select("allow_staff_choice, business_hours, name")
     .eq("id", businessId)
     .single();
   const staffChoice = !!bizChoice?.allow_staff_choice;
+  const bizName = (bizChoice?.name as string | null) ?? "";
 
   let assignedStaffId: string | null = null;
 
   if (!staffChoice) {
     // Global double-booking guard (pre-staff behavior) + blocked time.
-    if (serviceDuration && (overlaps(bookedRows) || blockOverlaps(null))) return takenErr();
+    if (svcDuration && (overlaps(bookedRows) || blockOverlaps(null))) return takenErr();
   } else {
     // Per-staff hours: own working_hours override business hours; used to reject assigning a
     // booking to a staff member who isn't scheduled at this time (mirrors the slots route).
@@ -204,22 +221,14 @@ export async function POST(req: NextRequest) {
       ((staffRows || []).find((r) => r.id === sid)?.working_hours as BusinessHours | null) || bizHours;
     const dayKey = DAY_NAMES[new Date(date + "T12:00:00").getDay()];
     const withinHours = (sid: string) => {
-      if (!serviceDuration) return true;
+      if (!svcDuration) return true;
       const dh = hoursFor(sid)?.[dayKey];
       if (!dh?.open) return false;
       return newStart >= toMins(dh.start) && newEnd <= toMins(dh.end);
     };
 
-    // Resolve the eligible staff pool: service.staff_ids, else all active staff.
-    let eligibleStaffIds: string[] = [];
-    if (serviceId) {
-      const { data: service } = await supabase
-        .from("services")
-        .select("staff_ids")
-        .eq("id", serviceId)
-        .single();
-      eligibleStaffIds = (service?.staff_ids as string[] | null) || [];
-    }
+    // Resolve the eligible staff pool: service.staff_ids (server-fetched), else all active staff.
+    let eligibleStaffIds: string[] = svcStaffIds;
     if (eligibleStaffIds.length === 0) {
       eligibleStaffIds = (staffRows || []).map((r) => r.id);
     }
@@ -227,11 +236,11 @@ export async function POST(req: NextRequest) {
     const explicit = typeof staffId === "string" && staffId ? staffId : null;
     if (explicit) {
       // Chosen professional must be working + free (bookings + their blocks).
-      if (serviceDuration && (!withinHours(explicit) || overlaps(bookingsForStaff(bookedRows, explicit)) || blockOverlaps(explicit))) return takenErr();
+      if (svcDuration && (!withinHours(explicit) || overlaps(bookingsForStaff(bookedRows, explicit)) || blockOverlaps(explicit))) return takenErr();
       assignedStaffId = explicit;
     } else if (eligibleStaffIds.length > 0) {
       // "Any available" — first eligible staff who is working + free at this time.
-      if (serviceDuration) {
+      if (svcDuration) {
         for (const sid of eligibleStaffIds) {
           if (withinHours(sid) && !overlaps(bookingsForStaff(bookedRows, sid)) && !blockOverlaps(sid)) { assignedStaffId = sid; break; }
         }
@@ -316,8 +325,8 @@ export async function POST(req: NextRequest) {
       try {
         const { subject, html } = buildEmailHtml({
           lang: lang === "he" ? "he" : "en",
-          customerName, businessName, serviceName, formattedDate, time,
-          servicePrice: servicePrice || 0,
+          customerName, businessName: bizName, serviceName: svcName, formattedDate, time,
+          servicePrice: svcPrice,
           cancelUrl,
         });
         await transporter.sendMail({
@@ -336,14 +345,14 @@ export async function POST(req: NextRequest) {
       await transporter.sendMail({
         from: `Bapita <${process.env.GMAIL_USER}>`,
         to: bccEmail,
-        subject: `הזמנה חדשה — ${customerName} | ${serviceName}`,
+        subject: `הזמנה חדשה — ${customerName} | ${svcName}`,
         html: `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;direction:rtl;text-align:right;">
             <h2 style="margin:0 0 8px;">הזמנה חדשה 📅</h2>
             <div style="background:#FAF5EC;border-radius:12px;padding:20px;margin-bottom:24px;">
               <div style="margin-bottom:8px;"><strong>לקוח:</strong> ${esc(customerName)}</div>
               <div style="margin-bottom:8px;"><strong>טלפון:</strong> ${esc(customerPhone)}</div>
-              <div style="margin-bottom:8px;"><strong>שירות:</strong> ${esc(serviceName)}</div>
+              <div style="margin-bottom:8px;"><strong>שירות:</strong> ${esc(svcName)}</div>
               <div style="margin-bottom:8px;"><strong>תאריך:</strong> ${esc(formattedDate)}</div>
               <div><strong>שעה:</strong> ${esc(time.slice(0, 5))}</div>
             </div>

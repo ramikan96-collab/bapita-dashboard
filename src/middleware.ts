@@ -58,6 +58,20 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Admin gate (defense-in-depth) — API handlers + the /admin layout already check this,
+  // but middleware blocks non-admins before they reach either.
+  const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
+  const isAdminPath =
+    pathname.startsWith("/api/admin") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/");
+  if (isAdminPath && !ADMIN_EMAILS.includes(user?.email ?? "")) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+    return NextResponse.redirect(new URL(user ? "/calendar" : "/login", request.url));
+  }
+
   // Dashboard routes require auth
   const isDashboard = DASHBOARD_ROUTES.some(
     (r) => pathname === r || pathname.startsWith(r + "/")

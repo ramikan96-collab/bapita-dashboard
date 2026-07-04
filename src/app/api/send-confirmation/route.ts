@@ -28,31 +28,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const { customerName, customerEmail, businessName, serviceName, date, time, businessId } = await req.json();
+  const { customerName, customerEmail, serviceName, date, time, businessId } = await req.json();
 
   if (!customerEmail) {
     return NextResponse.json({ ok: true });
   }
 
-  // Resolve notification email: prefer explicit businessId, fall back to oldest business owned by user
+  // Resolve notification email + business name server-side. Never trust a
+  // client-supplied businessName — echoing it into an email to an arbitrary
+  // recipient turns this authed route into a spoofable mailer.
   let bccEmail = process.env.GMAIL_USER || "info.bapita@gmail.com";
+  let businessName = "";
   if (businessId) {
     const { data: biz } = await supabase
       .from("businesses")
-      .select("notification_email, owner_email")
+      .select("name, notification_email, owner_email")
       .eq("id", businessId)
       .or(`owner_id.eq.${user.id},owner_email.eq.${user.email ?? ""}`)
       .single();
     bccEmail = biz?.notification_email || biz?.owner_email || bccEmail;
+    businessName = biz?.name || "";
   } else {
     const { data: bizRows } = await supabase
       .from("businesses")
-      .select("notification_email, owner_email")
+      .select("name, notification_email, owner_email")
       .eq("owner_id", user.id)
       .order("created_at", { ascending: true })
       .limit(1);
     const biz = bizRows?.[0];
     bccEmail = biz?.notification_email || biz?.owner_email || bccEmail;
+    businessName = biz?.name || "";
   }
 
   const formattedDate = new Date(date + "T00:00:00").toLocaleDateString("he-IL", {

@@ -57,6 +57,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "missing params" }, { status: 400 });
   }
 
+  // Validate date: strict ISO YYYY-MM-DD, real calendar date, not in the past.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return NextResponse.json({ error: "invalid date" }, { status: 400 });
+  }
+  const reqDate = new Date(date + "T12:00:00");
+  if (isNaN(reqDate.getTime()) || reqDate.toISOString().slice(0, 10) !== date) {
+    return NextResponse.json({ error: "invalid date" }, { status: 400 });
+  }
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  if (reqDate < startOfToday) {
+    return NextResponse.json({ slots: [] });
+  }
+
   const supabase = createServiceClient();
 
   const { data: business } = await supabase

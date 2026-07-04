@@ -21,10 +21,15 @@ export async function POST() {
   if (businesses && businesses.length > 0) {
     const businessIds = businesses.map((b) => b.id);
 
-    // Delete bookings → customers → services → business rows
+    // Delete all child rows scoped by business_id before the business rows,
+    // so no orphaned records linger after account deletion.
     await admin.from("bookings").delete().in("business_id", businessIds);
     await admin.from("customers").delete().in("business_id", businessIds);
     await admin.from("services").delete().in("business_id", businessIds);
+    await admin.from("staff").delete().in("business_id", businessIds);
+    await admin.from("blocked_times").delete().in("business_id", businessIds);
+    await admin.from("notifications").delete().in("business_id", businessIds);
+    await admin.from("push_subscriptions").delete().in("business_id", businessIds);
     await admin.from("businesses").delete().in("id", businessIds);
   }
 
