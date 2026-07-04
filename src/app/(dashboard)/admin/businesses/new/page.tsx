@@ -8,7 +8,7 @@ export default function NewBusinessPage() {
   return (
     <BusinessForm
       mode="new"
-      onSaved={(slug) => router.push(`/admin/businesses`)}
+      onSaved={() => router.push(`/admin/businesses`)}
       onCancel={() => router.push("/admin/businesses")}
     />
   );

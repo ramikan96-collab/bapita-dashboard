@@ -51,7 +51,7 @@ export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borde
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {visible.map((r, i) => (
+      {visible.map((r) => (
         <div
           key={r.id}
           style={{

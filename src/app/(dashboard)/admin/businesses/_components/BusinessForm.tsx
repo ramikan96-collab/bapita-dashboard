@@ -50,16 +50,6 @@ const DEFAULT_HOURS: BusinessHours = {
   saturday:  { open: false, start: "09:00", end: "14:00" },
 };
 
-const PLAN_TIERS = ["Starter", "Pro", "Custom"];
-const PLAN_ADDONS = [
-  { key: "whatsapp_reminders", label: "WhatsApp Reminders" },
-  { key: "custom_domain",      label: "Custom Domain"       },
-  { key: "priority_support",   label: "Priority Support"    },
-  { key: "stripe_payments",    label: "Stripe Payments"     },
-  { key: "social_boost",       label: "Social Boost"        },
-  { key: "google_ads",         label: "Google Ads"          },
-];
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FormData {
@@ -350,15 +340,6 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     setStaffMembers(ms => ms.map((m, i) => {
       if (i !== idx || !m.working_hours) return m;
       return { ...m, working_hours: { ...m.working_hours, [key]: { ...m.working_hours[key], ...patch } } };
-    }));
-  }
-
-  function toggleAddon(key: string) {
-    setForm(f => ({
-      ...f,
-      plan_addons: f.plan_addons.includes(key)
-        ? f.plan_addons.filter(k => k !== key)
-        : [...f.plan_addons, key],
     }));
   }
 

@@ -13,21 +13,6 @@ import { loadStaff, syncStaffTable } from "@/lib/staff";
 
 type Section = "business" | "services" | "hours" | "team" | "website" | "content";
 
-interface BookingSettings {
-  buffer_minutes: number;
-  advance_days: number;
-  cancellation_policy: "none" | "24h" | "48h" | "custom";
-  cancellation_note: string;
-}
-
-interface NotificationSettings {
-  email_new_booking: boolean;
-  email_cancellation: boolean;
-  email_reminder: boolean;
-  whatsapp_new_booking: boolean;
-  whatsapp_reminder: boolean;
-}
-
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DAYS: { key: DayKey; label: string }[] = [
@@ -48,21 +33,6 @@ const DEFAULT_HOURS: BusinessHours = {
   thursday:  { open: true,  start: "09:00", end: "19:00" },
   friday:    { open: true,  start: "09:00", end: "16:00" },
   saturday:  { open: false, start: "09:00", end: "14:00" },
-};
-
-const DEFAULT_BOOKING: BookingSettings = {
-  buffer_minutes: 0,
-  advance_days: 30,
-  cancellation_policy: "24h",
-  cancellation_note: "",
-};
-
-const DEFAULT_NOTIFICATIONS: NotificationSettings = {
-  email_new_booking: true,
-  email_cancellation: true,
-  email_reminder: true,
-  whatsapp_new_booking: false,
-  whatsapp_reminder: false,
 };
 
 const SECTIONS: { id: Section; label: string }[] = [

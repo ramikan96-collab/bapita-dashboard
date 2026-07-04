@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
 
@@ -30,7 +29,6 @@ function SignOutIcon() {
 }
 
 export default function ProfilePage() {
-  const router = useRouter();
   const supabase = createClient();
   const { showToast } = useToast();
 

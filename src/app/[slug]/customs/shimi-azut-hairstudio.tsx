@@ -10,7 +10,7 @@ import { SectionLocation } from "../components/SectionLocation";
 import { SectionReviews }  from "../components/SectionReviews";
 import { BookingOverlay }  from "../booking/BookingOverlay";
 import { translations, type Lang } from "../translations";
-import { getOpenStatus, getInstagramHandle, getCityFromAddress } from "../utils/openStatus";
+import { getOpenStatus } from "../utils/openStatus";
 import { WaIcon, StarIcon } from "../_shared/icons";
 import { useFadeInOnEnter } from "../_shared/useFadeInOnEnter";
 import { LangToggle } from "../_shared/LangToggle";
@@ -57,8 +57,6 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
   const heroImage   = business.hero_image_url || FALLBACK_HERO;
   const heroFocal   = business.image_focal?.[heroImage] || "center";
   const openStatus  = getOpenStatus(business.business_hours, t.status, t.days);
-  const igHandle    = getInstagramHandle(business.instagram_url);
-  const cityLabel   = getCityFromAddress(business.address);
   const waNumber    = business.whatsapp_number?.replace(/\D/g, "");
   const displayName = (isRtl && business.name_he) ? business.name_he : business.name;
   const headingFont = resolveFont(business.heading_font, "'Heebo', sans-serif");

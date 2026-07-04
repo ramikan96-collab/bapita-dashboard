@@ -88,24 +88,6 @@ function IconChevronDown({ size = 14 }: IconProps) {
   );
 }
 
-function IconMore({ size = 24 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="5" r="1"></circle>
-      <circle cx="12" cy="12" r="1"></circle>
-      <circle cx="12" cy="19" r="1"></circle>
-    </svg>
-  );
-}
-
-function IconFilter({ size = 20 }: IconProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-    </svg>
-  );
-}
-
 function IconSearch({ size = 20 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -420,7 +402,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           setNotificationsOpen(true);
         }
       };
-    } catch (_) {
+    } catch {
       return;
     }
     return () => bc.close();

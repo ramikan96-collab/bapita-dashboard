@@ -599,6 +599,7 @@ function CustomRequestModal({ businessId, onClose }: { businessId: string; onClo
 
 // ─── Email card ───────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function EmailCard({ selectedTag, onTagClick }: { selectedTag: string | null; onTagClick: (tag: string) => void }) {
   return (
     <div
