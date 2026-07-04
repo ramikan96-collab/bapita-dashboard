@@ -96,15 +96,100 @@ export function ClientsSkeleton() {
 }
 
 export function InsightsSkeleton() {
+  const cardShadow = "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)";
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
-      <div className="shrink-0 px-4 py-4 border-b animate-pulse" style={{ borderColor: "var(--color-cream-2)" }}>
-        <div className="h-7 rounded w-24" style={{ background: "var(--color-cream-2)" }}></div>
+      <style>{`
+        .ins-sk-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 600px) {
+          .ins-sk-grid-2 { grid-template-columns: 1fr; }
+        }
+      `}</style>
+
+      {/* Header */}
+      <div className="shrink-0 animate-pulse" style={{ background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)" }}>
+        <div className="mx-auto w-full" style={{ maxWidth: 900, padding: "22px 24px 0" }}>
+          {/* Title + range label + print */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-baseline gap-2.5">
+              <div className="h-[26px] rounded w-20" style={{ background: "var(--color-cream-2)" }} />
+              <div className="h-3.5 rounded w-24" style={{ background: "var(--color-cream-2)" }} />
+            </div>
+            <div className="h-[34px] w-[34px] rounded-[9px]" style={{ background: "var(--color-cream-2)" }} />
+          </div>
+
+          {/* Range picker pills */}
+          <div className="mb-4">
+            <div className="inline-flex gap-0.5 p-[3px] rounded-[10px]" style={{ background: "var(--color-cream)", border: "1px solid var(--color-cream-2)" }}>
+              {[56, 64, 68, 62].map((w, i) => (
+                <div key={i} className="h-[34px] rounded-lg" style={{ width: w, background: i === 1 ? "var(--color-surface)" : "transparent" }} />
+              ))}
+            </div>
+          </div>
+
+          {/* Tab bar */}
+          <div className="flex gap-5 pb-2.5">
+            <div className="h-4 rounded w-16 pb-2" style={{ background: "var(--color-cream-2)", borderBottom: "2px solid var(--color-amber)" }} />
+            <div className="h-4 rounded w-24" style={{ background: "var(--color-cream-2)" }} />
+            <div className="h-4 rounded w-16" style={{ background: "var(--color-cream-2)" }} />
+          </div>
+        </div>
       </div>
-      <div className="p-4 space-y-3 animate-pulse">
-        <div className="h-28 rounded-xl" style={{ background: "var(--color-cream-2)" }}></div>
-        <div className="h-28 rounded-xl" style={{ background: "var(--color-cream-2)" }}></div>
-        <div className="h-40 rounded-xl" style={{ background: "var(--color-cream-2)" }}></div>
+
+      {/* Body */}
+      <div className="flex-1 overflow-hidden">
+        <div className="mx-auto w-full animate-pulse" style={{ maxWidth: 900, padding: "24px 24px 0", display: "flex", flexDirection: "column", gap: 20 }}>
+
+          {/* Earnings hero */}
+          <div className="rounded-2xl" style={{ padding: "24px 28px", background: "var(--color-cream-2)" }}>
+            <div className="h-2.5 rounded w-20 mb-3" style={{ background: "rgba(255,255,255,0.5)" }} />
+            <div className="h-10 rounded w-40 mb-4" style={{ background: "rgba(255,255,255,0.5)" }} />
+            <div className="h-6 w-32 rounded-full" style={{ background: "rgba(255,255,255,0.4)" }} />
+          </div>
+
+          {/* 4 stat cards 2x2 */}
+          <div className="grid grid-cols-2 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-2xl bg-white" style={{ padding: "16px 20px", boxShadow: cardShadow }}>
+                <div className="w-9 h-9 rounded-xl mb-3" style={{ background: "var(--color-cream-2)" }} />
+                <div className="h-[26px] rounded w-12 mb-1.5" style={{ background: "var(--color-cream-2)" }} />
+                <div className="h-2.5 rounded w-16" style={{ background: "var(--color-cream)" }} />
+              </div>
+            ))}
+          </div>
+
+          {/* Charts row */}
+          <div className="ins-sk-grid-2">
+            <div className="rounded-2xl bg-white" style={{ padding: "20px 20px 14px", boxShadow: cardShadow }}>
+              <div className="h-3.5 rounded w-28 mb-4" style={{ background: "var(--color-cream-2)" }} />
+              <div className="h-[100px] rounded-lg" style={{ background: "var(--color-cream)" }} />
+            </div>
+            <div className="rounded-2xl bg-white" style={{ padding: "20px 20px", boxShadow: cardShadow }}>
+              <div className="h-3.5 rounded w-24 mb-4" style={{ background: "var(--color-cream-2)" }} />
+              <div className="flex flex-col gap-4">
+                {[100, 80, 90].map((w, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <div className="w-[22px] h-[22px] rounded-full shrink-0" style={{ background: "var(--color-cream-2)" }} />
+                    <div className="flex-1">
+                      <div className="h-3 rounded mb-1.5" style={{ width: w, background: "var(--color-cream-2)" }} />
+                      <div className="h-[5px] rounded-full" style={{ background: "var(--color-cream)" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Ads CTA */}
+          <div className="rounded-2xl flex items-center gap-4" style={{ padding: "18px 20px", background: "var(--color-cream-2)" }}>
+            <div className="w-11 h-11 rounded-xl shrink-0" style={{ background: "rgba(255,255,255,0.5)" }} />
+            <div className="flex-1">
+              <div className="h-3.5 rounded w-36 mb-1.5" style={{ background: "rgba(255,255,255,0.5)" }} />
+              <div className="h-3 rounded w-48" style={{ background: "rgba(255,255,255,0.35)" }} />
+            </div>
+            <div className="h-9 w-20 rounded-xl shrink-0" style={{ background: "rgba(255,255,255,0.5)" }} />
+          </div>
+        </div>
       </div>
     </div>
   );
