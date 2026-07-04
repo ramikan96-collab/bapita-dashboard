@@ -8,6 +8,7 @@ import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "
 import { FontPicker } from "@/components/FontPicker";
 import { useLang } from "@/i18n";
 import { loadStaff, syncStaffTable } from "@/lib/staff";
+import { SettingsSkeleton } from "@/components/LoadingSkeleton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2385,13 +2386,7 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>("business");
   const dirtyRef = useRef(false);
 
-  if (bizLoading) {
-    return (
-      <div className="flex h-full items-center justify-center" style={{ background: "var(--color-cream)" }}>
-        <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
-      </div>
-    );
-  }
+  if (bizLoading) return <SettingsSkeleton />;
 
   if (!business) {
     if (isAdmin) return <SetupForm supabase={supabase} onCreated={refresh} />;

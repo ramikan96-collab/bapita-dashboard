@@ -241,19 +241,49 @@ export function ProfileSkeleton() {
   );
 }
 
+function SettingsCardSkeleton({ fields, textarea }: { fields: number; textarea?: boolean }) {
+  return (
+    <div style={{ background: "var(--color-surface)", borderRadius: 16, boxShadow: "var(--shadow-sm)", border: "1px solid var(--color-cream-2)", overflow: "hidden" }}>
+      <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid var(--color-cream-2)" }}>
+        <div className="h-[11px] rounded w-20" style={{ background: "var(--color-cream-2)" }} />
+      </div>
+      <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+        {Array.from({ length: fields }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-1.5">
+            <div className="h-2.5 rounded w-24" style={{ background: "var(--color-cream-2)" }} />
+            <div className="h-11 rounded-[11px]" style={{ background: "var(--color-cream)" }} />
+          </div>
+        ))}
+        {textarea && (
+          <div className="flex flex-col gap-1.5">
+            <div className="h-2.5 rounded w-16" style={{ background: "var(--color-cream-2)" }} />
+            <div className="h-24 rounded-[11px]" style={{ background: "var(--color-cream)" }} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function SettingsSkeleton() {
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
-      <div className="shrink-0 px-4 py-4 border-b animate-pulse" style={{ borderColor: "var(--color-cream-2)" }}>
-        <div className="h-7 rounded w-24" style={{ background: "var(--color-cream-2)" }}></div>
+      {/* Header + chip tabs */}
+      <div className="shrink-0 animate-pulse" style={{ background: "var(--color-surface)", borderBottom: "1px solid var(--color-cream-2)", padding: "26px 24px 0" }}>
+        <div className="h-[26px] rounded w-24 mb-4" style={{ background: "var(--color-cream-2)" }} />
+        <div style={{ display: "flex", gap: 8, paddingBottom: 18, overflowX: "auto" }}>
+          {[72, 80, 64, 76, 88, 70].map((w, i) => (
+            <div key={i} className="shrink-0" style={{ width: w, height: 34, borderRadius: 9999, background: "var(--color-cream-2)" }} />
+          ))}
+        </div>
       </div>
-      <div className="p-4 space-y-4 animate-pulse">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i}>
-            <div className="h-4 rounded w-32 mb-2" style={{ background: "var(--color-cream-2)" }}></div>
-            <div className="h-12 rounded-xl" style={{ background: "var(--color-cream)" }}></div>
-          </div>
-        ))}
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        <div className="mx-auto w-full animate-pulse" style={{ maxWidth: 560, padding: "24px 20px 0", display: "flex", flexDirection: "column", gap: 14 }}>
+          <SettingsCardSkeleton fields={5} textarea />
+          <SettingsCardSkeleton fields={3} />
+        </div>
       </div>
     </div>
   );
