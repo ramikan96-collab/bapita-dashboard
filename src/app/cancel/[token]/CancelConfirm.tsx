@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export default function CancelConfirm({ token }: { token: string }) {
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -59,12 +60,12 @@ export default function CancelConfirm({ token }: { token: string }) {
       >
         {state === "loading" ? "Cancelling…" : "Yes, cancel appointment"}
       </button>
-      <a
+      <Link
         href="/"
         style={{ textAlign: "center", fontSize: 13, color: "#888", textDecoration: "none" }}
       >
         Go back
-      </a>
+      </Link>
     </div>
   );
 }
