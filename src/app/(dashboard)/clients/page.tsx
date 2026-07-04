@@ -313,7 +313,7 @@ function Avatar({ name }: { name: string }) {
 // ─── Shared dropdown button style helper ──────────────────────────────────────
 
 const dropdownBtnStyle = (active: boolean): React.CSSProperties => ({
-  height: 34,
+  height: 44,
   padding: "0 11px",
   borderRadius: 9,
   border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`,
@@ -342,6 +342,7 @@ export default function ClientsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [clients, setClients] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("recent");
   const [showFilter, setShowFilter] = useState<ShowFilter>("all");
   const [totalCount, setTotalCount] = useState(0);
@@ -435,6 +436,7 @@ export default function ClientsPage() {
       setClients(data || []);
       setTotalCount(count || 0);
       setLoading(false);
+      setHasLoadedOnce(true);
     }
     fetchClients();
   }, [business, debouncedSearch, sortBy, showFilter, customFrom, customTo, labelFilter, supabase, refreshKey]);
@@ -475,9 +477,9 @@ export default function ClientsPage() {
 
   // Build column grid template
   const orderedCols: ColumnKey[] = ALL_COLUMNS.map((c) => c.key).filter((k) => visibleColumns.has(k));
-  const gridCols = ["34px", ...orderedCols.map(getColWidth), "80px"].join(" ");
+  const gridCols = ["34px", ...orderedCols.map(getColWidth), "120px"].join(" ");
   // Ensure the table is wide enough that minmax columns don't collapse
-  const tableMinWidth = Math.max(560, 34 + orderedCols.reduce((s, k) => s + COL_MIN_PX[k], 0) + 80 + (orderedCols.length + 1) * 14);
+  const tableMinWidth = Math.max(560, 34 + orderedCols.reduce((s, k) => s + COL_MIN_PX[k], 0) + 120 + (orderedCols.length + 1) * 14);
 
   function toggleColumn(key: ColumnKey) {
     setVisibleColumns((prev) => {
@@ -516,7 +518,7 @@ export default function ClientsPage() {
         .client-row:hover .row-actions { opacity: 1; }
         .row-arrow { display: flex; justify-content: flex-end; color: var(--color-cream-2); transition: color 0.15s ease, transform 0.15s ease; }
         .row-actions { opacity: 0; display: flex; gap: 4px; transition: opacity 0.15s ease; }
-        .row-action-btn { height: 26px; width: 26px; border-radius: 7px; border: 1.5px solid var(--color-cream-2); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-muted); transition: all 0.12s; flex-shrink: 0; }
+        .row-action-btn { height: 44px; width: 44px; border-radius: 12px; border: 1.5px solid var(--color-cream-2); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-muted); transition: all 0.12s; flex-shrink: 0; }
         .row-action-btn:hover { border-color: var(--color-amber); color: var(--color-amber); background: var(--amber-soft); }
         .row-action-btn.delete:hover { border-color: #EF4444; color: #EF4444; background: #FEF2F2; }
         .col-check { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--color-cream-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.12s; }
@@ -547,7 +549,7 @@ export default function ClientsPage() {
         @media (max-width: 639px) {
           .toolbar-search { flex-basis: 100%; order: -1; }
           .toolbar-btns { display: none; }
-          .filters-btn-mobile { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 13px; border-radius: 9px; border: 1.5px solid var(--color-cream-2); background: white; font-size: 13px; font-weight: 600; color: var(--color-dark); cursor: pointer; flex-shrink: 0; white-space: nowrap; }
+          .filters-btn-mobile { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 13px; border-radius: 9px; border: 1.5px solid var(--color-cream-2); background: white; font-size: 13px; font-weight: 600; color: var(--color-dark); cursor: pointer; flex-shrink: 0; white-space: nowrap; }
           .print-btn-wrap { display: none; }
           .client-header-row { display: none !important; }
           .client-row { display: flex !important; align-items: center; gap: 10px; padding: 12px 14px; }
@@ -587,7 +589,7 @@ export default function ClientsPage() {
               </div>
               <button
                 onClick={() => setShowAdd(true)}
-                style={{ height: 34, padding: "0 14px", borderRadius: 9, background: "var(--color-amber)", color: "white", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)", transition: "all 0.15s ease" }}
+                style={{ height: 44, padding: "0 14px", borderRadius: 9, background: "var(--color-amber)", color: "white", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)", transition: "all 0.15s ease" }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 18px rgba(232,146,10,0.36)"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 14px rgba(232,146,10,0.28)"; }}
               >
@@ -608,7 +610,7 @@ export default function ClientsPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t("Search by name, phone or email…")}
-                  style={{ width: "100%", height: 34, paddingInlineStart: 32, paddingInlineEnd: 10, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", fontSize: 13, color: "var(--color-dark)", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
+                  style={{ width: "100%", height: 44, paddingInlineStart: 32, paddingInlineEnd: 10, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", fontSize: 13, color: "var(--color-dark)", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
                 />
@@ -661,7 +663,7 @@ export default function ClientsPage() {
                             type="date"
                             value={customFrom}
                             onChange={(e) => { setCustomFrom(e.target.value); setShowFilter("custom"); }}
-                            style={{ width: "100%", height: 30, padding: "0 8px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 12, color: "var(--color-dark)", outline: "none" }}
+                            style={{ width: "100%", height: 44, padding: "0 8px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 12, color: "var(--color-dark)", outline: "none" }}
                             onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
                             onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
                           />
@@ -669,13 +671,13 @@ export default function ClientsPage() {
                             type="date"
                             value={customTo}
                             onChange={(e) => { setCustomTo(e.target.value); setShowFilter("custom"); }}
-                            style={{ width: "100%", height: 30, padding: "0 8px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 12, color: "var(--color-dark)", outline: "none" }}
+                            style={{ width: "100%", height: 44, padding: "0 8px", borderRadius: 7, border: "1.5px solid var(--color-cream-2)", background: "var(--color-cream)", fontSize: 12, color: "var(--color-dark)", outline: "none" }}
                             onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-amber)")}
                             onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-cream-2)")}
                           />
                           <button
                             onClick={() => setShowFilterDropdown(false)}
-                            style={{ height: 28, borderRadius: 7, background: "var(--color-amber)", color: "white", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                            style={{ height: 44, borderRadius: 7, background: "var(--color-amber)", color: "white", border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                           >
                             {t("Apply")}
                           </button>
@@ -766,7 +768,7 @@ export default function ClientsPage() {
                   <button
                     onClick={() => { setShowColumnsDropdown(!showColumnsDropdown); setShowSortDropdown(false); setShowFilterDropdown(false); setShowPrintDropdown(false); }}
                     title="Choose columns"
-                    style={{ height: 34, padding: "0 10px", borderRadius: 9, border: `1.5px solid ${showColumnsDropdown ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showColumnsDropdown ? "var(--amber-soft)" : "white", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: showColumnsDropdown ? "var(--color-amber)" : "var(--color-muted)", cursor: "pointer", transition: "all 0.15s" }}
+                    style={{ height: 44, padding: "0 10px", borderRadius: 9, border: `1.5px solid ${showColumnsDropdown ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showColumnsDropdown ? "var(--amber-soft)" : "white", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: showColumnsDropdown ? "var(--color-amber)" : "var(--color-muted)", cursor: "pointer", transition: "all 0.15s" }}
                   >
                     <IconColumns />
                     {t("Columns")}
@@ -803,7 +805,7 @@ export default function ClientsPage() {
                   <button
                     onClick={() => { setShowPrintDropdown(!showPrintDropdown); setShowSortDropdown(false); setShowFilterDropdown(false); setShowColumnsDropdown(false); }}
                     title="Print / Export"
-                    style={{ height: 34, width: 34, borderRadius: 9, border: `1.5px solid ${showPrintDropdown ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showPrintDropdown ? "var(--amber-soft)" : "white", display: "flex", alignItems: "center", justifyContent: "center", color: showPrintDropdown ? "var(--color-amber)" : "var(--color-muted)", cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s, color 0.15s, background 0.15s" }}
+                    style={{ height: 44, width: 44, borderRadius: 9, border: `1.5px solid ${showPrintDropdown ? "var(--color-amber)" : "var(--color-cream-2)"}`, background: showPrintDropdown ? "var(--amber-soft)" : "white", display: "flex", alignItems: "center", justifyContent: "center", color: showPrintDropdown ? "var(--color-amber)" : "var(--color-muted)", cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s, color 0.15s, background 0.15s" }}
                     onMouseEnter={(e) => { if (!showPrintDropdown) { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-amber)"; } }}
                     onMouseLeave={(e) => { if (!showPrintDropdown) { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-muted)"; } }}
                   >
@@ -837,7 +839,7 @@ export default function ClientsPage() {
         {/* ── Table ──────────────────────────────────────────────────────────── */}
         <div className="clients-body">
           <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", padding: "16px 24px 64px" }}>
-            {loading ? (
+            {loading && !hasLoadedOnce ? (
               <RowSkeleton />
             ) : clients.length === 0 ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", paddingTop: 80 }}>
@@ -855,7 +857,7 @@ export default function ClientsPage() {
                     <p style={{ fontSize: 13, color: "var(--color-muted)", marginBottom: 20 }}>{t("Add your first client to get started")}</p>
                     <button
                       onClick={() => setShowAdd(true)}
-                      style={{ height: 36, padding: "0 18px", borderRadius: 9, background: "var(--color-amber)", color: "white", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)" }}
+                      style={{ height: 44, padding: "0 18px", borderRadius: 9, background: "var(--color-amber)", color: "white", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", boxShadow: "0 4px 14px rgba(232,146,10,0.28)" }}
                     >
                       {t("Add your first client")}
                     </button>
@@ -969,7 +971,7 @@ export default function ClientsPage() {
                 <span style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)" }}>{t("Filters")}</span>
                 <button
                   onClick={() => setShowFiltersSheet(false)}
-                  style={{ width: 30, height: 30, borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-muted)", cursor: "pointer" }}
+                  style={{ width: 44, height: 44, borderRadius: 8, border: "1.5px solid var(--color-cream-2)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-muted)", cursor: "pointer" }}
                 >
                   <IconX />
                 </button>

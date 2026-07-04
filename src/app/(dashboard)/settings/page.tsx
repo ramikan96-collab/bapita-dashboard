@@ -1788,7 +1788,7 @@ function WebsiteSection({
               style={{ flex: 1, height: "100%", padding: "0 12px", fontSize: 14, color: "var(--color-dark)", background: "transparent", outline: "none", fontFamily: "inherit" }}
             />
           </div>
-          <p className="text-[12px] text-muted">Only lowercase letters, numbers, and hyphens</p>
+          <p className="text-[12px] text-muted">Only lowercase letters, numbers, and hyphens — e.g. book.bapita.com/studio-avi</p>
         </div>
         <div className="flex gap-2 mt-1">
           <button

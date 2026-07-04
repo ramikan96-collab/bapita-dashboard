@@ -193,6 +193,29 @@ export const HE: Record<string, string> = {
 
   // Settings — hours editor
   "Tap a day to toggle it on or off": "הקישו על יום כדי להפעיל או לכבות אותו",
+
+  // Calendar sidebar — share card (F6)
+  "Share your booking page": "שתפו את דף ההזמנות",
+  "Copy link": "העתקת קישור",
+  "Booking link copied": "קישור ההזמנות הועתק",
+
+  // Login page (outside LangProvider — read directly via translate())
+  "Log in to your dashboard": "התחברות לדשבורד",
+  "Password": "סיסמה",
+  "Forgot password?": "שכחת סיסמה?",
+  "Log in": "התחברות",
+  "Logging in…": "מתחבר…",
+  "or": "או",
+  "Continue with Google": "המשך עם Google",
+  "Enter your email and we'll send a reset link.": "הזינו את האימייל ונשלח קישור לאיפוס.",
+  "Send reset link": "שליחת קישור לאיפוס",
+  "Sending…": "שולח…",
+  "Back to log in": "חזרה להתחברות",
+  "Check your email": "בדקו את האימייל שלכם",
+  "Password reset link sent to": "קישור לאיפוס סיסמה נשלח אל",
+  "Enter your email address first.": "הזינו קודם את כתובת האימייל.",
+  "Something went wrong. Try again.": "משהו השתבש. נסו שוב.",
+  "Your business, online. Done for you.": "העסק שלכם, אונליין. הכל מוכן בשבילכם.",
 };
 
 export function translate(lang: DashboardLang, key: string): string {

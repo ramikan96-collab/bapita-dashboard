@@ -263,3 +263,29 @@ The whole live walkthrough rendered **English, LTR** even though `<html lang="he
 
 ---
 
+# Batch 2 — touch / interaction — EXECUTION LOG (2026-07-05, Sonnet)
+
+**Status: DONE.** App-code only, no DB touch. `npm run lint` clean.
+
+| # | Status | What shipped |
+|---|--------|--------------|
+| **F21** | ✅ done | `clients/page.tsx` — `.row-action-btn` 26px→44px (border-radius 7→12 to match proportion); toolbar `dropdownBtnStyle` (Show/Label/Sort) 34→44; Columns button 34→44; Print button 34×34→44×44; mobile `.filters-btn-mobile` 34→44; header "Add client" button 34→44; empty-state "Add your first client" CTA 36→44; search input 34→44; Show-dropdown custom-range date inputs 30→44 + Apply button 28→44; mobile filter-sheet close (X) button 30×30→44×44. Widened the desktop row's sticky actions grid column (`80px`→`120px`, both `gridCols` and `tableMinWidth`) so the now-larger row-action buttons + arrow don't overflow. No bare `*{padding:0}` reset used — every change is a scoped inline-style or single-selector CSS-in-JS edit (the footgun the audit flagged). |
+| **U4/F13** | ✅ done | `login/page.tsx` — page lives outside `LangProvider` (no business row pre-auth), so it now reads its own lang: `navigator.language` (client-only, `useState` lazy-init not used to avoid SSR hydration mismatch — instead a mount-effect sets it, `eslint-disable-next-line react-hooks/set-state-in-effect` per this repo's established pattern for legit external-system sync) defaulting to `"he"` for anything non-English, then a second effect flips `document.documentElement.dir`/`lang` the same way `LangProvider` does. Routed all visible strings through `translate()` (added ~16 new HE keys to `i18n/dict.ts`: login title, Password, Forgot password?, Log in/Logging in…, or, Continue with Google, forgot-password flow copy, error strings, footer line). Bare `"…"` loading labels replaced with real text (`t("Logging in…")` / `t("Sending…")`). Submit + Google buttons 46px→44px to match the already-44px inputs (audit's "inputs 44 = button 44").
+
+---
+
+# Batch 3 — polish — EXECUTION LOG (2026-07-05, Sonnet)
+
+**Status: DONE.** App-code only, no DB touch. `npm run lint` clean.
+
+| # | Status | What shipped |
+|---|--------|--------------|
+| **U5** | ✅ done | `clients/page.tsx` — added `hasLoadedOnce` state (set true after the first successful fetch). `RowSkeleton` now only renders when `loading && !hasLoadedOnce`, i.e. the true first page load. Subsequent debounced searches/filter changes no longer blank the list to 5 fake skeleton rows — the previous results stay on screen until the new fetch resolves, then swap directly to the new list or the real "No results" empty state. |
+| **U6** | ✅ done | `AppShell.tsx` — removed the duplicate "New booking" button from the calendar-only desktop sidebar (it duplicated the always-visible header `topActions` pill on the same screen at desktop/tablet width). Kept the single header CTA as the one primary entry point everywhere, sidebar included. |
+| **F6** | ✅ done | `AppShell.tsx` — added a "Share your booking page" row to the calendar-only desktop sidebar (below the date picker), only rendered when `business.slug` exists. Reuses the same `book.bapita.com/{slug}` link + clipboard-copy + toast pattern as Settings → Website's `copyLink()` (new `copyBookingLink()` in `AppShell.tsx`). Added 3 new HE dict keys. Scoped to the desktop sidebar only (mobile calendar toolbar is already tightly packed with View/Filter/Search/Today/Print pills — adding a 6th control there was judged higher-risk than the low-risk rating this item was given; Settings → Website remains the mobile-reachable path). |
+| **F29** | ✅ done | `settings/page.tsx` — booking-URL helper text now reads "Only lowercase letters, numbers, and hyphens — e.g. book.bapita.com/studio-avi" instead of the constraint text alone. |
+
+**Not in scope this batch:** Batch 4 (not yet specified) remains queued; no push yet per instruction — batches 2–3 committed locally, will push once batch 4 lands.
+
+---
+

@@ -454,6 +454,12 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     router.push(path);
   }
 
+  function copyBookingLink() {
+    if (!business?.slug) return;
+    navigator.clipboard.writeText(`https://book.bapita.com/${business.slug}`);
+    showToast(t("Booking link copied"), "success");
+  }
+
   const lang: DashboardLang = business?.dashboard_lang === "he" ? "he" : "en";
   const t = (key: string) => translate(lang, key);
 
@@ -754,24 +760,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             paddingTop: 14,
           }}
         >
-          {/* New Booking */}
-          <div style={{ padding: "0 12px 12px" }}>
-            <button
-              onClick={() => router.push("/new-booking")}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
-                gap: 6, height: 38, borderRadius: 999, background: "var(--wash-amber)",
-                color: "#fff", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer",
-                boxShadow: "0 2px 8px rgba(232,146,10,0.26)", transition: "transform 0.15s, box-shadow 0.15s",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,146,10,0.34)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(232,146,10,0.26)"; }}
-            >
-              <IconPlus size={16} />
-              {t("New booking")}
-            </button>
-          </div>
-
           {/* Search */}
           <div style={{ padding: "0 12px 8px" }}>
             <div
@@ -821,6 +809,29 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <IconChevronDown size={12} />
             </button>
           </div>
+
+          {/* Share booking page (F6) */}
+          {business?.slug && (
+            <div style={{ padding: "0 12px 12px" }}>
+              <button
+                onClick={copyBookingLink}
+                title={`book.bapita.com/${business.slug}`}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+                  gap: 6, height: 34, borderRadius: 9, border: "1.5px dashed var(--color-cream-2)",
+                  background: "transparent", color: "var(--color-muted)", fontSize: 12, fontWeight: 600,
+                  cursor: "pointer", transition: "border-color 0.15s, color 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.color = "var(--color-amber)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.color = "var(--color-muted)"; }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+                {t("Share your booking page")}
+              </button>
+            </div>
+          )}
 
           {/* ── View ──────────────────────────────────────────────────── */}
           <div style={{ height: 1, margin: "0 12px" , background: "var(--color-cream-2)" }} />

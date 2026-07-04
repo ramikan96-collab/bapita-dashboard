@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { translate, type DashboardLang } from "@/i18n/dict";
 
 // Signup is disabled — new clients go through bapita.com lead form → admin approval
 
@@ -43,8 +44,23 @@ export default function LoginPage() {
   const [error,        setError]        = useState("");
   const [loading,      setLoading]      = useState(false);
   const [resetSent,    setResetSent]    = useState(false);
+  // Login lives outside LangProvider (no business row yet, pre-auth) — read
+  // the OS/browser locale directly instead. Defaults he (Hebrew-first product).
+  const [lang,         setLang]         = useState<DashboardLang>("he");
 
   const supabase = createClient();
+  const t = useCallback((key: string) => translate(lang, key), [lang]);
+
+  useEffect(() => {
+    const nav = typeof navigator !== "undefined" ? navigator.language : "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLang(nav.toLowerCase().startsWith("en") ? "en" : "he");
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dir = lang === "he" ? "rtl" : "ltr";
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   async function handleGoogle() {
     setError("");
@@ -68,7 +84,7 @@ export default function LoginPage() {
 
   async function handleForgot(e: React.FormEvent) {
     e.preventDefault();
-    if (!email) { setError("Enter your email address first."); return; }
+    if (!email) { setError(t("Enter your email address first.")); return; }
     setError("");
     setLoading(true);
     const res = await fetch("/api/auth/forgot-password", {
@@ -77,7 +93,7 @@ export default function LoginPage() {
       body: JSON.stringify({ email }),
     });
     setLoading(false);
-    if (!res.ok) { setError("Something went wrong. Try again."); }
+    if (!res.ok) { setError(t("Something went wrong. Try again.")); }
     else          { setResetSent(true); }
   }
 
@@ -118,7 +134,7 @@ export default function LoginPage() {
 
         {/* Header */}
         <div style={{ padding: "18px 24px 0", borderBottom: "1px solid var(--color-cream-2)", paddingBottom: 16 }}>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "var(--color-dark)" }}>Log in to your dashboard</p>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "var(--color-dark)" }}>{t("Log in to your dashboard")}</p>
         </div>
 
         <div style={{ padding: "24px 24px 28px" }}>
@@ -128,19 +144,19 @@ export default function LoginPage() {
                 <div style={{ width: 56, height: 56, borderRadius: 16, background: "var(--amber-soft)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                   <MailIcon />
                 </div>
-                <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", marginBottom: 6 }}>Check your email</p>
+                <p style={{ fontSize: 17, fontWeight: 800, color: "var(--color-dark)", marginBottom: 6 }}>{t("Check your email")}</p>
                 <p style={{ fontSize: 13, color: "var(--color-muted)", lineHeight: 1.5, marginBottom: 20 }}>
-                  Password reset link sent to <strong style={{ color: "var(--color-dark)" }}>{email}</strong>
+                  {t("Password reset link sent to")} <strong style={{ color: "var(--color-dark)" }}>{email}</strong>
                 </p>
                 <button type="button" onClick={() => switchTab("login")} style={{ fontSize: 13, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer" }}>
-                  Back to log in
+                  {t("Back to log in")}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleForgot} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <p style={{ fontSize: 14, color: "var(--color-muted)", margin: "0 0 4px", lineHeight: 1.5 }}>Enter your email and we&apos;ll send a reset link.</p>
+                <p style={{ fontSize: 14, color: "var(--color-muted)", margin: "0 0 4px", lineHeight: 1.5 }}>{t("Enter your email and we'll send a reset link.")}</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Email</label>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Email")}</label>
                   <input
                     type="email"
                     value={email}
@@ -153,18 +169,18 @@ export default function LoginPage() {
                   />
                 </div>
                 {error && <p style={{ fontSize: 12, color: "#EF4444", marginTop: -4 }}>{error}</p>}
-                <button type="submit" disabled={loading} style={{ width: "100%", height: 46, borderRadius: 12, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, boxShadow: "0 4px 14px rgba(232,146,10,0.30)" }}>
-                  {loading ? "…" : "Send reset link"}
+                <button type="submit" disabled={loading} style={{ width: "100%", height: 44, borderRadius: 12, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, boxShadow: "0 4px 14px rgba(232,146,10,0.30)" }}>
+                  {loading ? t("Sending…") : t("Send reset link")}
                 </button>
                 <button type="button" onClick={() => switchTab("login")} style={{ fontSize: 13, fontWeight: 600, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer" }}>
-                  Back to log in
+                  {t("Back to log in")}
                 </button>
               </form>
             )
           ) : (
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Email</label>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Email")}</label>
                 <input
                   type="email"
                   value={email}
@@ -178,7 +194,7 @@ export default function LoginPage() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Password</label>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Password")}</label>
                 <input
                   type="password"
                   value={password}
@@ -195,7 +211,7 @@ export default function LoginPage() {
                   onClick={() => switchTab("forgot")}
                   style={{ alignSelf: "flex-end", fontSize: 12, fontWeight: 600, color: "var(--color-amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                 >
-                  Forgot password?
+                  {t("Forgot password?")}
                 </button>
               </div>
 
@@ -208,7 +224,7 @@ export default function LoginPage() {
                 disabled={loading}
                 style={{
                   width: "100%",
-                  height: 46,
+                  height: 44,
                   borderRadius: 12,
                   border: "none",
                   background: "var(--wash-amber)",
@@ -224,7 +240,7 @@ export default function LoginPage() {
                 onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(232,146,10,0.38)"; } }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(232,146,10,0.30)"; }}
               >
-                {loading ? "…" : "Log in"}
+                {loading ? t("Logging in…") : t("Log in")}
               </button>
             </form>
           )}
@@ -233,7 +249,7 @@ export default function LoginPage() {
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0 14px" }}>
                 <div style={{ flex: 1, height: 1, background: "var(--color-cream-2)" }} />
-                <span style={{ fontSize: 12, color: "var(--color-muted)", fontWeight: 500 }}>or</span>
+                <span style={{ fontSize: 12, color: "var(--color-muted)", fontWeight: 500 }}>{t("or")}</span>
                 <div style={{ flex: 1, height: 1, background: "var(--color-cream-2)" }} />
               </div>
               <button
@@ -241,7 +257,7 @@ export default function LoginPage() {
                 onClick={handleGoogle}
                 disabled={loading}
                 style={{
-                  width: "100%", height: 46, borderRadius: 12,
+                  width: "100%", height: 44, borderRadius: 12,
                   border: "1.5px solid var(--color-cream-2)",
                   background: "var(--color-surface)",
                   color: "var(--color-dark)", fontSize: 15, fontWeight: 600,
@@ -254,7 +270,7 @@ export default function LoginPage() {
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; }}
               >
                 <GoogleIcon />
-                Continue with Google
+                {t("Continue with Google")}
               </button>
             </>
           )}
@@ -262,7 +278,7 @@ export default function LoginPage() {
       </div>
 
       <p style={{ marginTop: 24, fontSize: 13, color: "var(--color-muted)" }}>
-        Your business, online. Done for you.
+        {t("Your business, online. Done for you.")}
       </p>
     </div>
   );
