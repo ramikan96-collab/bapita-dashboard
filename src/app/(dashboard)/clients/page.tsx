@@ -844,7 +844,7 @@ export default function ClientsPage() {
                 </div>
                 {debouncedSearch ? (
                   <>
-                    <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 6 }}>No results for "{debouncedSearch}"</p>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)", marginBottom: 6 }}>No results for &quot;{debouncedSearch}&quot;</p>
                     <p style={{ fontSize: 13, color: "var(--color-muted)" }}>Try a different name, phone or email</p>
                   </>
                 ) : (
@@ -929,7 +929,7 @@ export default function ClientsPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <p style={{ fontSize: 16, fontWeight: 800, color: "var(--color-dark)", margin: "0 0 6px" }}>Delete {deleteTarget.name}?</p>
-              <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>All their booking history will be permanently deleted. This can't be undone.</p>
+              <p style={{ fontSize: 13, color: "var(--color-muted)", margin: "0 0 20px", lineHeight: 1.5 }}>All their booking history will be permanently deleted. This can&apos;t be undone.</p>
               <div style={{ display: "flex", gap: 10 }}>
                 <button
                   onClick={() => setDeleteTarget(null)}

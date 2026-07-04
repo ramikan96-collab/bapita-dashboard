@@ -184,7 +184,7 @@ export default function ProfilePage() {
                 </button>
               </div>
               {mismatch && (
-                <p style={{ fontSize: 12, color: "#EF4444", marginTop: 5 }}>Passwords don't match</p>
+                <p style={{ fontSize: 12, color: "#EF4444", marginTop: 5 }}>Passwords don&apos;t match</p>
               )}
             </div>
 

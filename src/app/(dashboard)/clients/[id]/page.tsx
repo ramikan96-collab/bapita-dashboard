@@ -586,7 +586,7 @@ export default function ClientProfilePage() {
                   <IconUpcoming />
                 </div>
                 <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)", margin: 0 }}>No bookings yet</p>
-                <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }}>This client hasn't booked an appointment</p>
+                <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }}>This client hasn&apos;t booked an appointment</p>
               </div>
             ) : (
               <>

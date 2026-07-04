@@ -138,7 +138,7 @@ export default function LoginPage() {
               </div>
             ) : (
               <form onSubmit={handleForgot} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <p style={{ fontSize: 14, color: "var(--color-muted)", margin: "0 0 4px", lineHeight: 1.5 }}>Enter your email and we'll send a reset link.</p>
+                <p style={{ fontSize: 14, color: "var(--color-muted)", margin: "0 0 4px", lineHeight: 1.5 }}>Enter your email and we&apos;ll send a reset link.</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Email</label>
                   <input
