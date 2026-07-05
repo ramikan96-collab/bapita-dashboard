@@ -6,10 +6,10 @@ import {
 } from "date-fns";
 import { useLang } from "@/i18n";
 import type { Booking, BlockedTime } from "@/types";
-import { STATUS_COLOR } from "@/types";
+import { STATUS_COLOR, STATUS_LABEL } from "@/types";
 import {
   PX_PER_HOUR, PX_PER_MIN, TOTAL_H, HOURS, GRID_LINE, GRID_LINE_HALF,
-  timeToMins, firstName, packLanes, useGridGestures, useSwipe,
+  timeToMins, firstName, formatRange, packLanes, useGridGestures, useSwipe,
 } from "./grid";
 
 interface Props {
@@ -151,8 +151,8 @@ export default function WeekView({
             <div
               key={h}
               style={{
-                position: "absolute", top: h * PX_PER_HOUR - 6, insetInlineEnd: 6,
-                fontSize: 12, color: "rgba(30,26,20,0.55)", fontWeight: 600,
+                position: "absolute", top: h * PX_PER_HOUR - 6, insetInlineEnd: 8,
+                fontSize: 11, color: "var(--time-label)", fontWeight: 600,
               }}
             >
               {h === 0 ? "" : `${String(h).padStart(2, "0")}:00`}
@@ -251,6 +251,7 @@ function WeekDayColumn({
             key={bl.id}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onBlockClick(bl); }}
+            aria-label={`Blocked ${bl.start_time}–${bl.end_time}`}
             className="absolute rounded-[6px] overflow-hidden text-start"
             style={{
               top, height, insetInlineStart: 2, insetInlineEnd: 2, zIndex: 4,
@@ -279,6 +280,7 @@ function WeekDayColumn({
             key={b.id}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onSelectBooking(b); }}
+            aria-label={`${b.customer_name}, ${b.service?.name ?? ""}, ${formatRange(b.appointment_time, duration)}, ${STATUS_LABEL[b.status]}`}
             className="absolute rounded-lg overflow-hidden text-start border-s-[3px] transition-opacity active:opacity-70"
             style={{
               top, height,
@@ -286,7 +288,7 @@ function WeekDayColumn({
               width: `calc(${widthPct}% - 4px)`,
               borderColor: borderColor,
               background: `${statusColor}1f`,
-              boxShadow: "0 1px 2px rgba(28,25,23,0.06)",
+              boxShadow: "var(--shadow-sm)",
               padding: "5px 8px",
               zIndex: 6,
               opacity: isPast ? 0.45 : 1,

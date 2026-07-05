@@ -379,51 +379,55 @@ function CalendarPageInner() {
           </div>
         ) : null}
 
-        {!searchQuery && view === "day" && (
-          <DayView
-            date={date}
-            bookings={visibleBookings}
-            blocked={visibleBlocked}
-            openHour={openHour}
-            onSelectBooking={setSelected}
-            onCreateAt={handleCreateAt}
-            onLongPressAt={handleLongPressAt}
-            onBlockClick={handleBlockClick}
-            onPrev={() => setDate((d) => addDays(d, -1))}
-            onNext={() => setDate((d) => addDays(d, 1))}
-          />
-        )}
-        {!searchQuery && view === "week" && (
-          <WeekView
-            date={date}
-            bookings={visibleBookings}
-            blocked={visibleBlocked}
-            openHour={openHour}
-            onSelectBooking={setSelected}
-            onCreateAt={handleCreateAt}
-            onLongPressAt={handleLongPressAt}
-            onBlockClick={handleBlockClick}
-            onSelectDay={handleSelectDay}
-            onPrev={() => setDate((d) => addDays(d, -7))}
-            onNext={() => setDate((d) => addDays(d, 7))}
-          />
-        )}
-        {!searchQuery && view === "month" && (
-          <MonthView
-            date={date}
-            bookings={visibleBookings}
-            onSelectDay={handleSelectDay}
-            onSelectBooking={setSelected}
-            onPrev={() => setDate((d) => addMonths(d, -1))}
-            onNext={() => setDate((d) => addMonths(d, 1))}
-          />
-        )}
-        {!searchQuery && view === "agenda" && (
-          <AgendaView
-            bookings={visibleBookings}
-            onSelectBooking={setSelected}
-            onNewBooking={() => router.push("/new-booking")}
-          />
+        {!searchQuery && (
+          <div key={view} className="page-anim h-full">
+            {view === "day" && (
+              <DayView
+                date={date}
+                bookings={visibleBookings}
+                blocked={visibleBlocked}
+                openHour={openHour}
+                onSelectBooking={setSelected}
+                onCreateAt={handleCreateAt}
+                onLongPressAt={handleLongPressAt}
+                onBlockClick={handleBlockClick}
+                onPrev={() => setDate((d) => addDays(d, -1))}
+                onNext={() => setDate((d) => addDays(d, 1))}
+              />
+            )}
+            {view === "week" && (
+              <WeekView
+                date={date}
+                bookings={visibleBookings}
+                blocked={visibleBlocked}
+                openHour={openHour}
+                onSelectBooking={setSelected}
+                onCreateAt={handleCreateAt}
+                onLongPressAt={handleLongPressAt}
+                onBlockClick={handleBlockClick}
+                onSelectDay={handleSelectDay}
+                onPrev={() => setDate((d) => addDays(d, -7))}
+                onNext={() => setDate((d) => addDays(d, 7))}
+              />
+            )}
+            {view === "month" && (
+              <MonthView
+                date={date}
+                bookings={visibleBookings}
+                onSelectDay={handleSelectDay}
+                onSelectBooking={setSelected}
+                onPrev={() => setDate((d) => addMonths(d, -1))}
+                onNext={() => setDate((d) => addMonths(d, 1))}
+              />
+            )}
+            {view === "agenda" && (
+              <AgendaView
+                bookings={visibleBookings}
+                onSelectBooking={setSelected}
+                onNewBooking={() => router.push("/new-booking")}
+              />
+            )}
+          </div>
         )}
       </div>
 

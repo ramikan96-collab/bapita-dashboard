@@ -51,6 +51,8 @@
 :root {
   --line:         #ECE5DA;
   --now-line:     #D4622A;
+  --time-label:   rgba(30,26,20,0.55);
+  --grid-overlay: rgba(255,255,255,0.6);
   --amber-soft:   rgba(232,146,10,.10);
   --wash-amber:   linear-gradient(157deg, #F8DEAE 0%, #E79B22 100%);
   --wash-sand:    linear-gradient(157deg, #F8F0E2 0%, #EAD3AC 100%);
