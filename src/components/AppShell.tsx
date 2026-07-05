@@ -316,8 +316,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isAdmin,    setIsAdmin]    = useState(false);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
-  const [viewSectionOpen, setViewSectionOpen] = useState(false);
-  const [calendarsSectionOpen, setCalendarsSectionOpen] = useState(false);
+  const [viewSectionOpen, setViewSectionOpen] = useState(true);
+  const [calendarsSectionOpen, setCalendarsSectionOpen] = useState(true);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [viewSheetOpen, setViewSheetOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -758,6 +758,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             background: "var(--color-cream)",
             borderInlineEnd: "1px solid var(--color-cream-2)",
             paddingTop: 14,
+            paddingInline: 8,
           }}
         >
           {/* Search */}
