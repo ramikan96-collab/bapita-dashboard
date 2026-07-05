@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getUserDeduped } from "@/lib/supabase/client";
 import { ToastProvider, useToast } from "@/components/Toast";
 import { useBusiness } from "@/hooks/useBusiness";
 import {
@@ -417,12 +417,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const onCalendar = pathname === "/calendar";
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getUserDeduped().then((user) => {
       const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
       setIsAdmin(ADMIN_EMAILS.includes(user?.email ?? ""));
     });
-  // Runs once on mount; supabase client is recreated each render so excluding it is intentional.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/");

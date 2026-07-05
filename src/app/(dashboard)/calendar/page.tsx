@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -17,12 +18,16 @@ import WeekView from "@/components/calendar/WeekView";
 import MonthView from "@/components/calendar/MonthView";
 import AgendaView from "@/components/calendar/AgendaView";
 import AgendaList from "@/components/calendar/AgendaList";
-import BookingDrawer from "@/components/calendar/BookingDrawer";
-import BlockTimeSheet, { type BlockDraft } from "@/components/calendar/BlockTimeSheet";
+import type { BlockDraft } from "@/components/calendar/BlockTimeSheet";
 import { openHourFor, minsToTime } from "@/components/calendar/grid";
 import { CalendarSkeleton } from "@/components/LoadingSkeleton";
 import { loadActiveStaff } from "@/lib/staff";
 import type { Booking, BlockedTime, BookingStatus, StaffMember } from "@/types";
+
+// Both only render once the user opens a booking/block — split out of the
+// calendar route's initial chunk instead of loading with every page view.
+const BookingDrawer = dynamic(() => import("@/components/calendar/BookingDrawer"));
+const BlockTimeSheet = dynamic(() => import("@/components/calendar/BlockTimeSheet"));
 
 function applyPatch(bookings: Booking[], id: string, patch: Partial<Booking>): Booking[] {
   return bookings.map((b) => (b.id === id ? { ...b, ...patch } : b));

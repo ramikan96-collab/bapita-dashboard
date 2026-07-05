@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getUserDeduped } from "@/lib/supabase/client";
 import type { Business } from "@/types";
 
 const ADMIN_PERSONAL_SLUGS: Record<string, string> = {
@@ -16,7 +16,7 @@ export function useBusiness() {
   const supabase = createClient();
 
   const fetchBusiness = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getUserDeduped();
     if (!user) {
       setLoading(false);
       return;

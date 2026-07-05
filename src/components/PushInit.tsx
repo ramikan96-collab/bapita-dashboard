@@ -35,12 +35,19 @@ export function pushSupported(): boolean {
   );
 }
 
+const LAST_SENT_ENDPOINT_KEY = "bapita:push-subscription-endpoint";
+
 async function sendSubscription(sub: PushSubscription) {
   await fetch("/api/push/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ subscription: sub.toJSON() }),
   });
+  try {
+    sessionStorage.setItem(LAST_SENT_ENDPOINT_KEY, sub.endpoint);
+  } catch {
+    // sessionStorage unavailable (private mode etc.) — not fatal, just re-sends next load.
+  }
 }
 
 export type EnablePushResult =
@@ -119,7 +126,15 @@ export function PushInit() {
       try {
         const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
         const existing = await reg.pushManager.getSubscription();
-        if (existing && !cancelled) await sendSubscription(existing);
+        if (existing && !cancelled) {
+          let lastSent: string | null = null;
+          try {
+            lastSent = sessionStorage.getItem(LAST_SENT_ENDPOINT_KEY);
+          } catch {
+            // sessionStorage unavailable — fall through and resend.
+          }
+          if (lastSent !== existing.endpoint) await sendSubscription(existing);
+        }
       } catch {
         // Non-fatal — app works without push
       }
