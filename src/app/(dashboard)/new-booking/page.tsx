@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, parseISO } from "date-fns";
+import { Search } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/components/Toast";
@@ -28,7 +29,7 @@ const inputStyle: React.CSSProperties = {
   padding: "0 13px",
   borderRadius: 11,
   border: "1.5px solid var(--color-cream-2)",
-  background: "var(--color-cream)",
+  background: "var(--color-surface)",
   fontSize: 16, // must be >=16 to prevent iOS Safari auto-zoom
   color: "var(--color-dark)",
   outline: "none",
@@ -443,27 +444,36 @@ function NewBookingInner() {
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {!showNewClient ? (
                 <>
-                  <button
-                    onClick={() => setShowNewClient(true)}
-                    style={{ width: "100%", height: 44, borderRadius: 11, border: "1.5px dashed var(--color-cream-2)", background: "transparent", color: "var(--color-dark)", fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "border-color 0.15s, background 0.15s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-amber)"; e.currentTarget.style.background = "var(--amber-soft)"; e.currentTarget.style.color = "var(--color-amber)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-cream-2)"; e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--color-dark)"; }}
-                  >
-                    + New client
-                  </button>
-
                   <div>
-                    <label style={labelStyle}>Search client</label>
-                    <input
-                      type="text"
-                      value={clientSearch}
-                      onChange={(e) => setClientSearch(e.target.value)}
-                      placeholder="Name or phone"
-                      style={inputStyle}
-                      onFocus={onFocusAmber}
-                      onBlur={onBlurCream}
-                    />
+                    <label style={labelStyle}>Add a client</label>
+                    <div style={{ position: "relative" }}>
+                      <Search
+                        size={18}
+                        strokeWidth={2}
+                        style={{ position: "absolute", top: "50%", insetInlineStart: 14, transform: "translateY(-50%)", color: "var(--color-muted)", pointerEvents: "none" }}
+                      />
+                      <input
+                        type="text"
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        placeholder="Type a name or phone…"
+                        style={{ ...inputStyle, height: 52, paddingInlineStart: 42, fontWeight: 600 }}
+                        onFocus={onFocusAmber}
+                        onBlur={onBlurCream}
+                      />
+                    </div>
                   </div>
+
+                  {/* Create-from-search — always offered once typing */}
+                  {clientSearch.trim().length >= 2 && (
+                    <button
+                      onClick={() => { setNewClientName(clientSearch.trim()); setShowNewClient(true); }}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "13px 16px", borderRadius: 13, border: "1.5px solid var(--color-amber)", background: "var(--amber-soft)", color: "var(--color-amber)", fontSize: 14, fontWeight: 700, cursor: "pointer", textAlign: "start" }}
+                    >
+                      <span style={{ fontSize: 18, lineHeight: 1 }}>+</span>
+                      <span>Create &quot;{clientSearch.trim()}&quot; as new client</span>
+                    </button>
+                  )}
 
                   {/* Search results */}
                   {clientSearch.trim().length >= 2 && clients.length > 0 && (
@@ -494,12 +504,6 @@ function NewBookingInner() {
                         );
                       })}
                     </div>
-                  )}
-
-                  {clientSearch.trim().length >= 2 && clients.length === 0 && (
-                    <p style={{ fontSize: 13, textAlign: "center", color: "var(--color-muted)", padding: "4px 0" }}>
-                      No client matches &quot;{clientSearch.trim()}&quot;
-                    </p>
                   )}
 
                   {/* Recent clients — shown when search is empty */}
