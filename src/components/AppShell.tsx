@@ -474,7 +474,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         onClick={() => router.push("/new-booking")}
         className="flex items-center gap-1.5 rounded-full transition-transform active:scale-95"
         style={{
-          height: 36, paddingInline: 16, background: "var(--wash-amber)",
+          height: 36, paddingInline: 16, background: "var(--color-amber)",
           color: "var(--color-surface)", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer",
           boxShadow: "0 2px 8px rgba(232,146,10,0.26)",
         }}
@@ -485,15 +485,15 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       </button>
       <button
         onClick={() => setNotificationsOpen(true)}
-        className="relative flex items-center justify-center rounded-full text-dark hover:bg-[var(--color-cream-2)] active:bg-[var(--color-cream-2)] transition-colors shrink-0"
-        style={{ width: 40, height: 40 }}
+        className="relative flex items-center justify-center rounded-full text-dark bg-[var(--color-surface)] hover:bg-[var(--color-cream-2)] active:bg-[var(--color-cream-2)] transition-colors shrink-0"
+        style={{ width: 36, height: 36, border: "1.5px solid var(--color-cream-2)" }}
         aria-label={t("Notifications")}
       >
         <IconBell size={20} />
         {unreadCount > 0 && (
           <span
             className="absolute flex items-center justify-center rounded-full text-white font-bold"
-            style={{ top: 4, insetInlineEnd: 4, minWidth: 16, height: 16, padding: "0 3px", fontSize: 10, background: "var(--color-amber)", lineHeight: 1 }}
+            style={{ top: 4, insetInlineEnd: 4, minWidth: 16, height: 16, padding: "0 3px", fontSize: 10, background: "var(--color-terra)", border: "2px solid var(--color-surface)", lineHeight: 1 }}
           >
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
@@ -530,7 +530,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         {onCalendar && (
           <button
             onClick={() => window.print()}
-            className="p-2 rounded-full text-dark hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
+            className="flex items-center justify-center rounded-full text-dark bg-[var(--color-surface)] hover:bg-[var(--color-cream-2)] transition-colors shrink-0"
+            style={{ width: 36, height: 36, border: "1.5px solid var(--color-cream-2)" }}
             aria-label={t("Print")}
           >
             <IconPrint size={18} />
