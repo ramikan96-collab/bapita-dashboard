@@ -1125,8 +1125,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           {/* Dashboard language — one tap from anywhere, not buried in Settings */}
-          <div className="flex items-center justify-between" style={{ paddingInline: 12, paddingBottom: 8 }}>
-            <span className="text-[13px] font-medium" style={{ color: "var(--color-muted)" }}>{t("Dashboard language")}</span>
+          <div className="flex items-center justify-center" style={{ paddingInline: 12, paddingBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", borderRadius: 9999, padding: 3, gap: 2, background: "var(--color-cream-2)", flexShrink: 0, opacity: langSaving ? 0.6 : 1 }}>
               {(["en", "he"] as const).map((l) => (
                 <button
