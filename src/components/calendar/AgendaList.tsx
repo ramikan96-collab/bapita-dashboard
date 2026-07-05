@@ -53,42 +53,30 @@ export default function AgendaList({
         const list = byDate[dateStr];
 
         return (
-          <div key={dateStr} className="mb-5 last:mb-0">
-            {/* Date label — sits on page background above the card */}
-            <div className="flex items-center gap-2 px-1 mb-2">
+          <div key={dateStr} className="mb-7 last:mb-0">
+            {/* Date label — sits on page background above the cards */}
+            <div className="flex items-center gap-2 px-1 mb-3">
               {isToday && (
                 <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  className="w-2 h-2 rounded-full shrink-0"
                   style={{ background: "var(--color-amber)" }}
                 />
               )}
               <span
-                className="text-[13px] font-semibold"
+                className="text-[15px] font-bold tracking-tight"
                 style={{ color: isToday ? "var(--color-amber)" : "var(--color-dark)" }}
               >
                 {isToday ? `${t("Today")} · ${format(day, "EEE, MMM d", { locale: dateLocale })}` : format(day, "EEEE, MMMM d", { locale: dateLocale })}
               </span>
-              <span className="text-[12px] ms-auto" style={{ color: "var(--color-muted)" }}>
+              <span className="text-[13px] font-medium ms-auto" style={{ color: "var(--color-muted)" }}>
                 {list.length} appt{list.length !== 1 ? "s" : ""}
               </span>
             </div>
 
-            {/* Grouped booking card */}
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{
-                background: "var(--color-surface)",
-                border: "1px solid var(--line)",
-                boxShadow: "var(--shadow-sm)",
-              }}
-            >
-              {list.map((b, i) => (
-                <AgendaCard
-                  key={b.id}
-                  booking={b}
-                  onClick={onSelectBooking}
-                  last={i === list.length - 1}
-                />
+            {/* Reservation cards */}
+            <div className="flex flex-col gap-2.5">
+              {list.map((b) => (
+                <AgendaCard key={b.id} booking={b} onClick={onSelectBooking} />
               ))}
             </div>
           </div>
