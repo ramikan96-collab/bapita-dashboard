@@ -46,22 +46,16 @@ export default function AgendaList({
   const dates = Object.keys(byDate).sort();
 
   return (
-    <div>
+    <div className="mx-auto w-full max-w-2xl px-3 sm:px-4 py-4">
       {dates.map((dateStr) => {
         const day = parseISO(dateStr);
         const isToday = isSameDay(day, new Date());
         const list = byDate[dateStr];
 
         return (
-          <div key={dateStr}>
-            {/* Date header */}
-            <div
-              className="sticky top-0 flex items-center gap-2 px-4 py-2 z-10"
-              style={{
-                background: "var(--color-surface)",
-                borderBottom: "1px solid var(--line)",
-              }}
-            >
+          <div key={dateStr} className="mb-5 last:mb-0">
+            {/* Date label — sits on page background above the card */}
+            <div className="flex items-center gap-2 px-1 mb-2">
               {isToday && (
                 <span
                   className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -79,10 +73,24 @@ export default function AgendaList({
               </span>
             </div>
 
-            {/* Booking cards */}
-            {list.map((b) => (
-              <AgendaCard key={b.id} booking={b} onClick={onSelectBooking} />
-            ))}
+            {/* Grouped booking card */}
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "var(--color-surface)",
+                border: "1px solid var(--line)",
+                boxShadow: "var(--shadow-sm)",
+              }}
+            >
+              {list.map((b, i) => (
+                <AgendaCard
+                  key={b.id}
+                  booking={b}
+                  onClick={onSelectBooking}
+                  last={i === list.length - 1}
+                />
+              ))}
+            </div>
           </div>
         );
       })}

@@ -6,6 +6,7 @@ import { STATUS_COLOR, STATUS_LABEL } from "@/types";
 interface Props {
   booking: Booking;
   onClick: (b: Booking) => void;
+  last?: boolean;
 }
 
 function endTime(time: string, duration: number): string {
@@ -14,15 +15,18 @@ function endTime(time: string, duration: number): string {
   return `${String(Math.floor(e / 60)).padStart(2, "0")}:${String(e % 60).padStart(2, "0")}`;
 }
 
-export default function AgendaCard({ booking: b, onClick }: Props) {
+export default function AgendaCard({ booking: b, onClick, last }: Props) {
   const color = STATUS_COLOR[b.status];
   const duration = b.service?.duration ?? 30;
 
   return (
     <button
       onClick={() => onClick(b)}
-      className="w-full flex items-center gap-3 text-start px-4 py-3 bg-white active:bg-[var(--color-cream)] transition-colors border-b"
-      style={{ borderColor: "var(--color-cream-2)", borderInlineStart: `3px solid ${color}` }}
+      className="w-full flex items-center gap-3 text-start px-4 py-3.5 hover:bg-[var(--color-cream)] active:bg-[var(--color-cream)] transition-colors"
+      style={{
+        borderBottom: last ? "none" : "1px solid var(--line)",
+        borderInlineStart: `3px solid ${color}`,
+      }}
     >
       {/* Time */}
       <div className="shrink-0 w-14">
