@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
 function isSafeUrl(u?: string | null): u is string {
   if (!u) return false;
   try {
@@ -21,20 +25,45 @@ export function SectionLocation({ address, darkColor, accentColor, directionsLab
 
   const embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
 
+  // The Maps embed iframe pulls in ~350KB of Maps JS on connect; native loading="lazy"
+  // doesn't defer it enough since this section usually sits several screens down but
+  // still within the browser's eager-load margin. Gate it on a real IntersectionObserver
+  // instead so it stays off the initial-load window entirely.
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ fontSize: 15, color: darkColor, lineHeight: 1.6 }}>{address}</div>
 
-      <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", width: "100%", aspectRatio: "16/9" }}>
-        <iframe
-          src={embedSrc}
-          width="100%"
-          height="100%"
-          style={{ border: 0, display: "block" }}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          title="Location map"
-        />
+      <div ref={containerRef} style={{ position: "relative", borderRadius: 12, overflow: "hidden", width: "100%", aspectRatio: "16/9" }}>
+        {shouldLoad && (
+          <iframe
+            src={embedSrc}
+            width="100%"
+            height="100%"
+            style={{ border: 0, display: "block" }}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="Location map"
+          />
+        )}
         <a
           href={mapsUrl}
           target="_blank"

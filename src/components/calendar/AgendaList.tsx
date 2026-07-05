@@ -46,7 +46,7 @@ export default function AgendaList({
   const dates = Object.keys(byDate).sort();
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-3 sm:px-4 py-4">
+    <div className="mx-auto w-full max-w-2xl px-3 sm:px-4 py-5">
       {dates.map((dateStr) => {
         const day = parseISO(dateStr);
         const isToday = isSameDay(day, new Date());
@@ -74,7 +74,7 @@ export default function AgendaList({
             </div>
 
             {/* Reservation cards */}
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-3">
               {list.map((b) => (
                 <AgendaCard key={b.id} booking={b} onClick={onSelectBooking} />
               ))}

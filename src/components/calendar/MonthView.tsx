@@ -45,8 +45,7 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
 
   return (
     <div
-      className="flex flex-col h-full overflow-y-auto"
-      style={{ background: "var(--color-cream)" }}
+      className="flex flex-col h-full overflow-y-auto bg-[var(--color-surface)] md:bg-[var(--color-cream)]"
       onTouchStart={swipe.onTouchStart}
       onTouchEnd={swipe.onTouchEnd}
     >
@@ -81,9 +80,9 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
       </div>
 
       {/* Framed month grid — unified hairline grid (social look) */}
-      <div className="shrink-0 px-0 pt-1 md:px-6 md:pt-2 md:pb-2">
+      <div className="shrink-0 px-3 pt-2 md:px-6 md:pt-2 md:pb-2">
         <div
-          className="overflow-hidden md:rounded-2xl md:border"
+          className="overflow-hidden rounded-2xl border"
           style={{ borderColor: "var(--line)", boxShadow: "var(--shadow-sm)" }}
         >
           <div className="grid grid-cols-7 gap-px" style={{ background: "var(--line)" }}>
@@ -173,7 +172,7 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
       </div>
 
       {/* Agenda section below grid */}
-      <div className="shrink-0 mt-2">
+      <div className="shrink-0 mt-4 md:mt-2">
         <AgendaList
           bookings={bookings}
           onSelectBooking={onSelectBooking}

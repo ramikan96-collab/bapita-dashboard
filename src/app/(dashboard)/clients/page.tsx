@@ -184,13 +184,6 @@ function IconChevronDown() {
   );
 }
 
-function IconArrowRight() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-    </svg>
-  );
-}
 
 function IconPhone() {
   return (
@@ -494,12 +487,12 @@ export default function ClientsPage() {
 
   // Build column grid template
   const orderedCols: ColumnKey[] = ALL_COLUMNS.map((c) => c.key).filter((k) => visibleColumns.has(k));
-  const gridCols = ["34px", ...orderedCols.map(getColWidth), "96px"].join(" ");
+  const gridCols = ["34px", ...orderedCols.map(getColWidth), "76px"].join(" ");
   // Ensure the table is wide enough that minmax columns don't collapse.
   // +28 accounts for .client-row's own 14px left/right padding (the grid's content
   // box is the row width minus that padding) — omitting it let the grid overflow
   // its row and made the sticky actions column overlap the last data column.
-  const tableMinWidth = Math.max(560, 34 + orderedCols.reduce((s, k) => s + COL_MIN_PX[k], 0) + 96 + (orderedCols.length + 1) * 14 + 28);
+  const tableMinWidth = Math.max(560, 34 + orderedCols.reduce((s, k) => s + COL_MIN_PX[k], 0) + 76 + (orderedCols.length + 1) * 14 + 28);
 
   function toggleColumn(key: ColumnKey) {
     setVisibleColumns((prev) => {
@@ -534,9 +527,7 @@ export default function ClientsPage() {
           transform: translateY(-1px);
           border-color: var(--color-cream-2);
         }
-        .client-row:hover .row-arrow { color: var(--color-amber); transform: translateX(2px); }
         .client-row:hover .row-actions { opacity: 1; }
-        .row-arrow { display: flex; justify-content: flex-end; color: var(--color-cream-2); transition: color 0.15s ease, transform 0.15s ease; }
         .row-actions { opacity: 0; display: flex; gap: 6px; transition: opacity 0.15s ease; }
         /* Desktop: quiet icon-only buttons — no border box, just hover tint (mobile gets its own bordered/44px style below) */
         .row-action-btn { height: 32px; width: 32px; border-radius: 9px; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-muted); transition: all 0.12s; flex-shrink: 0; }
@@ -586,7 +577,6 @@ export default function ClientsPage() {
           .row-action-btn { height: 44px; width: 44px; border-radius: 12px; border: 1.5px solid var(--color-cream-2); background: white; }
           .row-action-btn.delete:hover { border-color: var(--color-danger); }
           .row-action-btn:hover { border-color: var(--color-amber); }
-          .row-arrow { display: none !important; }
           .table-scroll { overflow-x: auto; }
           .table-min { min-width: 0; }
           /* Mobile: don't trap scroll in inner div — let AppShell main scroll */
@@ -1257,7 +1247,6 @@ function ClientRow({
             <button className="row-action-btn" title="Edit" onClick={onEdit}><IconEdit /></button>
             <button className="row-action-btn delete" title="Delete" onClick={onDelete}><IconTrash /></button>
           </div>
-          <div className="row-arrow"><IconArrowRight /></div>
         </div>
       </div>
     </div>

@@ -28,7 +28,7 @@ export default function RootLayout({
       </body>
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=G-XESDNYB9T6"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
       <Script id="google-analytics" strategy="afterInteractive">
         {`

@@ -358,7 +358,7 @@ function CalendarPageInner() {
 
         {/* Search results overlay */}
         {searchQuery ? (
-          <div className="h-full overflow-y-auto" style={{ background: "var(--color-cream)" }}>
+          <div className="h-full overflow-y-auto bg-[var(--color-surface)] md:bg-[var(--color-cream)]">
             {searchResults === null ? (
               <div className="flex items-center justify-center h-32">
                 <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />

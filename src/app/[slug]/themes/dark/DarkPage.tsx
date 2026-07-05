@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Oswald } from "next/font/google";
 import type { Business, Service } from "@/types";
 import { getSocialProof } from "@/lib/social-proof";
 import { FloatingCTA }    from "../../components/FloatingCTA";
@@ -30,6 +31,8 @@ const D = {
   muted:   "#888888",
   border:  "rgba(255,255,255,0.08)",
 };
+
+const oswald = Oswald({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap" });
 
 // ─── Gold ornamental divider ──────────────────────────────────────────────────
 
@@ -107,7 +110,7 @@ export function DarkPage({ business, services }: Props) {
   const cityLabel    = getCityFromAddress(business.address);
   const displayName  = (isRtl && business.name_he) ? business.name_he : business.name;
   const displayTag   = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
-  const headingFont = resolveFont(business.heading_font, "'Oswald', sans-serif");
+  const headingFont = resolveFont(business.heading_font, oswald.style.fontFamily);
   const bodyFont    = resolveFont(business.body_font, "'Inter', system-ui, sans-serif");
   const showInstaGallery = business.show_gallery !== false && business.gallery_source === "instagram" && !!business.instagram_embed;
   const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
@@ -118,10 +121,9 @@ export function DarkPage({ business, services }: Props) {
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
   return (
-    <div dir={isRtl ? "rtl" : "ltr"} style={{ background: D.bg, minHeight: "100svh", color: D.text, fontFamily: bodyFont, position: "relative", overflowX: "hidden" }}>
+    <div className={oswald.className} dir={isRtl ? "rtl" : "ltr"} style={{ background: D.bg, minHeight: "100svh", color: D.text, fontFamily: bodyFont, position: "relative", overflowX: "hidden" }}>
       <FontLoader fonts={[business.heading_font, business.body_font]} />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap');
         @keyframes kenBurns   { 0%{transform:scale(1.0)} 100%{transform:scale(1.07)} }
         @keyframes fadeUp     { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
         @keyframes slideDown  { from{opacity:0;transform:translateY(-100%)} to{opacity:1;transform:translateY(0)} }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Behold renders via a <behold-widget> custom element, not a standard tag.
 declare module "react" {
@@ -39,12 +39,34 @@ function toBeholdFeedId(raw: string): string | null {
  * custom ejected page. Auto-updates on its own (Behold pulls the latest posts).
  * Grid layout (columns, post count, spacing) is configured in the Behold dashboard.
  * Renders nothing when no feed id is set.
+ *
+ * The widget script + its feed request only fire once the section nears the viewport
+ * (rootMargin gives it a head start) — keeps this off the critical initial-load path.
  */
 export function InstagramFeed({ embed, radius = 10 }: Props) {
   const feedId = embed ? toBeholdFeedId(embed) : null;
+  const [visible, setVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!feedId) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [feedId]);
+
+  useEffect(() => {
+    if (!feedId || !visible) return;
     // Behold's module script defines the <behold-widget> element. Load it once.
     const existing = document.querySelector<HTMLScriptElement>("script[data-behold]");
     if (existing) return;
@@ -53,13 +75,13 @@ export function InstagramFeed({ embed, radius = 10 }: Props) {
     s.src = "https://w.behold.so/widget.js";
     s.dataset.behold = "1";
     document.head.appendChild(s);
-  }, [feedId]);
+  }, [feedId, visible]);
 
   if (!feedId) return null;
 
   return (
-    <div style={{ width: "100%", borderRadius: radius, overflow: "hidden" }}>
-      <behold-widget feed-id={feedId} />
+    <div ref={containerRef} style={{ width: "100%", borderRadius: radius, overflow: "hidden" }}>
+      {visible && <behold-widget feed-id={feedId} />}
     </div>
   );
 }

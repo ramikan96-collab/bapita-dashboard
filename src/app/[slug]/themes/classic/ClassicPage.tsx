@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Playfair_Display } from "next/font/google";
 import type { Business, Service } from "@/types";
 import { getSocialProof } from "@/lib/social-proof";
 import { FloatingCTA }    from "../../components/FloatingCTA";
@@ -22,6 +23,8 @@ import { InstagramFeed } from "../../_shared/InstagramFeed";
 const C = { bg: "#F8F2E8", dark: "#221510", gold: "#B8862A", cream2: "#F0E8D8" };
 const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews"];
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=1200&q=80";
+
+const playfairDisplay = Playfair_Display({ subsets: ["latin"], weight: ["700"], display: "swap" });
 
 function SectionTitle({ title, accentColor, darkColor }: { title: string; accentColor: string; darkColor: string }) {
   const { ref, visible } = useFadeInOnEnter();
@@ -61,7 +64,7 @@ export function ClassicPage({ business, services }: Props) {
   const cityLabel   = getCityFromAddress(business.address);
   const waNumber    = business.whatsapp_number?.replace(/\D/g, "");
   const displayName = (isRtl && business.name_he) ? business.name_he : business.name;
-  const headingFont = resolveFont(business.heading_font, "'Playfair Display', serif");
+  const headingFont = resolveFont(business.heading_font, playfairDisplay.style.fontFamily);
   const bodyFont    = resolveFont(business.body_font, "'Heebo', sans-serif");
   const showInstaGallery = business.show_gallery !== false && business.gallery_source === "instagram" && !!business.instagram_embed;
   const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
@@ -75,10 +78,9 @@ export function ClassicPage({ business, services }: Props) {
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
   return (
-    <div dir={isRtl ? "rtl" : "ltr"} style={{ background: C.bg, minHeight: "100svh", fontFamily: bodyFont, color: C.dark }}>
+    <div className={playfairDisplay.className} dir={isRtl ? "rtl" : "ltr"} style={{ background: C.bg, minHeight: "100svh", fontFamily: bodyFont, color: C.dark }}>
       <FontLoader fonts={[business.heading_font, business.body_font]} />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
         @keyframes kenBurns   { 0%{transform:scale(1.0)} 100%{transform:scale(1.06)} }
         @keyframes fadeUpLoad { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
         .c-hero-img { animation: kenBurns 10s ease-in-out infinite alternate; }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import type { Business, Service } from "@/types";
 import { getSocialProof } from "@/lib/social-proof";
 import { FloatingCTA }    from "../../components/FloatingCTA";
@@ -23,6 +24,8 @@ const FALLBACK_HERO = "https://images.unsplash.com/photo-1503951914875-452162b0f
 
 const P = { bg: "#FFFFFF", text: "#111111", muted: "#6B7280", surface: "#F9F9F9", border: "#E5E5E5", panel: "#141414" };
 const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews"];
+
+const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], display: "swap" });
 
 function SectionTitle({ title, accent, headingFont }: { title: string; accent: string; headingFont: string }) {
   const { ref, visible } = useFadeInOnEnter();
@@ -64,8 +67,8 @@ export function CleanPage({ business, services }: Props) {
   const igHandle     = getInstagramHandle(business.instagram_url);
   const cityLabel    = getCityFromAddress(business.address);
   const displayName  = (isRtl && business.name_he) ? business.name_he : business.name;
-  const headingFont = resolveFont(business.heading_font, "'Plus Jakarta Sans', sans-serif");
-  const bodyFont    = resolveFont(business.body_font, "'Plus Jakarta Sans', sans-serif");
+  const headingFont = resolveFont(business.heading_font, plusJakartaSans.style.fontFamily);
+  const bodyFont    = resolveFont(business.body_font, plusJakartaSans.style.fontFamily);
   const showInstaGallery = business.show_gallery !== false && business.gallery_source === "instagram" && !!business.instagram_embed;
   const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
 
@@ -78,10 +81,9 @@ export function CleanPage({ business, services }: Props) {
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
   return (
-    <div dir={isRtl ? "rtl" : "ltr"} style={{ background: P.bg, minHeight: "100svh", fontFamily: bodyFont, color: P.text }}>
+    <div className={plusJakartaSans.className} dir={isRtl ? "rtl" : "ltr"} style={{ background: P.bg, minHeight: "100svh", fontFamily: bodyFont, color: P.text }}>
       <FontLoader fonts={[business.heading_font, business.body_font]} />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         @keyframes fadeUp    { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
         @keyframes slideDown { from{opacity:0;transform:translateY(-100%)} to{opacity:1;transform:translateY(0)} }
         @keyframes imgReveal { from{transform:scale(1.06)} to{transform:scale(1)} }
