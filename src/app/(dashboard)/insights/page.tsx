@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   format, parseISO, addDays, subDays, subMonths, subWeeks,
   startOfMonth, endOfMonth,
@@ -137,6 +137,8 @@ export default function InsightsPage() {
   const [stats,       setStats]       = useState<Stats | null>(null);
   const [allBookings, setAllBookings] = useState<BookingRow[]>([]);
   const [loading,     setLoading]     = useState(true);
+  const [menuOpen,    setMenuOpen]    = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const { start, end, prevStart, prevEnd } = getRangeDates(rangeKey, customStart, customEnd);
   const label = rangeLabel(rangeKey, start, end);
@@ -193,6 +195,33 @@ export default function InsightsPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDown(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [menuOpen]);
+
+  function exportCSV() {
+    const header = ["Date", "Time", "Client", "Service", "Duration (min)", "Price (₪)", "Status", "Payment"];
+    const rows = allBookings.map((b) => [
+      b.appointment_date, b.appointment_time.slice(0, 5), b.customer_name,
+      b.service?.name ?? "", b.service?.duration ?? "", b.service?.price ?? "",
+      STATUS_LABEL[b.status], b.payment_status,
+    ]);
+    const csv = [header, ...rows].map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `insights-${label.replace(/\s/g, "-")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setMenuOpen(false);
+  }
+
   if (bizLoading || (business && loading)) return <InsightsSkeleton />;
 
   const empty             = !stats || stats.bookings === 0;
@@ -226,19 +255,44 @@ export default function InsightsPage() {
                 </h1>
                 <span style={{ fontSize: 13, color: "var(--color-muted)" }}>{label}</span>
               </div>
-              <button
-                onClick={() => window.print()}
-                title="Print / Download"
-                style={{ height: 34, width: 34, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-muted)", cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s, color 0.15s" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-amber)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-muted)"; }}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 6 2 18 2 18 9" />
-                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                  <rect x="6" y="14" width="12" height="8" />
-                </svg>
-              </button>
+              <div ref={menuRef} style={{ position: "relative", flexShrink: 0 }}>
+                <button
+                  onClick={() => setMenuOpen((v) => !v)}
+                  title="Print / Export"
+                  style={{ height: 34, width: 34, borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "white", display: "flex", alignItems: "center", justifyContent: "center", color: menuOpen ? "var(--color-amber)" : "var(--color-muted)", borderColor: menuOpen ? "var(--color-amber)" : "var(--color-cream-2)", cursor: "pointer", transition: "border-color 0.15s, color 0.15s" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-amber)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-amber)"; }}
+                  onMouseLeave={(e) => { if (!menuOpen) { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-cream-2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-muted)"; } }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9" />
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                    <rect x="6" y="14" width="12" height="8" />
+                  </svg>
+                </button>
+
+                {menuOpen && (
+                  <div
+                    style={{ position: "absolute", top: 40, right: 0, zIndex: 20, minWidth: 180, background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", borderRadius: 12, boxShadow: "var(--shadow-md)", overflow: "hidden", padding: 4 }}
+                  >
+                    <button
+                      onClick={() => { setMenuOpen(false); window.print(); }}
+                      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 12px", borderRadius: 8, border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer", textAlign: "left" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                    >
+                      <IconPrinter /> Print <span style={{ color: "var(--color-muted)", fontWeight: 400 }}>(PDF)</span>
+                    </button>
+                    <button
+                      onClick={exportCSV}
+                      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 12px", borderRadius: 8, border: "none", background: "transparent", fontSize: 13, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer", textAlign: "left" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                    >
+                      <IconDownload /> Export as CSV
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Range picker */}
@@ -338,10 +392,10 @@ export default function InsightsPage() {
               />
             )}
             {tab === "appointments" && (
-              <AppointmentsTab bookings={allBookings} label={label} />
+              <AppointmentsTab bookings={allBookings} />
             )}
             {tab === "revenue" && (
-              <RevenueTab bookings={allBookings} label={label} />
+              <RevenueTab bookings={allBookings} />
             )}
 
           </div>
@@ -526,38 +580,13 @@ function OverviewEmpty() {
 
 // ─── Appointments tab ─────────────────────────────────────────────────────────
 
-function AppointmentsTab({ bookings, label }: { bookings: BookingRow[]; label: string }) {
-  function exportCSV() {
-    const header = ["Date", "Time", "Client", "Service", "Duration (min)", "Price (₪)", "Status", "Payment"];
-    const rows = bookings.map((b) => [
-      b.appointment_date, b.appointment_time.slice(0, 5), b.customer_name,
-      b.service?.name ?? "", b.service?.duration ?? "", b.service?.price ?? "",
-      STATUS_LABEL[b.status], b.payment_status,
-    ]);
-    const csv = [header, ...rows].map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `appointments-${label.replace(/\s/g, "-")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
+function AppointmentsTab({ bookings }: { bookings: BookingRow[] }) {
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
+      <div style={{ marginBottom: 20 }}>
         <p style={{ fontSize: 14, color: "var(--color-muted)" }}>
           {bookings.length} appointment{bookings.length !== 1 ? "s" : ""}
         </p>
-        {bookings.length > 0 && (
-          <button
-            onClick={exportCSV}
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 36, padding: "0 14px", borderRadius: 9, border: "1.5px solid var(--color-cream-2)", background: "var(--color-surface)", fontSize: 13, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer", boxShadow: "var(--shadow-sm)" }}
-          >
-            <IconDownload /> Export CSV
-          </button>
-        )}
       </div>
 
       {bookings.length === 0 ? (
@@ -598,7 +627,7 @@ function AppointmentsTab({ bookings, label }: { bookings: BookingRow[]; label: s
 
 // ─── Revenue tab ──────────────────────────────────────────────────────────────
 
-function RevenueTab({ bookings, label }: { bookings: BookingRow[]; label: string }) {
+function RevenueTab({ bookings }: { bookings: BookingRow[] }) {
   const earned  = bookings.filter((b) => isEarned(b.status));
   const pending = bookings.filter((b) => b.status === "pending" || b.status === "confirmed");
   const totalEarned     = earned.reduce((s, b) => s + (b.service?.price || 0), 0);
@@ -614,18 +643,6 @@ function RevenueTab({ bookings, label }: { bookings: BookingRow[]; label: string
     map.set(b.service.name, e);
   });
   const services = Array.from(map.values()).sort((a, b) => b.earned - a.earned || b.receivable - a.receivable);
-
-  function exportCSV() {
-    const header = ["Service", "Bookings", "Earned (₪)", "Receivable (₪)"];
-    const rows   = services.map((s) => [s.name, s.count, s.earned, s.receivable]);
-    const footer = ["Total", bookings.length, totalEarned, totalReceivable];
-    const csv    = [header, ...rows, footer].map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
-    const blob   = new Blob([csv], { type: "text/csv" });
-    const url    = URL.createObjectURL(blob);
-    const a      = document.createElement("a");
-    a.href = url; a.download = `revenue-${label.replace(/\s/g, "-")}.csv`; a.click();
-    URL.revokeObjectURL(url);
-  }
 
   if (bookings.length === 0) return (
     <div className="rounded-2xl" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)", padding: "56px 24px", textAlign: "center" }}>
@@ -657,14 +674,8 @@ function RevenueTab({ bookings, label }: { bookings: BookingRow[]; label: string
       {/* Service breakdown */}
       {services.length > 0 && (
         <div className="rounded-2xl" style={{ background: "var(--color-surface)", boxShadow: "var(--shadow-md)", overflow: "hidden" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--color-cream-2)", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--color-cream-2)" }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Breakdown by service</p>
-            <button
-              onClick={exportCSV}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 12px", borderRadius: 8, border: "none", background: "var(--color-cream)", fontSize: 12, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer" }}
-            >
-              <IconDownload /> Export CSV
-            </button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 56px 72px", padding: "10px 20px", borderBottom: "1px solid var(--color-cream-2)" }}>
             {["Service", "Count", "Earned"].map((h) => (
@@ -949,4 +960,7 @@ function IconTag({ size = 18, color = "currentColor" }: { size?: number; color?:
 }
 function IconDownload() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>;
+}
+function IconPrinter() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>;
 }
