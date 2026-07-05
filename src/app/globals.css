@@ -113,8 +113,6 @@
 .badge-failed    { background: #F7DEDA; color: #9A2E1C; }
 .badge-draft     { background: #ECE9E4; color: #6B6259; }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 html, body { height: 100%; }
 
 body {

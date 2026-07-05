@@ -495,8 +495,11 @@ export default function ClientsPage() {
   // Build column grid template
   const orderedCols: ColumnKey[] = ALL_COLUMNS.map((c) => c.key).filter((k) => visibleColumns.has(k));
   const gridCols = ["34px", ...orderedCols.map(getColWidth), "96px"].join(" ");
-  // Ensure the table is wide enough that minmax columns don't collapse
-  const tableMinWidth = Math.max(560, 34 + orderedCols.reduce((s, k) => s + COL_MIN_PX[k], 0) + 96 + (orderedCols.length + 1) * 14);
+  // Ensure the table is wide enough that minmax columns don't collapse.
+  // +28 accounts for .client-row's own 14px left/right padding (the grid's content
+  // box is the row width minus that padding) — omitting it let the grid overflow
+  // its row and made the sticky actions column overlap the last data column.
+  const tableMinWidth = Math.max(560, 34 + orderedCols.reduce((s, k) => s + COL_MIN_PX[k], 0) + 96 + (orderedCols.length + 1) * 14 + 28);
 
   function toggleColumn(key: ColumnKey) {
     setVisibleColumns((prev) => {
