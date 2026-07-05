@@ -12,13 +12,12 @@ import { getAvailableSlots, type TimeSlot } from "@/lib/availability";
 import { loadActiveStaff } from "@/lib/staff";
 import type { Service, Customer, StaffMember } from "@/types";
 
-type Step = "client" | "service" | "datetime" | "confirm";
-const STEP_ORDER: Step[] = ["client", "service", "datetime", "confirm"];
+type Step = "client" | "service" | "confirm";
+const STEP_ORDER: Step[] = ["client", "service", "confirm"];
 const STEP_LABEL: Record<Step, string> = {
-  client:   "Client",
-  service:  "Service",
-  datetime: "Time",
-  confirm:  "Confirm",
+  client:  "Client",
+  service: "Service & time",
+  confirm: "Confirm",
 };
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
@@ -86,6 +85,44 @@ function Row({ label, value }: { label: string; value: string }) {
       <span style={{ color: "var(--color-muted)" }}>{label}</span>
       <span style={{ fontWeight: 600, color: "var(--color-dark)", textAlign: "end" }}>{value}</span>
     </div>
+  );
+}
+
+// ─── Client row (search + recent lists) ──────────────────────────────────────
+
+function initials(name: string) {
+  return name.trim().split(/\s+/).slice(0, 2).map((n) => n[0]).join("").toUpperCase();
+}
+
+function ClientRow({ client, active, onClick }: { client: Customer; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        textAlign: "start",
+        padding: "11px 14px",
+        borderRadius: 13,
+        background: "var(--color-surface)",
+        border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`,
+        boxShadow: active ? "0 2px 8px rgba(232,146,10,0.12)" : "var(--shadow-sm)",
+        cursor: "pointer",
+        transition: "border-color 0.15s, box-shadow 0.15s",
+      }}
+    >
+      <span style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--color-amber)", color: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, flexShrink: 0 }}>
+        {initials(client.name)}
+      </span>
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "var(--color-dark)" }}>{client.name}</span>
+        <span style={{ display: "block", fontSize: 12, color: "var(--color-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {client.phone}{client.email && ` · ${client.email}`}
+        </span>
+      </span>
+    </button>
   );
 }
 
@@ -189,6 +226,8 @@ function NewBookingInner() {
   const [notes,      setNotes]      = useState("");
   const [markAsPaid, setMarkAsPaid] = useState(false);
   const [sendEmail,  setSendEmail]  = useState(true);
+  const [showEmailField,  setShowEmailField]  = useState(false);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // ─── Preselect client ───────────────────────────────────────────────────
   useEffect(() => {
@@ -247,7 +286,7 @@ function NewBookingInner() {
 
   // ─── Available slots ────────────────────────────────────────────────────
   useEffect(() => {
-    if (!business || !selectedService || step !== "datetime") return;
+    if (!business || !selectedService || step !== "service") return;
     let cancelled = false;
     (async () => {
       setLoadingSlots(true);
@@ -310,7 +349,7 @@ function NewBookingInner() {
         const updated = getAvailableSlots(selectedDate, selectedService.duration, business.business_hours, fresh as unknown as { appointment_time: string; service?: { duration: number } | null }[]);
         setSlots(updated);
         setSelectedTime(null);
-        setStep("datetime");
+        setStep("service");
         showToast("That slot was just taken. Pick another time.", "error");
         setSubmitting(false);
         return;
@@ -336,6 +375,8 @@ function NewBookingInner() {
     setNotes("");
     setSendEmail(true);
     setSlots([]);
+    setShowMoreOptions(false);
+    setShowEmailField(false);
     if (selectedClient && clientIdParam) {
       setStep("service");
     } else {
@@ -408,7 +449,7 @@ function NewBookingInner() {
             <div>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--color-dark)", margin: 0 }}>New booking</h1>
               <span style={{ fontSize: 12, fontWeight: 500, color: "var(--color-muted)" }}>
-                Step {stepIndex + 1} of 4 · {STEP_LABEL[step]}
+                Step {stepIndex + 1} of {STEP_ORDER.length} · {STEP_LABEL[step]}
               </span>
             </div>
             <button
@@ -481,26 +522,7 @@ function NewBookingInner() {
                       {clients.map((client) => {
                         const active = selectedClient?.id === client.id;
                         return (
-                          <button
-                            key={client.id}
-                            onClick={() => setSelectedClient(client)}
-                            style={{
-                              width: "100%",
-                              textAlign: "start",
-                              padding: "11px 14px",
-                              borderRadius: 13,
-                              background: "var(--color-surface)",
-                              border: `1.5px solid ${active ? "var(--color-amber)" : "var(--color-cream-2)"}`,
-                              boxShadow: active ? "0 2px 8px rgba(232,146,10,0.12)" : "var(--shadow-sm)",
-                              cursor: "pointer",
-                              transition: "border-color 0.15s, box-shadow 0.15s",
-                            }}
-                          >
-                            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)" }}>{client.name}</div>
-                            <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>
-                              {client.phone}{client.email && ` · ${client.email}`}
-                            </div>
-                          </button>
+                          <ClientRow key={client.id} client={client} active={active} onClick={() => setSelectedClient(client)} />
                         );
                       })}
                     </div>
@@ -553,10 +575,19 @@ function NewBookingInner() {
                     <label style={labelStyle}>Phone *</label>
                     <input type="tel" value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} placeholder="05X-XXX-XXXX" style={inputStyle} onFocus={onFocusAmber} onBlur={onBlurCream} />
                   </div>
-                  <div>
-                    <label style={labelStyle}>Email (optional)</label>
-                    <input type="email" value={newClientEmail} onChange={(e) => setNewClientEmail(e.target.value)} placeholder="name@example.com" style={inputStyle} onFocus={onFocusAmber} onBlur={onBlurCream} />
-                  </div>
+                  {showEmailField ? (
+                    <div>
+                      <label style={labelStyle}>Email (optional)</label>
+                      <input type="email" value={newClientEmail} onChange={(e) => setNewClientEmail(e.target.value)} placeholder="name@example.com" style={inputStyle} onFocus={onFocusAmber} onBlur={onBlurCream} />
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowEmailField(true)}
+                      style={{ alignSelf: "start", background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--color-amber)", padding: "2px 0" }}
+                    >
+                      + Add email
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowNewClient(false)}
                     style={{ width: "100%", height: 36, background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "var(--color-muted)", textAlign: "center" }}
@@ -581,7 +612,7 @@ function NewBookingInner() {
                 return (
                   <button
                     key={service.id}
-                    onClick={() => { setSelectedService(service); setSelectedStaffId(null); setStep("datetime"); }}
+                    onClick={() => { setSelectedService(service); setSelectedStaffId(null); setSelectedTime(null); }}
                     style={{
                       width: "100%",
                       textAlign: "start",
@@ -617,9 +648,9 @@ function NewBookingInner() {
             </div>
           )}
 
-          {/* ── Step 3: Date + time ─────────────────────────────────────── */}
-          {step === "datetime" && selectedService && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* ── Step 2 (cont.): Date + time — revealed after service pick ── */}
+          {step === "service" && selectedService && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 20, marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--color-cream-2)" }}>
               <div>
                 <label style={labelStyle}>Date</label>
                 <input
@@ -740,6 +771,16 @@ function NewBookingInner() {
                 </div>
               </div>
 
+              {/* More options — collapsed by default; smart defaults handle the common case */}
+              <button
+                onClick={() => setShowMoreOptions((v) => !v)}
+                style={{ alignSelf: "start", background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--color-muted)", padding: "2px 0", display: "flex", alignItems: "center", gap: 6 }}
+              >
+                More options
+                <span style={{ transition: "transform 0.15s", transform: showMoreOptions ? "rotate(180deg)" : "none", fontSize: 10 }}>▾</span>
+              </button>
+
+              {showMoreOptions && (<>
               {/* Notes */}
               <div>
                 <label style={labelStyle}>Internal notes (optional)</label>
@@ -840,6 +881,7 @@ function NewBookingInner() {
                   />
                 </button>
               </div>
+              </>)}
             </div>
           )}
 
@@ -861,10 +903,6 @@ function NewBookingInner() {
           )}
 
           {step === "service" && selectedService && (
-            <PrimaryBtn onClick={() => setStep("datetime")}>Continue</PrimaryBtn>
-          )}
-
-          {step === "datetime" && (
             <PrimaryBtn onClick={() => setStep("confirm")} disabled={!selectedTime}>Continue</PrimaryBtn>
           )}
 
