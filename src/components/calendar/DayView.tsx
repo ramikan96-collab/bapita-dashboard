@@ -65,14 +65,14 @@ export default function DayView({
   return (
     <div
       className="h-full flex flex-col"
-      style={{ background: "var(--color-cream)" }}
+      style={{ background: "var(--color-surface)" }}
       onTouchStart={swipe.onTouchStart}
       onTouchEnd={swipe.onTouchEnd}
     >
       {/* Sticky day nav header */}
       <div
         className="shrink-0 flex items-center sticky top-0 z-10"
-        style={{ height: 52, background: "var(--color-cream)", borderBottom: "1px solid var(--color-cream-2)" }}
+        style={{ height: 52, background: "var(--color-surface)", borderBottom: "1px solid var(--line)" }}
       >
         <button
           onClick={onPrev}
@@ -107,8 +107,8 @@ export default function DayView({
       {/* Time grid — independently scrollable */}
       <div
         ref={scrollRef}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain md:mx-4 md:mb-4 md:rounded-2xl md:border"
-        style={{ background: "var(--color-surface)", borderColor: "var(--line)", boxShadow: "var(--shadow-sm)" }}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain md:mx-4 md:mb-4 md:rounded-2xl"
+        style={{ background: "var(--color-surface)" }}
       >
       <div className="flex" style={{ height: TOTAL_H }}>
         {/* Time labels */}
