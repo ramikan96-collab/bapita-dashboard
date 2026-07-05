@@ -348,7 +348,7 @@ export function CleanPage({ business, services }: Props) {
       <FloatingCTA shopName={displayName} bookLabel={t.hero.cta} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
 
       {waNumber && (
-        <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
+        <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
           style={{ position: "fixed", bottom: 90, left: 20, width: 52, height: 52, borderRadius: "50%", background: accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", zIndex: 50, transform: showWa ? "translateY(0) scale(1)" : "translateY(20px) scale(0.85)", opacity: showWa ? 1 : 0, transition: "transform 0.35s ease, opacity 0.35s ease", pointerEvents: showWa ? "auto" : "none" }}>
           <WaIcon size={22} color="#fff" />
         </a>

@@ -1025,10 +1025,13 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                               setStaffUploading(s => ({ ...s, [member.id]: true }));
                               const ext = file.name.split(".").pop();
                               const path = `profiles/staff/${stableId.current}/${member.id}.${ext}`;
-                              const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true });
+                              const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
                               if (!error) {
                                 const { data } = supabase.storage.from("business-images").getPublicUrl(path);
-                                setStaffMembers(ms => ms.map((m, i) => i === idx ? { ...m, photo_url: data.publicUrl } : m));
+                                // path is stable (member.id, upsert-overwritten) — cache-bust via query string so a
+                                // long Cache-Control on the object doesn't serve a stale photo after replacement.
+                                const url = `${data.publicUrl}?v=${Date.now()}`;
+                                setStaffMembers(ms => ms.map((m, i) => i === idx ? { ...m, photo_url: url } : m));
                                 setDirty(true);
                               }
                               setStaffUploading(s => ({ ...s, [member.id]: false }));
@@ -1775,7 +1778,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
     setProfileUploading(true);
     const ext  = file.name.split(".").pop();
     const path = `profiles/${businessId || "temp"}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true });
+    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
     if (!error) {
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       setProfileImageUrl(data.publicUrl);
@@ -1801,7 +1804,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
     const results = await Promise.all(files.map(async (file, i) => {
       const ext  = file.name.split(".").pop();
       const path = `galleries/${businessId || "temp"}/${Date.now()}-${i}.${ext}`;
-      const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true });
+      const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
       if (error) return null;
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       return data.publicUrl;

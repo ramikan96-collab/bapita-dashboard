@@ -237,7 +237,7 @@ export function ClassicPage({ business, services }: Props) {
                         </div>
                         <div>
                           <div style={{ fontFamily: headingFont, fontSize: 15, fontWeight: 700, color: C.dark }}>{member.name}</div>
-                          {member.role && <div style={{ fontSize: 12, color: C.dark, opacity: 0.55, marginTop: 3 }}>{member.role}</div>}
+                          {member.role && <div style={{ fontSize: 12, color: C.dark, opacity: 0.75, marginTop: 3 }}>{member.role}</div>}
                         </div>
                       </div>
                     ))}
@@ -300,20 +300,20 @@ export function ClassicPage({ business, services }: Props) {
         <ThemeFooter
           business={business}
           accent={accent}
-          colors={{ text: C.dark, muted: "rgba(34,21,16,0.5)", surface: C.cream2, border: "transparent" }}
+          colors={{ text: C.dark, muted: "rgba(34,21,16,0.75)", surface: C.cream2, border: "transparent" }}
           socialShape="circle"
           socialBg={C.cream2}
           iconColor={C.dark}
           footerLabel={t.footer.poweredBy}
           brandLabel={t.footer.brand}
-          footerLabelStyle={{ color: "rgba(34,21,16,0.38)" }}
+          footerLabelStyle={{ color: "rgba(34,21,16,0.7)" }}
         />
       </div>
 
       <FloatingCTA shopName={displayName} bookLabel={t.hero.cta} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
 
       {waNumber && (
-        <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
+        <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
           style={{ position: "fixed", bottom: 90, insetInlineStart: 20, width: 52, height: 52, borderRadius: "50%", background: accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.22)", zIndex: 50, transform: showWa ? "translateY(0) scale(1)" : "translateY(20px) scale(0.85)", opacity: showWa ? 1 : 0, transition: "transform 0.35s ease, opacity 0.35s ease", pointerEvents: showWa ? "auto" : "none" }}
           onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px) scale(1.06)";}}
           onMouseLeave={e=>{e.currentTarget.style.transform=showWa?"translateY(0) scale(1)":"translateY(20px) scale(0.85)";}}

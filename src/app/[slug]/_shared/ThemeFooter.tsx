@@ -56,22 +56,22 @@ export function ThemeFooter({
       {hasSocials && (
         <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 20 }}>
           {business.instagram_url && (
-            <a href={business.instagram_url} target="_blank" rel="noopener noreferrer" style={socialStyle()} onMouseEnter={onEnter} onMouseLeave={onLeave}>
+            <a href={business.instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram" style={socialStyle()} onMouseEnter={onEnter} onMouseLeave={onLeave}>
               <IgIcon size={16} color={iconColor} />
             </a>
           )}
           {business.whatsapp_number && (
-            <a href={`https://wa.me/${business.whatsapp_number.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" style={socialStyle()} onMouseEnter={onEnter} onMouseLeave={onLeave}>
+            <a href={`https://wa.me/${business.whatsapp_number.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" style={socialStyle()} onMouseEnter={onEnter} onMouseLeave={onLeave}>
               <WaIcon size={16} color={iconColor} />
             </a>
           )}
           {business.facebook_url && (
-            <a href={business.facebook_url} target="_blank" rel="noopener noreferrer" style={socialStyle()} onMouseEnter={onEnter} onMouseLeave={onLeave}>
+            <a href={business.facebook_url} target="_blank" rel="noopener noreferrer" aria-label="Facebook" style={socialStyle()} onMouseEnter={onEnter} onMouseLeave={onLeave}>
               <FbIcon size={16} color={iconColor} />
             </a>
           )}
           {business.tiktok_url && (
-            <a href={business.tiktok_url} target="_blank" rel="noopener noreferrer" style={socialStyle()} onMouseEnter={onEnter} onMouseLeave={onLeave}>
+            <a href={business.tiktok_url} target="_blank" rel="noopener noreferrer" aria-label="TikTok" style={socialStyle()} onMouseEnter={onEnter} onMouseLeave={onLeave}>
               <TkIcon size={16} color={iconColor} />
             </a>
           )}

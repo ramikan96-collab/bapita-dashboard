@@ -76,7 +76,7 @@ export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borde
               </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: darkColor, lineHeight: 1.2 }}>{r.author}</div>
-                {r.date && <div style={{ fontSize: 11, color: darkColor, opacity: 0.45, marginTop: 1 }}>{r.date}</div>}
+                {r.date && <div style={{ fontSize: 11, color: darkColor, opacity: 0.75, marginTop: 1 }}>{r.date}</div>}
               </div>
             </div>
             <Stars rating={r.rating} color={darkColor} />

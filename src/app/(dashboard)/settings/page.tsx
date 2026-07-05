@@ -1688,10 +1688,13 @@ function WebsiteSection({
     setStaffUploading(s => ({ ...s, [memberId]: true }));
     const ext  = file.name.split(".").pop();
     const path = `profiles/staff/${business.id}/${memberId}.${ext}`;
-    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true });
+    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
     if (!error) {
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
-      setStaffMembers(ms => ms.map((m, i) => i === memberIdx ? { ...m, photo_url: data.publicUrl } : m));
+      // path is stable (memberId, upsert-overwritten) — cache-bust via query string so a
+      // long Cache-Control on the object doesn't serve a stale photo after replacement.
+      const url = `${data.publicUrl}?v=${Date.now()}`;
+      setStaffMembers(ms => ms.map((m, i) => i === memberIdx ? { ...m, photo_url: url } : m));
     } else {
       showToast("Failed to upload photo", "error");
     }
@@ -1710,7 +1713,7 @@ function WebsiteSection({
       const file = files[i];
       const ext = file.name.split(".").pop();
       const path = `galleries/${business.id}/${Date.now()}-${i}.${ext}`;
-      const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true });
+      const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
       if (error) { showToast(`Failed to upload ${file.name}`, "error"); continue; }
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       urls.push(data.publicUrl);

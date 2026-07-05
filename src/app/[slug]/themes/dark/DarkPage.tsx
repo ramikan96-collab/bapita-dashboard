@@ -396,7 +396,7 @@ export function DarkPage({ business, services }: Props) {
       <FloatingCTA shopName={displayName} bookLabel={t.hero.bookNow} onBook={openFromCTA} bgColor={accent} textColor={D.bg} />
 
       {waNumber && (
-        <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
+        <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
           style={{ position: "fixed", bottom: 90, insetInlineStart: 20, width: 52, height: 52, borderRadius: 2, background: accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 24px ${accent}44`, zIndex: 50, transform: showWa ? "translateY(0) scale(1)" : "translateY(20px) scale(0.85)", opacity: showWa ? 1 : 0, transition: "transform 0.35s ease, opacity 0.35s ease", pointerEvents: showWa ? "auto" : "none" }}>
           <WaIcon size={22} color={D.bg} />
         </a>
