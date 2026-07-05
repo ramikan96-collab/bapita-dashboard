@@ -69,22 +69,65 @@ export function CalendarSkeleton() {
 export function ClientsSkeleton() {
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--color-cream)" }}>
-      <div className="shrink-0 px-4 pt-4 pb-3 flex items-center justify-between animate-pulse">
-        <div className="h-8 rounded w-28" style={{ background: "var(--color-cream-2)" }}></div>
-        <div className="h-11 rounded-xl w-20" style={{ background: "var(--color-cream-2)" }}></div>
-      </div>
-      <div className="px-4 pb-3 space-y-3 animate-pulse">
-        <div className="h-12 rounded-[10px]" style={{ background: "var(--color-cream-2)" }}></div>
-        <div className="flex gap-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-8 rounded-full w-20" style={{ background: "var(--color-cream-2)" }}></div>
-          ))}
+      {/* Header — mirrors clients-header: white strip, 760 centered, 26/24/18 padding */}
+      <div className="shrink-0" style={{ background: "white", borderBottom: "1px solid var(--color-cream-2)" }}>
+        <div className="mx-auto w-full animate-pulse" style={{ maxWidth: 760, padding: "26px 24px 18px" }}>
+          {/* Title + count chip + Add client button */}
+          <div className="flex items-center justify-between" style={{ marginBottom: 18 }}>
+            <div className="flex items-center" style={{ gap: 10 }}>
+              <div className="rounded" style={{ width: 72, height: 26, background: "var(--color-cream-2)" }} />
+              <div className="rounded-full" style={{ width: 22, height: 20, background: "var(--color-cream-2)" }} />
+            </div>
+            <div className="rounded-[9px]" style={{ width: 118, height: 44, background: "var(--color-cream-2)" }} />
+          </div>
+          {/* Toolbar: search + Show/Label/Sort/Columns/Print */}
+          <div className="flex items-center" style={{ gap: 8 }}>
+            <div className="rounded-[9px]" style={{ flex: "1 1 200px", minWidth: 120, height: 44, background: "var(--color-cream-2)" }} />
+            <div className="hidden sm:flex" style={{ gap: 8 }}>
+              {[92, 84, 88].map((w, i) => (
+                <div key={i} className="rounded-[9px] shrink-0" style={{ width: w, height: 44, background: "var(--color-cream-2)" }} />
+              ))}
+              <div className="rounded-[9px] shrink-0" style={{ width: 78, height: 44, background: "var(--color-cream-2)" }} />
+              <div className="rounded-[9px] shrink-0" style={{ width: 44, height: 44, background: "var(--color-cream-2)" }} />
+            </div>
+          </div>
         </div>
       </div>
-      <div className="px-4 space-y-2.5 animate-pulse">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-[76px] rounded-2xl bg-white" style={{ boxShadow: "0 1px 2px rgba(30,26,20,0.06), 0 2px 8px rgba(30,26,20,0.05)" }}></div>
-        ))}
+
+      {/* Body — mirrors table: column header row + rows with avatar/columns/actions */}
+      <div className="flex-1 overflow-hidden">
+        <div className="mx-auto w-full animate-pulse" style={{ maxWidth: 760, padding: "16px 24px 0" }}>
+          {/* Column header row — desktop only */}
+          <div className="hidden sm:flex items-center" style={{ gap: 14, padding: "0 14px 8px" }}>
+            <div style={{ width: 34 }} />
+            {[60, 60, 80, 110, 60, 40, 70].map((w, i) => (
+              <div key={i} className="rounded shrink-0" style={{ width: w, height: 9, background: "var(--color-cream-2)" }} />
+            ))}
+          </div>
+          <div className="flex flex-col" style={{ gap: 6 }}>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="flex items-center bg-white"
+                style={{ gap: 14, padding: "11px 14px", borderRadius: 13, boxShadow: "0 1px 3px rgba(30,26,20,0.06)", height: 60 }}
+              >
+                <div className="rounded-[10px] shrink-0" style={{ width: 34, height: 34, background: "var(--color-cream-2)" }} />
+                <div className="hidden sm:flex items-center flex-1" style={{ gap: 14 }}>
+                  <div className="rounded" style={{ width: "14%", height: 10, background: "var(--color-cream-2)" }} />
+                  <div className="rounded" style={{ width: "10%", height: 10, background: "var(--color-cream)" }} />
+                  <div className="rounded" style={{ width: "16%", height: 10, background: "var(--color-cream-2)" }} />
+                  <div className="rounded" style={{ width: "22%", height: 10, background: "var(--color-cream)" }} />
+                  <div className="rounded-full" style={{ width: "10%", height: 16, background: "var(--color-cream-2)" }} />
+                  <div className="rounded" style={{ width: "6%", height: 10, background: "var(--color-cream)" }} />
+                </div>
+                <div className="flex sm:hidden flex-col flex-1" style={{ gap: 6 }}>
+                  <div className="rounded" style={{ width: "45%", height: 12, background: "var(--color-cream-2)" }} />
+                  <div className="rounded" style={{ width: "65%", height: 10, background: "var(--color-cream)" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

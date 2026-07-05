@@ -281,9 +281,26 @@ function IconX() {
 
 function RowSkeleton() {
   return (
-    <div className="animate-pulse" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div className="animate-pulse" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} style={{ height: 64, borderRadius: 14, background: "white", boxShadow: "0 1px 3px rgba(30,26,20,0.06)" }} />
+        <div
+          key={i}
+          style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 14px", height: 60, borderRadius: 13, background: "white", boxShadow: "0 1px 3px rgba(30,26,20,0.06)" }}
+        >
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--color-cream-2)", flexShrink: 0 }} />
+          <div className="row-desktop" style={{ display: "flex", alignItems: "center", flex: 1, gap: 14 }}>
+            <div style={{ width: "14%", height: 10, borderRadius: 5, background: "var(--color-cream-2)" }} />
+            <div style={{ width: "10%", height: 10, borderRadius: 5, background: "var(--color-cream)" }} />
+            <div style={{ width: "16%", height: 10, borderRadius: 5, background: "var(--color-cream-2)" }} />
+            <div style={{ width: "22%", height: 10, borderRadius: 5, background: "var(--color-cream)" }} />
+            <div style={{ width: "10%", height: 16, borderRadius: 20, background: "var(--color-cream-2)" }} />
+            <div style={{ width: "6%", height: 10, borderRadius: 5, background: "var(--color-cream)" }} />
+          </div>
+          <div className="row-mobile" style={{ display: "none", flexDirection: "column", flex: 1, gap: 6 }}>
+            <div style={{ width: "45%", height: 12, borderRadius: 5, background: "var(--color-cream-2)" }} />
+            <div style={{ width: "65%", height: 10, borderRadius: 5, background: "var(--color-cream)" }} />
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -477,9 +494,9 @@ export default function ClientsPage() {
 
   // Build column grid template
   const orderedCols: ColumnKey[] = ALL_COLUMNS.map((c) => c.key).filter((k) => visibleColumns.has(k));
-  const gridCols = ["34px", ...orderedCols.map(getColWidth), "120px"].join(" ");
+  const gridCols = ["34px", ...orderedCols.map(getColWidth), "96px"].join(" ");
   // Ensure the table is wide enough that minmax columns don't collapse
-  const tableMinWidth = Math.max(560, 34 + orderedCols.reduce((s, k) => s + COL_MIN_PX[k], 0) + 120 + (orderedCols.length + 1) * 14);
+  const tableMinWidth = Math.max(560, 34 + orderedCols.reduce((s, k) => s + COL_MIN_PX[k], 0) + 96 + (orderedCols.length + 1) * 14);
 
   function toggleColumn(key: ColumnKey) {
     setVisibleColumns((prev) => {
@@ -517,10 +534,11 @@ export default function ClientsPage() {
         .client-row:hover .row-arrow { color: var(--color-amber); transform: translateX(2px); }
         .client-row:hover .row-actions { opacity: 1; }
         .row-arrow { display: flex; justify-content: flex-end; color: var(--color-cream-2); transition: color 0.15s ease, transform 0.15s ease; }
-        .row-actions { opacity: 0; display: flex; gap: 4px; transition: opacity 0.15s ease; }
-        .row-action-btn { height: 44px; width: 44px; border-radius: 12px; border: 1.5px solid var(--color-cream-2); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-muted); transition: all 0.12s; flex-shrink: 0; }
-        .row-action-btn:hover { border-color: var(--color-amber); color: var(--color-amber); background: var(--amber-soft); }
-        .row-action-btn.delete:hover { border-color: var(--color-danger); color: var(--color-danger); background: var(--color-danger-bg); }
+        .row-actions { opacity: 0; display: flex; gap: 6px; transition: opacity 0.15s ease; }
+        /* Desktop: quiet icon-only buttons — no border box, just hover tint (mobile gets its own bordered/44px style below) */
+        .row-action-btn { height: 32px; width: 32px; border-radius: 9px; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-muted); transition: all 0.12s; flex-shrink: 0; }
+        .row-action-btn:hover { color: var(--color-amber); background: var(--amber-soft); }
+        .row-action-btn.delete:hover { color: var(--color-danger); background: var(--color-danger-bg); }
         .col-check { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--color-cream-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.12s; }
         .col-check.checked { background: var(--color-amber); border-color: var(--color-amber); color: white; }
         .dd-menu-item { width: 100%; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--color-dark); background: transparent; border: none; cursor: pointer; text-align: start; transition: background 0.1s; }
@@ -558,7 +576,10 @@ export default function ClientsPage() {
           .row-mobile-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
           .row-mobile-name { font-size: 14px; font-weight: 700; color: var(--color-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .row-mobile-sub { font-size: 12px; color: var(--color-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          .row-actions { opacity: 1 !important; }
+          .row-actions { opacity: 1 !important; gap: 4px; }
+          .row-action-btn { height: 44px; width: 44px; border-radius: 12px; border: 1.5px solid var(--color-cream-2); background: white; }
+          .row-action-btn.delete:hover { border-color: var(--color-danger); }
+          .row-action-btn:hover { border-color: var(--color-amber); }
           .row-arrow { display: none !important; }
           .table-scroll { overflow-x: auto; }
           .table-min { min-width: 0; }
@@ -1225,7 +1246,7 @@ function ClientRow({
             {renderCell(key)}
           </div>
         ))}
-        <div className="sticky-actions-col" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
+        <div className="sticky-actions-col" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
           <div className="row-actions" onClick={(e) => e.stopPropagation()}>
             <button className="row-action-btn" title="Edit" onClick={onEdit}><IconEdit /></button>
             <button className="row-action-btn delete" title="Delete" onClick={onDelete}><IconTrash /></button>

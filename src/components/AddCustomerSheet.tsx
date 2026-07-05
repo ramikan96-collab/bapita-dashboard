@@ -198,8 +198,8 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
       <style>{`
         .csheet-outer { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); padding: 0; }
         @media (min-width: 640px) { .csheet-outer { align-items: center; padding: 20px; } }
-        .csheet-inner { width: 100%; max-height: 92dvh; display: flex; flex-direction: column; background: var(--color-surface); border-radius: 20px 20px 0 0; box-shadow: 0 -4px 24px rgba(30,26,20,0.12); }
-        @media (min-width: 640px) { .csheet-inner { max-width: 480px; border-radius: 20px; max-height: 88dvh; box-shadow: 0 8px 48px rgba(30,26,20,0.18); } }
+        .csheet-inner { width: 100%; max-height: 92dvh; display: flex; flex-direction: column; background: var(--color-surface); border-radius: 24px 24px 0 0; box-shadow: 0 -4px 24px rgba(30,26,20,0.12); }
+        @media (min-width: 640px) { .csheet-inner { max-width: 520px; border-radius: 24px; max-height: 88dvh; box-shadow: 0 8px 48px rgba(30,26,20,0.16); } }
         .csheet-handle { display: flex; justify-content: center; padding: 12px 0 4px; }
         @media (min-width: 640px) { .csheet-handle { display: none; } }
       `}</style>
@@ -217,12 +217,12 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
           </div>
 
         {/* Title */}
-        <div className="px-5 pb-3 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--color-dark)", margin: 0 }}>{isEdit ? "Edit client" : "Add client"}</h2>
+        <div className="px-6 pt-5 pb-4 border-b" style={{ borderColor: "var(--color-cream-2)" }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--color-dark)", margin: 0 }}>{isEdit ? "Edit client" : "Add client"}</h2>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto" style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="flex-1 overflow-y-auto" style={{ padding: "22px 24px", display: "flex", flexDirection: "column", gap: 18 }}>
 
           {/* Name */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -432,10 +432,10 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
         </div>
 
         {/* Footer */}
-        <div style={{ flexShrink: 0, padding: "14px 20px 20px", borderTop: "1px solid var(--color-cream-2)", display: "flex", gap: 10 }}>
+        <div style={{ flexShrink: 0, padding: "18px 24px 24px", borderTop: "1px solid var(--color-cream-2)", display: "flex", gap: 12 }}>
           <button
             onClick={onClose}
-            style={{ flex: 1, height: 46, borderRadius: 13, border: "1.5px solid var(--color-cream-2)", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer", transition: "background 0.15s" }}
+            style={{ flex: 1, height: 48, borderRadius: 13, border: "1.5px solid var(--color-cream-2)", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--color-dark)", cursor: "pointer", transition: "background 0.15s" }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--color-cream)")}
             onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
           >
@@ -444,7 +444,7 @@ export default function AddCustomerSheet({ business, onClose, onCreated, clientT
           <button
             onClick={handleSave}
             disabled={submitting}
-            style={{ flex: 1, height: 46, borderRadius: 13, border: "none", background: submitting ? "var(--color-cream-2)" : "var(--wash-amber)", color: submitting ? "var(--color-muted)" : "var(--color-surface)", fontSize: 14, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer", boxShadow: submitting ? "none" : "0 4px 14px rgba(232,146,10,0.28)", transition: "all 0.15s" }}
+            style={{ flex: 1, height: 48, borderRadius: 13, border: "none", background: submitting ? "var(--color-cream-2)" : "var(--wash-amber)", color: submitting ? "var(--color-muted)" : "var(--color-surface)", fontSize: 14, fontWeight: 700, cursor: submitting ? "not-allowed" : "pointer", boxShadow: submitting ? "none" : "0 4px 14px rgba(232,146,10,0.28)", transition: "all 0.15s" }}
           >
             {submitting ? "Saving…" : isEdit ? "Save changes" : attach ? "Save & book" : "Save client"}
           </button>
