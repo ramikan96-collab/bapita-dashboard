@@ -69,10 +69,19 @@ export default function CalendarSelectorPanel({
         {ownerName}
       </button>
       {staff.map((s) => {
-        const on = calendarFilter.includes(s.id);
+        // Empty filter = "all selected", so every staff row reads as checked.
+        const on = allChecked || calendarFilter.includes(s.id);
         return (
           <button key={s.id}
-            onClick={() => setCalendarFilter(on ? calendarFilter.filter(id => id !== s.id) : [...calendarFilter.filter(id => id !== "owner"), s.id])}
+            onClick={() =>
+              allChecked
+                ? setCalendarFilter([s.id]) // narrow from "all" to just this one
+                : setCalendarFilter(
+                    calendarFilter.includes(s.id)
+                      ? calendarFilter.filter((id) => id !== s.id)
+                      : [...calendarFilter, s.id]
+                  )
+            }
             style={{ ...rowStyle, color: on ? "var(--color-amber)" : "var(--color-dark)" }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>

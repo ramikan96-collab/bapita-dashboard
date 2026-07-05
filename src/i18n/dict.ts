@@ -46,6 +46,9 @@ export const HE: Record<string, string> = {
   "Clear filters": "ניקוי מסננים",
   "Clear all filters": "ניקוי כל המסננים",
   "Add calendar": "הוספת יומן",
+  "Add staff calendar": "הוספת יומן צוות",
+  "Google Calendar": "יומן Google",
+  "Soon": "בקרוב",
   "Jump to today": "מעבר להיום",
   "Multiple calendars coming soon": "ריבוי יומנים — בקרוב",
 

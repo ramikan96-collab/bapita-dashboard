@@ -2386,6 +2386,16 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>("business");
   const dirtyRef = useRef(false);
 
+  // Deep-link support: /settings?section=team lands directly on that section
+  // (used by the "Add staff calendar" link in the calendar sidebar).
+  useEffect(() => {
+    const s = new URLSearchParams(window.location.search).get("section");
+    if (s && SECTIONS.some((sec) => sec.id === s)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveSection(s as Section);
+    }
+  }, []);
+
   if (bizLoading) return <SettingsSkeleton />;
 
   if (!business) {

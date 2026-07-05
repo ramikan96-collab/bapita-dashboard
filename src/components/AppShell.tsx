@@ -974,24 +974,36 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 setCalendarFilter={chrome.setCalendarFilter}
                 staff={chrome.staff ?? []}
               />
+              {/* Add a staff member = adds their calendar (real, actionable). */}
               <button
-                onClick={() => showToast(t("Multiple calendars coming soon"), "info")}
+                onClick={() => go("/settings?section=team")}
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 8,
                   padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "start",
-                  color: "var(--color-muted)", background: "transparent", border: "none",
-                  cursor: "pointer", marginTop: 4, transition: "background 0.12s, color 0.12s",
-                  opacity: 0.6,
+                  color: "var(--color-amber)", fontWeight: 600, background: "transparent",
+                  border: "none", cursor: "pointer", marginTop: 4,
+                  transition: "background 0.12s",
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 <IconPlus size={13} />
-                {t("Add calendar")}
-                <span style={{ marginInlineStart: "auto", fontSize: 10, fontWeight: 700, background: "var(--color-cream-2)", padding: "2px 6px", borderRadius: 4, color: "var(--color-muted)", letterSpacing: "0.04em" }}>
-                  SOON
-                </span>
+                {t("Add staff calendar")}
               </button>
+              {/* Google Calendar — not clickable, quiet "soon" info row (no toast). */}
+              <div
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 8,
+                  padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "start",
+                  color: "var(--color-muted)", marginTop: 2,
+                }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: "var(--color-cream-2)" }} />
+                {t("Google Calendar")}
+                <span style={{ marginInlineStart: "auto", fontSize: 10, fontWeight: 700, background: "var(--color-cream-2)", padding: "2px 6px", borderRadius: 4, color: "var(--color-muted)", letterSpacing: "0.04em" }}>
+                  {t("Soon")}
+                </span>
+              </div>
             </div>
           )}
 
