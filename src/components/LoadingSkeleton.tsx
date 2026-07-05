@@ -1,67 +1,62 @@
 "use client";
 
 export function CalendarSkeleton() {
+  const hours = Array.from({ length: 11 }); // ~visible viewport rows
+
   return (
     <div
-      className="flex flex-col h-full animate-pulse"
+      className="flex flex-col h-full overflow-hidden animate-pulse"
       style={{ background: "var(--color-cream)" }}
     >
-      {/* Header bar with day labels */}
+      {/* Sticky week strip — mirrors WeekView's prev/next arrows + weekday/circle pill */}
       <div
-        className="shrink-0 flex border-b"
-        style={{ borderColor: "var(--color-cream-2)", height: 48 }}
+        className="shrink-0 flex"
+        style={{ height: 56, background: "var(--color-cream)", borderBottom: "1px solid var(--color-cream-2)" }}
       >
-        {/* Time column gutter */}
-        <div className="w-12 shrink-0" />
-        {/* 7 day columns */}
+        <div className="shrink-0" style={{ width: 44 }} />
         {Array.from({ length: 7 }).map((_, i) => (
-          <div
-            key={i}
-            className="flex-1 flex items-center justify-center"
-            style={{ borderLeft: "1px solid var(--color-cream-2)" }}
-          >
-            <div
-              className="h-5 rounded"
-              style={{ width: "60%", background: "var(--color-cream-2)" }}
-            />
+          <div key={i} className="flex-1 flex flex-col items-center justify-center gap-1.5">
+            <div className="h-2.5 rounded" style={{ width: 20, background: "var(--color-cream-2)" }} />
+            <div className="rounded-full" style={{ width: 32, height: 32, background: "var(--color-cream-2)" }} />
           </div>
         ))}
+        <div className="shrink-0" style={{ width: 44 }} />
       </div>
 
-      {/* Grid body */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Time column */}
-        <div className="w-12 shrink-0 flex flex-col gap-8 pt-6 px-1">
-          {Array.from({ length: 6 }).map((_, i) => (
+      {/* Grid card — mirrors WeekView's rounded, bordered surface panel */}
+      <div
+        className="flex flex-1 min-h-0 md:mx-4 md:my-4 md:rounded-2xl md:border overflow-hidden"
+        style={{ background: "var(--color-surface)", borderColor: "var(--line)", boxShadow: "var(--shadow-sm)" }}
+      >
+        {/* Time labels */}
+        <div className="shrink-0 flex flex-col" style={{ width: 44 }}>
+          {hours.map((_, i) => (
             <div
               key={i}
-              className="h-3 rounded"
-              style={{ background: "var(--color-cream-2)" }}
-            />
+              className="flex items-start justify-end pr-1.5"
+              style={{ height: 64, borderTop: i === 0 ? "none" : `1px solid var(--color-cream-2)` }}
+            >
+              <div className="h-2 rounded" style={{ width: 22, background: "var(--color-cream-2)", marginTop: -6 }} />
+            </div>
           ))}
         </div>
 
-        {/* Day columns with booking chip skeletons */}
+        {/* Day columns with hour lines + booking chip skeletons */}
         {Array.from({ length: 7 }).map((_, col) => (
-          <div
-            key={col}
-            className="flex-1 relative pt-3 flex flex-col gap-3 px-1"
-            style={{ borderLeft: "1px solid var(--color-cream-2)" }}
-          >
+          <div key={col} className="flex-1 relative flex flex-col" style={{ borderLeft: "1px solid var(--color-cream-2)" }}>
+            {hours.map((_, i) => (
+              <div key={i} style={{ height: 64, borderTop: i === 0 ? "none" : `1px solid var(--color-cream-2)` }} />
+            ))}
             {col % 3 !== 2 && (
               <div
-                className="rounded-lg"
-                style={{
-                  height: 36,
-                  background: "var(--color-cream-2)",
-                  marginTop: `${col * 8}px`,
-                }}
+                className="absolute rounded-lg left-1 right-1"
+                style={{ height: 36, background: "var(--color-cream-2)", top: 64 + col * 20 }}
               />
             )}
             {col % 4 === 0 && (
               <div
-                className="rounded-lg"
-                style={{ height: 52, background: "var(--color-cream-2)" }}
+                className="absolute rounded-lg left-1 right-1"
+                style={{ height: 52, background: "var(--color-cream-2)", top: 64 * 3 + col * 12 }}
               />
             )}
           </div>
