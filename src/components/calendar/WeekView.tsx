@@ -79,16 +79,15 @@ export default function WeekView({
   return (
     <div
       ref={scrollRef}
-      className="h-full overflow-y-auto overscroll-contain"
-      style={{ background: "var(--color-cream)" }}
+      className="h-full overflow-y-auto overscroll-contain bg-[var(--color-surface)] md:bg-[var(--color-cream)]"
       onTouchStart={swipe.onTouchStart}
       onTouchEnd={swipe.onTouchEnd}
       onWheel={handleWheel}
     >
       {/* Sticky week strip */}
       <div
-        className="sticky top-0 z-10 flex"
-        style={{ height: 56, background: "var(--color-cream)", borderBottom: `1px solid var(--color-cream-2)` }}
+        className="sticky top-0 z-10 flex bg-[var(--color-surface)] md:bg-[var(--color-cream)]"
+        style={{ height: 56, borderBottom: `1px solid var(--color-cream-2)` }}
       >
         {/* Prev arrow sits in the time-label column */}
         <button
