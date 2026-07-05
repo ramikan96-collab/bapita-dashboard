@@ -30,7 +30,7 @@ export default function WeekView({
   date, bookings, blocked, openHour,
   onSelectBooking, onCreateAt, onLongPressAt, onBlockClick, onSelectDay, onPrev, onNext,
 }: Props) {
-  const { dateLocale } = useLang();
+  const { t, dateLocale } = useLang();
   const scrollRef = useRef<HTMLDivElement>(null);
   const weekStart = date;
   const weekEnd   = addDays(date, 6);
@@ -180,6 +180,15 @@ export default function WeekView({
           );
         })}
       </div>
+
+      {/* Empty hint */}
+      {bookings.length === 0 && blocked.length === 0 && (
+        <div className="pointer-events-none sticky bottom-6 flex justify-center">
+          <span className="text-[12px] px-3 py-1.5 rounded-full" style={{ background: "var(--color-cream-2)", color: "var(--color-muted)" }}>
+            {t("Tap a slot to book")}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

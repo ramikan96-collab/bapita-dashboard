@@ -344,8 +344,15 @@ function CalendarPageInner() {
 
       <div className="flex-1 overflow-hidden relative">
         {loading && !searchQuery && (
-          <div className="absolute inset-0 flex items-center justify-center z-20" style={{ background: "rgba(255,255,255,0.6)" }}>
-            <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "var(--color-amber)", borderTopColor: "transparent" }} />
+          <div className="absolute top-0 left-0 right-0 overflow-hidden z-20" style={{ height: 2 }}>
+            <div style={{ height: "100%", background: "var(--color-amber)", animation: "calProgress 1.1s ease-in-out infinite" }} />
+            <style jsx>{`
+              @keyframes calProgress {
+                0% { width: 0%; margin-left: 0%; }
+                50% { width: 60%; margin-left: 20%; }
+                100% { width: 0%; margin-left: 100%; }
+              }
+            `}</style>
           </div>
         )}
 

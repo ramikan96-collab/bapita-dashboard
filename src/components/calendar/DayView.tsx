@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { isSameDay, format } from "date-fns";
 import { useLang } from "@/i18n";
 import type { Booking, BlockedTime } from "@/types";
@@ -29,6 +29,7 @@ export default function DayView({
   onSelectBooking, onCreateAt, onLongPressAt, onBlockClick, onPrev, onNext,
 }: Props) {
   const { t, dateLocale } = useLang();
+  const [agendaOpen, setAgendaOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const now = new Date();
   const isToday = isSameDay(date, now);
@@ -227,21 +228,47 @@ export default function DayView({
       )}
       </div>{/* end time grid scroll */}
 
-      {/* Agenda list for this day */}
+      {/* Agenda — collapsed bar, expands on tap */}
       {bookings.length > 0 && (
-        <div
-          className="shrink-0 border-t"
-          style={{
-            borderColor: "var(--color-cream-2)",
-            maxHeight: "40%",
-            overflowY: "auto",
-          }}
-        >
-          <AgendaList
-            bookings={bookings}
-            onSelectBooking={onSelectBooking}
-          />
-        </div>
+        <>
+          <button
+            onClick={() => setAgendaOpen((o) => !o)}
+            className="shrink-0 border-t flex items-center justify-between"
+            style={{
+              borderColor: "var(--color-cream-2)",
+              background: "var(--color-cream)",
+              padding: "10px 16px",
+              cursor: "pointer",
+            }}
+            aria-expanded={agendaOpen}
+          >
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-dark)" }}>
+              {bookings.length} {t("appointments")}
+            </span>
+            <svg
+              width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="var(--color-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: agendaOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          {agendaOpen && (
+            <div
+              className="shrink-0 border-t"
+              style={{
+                borderColor: "var(--color-cream-2)",
+                maxHeight: "40%",
+                overflowY: "auto",
+              }}
+            >
+              <AgendaList
+                bookings={bookings}
+                onSelectBooking={onSelectBooking}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

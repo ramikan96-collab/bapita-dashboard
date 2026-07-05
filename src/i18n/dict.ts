@@ -58,6 +58,7 @@ export const HE: Record<string, string> = {
   "Sat": "ש׳",
   "Sun": "א׳",
   "No appointments": "אין תורים",
+  "appointments": "תורים",
 
   // Booking statuses
   "Pending": "ממתין",
