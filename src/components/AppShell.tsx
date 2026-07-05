@@ -718,7 +718,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         style={{
           background: "var(--color-surface)",
           borderColor: "var(--color-cream-2)",
-          height: 72,
+          height: "calc(72px + env(safe-area-inset-bottom))",
           paddingBottom: "env(safe-area-inset-bottom)",
           touchAction: "pan-y",
         }}
@@ -1029,7 +1029,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* ─── Main Content ─────────────────────────────────────────────── */}
-      <main key={pathname} className="page-anim flex-1 min-w-0 overflow-y-auto flex flex-col pt-4 pb-20 md:overflow-visible md:pt-0 md:pb-0">{children}</main>
+      <main key={pathname} className="page-anim flex-1 min-w-0 overflow-y-auto flex flex-col pt-4 pb-[calc(72px+env(safe-area-inset-bottom))] md:overflow-visible md:pt-0 md:pb-0">{children}</main>
       </div>
       </div>
 
