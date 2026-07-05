@@ -131,7 +131,7 @@ export default function WeekView({
         <button
           onClick={onNext}
           className="shrink-0 flex items-center justify-center"
-          style={{ width: 36, background: "transparent", border: "none", cursor: "pointer", color: "var(--color-muted)" }}
+          style={{ width: 44, background: "transparent", border: "none", cursor: "pointer", color: "var(--color-muted)" }}
           aria-label="Next week"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -141,7 +141,10 @@ export default function WeekView({
       </div>
 
       {/* Time grid */}
-      <div className="flex" style={{ height: TOTAL_H }}>
+      <div
+        className="flex md:mx-4 md:mb-4 md:rounded-2xl md:border md:overflow-hidden"
+        style={{ height: TOTAL_H, background: "var(--color-surface)", borderColor: "var(--line)", boxShadow: "var(--shadow-sm)" }}
+      >
         {/* Time labels */}
         <div className="shrink-0 relative" style={{ width: 44 }}>
           {HOURS.map((h) => (
@@ -300,8 +303,8 @@ function WeekDayColumn({
 
       {/* Current-time indicator (today only) */}
       {isToday && (
-        <div style={{ position: "absolute", top: nowMins * PX_PER_MIN, left: 0, right: 0, height: 2, background: "var(--color-amber)", zIndex: 10, pointerEvents: "none" }}>
-          <div style={{ position: "absolute", insetInlineStart: -3, top: -3, width: 8, height: 8, borderRadius: "50%", background: "var(--color-amber)" }} />
+        <div style={{ position: "absolute", top: nowMins * PX_PER_MIN, left: 0, right: 0, height: 2, background: "var(--now-line)", zIndex: 10, pointerEvents: "none" }}>
+          <div style={{ position: "absolute", insetInlineStart: -3, top: -3, width: 8, height: 8, borderRadius: "50%", background: "var(--now-line)" }} />
         </div>
       )}
     </div>

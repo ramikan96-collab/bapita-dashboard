@@ -106,7 +106,8 @@ export default function DayView({
       {/* Time grid — independently scrollable */}
       <div
         ref={scrollRef}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain md:mx-4 md:mb-4 md:rounded-2xl md:border"
+        style={{ background: "var(--color-surface)", borderColor: "var(--line)", boxShadow: "var(--shadow-sm)" }}
       >
       <div className="flex" style={{ height: TOTAL_H }}>
         {/* Time labels */}
@@ -209,8 +210,8 @@ export default function DayView({
 
           {/* Current-time indicator */}
           {isToday && (
-            <div style={{ position: "absolute", top: nowMins * PX_PER_MIN, left: 0, right: 0, height: 2, background: "var(--color-amber)", zIndex: 10, pointerEvents: "none" }}>
-              <div style={{ position: "absolute", insetInlineStart: -4, top: -3, width: 8, height: 8, borderRadius: "50%", background: "var(--color-amber)" }} />
+            <div style={{ position: "absolute", top: nowMins * PX_PER_MIN, left: 0, right: 0, height: 2, background: "var(--now-line)", zIndex: 10, pointerEvents: "none" }}>
+              <div style={{ position: "absolute", insetInlineStart: -4, top: -3, width: 8, height: 8, borderRadius: "50%", background: "var(--now-line)" }} />
             </div>
           )}
         </div>
