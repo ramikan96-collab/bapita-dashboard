@@ -41,7 +41,7 @@ const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "lastVisit", label: "Last visit" },
 ];
 
-const DEFAULT_COLUMNS: ColumnKey[] = ["firstName", "lastName", "phone", "email", "label", "visits", "lastVisit"];
+const DEFAULT_COLUMNS: ColumnKey[] = ["firstName", "lastName", "phone", "email", "label", "visits"];
 
 // Per-column grid width
 function getColWidth(key: ColumnKey): string {
@@ -564,8 +564,11 @@ export default function ClientsPage() {
         .toolbar-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: nowrap; }
         .filters-btn-mobile { display: none; }
         /* Sticky actions column for desktop horizontal scroll */
-        .sticky-actions-col { position: sticky; inset-inline-end: 0; background: white; z-index: 2; box-shadow: -4px 0 8px rgba(30,26,20,0.04); }
-        .client-row:hover .sticky-actions-col { background: white; }
+        /* Transparent by default so the actions cell never paints a white box over the
+           preceding column; white + shadow kicks in only on row-hover, when the edit/delete
+           icons actually appear and need a solid backdrop over any horizontally-scrolled content. */
+        .sticky-actions-col { position: sticky; inset-inline-end: 0; background: transparent; z-index: 2; }
+        .client-row:hover .sticky-actions-col { background: white; box-shadow: -4px 0 8px rgba(30,26,20,0.04); }
         /* ── Mobile ────────────────────────────────────────────────────────── */
         @media (max-width: 639px) {
           .toolbar-search { flex-basis: 100%; order: -1; }
