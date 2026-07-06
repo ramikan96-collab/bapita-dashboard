@@ -262,17 +262,18 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
               →
             </button>
 
-            {/* Dots indicator */}
+            {/* Dots indicator - moved to bottom-right */}
             <div style={{
               position: "absolute",
-              bottom: "calc(28px + 80px + env(safe-area-inset-bottom))",
-              left: 0,
-              right: 0,
+              bottom: "calc(28px + env(safe-area-inset-bottom))",
+              right: 28,
               zIndex: 3,
               display: "flex",
-              justifyContent: "center",
               gap: 10,
-              padding: "0 20px",
+              padding: "8px 12px",
+              borderRadius: 20,
+              background: "rgba(0,0,0,0.3)",
+              backdropFilter: "blur(8px)",
             }}>
               {carouselImages.map((_, index) => (
                 <button
