@@ -85,6 +85,8 @@ interface FormData {
   show_reviews:       boolean;
   show_staff:         boolean;
   status:             "draft" | "live";
+  custom_domain:          string;
+  custom_domain_verified: boolean;
   // plan
   plan_tier:          string;
   plan_price:         string;
@@ -125,6 +127,7 @@ const EMPTY_FORM: FormData = {
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
   show_stats: true, show_open_status: true, show_services: true, show_reviews: true, show_staff: true,
   status: "draft",
+  custom_domain: "", custom_domain_verified: false,
   plan_tier: "", plan_price: "", plan_setup_price: "", plan_addons: [],
   plan_booking_limit: "", plan_start_date: "", plan_renewal_date: "", plan_notes: "",
   stat_years: "", stat_clients: "", stat_rating: "",
@@ -206,6 +209,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           show_reviews:       b.show_reviews        ?? true,
           show_staff:         b.show_staff          ?? true,
           status:             b.status              || "draft",
+          custom_domain:          (b as unknown as { custom_domain?: string | null }).custom_domain || "",
+          custom_domain_verified: (b as unknown as { custom_domain_verified?: boolean | null }).custom_domain_verified ?? false,
           plan_tier:          b.plan_tier           || "",
           plan_price:         b.plan_price != null   ? String(b.plan_price) : "",
           plan_setup_price:   (b as unknown as { plan_setup_price?: number | null }).plan_setup_price != null ? String((b as unknown as { plan_setup_price?: number | null }).plan_setup_price) : "",
@@ -345,6 +350,11 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     }));
   }
 
+  function normalizeCustomDomain(raw: string): string | null {
+    const v = raw.trim().toLowerCase().replace(/^www\./, "").replace(/\/+$/, "");
+    return v || null;
+  }
+
   async function handleSave() {
     if (!form.name.trim()) { setError("Name is required"); return; }
     setSaving(true); setError("");
@@ -386,6 +396,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       show_staff:         form.show_staff,
       staff_members:      staffMembers,
       status:             form.status,
+      custom_domain:          normalizeCustomDomain(form.custom_domain),
+      custom_domain_verified: form.custom_domain_verified,
       gallery_images:     urls,
       gallery_hidden:     hiddenUrls,
       hero_image_url:     urls[0]                 || null,
@@ -717,6 +729,30 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                       <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
                         Dashboard access + notifications
                       </div>
+                    </Field>
+                    <Field label="Custom Domain">
+                      <input
+                        value={form.custom_domain}
+                        onChange={e => set("custom_domain", e.target.value)}
+                        placeholder="shimi-azut.com"
+                        style={inputStyle}
+                      />
+                      <label style={{ display:"flex", alignItems:"center", gap:6, marginTop:8, cursor:"pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={form.custom_domain_verified}
+                          onChange={e => set("custom_domain_verified", e.target.checked)}
+                          style={{ width:16, height:16, accentColor:"var(--color-amber)", cursor:"pointer" }}
+                        />
+                        <span style={{ fontSize:12, fontWeight:600, color:"var(--color-dark)" }}>Domain verified (routes live traffic)</span>
+                      </label>
+                      {form.custom_domain.trim() && (
+                        <div style={{ marginTop:8, background:"var(--color-cream)", borderRadius:9, padding:"10px 12px", fontSize:11, color:"var(--color-muted)", lineHeight:1.6 }}>
+                          <div>DNS at the registrar (Cloudflare: set both to <strong>DNS only / gray cloud</strong>, not proxied — proxying breaks Vercel SSL):</div>
+                          <div>Apex <code>A</code> record → <code>76.76.21.21</code></div>
+                          <div><code>www</code> <code>CNAME</code> → <code>cname.vercel-dns.com</code></div>
+                        </div>
+                      )}
                     </Field>
                     {!cloning && confirmClone && (
                       <div style={{ background:"#FEF3C7", borderRadius:11, padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, border:"1px solid #FDE68A" }}>
