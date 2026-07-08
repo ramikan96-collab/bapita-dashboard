@@ -159,6 +159,65 @@ Do these once for `shimi-azut.com` as part of bring-up:
   gating the middleware lookup on status.
 - **RLS on `custom_domain_verified`:** confirm owners cannot self-verify (see Data note).
 
+## Implementation — batch-by-batch to-do
+
+Do batches in order. Each batch ends at a safe, committable, non-broken state.
+Do NOT push or deploy — Rami handles that. Rami applies the migration himself.
+
+### Batch 0 — Recon (no code)
+- [ ] Read `src/middleware.ts` end to end — note the existing auth/admin/dashboard branches.
+- [ ] Read `src/app/[slug]/page.tsx` — confirm the `businesses` query + how `slug` renders.
+- [ ] Find the allowed `status` value(s) for an active business (grep `status` usage across
+      `src/app`, admin forms, `[slug]`). Record the exact value to gate the middleware lookup.
+- [ ] Inspect the `businesses` RLS policy (SQL in `docs/migrations/*`, or Supabase). Determine
+      whether a business owner can update `custom_domain_verified` on their own row.
+- [ ] Report findings before writing code.
+
+### Batch 1 — Migration file (do not apply)
+- [ ] Write `docs/migrations/2026-07-08-custom-domain.sql` exactly as in the Data section
+      (two columns + partial index).
+- [ ] If Batch 0 showed owners can self-set `custom_domain_verified`, add to the same SQL a
+      column-level RLS restriction or a trigger so only admin can flip it. If unsure, add a
+      `BEFORE UPDATE` trigger that blocks non-admin changes to `custom_domain_verified`.
+- [ ] Tell Rami the file is ready to run. Do NOT apply it. Stop until Rami confirms applied.
+
+### Batch 2 — Middleware host rewrite (the core)
+- [ ] Edit `src/middleware.ts`. Add host handling BEFORE existing auth logic.
+- [ ] Compute `bareHost` (lowercase host, strip leading `www.`).
+- [ ] Known-host set: `book.bapita.com`, `dashboard.bapita.com`, `localhost`/`127.0.0.1`
+      (ignore port), any `*.vercel.app` → fall through to existing logic unchanged.
+- [ ] Custom host: query `businesses` (anon client) where `custom_domain = bareHost` AND
+      `custom_domain_verified = true` AND active status (value from Batch 0). Select `slug`.
+- [ ] Found + `pathname === "/"` → `NextResponse.rewrite('/' + slug)`.
+- [ ] Found + asset/`_next`/`/api/public/*` path → pass through untouched.
+- [ ] Found + any other path (e.g. `/calendar`) → redirect to `https://book.bapita.com{pathname}`.
+- [ ] Not found → redirect to `https://book.bapita.com`.
+- [ ] Manually sanity-check `book.bapita.com` + `dashboard.bapita.com` logic paths are
+      byte-for-byte unchanged (only added a branch above them).
+- [ ] Commit. State: routing works once DB column exists + a row is verified.
+
+### Batch 3 — Admin UI (set + verify)
+- [ ] Edit `src/app/(dashboard)/admin/businesses/_components/BusinessForm.tsx`.
+- [ ] Add "Custom domain" text input → `payload.custom_domain`. Normalize on save:
+      trim, lowercase, strip leading `www.`, strip trailing `/`; empty → `null`.
+- [ ] Add admin-only "Domain verified" toggle → `payload.custom_domain_verified`.
+- [ ] Add static DNS helper block: apex `A → 76.76.21.21`, `www CNAME → cname.vercel-dns.com`,
+      Cloudflare "DNS only / gray cloud" warning. Match existing form styling.
+- [ ] Load the field into the form when editing (add to the initial fetch/`select("*")` map
+      if fields are enumerated). Commit.
+
+### Batch 4 — Settings read-only status
+- [ ] Edit `src/app/(dashboard)/settings/page.tsx` near the `book.bapita.com/{slug}` field
+      (~lines 233 / 1770–1797).
+- [ ] If business has `custom_domain`: show it + badge — verified → "Connected" (green),
+      else "Pending DNS" (amber). Read-only, no verify control here. Commit.
+
+### Batch 5 — Verify + hand off
+- [ ] `npm run build` (or lint/typecheck) clean.
+- [ ] Give Rami the manual checklist (Vercel Add Domain, Cloudflare DNS, flip verified).
+- [ ] After Rami reports DNS live + verified: confirm `shimi-azut.com` + `www.shimi-azut.com`
+      serve Shimi's page over HTTPS and the booking flow works. Walk the acceptance criteria.
+
 ## Acceptance criteria
 
 - [ ] Migration applied; `businesses` has `custom_domain` + `custom_domain_verified`.
