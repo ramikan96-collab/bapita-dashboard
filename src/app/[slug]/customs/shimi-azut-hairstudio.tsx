@@ -41,17 +41,32 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
   const [hoveredCard,     setHoveredCard]     = useState<string | null>(null);
   const [showWa,          setShowWa]          = useState(false);
   const [lang,            setLang]            = useState<Lang>((business.default_lang as Lang) || "en");
+  const [currentSlide,    setCurrentSlide]    = useState(0);
 
   const t      = translations[lang];
   const isRtl  = lang === "he";
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
 
+  // Get carousel images - use gallery if available, otherwise single hero image
+  const carouselImages = (Array.isArray(business.gallery_images) && business.gallery_images.length > 0)
+    ? business.gallery_images
+    : [business.hero_image_url || FALLBACK_HERO];
+
   useEffect(() => {
     const onScroll = () => setShowWa(window.scrollY > window.innerHeight * 0.7);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Auto-slide effect for carousel
+  useEffect(() => {
+    if (carouselImages.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % carouselImages.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [carouselImages.length]);
 
   const accent      = business.accent_color || C.gold;
   const heroImage   = business.hero_image_url || FALLBACK_HERO;
@@ -81,6 +96,19 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
   }
   function closeOverlay() { setOverlayOpen(false); setSelectedService(null); }
 
+  // Navigation functions for carousel
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
+
+  const goToPrevSlide = () => {
+    setCurrentSlide((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1));
+  };
+
+  const goToNextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % carouselImages.length);
+  };
+
   return (
     <div dir={isRtl ? "rtl" : "ltr"} style={{ background: C.bg, minHeight: "100svh", fontFamily: bodyFont, color: C.dark }}>
       <FontLoader fonts={[business.heading_font, business.body_font]} />
@@ -102,6 +130,15 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
         @media(min-width:480px) { .about-row { flex-direction:row; align-items:flex-start; } }
         .c-staff-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
         @media (max-width: 600px) { .c-staff-grid { grid-template-columns: repeat(2, 1fr); } }
+        /* Carousel dot animation */
+        .c-dot-active {
+          animation: dotPulse 0.3s ease-out;
+        }
+        @keyframes dotPulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.4); }
+          100% { transform: scale(1.2); }
+        }
       `}</style>
 
       <LangToggle lang={lang} setLang={setLang} />
@@ -116,19 +153,153 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
         </div>
       )}
 
-      {/* Hero — clean / minimal / editorial (IG-matched) */}
+      {/* Hero — with carousel support */}
       <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+        {/* Carousel images container */}
         <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={heroImage} alt="" className="c-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: heroFocal, transformOrigin: "center center" }} />
+          {carouselImages.map((img, index) => {
+            const isActive = index === currentSlide;
+            const focal = business.image_focal?.[img] || "center";
+            
+            return (
+              <div
+                key={index}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  transition: "transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                  transform: isActive ? "translateX(0) scale(1)" : "translateX(100%) scale(0.98)",
+                  opacity: isActive ? 1 : 0.6,
+                  zIndex: isActive ? 1 : 0,
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img}
+                  alt=""
+                  className="c-hero-img"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    objectPosition: focal,
+                    transformOrigin: "center center",
+                  }}
+                />
+              </div>
+            );
+          })}
         </div>
+        
         {/* Soft bottom-weighted scrim — keeps the photo bright and airy */}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(34,21,16,0.14) 0%, rgba(34,21,16,0.30) 40%, rgba(34,21,16,0.90) 100%)" }} />
-        {/* Faint warm mocha wash — flat tint (cheap, no blend recompute) */}
-        <div style={{ position: "absolute", inset: 0, background: accent, opacity: 0.12, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(34,21,16,0.14) 0%, rgba(34,21,16,0.30) 40%, rgba(34,21,16,0.90) 100%)", zIndex: 2 }} />
+        
+        {/* Faint warm mocha wash — flat tint */}
+        <div style={{ position: "absolute", inset: 0, background: accent, opacity: 0.12, pointerEvents: "none", zIndex: 2 }} />
 
-        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", paddingBottom: "calc(28px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 620 }}>
-          {/* Wordmark — tracked, bilingual lockup like his logo */}
+        {/* Slide navigation controls - show only if multiple images */}
+        {carouselImages.length > 1 && (
+          <>
+            {/* Left arrow */}
+            <button
+              onClick={goToPrevSlide}
+              style={{
+                position: "absolute",
+                left: 16,
+                top: "50%",
+                transform: "translateY(-50%)",
+                zIndex: 4,
+                background: "rgba(0,0,0,0.3)",
+                border: "none",
+                borderRadius: "50%",
+                width: 44,
+                height: 44,
+                color: "#fff",
+                fontSize: 20,
+                cursor: "pointer",
+                backdropFilter: "blur(4px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "background 0.2s, transform 0.2s",
+                padding: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,0.5)"; e.currentTarget.style.transform = "translateY(-50%) scale(1.05)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,0,0,0.3)"; e.currentTarget.style.transform = "translateY(-50%) scale(1)"; }}
+              aria-label="Previous slide"
+            >
+              ←
+            </button>
+            
+            {/* Right arrow */}
+            <button
+              onClick={goToNextSlide}
+              style={{
+                position: "absolute",
+                right: 16,
+                top: "50%",
+                transform: "translateY(-50%)",
+                zIndex: 4,
+                background: "rgba(0,0,0,0.3)",
+                border: "none",
+                borderRadius: "50%",
+                width: 44,
+                height: 44,
+                color: "#fff",
+                fontSize: 20,
+                cursor: "pointer",
+                backdropFilter: "blur(4px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "background 0.2s, transform 0.2s",
+                padding: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,0.5)"; e.currentTarget.style.transform = "translateY(-50%) scale(1.05)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,0,0,0.3)"; e.currentTarget.style.transform = "translateY(-50%) scale(1)"; }}
+              aria-label="Next slide"
+            >
+              →
+            </button>
+
+            {/* Dots indicator - moved to bottom-right */}
+            <div style={{
+              position: "absolute",
+              bottom: "calc(28px + env(safe-area-inset-bottom))",
+              right: 28,
+              zIndex: 3,
+              display: "flex",
+              gap: 10,
+              padding: "8px 12px",
+              borderRadius: 20,
+              background: "rgba(0,0,0,0.3)",
+              backdropFilter: "blur(8px)",
+            }}>
+              {carouselImages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => goToSlide(index)}
+                  style={{
+                    width: index === currentSlide ? 10 : 8,
+                    height: index === currentSlide ? 10 : 8,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: index === currentSlide ? "#fff" : "rgba(255,255,255,0.4)",
+                    cursor: "pointer",
+                    transition: "background 0.3s ease, transform 0.3s ease, width 0.3s ease, height 0.3s ease",
+                    padding: 0,
+                    transform: index === currentSlide ? "scale(1.2)" : "scale(1)",
+                    boxShadow: index === currentSlide ? "0 0 12px rgba(255,255,255,0.3)" : "none",
+                  }}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Hero content overlay */}
+        <div style={{ position: "relative", zIndex: 2, textAlign: "center", padding: "0 28px", paddingBottom: "calc(28px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 620 }}>
           <h1 className="c-name" style={{ fontFamily: headingFont, fontWeight: 300, fontSize: "clamp(2.3rem, 8vw, 4.6rem)", color: "#fff", lineHeight: 1.06, letterSpacing: isRtl ? "0.02em" : "0.16em", textTransform: isRtl ? "none" : "uppercase", margin: 0, textShadow: "0 2px 26px rgba(0,0,0,0.62)" }}>
             {displayName}
           </h1>
@@ -137,14 +308,11 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
               {secondaryName}
             </div>
           )}
-
           {displayTag && (
             <p className="c-tagline" style={{ fontSize: "clamp(0.95rem, 2.4vw, 1.12rem)", color: "rgba(255,255,255,0.88)", fontWeight: 400, lineHeight: 1.55, margin: "12px auto 0", maxWidth: 420, textShadow: "0 1px 12px rgba(0,0,0,0.5)" }}>
               {displayTag}
             </p>
           )}
-
-          {/* CTA — solid gold, matches the floating button + brand accent */}
           <button className="c-hero-cta" onClick={openFromCTA}
             style={{ marginTop: 22, background: accent, border: "none", color: "#fff", padding: "16px 46px", borderRadius: 9999, fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", transition: "background 0.25s, transform 0.2s", fontFamily: "inherit", boxShadow: "0 6px 22px rgba(0,0,0,0.28)" }}
             onMouseEnter={e => { e.currentTarget.style.background = C.dark; e.currentTarget.style.transform = "translateY(-1px)"; }}
@@ -152,7 +320,6 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
           >
             {t.hero.cta}
           </button>
-
         </div>
       </section>
 
