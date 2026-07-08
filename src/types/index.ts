@@ -69,6 +69,8 @@ export interface Business {
   google_maps_url: string | null;
   waze_url: string | null;
   status: "draft" | "live";
+  custom_domain?: string | null;
+  custom_domain_verified?: boolean | null;
   business_hours?: BusinessHours;
   // booking page fields
   template_style?: string | null;

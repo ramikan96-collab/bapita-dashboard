@@ -1822,6 +1822,18 @@ function WebsiteSection({
             Preview
           </a>
         </div>
+        {business.custom_domain && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--color-cream-2)" }}>
+            <div style={{ fontSize: 13, color: "var(--color-dark)" }}>
+              {business.custom_domain}
+            </div>
+            {business.custom_domain_verified ? (
+              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 9999, background: "#D1FAE5", color: "#065F46" }}>Connected</span>
+            ) : (
+              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 9999, background: "#FEF3C7", color: "#92400E" }}>Pending DNS</span>
+            )}
+          </div>
+        )}
       </SectionCard>
 
       {/* Language */}
