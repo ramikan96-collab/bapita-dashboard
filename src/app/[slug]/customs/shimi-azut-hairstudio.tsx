@@ -76,12 +76,13 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
   const displayName = (isRtl && business.name_he) ? business.name_he : business.name;
   const headingFont = resolveFont(business.heading_font, "'Heebo', sans-serif");
   const bodyFont    = resolveFont(business.body_font, "'Heebo', sans-serif");
-  const secondaryName = (isRtl ? business.name : business.name_he) || null;
   const showInstaGallery = business.show_gallery !== false && business.gallery_source === "instagram" && !!business.instagram_embed;
   const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
 
   const socialProofText = getSocialProof(business, isRtl, t.social.happyClients);
-  const displayTag  = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
+  // Hero title/tagline stay fixed across languages (single brand mark, matches logo)
+  const heroTitle   = business.name;
+  const heroTagline = business.tagline;
   const displayAbout= (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
   const bookingUrl = business.external_booking_url?.trim() || null;
@@ -300,19 +301,15 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
 
         {/* Hero content overlay */}
         <div style={{ position: "relative", zIndex: 2, textAlign: "center", padding: "0 28px", paddingBottom: "calc(28px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 620 }}>
-          <h1 className="c-name" style={{ fontFamily: headingFont, fontWeight: 300, fontSize: "clamp(2.3rem, 8vw, 4.6rem)", color: "#fff", lineHeight: 1.06, letterSpacing: isRtl ? "0.02em" : "0.16em", textTransform: isRtl ? "none" : "uppercase", margin: 0, textShadow: "0 2px 26px rgba(0,0,0,0.62)" }}>
-            {displayName}
+          <h1 className="c-name" style={{ fontFamily: headingFont, fontWeight: 300, fontSize: "clamp(2.3rem, 8vw, 4.6rem)", color: "#fff", lineHeight: 1.06, letterSpacing: "0.16em", textTransform: "uppercase", margin: 0, textShadow: "0 2px 26px rgba(0,0,0,0.62)" }}>
+            {heroTitle}
           </h1>
-          {secondaryName && (
-            <div className="c-sub" style={{ marginTop: 10, color: "rgba(255,255,255,0.78)", fontSize: "clamp(0.7rem, 1.6vw, 0.82rem)", fontWeight: 400, letterSpacing: isRtl ? "0.22em" : "0.05em", textTransform: isRtl ? "uppercase" : "none", textShadow: "0 1px 12px rgba(0,0,0,0.5)" }}>
-              {secondaryName}
+          {heroTagline && (
+            <div className="c-sub" style={{ marginTop: 10, color: "rgba(255,255,255,0.78)", fontSize: "clamp(0.7rem, 1.6vw, 0.82rem)", fontWeight: 400, letterSpacing: "0.24em", textTransform: "uppercase", textShadow: "0 1px 12px rgba(0,0,0,0.5)" }}>
+              {heroTagline}
             </div>
           )}
-          {displayTag && (
-            <p className="c-tagline" style={{ fontSize: "clamp(0.95rem, 2.4vw, 1.12rem)", color: "rgba(255,255,255,0.88)", fontWeight: 400, lineHeight: 1.55, margin: "12px auto 0", maxWidth: 420, textShadow: "0 1px 12px rgba(0,0,0,0.5)" }}>
-              {displayTag}
-            </p>
-          )}
+          <div className="c-tagline" style={{ width: 64, height: 1, background: "rgba(255,255,255,0.4)", margin: "20px auto 0" }} />
           <button className="c-hero-cta" onClick={openFromCTA}
             style={{ marginTop: 22, background: accent, border: "none", color: "#fff", padding: "16px 46px", borderRadius: 9999, fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", transition: "background 0.25s, transform 0.2s", fontFamily: "inherit", boxShadow: "0 6px 22px rgba(0,0,0,0.28)" }}
             onMouseEnter={e => { e.currentTarget.style.background = C.dark; e.currentTarget.style.transform = "translateY(-1px)"; }}
