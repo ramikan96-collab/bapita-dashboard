@@ -15,7 +15,53 @@ const DASHBOARD_ROUTES = [
   "/admin",
 ];
 
+function isKnownHost(bareHost: string): boolean {
+  return (
+    bareHost === "book.bapita.com" ||
+    bareHost === "dashboard.bapita.com" ||
+    bareHost === "localhost" ||
+    bareHost === "127.0.0.1" ||
+    bareHost.endsWith(".vercel.app")
+  );
+}
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const host = request.headers.get("host")?.toLowerCase() ?? "";
+  const bareHost = host.replace(/:\d+$/, "").replace(/^www\./, "");
+
+  // Custom-domain routing — runs before auth/dashboard logic, and never touches it.
+  if (!isKnownHost(bareHost)) {
+    const isAsset =
+      pathname.startsWith("/_next") ||
+      pathname.startsWith("/api/public") ||
+      /\.(svg|png|jpg|jpeg|gif|webp|ico)$/.test(pathname);
+
+    const anon = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll: () => [], setAll: () => {} } }
+    );
+    const { data: match } = await anon
+      .from("businesses")
+      .select("slug")
+      .eq("custom_domain", bareHost)
+      .eq("custom_domain_verified", true)
+      .eq("status", "live")
+      .maybeSingle();
+
+    if (!match) {
+      return NextResponse.redirect("https://book.bapita.com");
+    }
+    if (pathname === "/") {
+      return NextResponse.rewrite(new URL(`/${match.slug}`, request.url));
+    }
+    if (isAsset) {
+      return NextResponse.next();
+    }
+    return NextResponse.redirect(`https://book.bapita.com${pathname}`);
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -42,8 +88,6 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
 
   // Auth pages — redirect logged-in users to dashboard
   if (pathname.startsWith("/login") || pathname.startsWith("/auth")) {
