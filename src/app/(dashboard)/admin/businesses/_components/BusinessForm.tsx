@@ -2158,9 +2158,32 @@ function ServicesPanel({ businessId, services, setServices }: {
   const [saving,   setSaving]   = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const dragIdx = useRef<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+
   async function reload() {
     const { data } = await supabase.from("services").select("*").eq("business_id", businessId).order("display_order");
     setServices((data as Service[]) || []);
+  }
+
+  function onDragStart(i: number) { dragIdx.current = i; }
+  function onDragEnter(i: number) { setDragOver(i); }
+  function onDragEnd()            { dragIdx.current = null; setDragOver(null); }
+
+  async function onDrop(i: number) {
+    const from = dragIdx.current;
+    if (from === null || from === i) { setDragOver(null); return; }
+    const reordered = [...services];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(i, 0, moved);
+    const prev = services;
+    setServices(reordered);
+    dragIdx.current = null;
+    setDragOver(null);
+    const results = await Promise.all(
+      reordered.map((s, idx) => supabase.from("services").update({ display_order: idx }).eq("id", s.id))
+    );
+    if (results.some((r) => r.error)) setServices(prev);
   }
 
   function startAdd()             { setEditing(null); setName(""); setNameHe(""); setPrice(""); setDuration(""); setDesc(""); setDescHe(""); setAdding(true); }
@@ -2195,8 +2218,18 @@ function ServicesPanel({ businessId, services, setServices }: {
         {services.length === 0 && !adding && (
           <p style={{ fontSize:13, color:"var(--color-muted)", textAlign:"center", padding:"16px 0" }}>No services yet.</p>
         )}
-        {services.map(s => (
-          <div key={s.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", background:"var(--color-cream)", borderRadius:10, border:"1.5px solid var(--color-cream-2)", opacity: s.active ? 1 : 0.5 }}>
+        {services.map((s, i) => (
+          <div
+            key={s.id}
+            draggable
+            onDragStart={() => onDragStart(i)}
+            onDragEnter={() => onDragEnter(i)}
+            onDragEnd={onDragEnd}
+            onDrop={e => { e.preventDefault(); onDrop(i); }}
+            onDragOver={e => e.preventDefault()}
+            style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", background:"var(--color-cream)", borderRadius:10, border:`1.5px solid ${dragOver === i ? "var(--color-amber)" : "var(--color-cream-2)"}`, opacity: s.active ? 1 : 0.5, cursor:"grab" }}
+          >
+            <span style={{ color:"var(--color-muted)", fontSize:14, userSelect:"none", flexShrink:0 }} aria-hidden>⠿</span>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:14, fontWeight:700, color:"var(--color-dark)" }}>{s.name}</div>
               <div style={{ fontSize:12, color:"var(--color-muted)", marginTop:2 }}>{s.duration} min · ₪{s.price}</div>
@@ -2216,6 +2249,10 @@ function ServicesPanel({ businessId, services, setServices }: {
             )}
           </div>
         ))}
+
+        {services.length > 1 && !adding && (
+          <p style={{ fontSize:12, color:"var(--color-muted)", margin:0, textAlign:"center" }}>Drag to reorder how services appear on the booking page</p>
+        )}
 
         {adding && (
           <div style={{ background:"var(--color-cream)", borderRadius:12, padding:"16px", border:"1.5px solid var(--color-amber)", display:"flex", flexDirection:"column", gap:10 }}>

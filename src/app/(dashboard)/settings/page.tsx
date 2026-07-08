@@ -561,9 +561,10 @@ function ServicesSection({
     const prevServices = services;
     setServices(reordered);
     dragIndex.current = null; dragOverIndex.current = null;
-    const updates = reordered.map((s, i) => ({ id: s.id, business_id: business.id, display_order: i }));
-    const { error } = await supabase.from("services").upsert(updates, { onConflict: "id" });
-    if (error) {
+    const results = await Promise.all(
+      reordered.map((s, i) => supabase.from("services").update({ display_order: i }).eq("id", s.id))
+    );
+    if (results.some((r) => r.error)) {
       setServices(prevServices);
       showToast("Couldn't reorder. Please try again.", "error");
     }
