@@ -30,6 +30,12 @@ export async function middleware(request: NextRequest) {
   const host = request.headers.get("host")?.toLowerCase() ?? "";
   const bareHost = host.replace(/:\d+$/, "").replace(/^www\./, "");
 
+  // Retired subdomain: dashboard.bapita.com → book.bapita.com (root goes to /login).
+  if (bareHost === "dashboard.bapita.com") {
+    const dest = pathname === "/" ? "/login" : pathname;
+    return NextResponse.redirect(`https://book.bapita.com${dest}`, 308);
+  }
+
   // Custom-domain routing — runs before auth/dashboard logic, and never touches it.
   if (!isKnownHost(bareHost)) {
     const isAsset =
@@ -60,6 +66,11 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
     return NextResponse.redirect(`https://book.bapita.com${pathname}`);
+  }
+
+  // Marketing homepage: serve the static Book booking page at "/" (own hosts only).
+  if (pathname === "/") {
+    return NextResponse.rewrite(new URL("/home.html", request.url));
   }
 
   let supabaseResponse = NextResponse.next({ request });
