@@ -68,11 +68,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(`https://book.bapita.com${pathname}`);
   }
 
-  // Marketing homepage: serve the static Book booking page at "/" (own hosts only).
-  if (pathname === "/") {
-    return NextResponse.rewrite(new URL("/home.html", request.url));
-  }
-
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -99,6 +94,15 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Marketing homepage at "/" (own hosts only) — logged-in users skip straight
+  // to the calendar instead of seeing the static Book booking page.
+  if (pathname === "/") {
+    if (user) {
+      return NextResponse.redirect(new URL("/calendar", request.url));
+    }
+    return NextResponse.rewrite(new URL("/home.html", request.url));
+  }
 
   // Auth pages — redirect logged-in users to dashboard
   if (pathname.startsWith("/login") || pathname.startsWith("/auth")) {
