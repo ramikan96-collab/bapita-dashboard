@@ -300,7 +300,7 @@ const faqs = [
 ];
 
 const pageCss = `
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.bp-home, .bp-home *, .bp-home *::before, .bp-home *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 #scroll-progress {
   position: fixed;
