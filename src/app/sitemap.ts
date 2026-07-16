@@ -10,19 +10,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    const { data: businesses } = await supabase
+    const { data: businesses, error } = await supabase
       .from("businesses")
-      .select("slug, updated_at")
+      .select("slug, created_at")
       .eq("status", "live");
+
+    if (error) {
+      console.error("sitemap: businesses query failed", error);
+    }
 
     slugRoutes = (businesses ?? []).map((b) => ({
       url: `https://book.bapita.com/${b.slug}`,
-      lastModified: b.updated_at ? new Date(b.updated_at) : new Date(),
+      lastModified: b.created_at ? new Date(b.created_at) : new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.8,
     }));
-  } catch {
+  } catch (err) {
     // DB unavailable — serve homepage-only sitemap
+    console.error("sitemap: unexpected failure", err);
   }
 
   return [
