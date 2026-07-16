@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isReservedSlug } from "@/lib/reserved-slugs";
 import OpenAI from "openai";
 
 const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
@@ -106,6 +107,7 @@ export async function POST(req: Request) {
   const { slug, lang = "he", raw = "", vibe = "" } = body;
 
   if (!slug) return NextResponse.json({ error: "slug is required" }, { status: 400 });
+  if (isReservedSlug(slug)) return NextResponse.json({ error: "slug is reserved" }, { status: 400 });
   if (!raw.trim()) return NextResponse.json({ error: "raw paste is required" }, { status: 400 });
 
   const userMessage = `Language preference: ${lang === "he" ? "Hebrew primary" : "English primary"}

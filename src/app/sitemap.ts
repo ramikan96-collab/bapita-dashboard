@@ -27,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     {
-      url: "https://bapita.com",
+      url: "https://book.bapita.com",
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 1,

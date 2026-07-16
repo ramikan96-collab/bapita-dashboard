@@ -58,17 +58,57 @@ export default async function BookPage({ params }: Props) {
     if (place.total  != null) b.google_review_count = place.total;
   }
 
-  const pageUrl = `https://bapita.com/${slug}`;
+  const pageUrl = `https://book.bapita.com/${slug}`;
+
+  // Days with valid open hours, mapped to schema.org OpeningHoursSpecification.
+  const dayNames: Record<keyof NonNullable<Business["business_hours"]>, string> = {
+    monday: "Monday",
+    tuesday: "Tuesday",
+    wednesday: "Wednesday",
+    thursday: "Thursday",
+    friday: "Friday",
+    saturday: "Saturday",
+    sunday: "Sunday",
+  };
+  const openingHoursSpecification = b.business_hours
+    ? (Object.keys(dayNames) as (keyof typeof dayNames)[])
+        .filter((day) => b.business_hours?.[day]?.open)
+        .map((day) => ({
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: `https://schema.org/${dayNames[day]}`,
+          opens: b.business_hours![day].start,
+          closes: b.business_hours![day].end,
+        }))
+    : [];
+
+  const sameAs = [b.instagram_url, b.facebook_url, b.google_review_link].filter(
+    (url): url is string => Boolean(url)
+  );
 
   const localBusinessSchema = {
     "@context": "https://schema.org",
-    "@type": "HairSalon",
+    "@type": "LocalBusiness",
     name: b.name,
+    ...(b.name_he && { alternateName: b.name_he }),
     url: pageUrl,
+    ...((b.tagline || b.tagline_he) && { description: b.tagline || b.tagline_he }),
     ...(b.phone && { telephone: b.phone }),
+    ...(b.email && { email: b.email }),
     ...(b.address && { address: { "@type": "PostalAddress", streetAddress: b.address } }),
     ...(b.hero_image_url && { image: b.hero_image_url }),
     ...(b.google_maps_url && { hasMap: b.google_maps_url }),
+    ...(sameAs.length > 0 && { sameAs }),
+    ...(openingHoursSpecification.length > 0 && { openingHoursSpecification }),
+    ...(b.google_place_id && {
+      identifier: { "@type": "PropertyValue", propertyID: "GooglePlaceId", value: b.google_place_id },
+    }),
+    ...(b.stat_rating && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: b.stat_rating,
+        ...(b.google_review_count && { reviewCount: b.google_review_count }),
+      },
+    }),
   };
 
   return (

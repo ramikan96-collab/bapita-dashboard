@@ -19,6 +19,6 @@ export default function robots(): MetadataRoute.Robots {
         "/addons",
       ],
     },
-    sitemap: "https://bapita.com/sitemap.xml",
+    sitemap: "https://book.bapita.com/sitemap.xml",
   };
 }

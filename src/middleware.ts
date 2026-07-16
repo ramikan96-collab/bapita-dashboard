@@ -96,12 +96,10 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Marketing homepage at "/" (own hosts only) — logged-in users skip straight
-  // to the calendar instead of seeing the static Book booking page.
-  if (pathname === "/") {
-    if (user) {
-      return NextResponse.redirect(new URL("/calendar", request.url));
-    }
-    return NextResponse.rewrite(new URL("/home.html", request.url));
+  // to the calendar instead of seeing the marketing page. Anonymous users fall
+  // through and resolve naturally to src/app/(marketing)/page.tsx.
+  if (pathname === "/" && user) {
+    return NextResponse.redirect(new URL("/calendar", request.url));
   }
 
   // Auth pages — redirect logged-in users to dashboard

@@ -6,6 +6,7 @@ import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "
 import { findPlaceId } from "@/app/actions/find-place-id";
 import { syncStaffTable, loadStaff } from "@/lib/staff";
 import { FontPicker } from "@/components/FontPicker";
+import { isReservedSlug } from "@/lib/reserved-slugs";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -429,6 +430,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       if (slugs.some(s => !s)) { setError("All slugs are required"); setSaving(false); return; }
       const unique = new Set(slugs);
       if (unique.size !== slugs.length) { setError("Slugs must be unique"); setSaving(false); return; }
+      const reserved = slugs.find(s => isReservedSlug(s));
+      if (reserved) { setError(`Slug "${reserved}" is reserved and can't be used`); setSaving(false); return; }
 
       // Insert one business row per variant
       const firstSlug = slugs[0];
@@ -450,6 +453,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       onSaved(firstSlug);
     } else {
       if (!form.slug.trim()) { setError("Slug is required"); setSaving(false); return; }
+      if (isReservedSlug(form.slug.trim())) { setError(`Slug "${form.slug.trim()}" is reserved and can't be used`); setSaving(false); return; }
       const payload = { ...basePayload, slug: form.slug.trim(), template_style: form.template_style };
       // Admins have a full-access RLS policy (public.is_admin()), so the browser
       // client can update businesses they don't own.
@@ -470,6 +474,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     if (slugs.some(s => !s)) { setError("All slugs are required"); return; }
     const unique = new Set(slugs);
     if (unique.size !== slugs.length) { setError("Slugs must be unique"); return; }
+    const reserved = slugs.find(s => isReservedSlug(s));
+    if (reserved) { setError(`Slug "${reserved}" is reserved and can't be used`); return; }
     setSaving(true); setError("");
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setError("Not logged in"); setSaving(false); return; }

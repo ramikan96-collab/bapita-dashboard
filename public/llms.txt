@@ -1,0 +1,19 @@
+# Bapita
+
+> Bapita builds a booking website, owner dashboard, and automations for appointment-based businesses — barbers, hair salons, personal trainers, coaches, and similar service providers — in 48 hours, with no tech skills required from the business owner.
+
+Bapita is built primarily for appointment-based businesses in Israel. A business owner has one conversation with the Bapita team, and Bapita handles the setup end-to-end: a branded booking website, an owner dashboard to manage appointments and clients, and optional automations (appointment reminders, deposit collection, review requests, and similar workflows). There is no software for the owner to configure and no ongoing technical maintenance on their end.
+
+## This site: book.bapita.com
+
+This domain (book.bapita.com) hosts the individual, public-facing booking pages that Bapita builds for each business. Each business gets its own page at `book.bapita.com/[business-slug]`, for example `book.bapita.com/avis-barber`. These pages let a business's customers view services, check availability, and book an appointment online, without the customer needing an account.
+
+Each business page is self-contained: it belongs to one business, shows that business's own services, hours, and contact details, and is not a directory or marketplace listing for multiple businesses.
+
+## Main site
+
+The company site, with product information, pricing, and how Bapita works, is at:
+https://bapita.com
+
+Booking pages for individual Bapita customers are hosted at:
+https://book.bapita.com/[business-slug]
