@@ -1,5 +1,3 @@
-@AGENTS.md
-
 # Bapita Dashboard — Multi-Tenant Booking Platform
 
 **Next.js 16.2.7**, Supabase backend, multi-tenant SaaS. dashboard.bapita.com. Deploy: Vercel project `bapita-dashboard`.
