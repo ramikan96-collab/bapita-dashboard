@@ -17,6 +17,37 @@ npm run build    # production build
 
 ---
 
+## Infrastructure & Ops
+
+**Where things live** — the naming is confusing, so read this before touching deploys or email.
+
+| Thing | Location |
+|---|---|
+| **Live app** (this repo) | Vercel project `bapita-dashboard`, team **rami's projects** (`ramis-projects-ff4a249e`). Account: **ramikan96**. |
+| Production domains | `book.bapita.com`, `dashboard.bapita.com` |
+| Git repo | `github.com/ramikan96-collab/bapita-dashboard`, branch `main` (git-connected to Vercel) |
+| Git commit author | GitHub user `info-bapita` (unrelated to which Vercel account hosts the app) |
+| **Other** Vercel account | **info.bapita** / team `infobapita-4729's-projects` → owns bapita.com marketing (`bapita-hub`), `social-ops-platform`. **NOT the booking app.** |
+
+Don't assume the booking app is on the info.bapita account just because email/commits say info.bapita — it is on **ramikan96 / rami's projects**. Env vars (including `GMAIL_*`) live there.
+
+### Transactional email
+
+All emails (booking confirmations, barber notifications, auth) send via **nodemailer Gmail SMTP** (`smtp.gmail.com:465`), authenticating as **info.bapita@gmail.com** with a Google **app password**.
+
+- Env vars in Vercel prod: `GMAIL_USER` (= info.bapita@gmail.com) and `GMAIL_APP_PASSWORD` (16 chars, no spaces). Both are **sensitive** — `vercel env pull` returns `[SENSITIVE]`, not the value.
+- Code paths: `src/app/api/public/book/route.ts` (customer + barber, sent in `after()`) and `src/app/api/send-confirmation/route.ts` (dashboard new-booking).
+
+**If emails silently stop** (bookings/calendar still work, no emails to anyone): check Vercel runtime logs for `535-5.7.8 ... BadCredentials` (`code: EAUTH`). This means the Gmail **app password was revoked** — Google auto-revokes app passwords whenever the account password or 2FA changes. Fix:
+
+1. Generate a new app password at <https://myaccount.google.com/apppasswords> (signed into info.bapita@gmail.com; 2FA must be on).
+2. Update `GMAIL_APP_PASSWORD` in Vercel prod (Production scope), then **redeploy** — env changes only take effect in a build created after the change.
+3. Verify before shipping: `nodemailer.createTransport({host:"smtp.gmail.com",port:465,secure:true,auth:{user,pass}}).verify()`.
+
+> Note: a git push to `main` does not always trigger a Vercel build (webhook has failed before). After pushing, confirm a new deployment actually appears in Vercel; if not, deploy manually.
+
+---
+
 ## Decision Log (locked)
 
 Decisions confirmed with the owner. Do not silently reverse — change here first.
