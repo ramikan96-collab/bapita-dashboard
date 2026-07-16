@@ -888,7 +888,8 @@ function NewBookingInner() {
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer — hidden on step 1 until a client is picked (no buttons to show) */}
+      {!(step === "client" && !selectedClient && !showNewClient) && (
       <div style={{ flexShrink: 0, background: "var(--color-surface)", borderTop: "1px solid var(--color-cream-2)" }}>
         <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", padding: "12px 20px", display: "flex", gap: 10 }}>
           {step !== "client" && <SecondaryBtn onClick={goBack}>Back</SecondaryBtn>}
@@ -913,6 +914,7 @@ function NewBookingInner() {
           )}
         </div>
       </div>
+      )}
 
     </div>
   );
