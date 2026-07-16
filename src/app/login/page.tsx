@@ -76,10 +76,14 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { setError(error.message); }
-    else        { window.location.href = "/calendar"; }
-    setLoading(false);
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setError(data.error || t("Something went wrong. Try again.")); setLoading(false); }
+    else          { window.location.href = "/calendar"; }
   }
 
   async function handleForgot(e: React.FormEvent) {
