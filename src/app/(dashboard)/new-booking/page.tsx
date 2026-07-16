@@ -359,7 +359,12 @@ function NewBookingInner() {
     const { error } = await supabase.from("bookings").insert({ business_id: business.id, customer_id: selectedClient.id, service_id: selectedService.id, staff_id: selectedStaffId, customer_name: selectedClient.name, customer_phone: selectedClient.phone || null, customer_email: selectedClient.email || null, appointment_date: format(selectedDate, "yyyy-MM-dd"), appointment_time: selectedTime, status: "confirmed", payment_status: markAsPaid ? "cash" : "none", notes: notes.trim() || null });
     if (error) { showToast("Couldn't create the booking. Please try again.", "error"); setSubmitting(false); return; }
     if (selectedClient.email && sendEmail) {
-      fetch("/api/send-confirmation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ customerName: selectedClient.name, customerEmail: selectedClient.email, businessName: business.name || "", serviceName: selectedService.name || "", date: format(selectedDate, "yyyy-MM-dd"), time: selectedTime, businessId: business.id }) }).catch(console.error);
+      // Fire-and-forget, but surface failures — a silently-swallowed send meant
+      // broken email creds went unnoticed in production. Warn the owner instead.
+      const warnEmailFailed = () => showToast("Booking saved, but the confirmation email couldn't be sent.", "error");
+      fetch("/api/send-confirmation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ customerName: selectedClient.name, customerEmail: selectedClient.email, businessName: business.name || "", serviceName: selectedService.name || "", date: format(selectedDate, "yyyy-MM-dd"), time: selectedTime, businessId: business.id }) })
+        .then((r) => { if (!r.ok) warnEmailFailed(); })
+        .catch(warnEmailFailed);
     }
     setSubmitting(false);
     setSuccess(true);
