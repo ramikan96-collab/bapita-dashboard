@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/components/Toast";
 import { getAvailableSlots } from "@/lib/availability";
+import { rescheduleBooking, sendRescheduleEmail } from "@/lib/reschedule";
 import type { Booking } from "@/types";
 
 interface Props {
@@ -66,17 +67,18 @@ export default function RescheduleSheet({ booking, onRescheduled, onClose }: Pro
     if (!time) return;
     setSaving(true);
     const dateStr = format(date, "yyyy-MM-dd");
-    const { error } = await supabase
-      .from("bookings")
-      .update({
-        appointment_date: dateStr,
-        appointment_time: time,
-        appointment_datetime: new Date(`${dateStr}T${time}`).toISOString(),
-      })
-      .eq("id", booking.id);
+    const { error } = await rescheduleBooking(supabase, booking.id, dateStr, time);
     if (error) {
       showToast("Couldn't reschedule. Please try again.", "error");
     } else {
+      sendRescheduleEmail(
+        booking,
+        booking.appointment_date,
+        booking.appointment_time,
+        dateStr,
+        time,
+        business,
+      );
       onRescheduled({ appointment_date: dateStr, appointment_time: time });
     }
     setSaving(false);
