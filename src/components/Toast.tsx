@@ -4,14 +4,25 @@ import { createContext, useContext, useState, useCallback, ReactNode } from "rea
 
 type ToastType = "success" | "error" | "info";
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
+interface ToastOptions {
+  action?: ToastAction;
+  duration?: number;
+}
+
 interface ToastMessage {
   id: string;
   text: string;
   type: ToastType;
+  action?: ToastAction;
 }
 
 interface ToastContextType {
-  showToast: (text: string, type?: ToastType) => void;
+  showToast: (text: string, type?: ToastType, opts?: ToastOptions) => void;
 }
 
 const ToastContext = createContext<ToastContextType | null>(null);
@@ -27,13 +38,13 @@ export function useToast() {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const showToast = useCallback((text: string, type: ToastType = "info") => {
+  const showToast = useCallback((text: string, type: ToastType = "info", opts?: ToastOptions) => {
     const id = Date.now().toString();
-    setToasts((prev) => [...prev, { id, text, type }]);
-    
+    setToasts((prev) => [...prev, { id, text, type, action: opts?.action }]);
+
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
+    }, opts?.duration ?? 3000);
   }, []);
 
   const getBgColor = (type: ToastType) => {
@@ -54,10 +65,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className="px-4 py-3 rounded-xl text-white text-sm font-medium animate-in slide-in-from-bottom-2 fade-in"
+            className="px-4 py-3 rounded-xl text-white text-sm font-medium animate-in slide-in-from-bottom-2 fade-in flex items-center justify-between gap-3"
             style={{ background: getBgColor(toast.type) }}
           >
-            {toast.text}
+            <span>{toast.text}</span>
+            {toast.action && (
+              <button
+                onClick={() => {
+                  toast.action!.onClick();
+                  setToasts((prev) => prev.filter((t) => t.id !== toast.id));
+                }}
+                className="shrink-0 font-bold underline underline-offset-2"
+              >
+                {toast.action.label}
+              </button>
+            )}
           </div>
         ))}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useEffect, useCallback } from "react";
+import { useMemo, useRef, useEffect, useCallback, useState } from "react";
 import {
   addDays, eachDayOfInterval, isSameDay, format,
 } from "date-fns";
@@ -8,8 +8,8 @@ import { useLang } from "@/i18n";
 import type { Booking, BlockedTime, Business } from "@/types";
 import { STATUS_COLOR, STATUS_LABEL } from "@/types";
 import {
-  PX_PER_HOUR, PX_PER_MIN, TOTAL_H, HOURS, GRID_LINE, GRID_LINE_HALF,
-  timeToMins, formatRange, packLanes, useGridGestures, useSwipe, dayIsOpen,
+  PX_PER_HOUR, PX_PER_MIN, TOTAL_H, DAY_MIN, HOURS, GRID_LINE, GRID_LINE_HALF,
+  timeToMins, minsToTime, snap, formatRange, packLanes, useGridGestures, useSwipe, dayIsOpen,
 } from "./grid";
 
 interface Props {
@@ -23,13 +23,23 @@ interface Props {
   onLongPressAt: (date: Date, mins: number) => void;
   onBlockClick: (b: BlockedTime) => void;
   onSelectDay: (d: Date) => void;
+  onRescheduleDrop: (booking: Booking, newDate: string, newTime: string) => void;
   onPrev: () => void;
   onNext: () => void;
 }
 
+interface DragState {
+  booking: Booking;
+  dayKey: string;
+  mins: number;
+  colLeft: number;
+  colTop: number;
+  colWidth: number;
+}
+
 export default function WeekView({
   date, bookings, blocked, openHour, business,
-  onSelectBooking, onCreateAt, onLongPressAt, onBlockClick, onSelectDay, onPrev, onNext,
+  onSelectBooking, onCreateAt, onLongPressAt, onBlockClick, onSelectDay, onRescheduleDrop, onPrev, onNext,
 }: Props) {
   const { t, dateLocale } = useLang();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -40,6 +50,94 @@ export default function WeekView({
   const nowMins   = today.getHours() * 60 + today.getMinutes();
 
   const swipe = useSwipe(onNext, onPrev);
+
+  // ─── Long-hold drag-to-reschedule ─────────────────────────────────────────
+  // Column + week-strip DOM nodes, keyed by yyyy-MM-dd, for pointer hit-testing
+  // (works in both LTR and RTL because we test against live element rects).
+  const colEls = useRef<Map<string, HTMLElement>>(new Map());
+  const stripEls = useRef<Map<string, HTMLElement>>(new Map());
+  const registerCol = useCallback((key: string, el: HTMLElement | null) => {
+    if (el) colEls.current.set(key, el); else colEls.current.delete(key);
+  }, []);
+
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const dragRef = useRef<DragState | null>(null);
+  const justDragged = useRef(false);
+
+  // Which day (and, via the strip, whether time is preserved) is under the pointer.
+  const hitTest = useCallback((cx: number, cy: number): { dayKey: string; viaStrip: boolean } | null => {
+    for (const [k, el] of stripEls.current) {
+      const r = el.getBoundingClientRect();
+      if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) return { dayKey: k, viaStrip: true };
+    }
+    for (const [k, el] of colEls.current) {
+      const r = el.getBoundingClientRect();
+      if (cx >= r.left && cx <= r.right) return { dayKey: k, viaStrip: false };
+    }
+    return null;
+  }, []);
+
+  const beginGrab = useCallback((booking: Booking, originKey: string, e: React.PointerEvent<HTMLElement>) => {
+    e.stopPropagation();
+    const pointerId = e.pointerId;
+    const startEl = e.currentTarget;
+    const x0 = e.clientX, y0 = e.clientY;
+    const duration = booking.service?.duration ?? 30;
+    let grabbed = false;
+
+    const update = (cx: number, cy: number) => {
+      const hit = hitTest(cx, cy);
+      const dayKey = hit?.dayKey ?? originKey;
+      const col = colEls.current.get(dayKey);
+      const r = col ? col.getBoundingClientRect() : { top: 0, left: 0, width: 0 };
+      const mins = hit?.viaStrip
+        ? timeToMins(booking.appointment_time) // strip drop → keep time, change date
+        : Math.max(0, Math.min(DAY_MIN - duration, snap((cy - r.top) / PX_PER_MIN)));
+      const next: DragState = { booking, dayKey, mins, colLeft: r.left, colTop: r.top, colWidth: r.width };
+      dragRef.current = next;
+      setDrag(next);
+    };
+
+    const onMove = (ev: PointerEvent) => {
+      if (!grabbed) {
+        if (Math.hypot(ev.clientX - x0, ev.clientY - y0) > 8) cleanup(); // scroll intent → abort
+        return;
+      }
+      update(ev.clientX, ev.clientY);
+    };
+    const onUp = () => {
+      clearTimeout(timer);
+      if (grabbed) {
+        const g = dragRef.current;
+        dragRef.current = null;
+        setDrag(null);
+        justDragged.current = true;
+        if (g) {
+          const newTime = minsToTime(g.mins);
+          if (g.dayKey !== booking.appointment_date || newTime !== booking.appointment_time) {
+            onRescheduleDrop(booking, g.dayKey, newTime);
+          }
+        }
+      }
+      cleanup();
+    };
+    function cleanup() {
+      clearTimeout(timer);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      try { startEl.releasePointerCapture(pointerId); } catch { /* noop */ }
+    }
+
+    const timer = setTimeout(() => {
+      grabbed = true;
+      try { startEl.setPointerCapture(pointerId); } catch { /* noop */ }
+      navigator.vibrate?.(15);
+      update(x0, y0);
+    }, 400);
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, [hitTest, onRescheduleDrop]);
 
   // Touchpad horizontal scroll → next/prev week (debounced 600ms).
   const lastWheelAt = useRef(0);
@@ -126,6 +224,10 @@ export default function WeekView({
           return (
             <button
               key={day.toISOString()}
+              ref={(el) => {
+                const k = format(day, "yyyy-MM-dd");
+                if (el) stripEls.current.set(k, el); else stripEls.current.delete(k);
+              }}
               onClick={() => onSelectDay(day)}
               className="flex-1 flex flex-col items-center justify-center gap-0.5"
             >
@@ -182,6 +284,7 @@ export default function WeekView({
             <WeekDayColumn
               key={key}
               day={day}
+              dayKey={key}
               isToday={isSameDay(day, today)}
               nowMins={nowMins}
               bookings={bucket?.bookings ?? []}
@@ -190,10 +293,36 @@ export default function WeekView({
               onCreateAt={onCreateAt}
               onLongPressAt={onLongPressAt}
               onBlockClick={onBlockClick}
+              registerCol={registerCol}
+              onBookingGrab={beginGrab}
+              justDragged={justDragged}
+              dragBookingId={drag?.booking.id ?? null}
             />
           );
         })}
       </div>
+
+      {/* Drag ghost — snapped placeholder in the target column */}
+      {drag && drag.colWidth > 0 && (
+        <div
+          className="fixed pointer-events-none rounded-lg border-2 border-dashed flex flex-col justify-center px-2"
+          style={{
+            left: drag.colLeft, width: drag.colWidth,
+            top: drag.colTop + drag.mins * PX_PER_MIN,
+            height: Math.max((drag.booking.service?.duration ?? 30) * PX_PER_MIN, 24),
+            borderColor: STATUS_COLOR[drag.booking.status],
+            background: `${STATUS_COLOR[drag.booking.status]}33`,
+            zIndex: 60, boxShadow: "0 6px 20px rgba(30,26,20,0.18)",
+          }}
+        >
+          <span className="text-[11px] font-bold leading-tight truncate" style={{ color: "var(--color-dark)" }}>
+            {minsToTime(drag.mins)}
+          </span>
+          <span className="text-[10px] leading-tight truncate" style={{ color: "var(--color-muted)" }}>
+            {drag.booking.customer_name}
+          </span>
+        </div>
+      )}
 
       {/* Empty hint */}
       {bookings.length === 0 && blocked.length === 0 && (
@@ -211,6 +340,7 @@ export default function WeekView({
 
 interface ColProps {
   day: Date;
+  dayKey: string;
   isToday: boolean;
   nowMins: number;
   bookings: Booking[];
@@ -219,11 +349,16 @@ interface ColProps {
   onCreateAt: (date: Date, mins: number) => void;
   onLongPressAt: (date: Date, mins: number) => void;
   onBlockClick: (b: BlockedTime) => void;
+  registerCol: (key: string, el: HTMLElement | null) => void;
+  onBookingGrab: (booking: Booking, originKey: string, e: React.PointerEvent<HTMLElement>) => void;
+  justDragged: React.RefObject<boolean>;
+  dragBookingId: string | null;
 }
 
 function WeekDayColumn({
-  day, isToday, nowMins, bookings, blocked,
+  day, dayKey, isToday, nowMins, bookings, blocked,
   onSelectBooking, onCreateAt, onLongPressAt, onBlockClick,
+  registerCol, onBookingGrab, justDragged, dragBookingId,
 }: ColProps) {
   const gestures = useGridGestures(
     (mins) => onCreateAt(day, mins),
@@ -243,6 +378,7 @@ function WeekDayColumn({
 
   return (
     <div
+      ref={(el) => registerCol(dayKey, el)}
       className="flex-1 relative border-s touch-pan-y"
       style={{ borderColor: GRID_LINE, background: isToday ? "rgba(232,146,10,0.04)" : "transparent" }}
       {...gestures}
@@ -294,8 +430,12 @@ function WeekDayColumn({
         return (
           <button
             key={b.id}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); onSelectBooking(b); }}
+            onPointerDown={(e) => onBookingGrab(b, dayKey, e)}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (justDragged.current) { justDragged.current = false; return; }
+              onSelectBooking(b);
+            }}
             aria-label={`${b.customer_name}, ${b.service?.name ?? ""}, ${formatRange(b.appointment_time, duration)}, ${STATUS_LABEL[b.status]}`}
             className="absolute rounded-lg overflow-hidden text-start border-s-[3px] transition-opacity active:opacity-70"
             style={{
@@ -307,7 +447,7 @@ function WeekDayColumn({
               boxShadow: "var(--shadow-sm)",
               padding: "5px 7px",
               zIndex: 6,
-              opacity: isPast ? 0.45 : 1,
+              opacity: dragBookingId === b.id ? 0.35 : isPast ? 0.45 : 1,
             }}
           >
             <div
