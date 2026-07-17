@@ -2372,7 +2372,7 @@ function AddonsSection() {
               <div className="addon-panel">
                 <div className="addon-panel-inner">
                   <p className="addon-panel-desc" data-i18n="addons.pay.body">
-                    Clients pay when they book — deposit or full amount, your choice.{" "}
+                    Clients pay when they book, deposit or full amount, your choice.{" "}
                     <strong>No-shows drop overnight</strong> because money on the table means
                     people show up. Payment lands in your account before they walk through the
                     door.
@@ -2459,7 +2459,7 @@ function AddonsSection() {
                 <div className="addon-panel-inner">
                   <p className="addon-panel-desc" data-i18n="addons.ads.body">
                     Click-to-WhatsApp campaigns on Meta that bring new clients straight into your
-                    booking flow. <strong>We write, launch, and manage everything</strong> —
+                    booking flow. <strong>We write, launch, and manage everything</strong>:
                     budget, creative, and targeting. You just check your calendar and see it
                     filling up.
                   </p>
@@ -2689,7 +2689,7 @@ function ConnectModal() {
               </div>
               <div style={{ textAlign: "start" }}>
                 <p style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)", margin: "0 0 2px" }}>Book a call</p>
-                <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Pick a time, we&apos;ll talk — 30 min</p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Pick a time, we&apos;ll talk. 30 min</p>
               </div>
             </button>
             <button id="bap-form-btn" className="bap-opt-btn">

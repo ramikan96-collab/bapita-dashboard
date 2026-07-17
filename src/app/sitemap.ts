@@ -19,12 +19,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       console.error("sitemap: businesses query failed", error);
     }
 
-    slugRoutes = (businesses ?? []).map((b) => ({
-      url: `https://book.bapita.com/${b.slug}`,
-      lastModified: b.created_at ? new Date(b.created_at) : new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    }));
+    slugRoutes = (businesses ?? [])
+      // Exclude demo/template pages: thin, near-duplicate content that would
+      // dilute the sitemap and risk duplicate-content signals. Real customers only.
+      .filter((b) => !/^demo(-|$)/.test(b.slug))
+      .map((b) => ({
+        url: `https://book.bapita.com/${b.slug}`,
+        lastModified: b.created_at ? new Date(b.created_at) : new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      }));
   } catch (err) {
     // DB unavailable — serve homepage-only sitemap
     console.error("sitemap: unexpected failure", err);

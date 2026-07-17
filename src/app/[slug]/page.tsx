@@ -138,11 +138,11 @@ export async function generateMetadata({ params }: Props) {
 
   if (!data) return { title: "Book an appointment" };
 
-  const title = `${data.name} — Online Booking`;
+  const title = `${data.name} | Online Booking`;
   const description =
     data.tagline ||
     `Book an appointment at ${data.name}${data.address ? `, ${data.address}` : ""}. Fast online booking.`;
-  const pageUrl = `https://bapita.com/${slug}`;
+  const pageUrl = `https://book.bapita.com/${slug}`;
 
   // Per-business brand assets (favicon + share image). Lives under
   // public/clients/<slug>/. Same per-slug override pattern as customs/.
@@ -150,12 +150,14 @@ export async function generateMetadata({ params }: Props) {
   const brand = brandAssetSlugs.has(slug) ? `/clients/${slug}` : null;
 
   const image = brand
-    ? `https://bapita.com${brand}/og.png`
-    : data.hero_image_url || "https://bapita.com/og-image.png";
+    ? `https://book.bapita.com${brand}/og.png`
+    : data.hero_image_url || "https://book.bapita.com/og-image.png";
 
   return {
     title,
     description,
+    // Demo/template pages are near-duplicate showcases — keep them out of the index.
+    ...(/^demo(-|$)/.test(slug) && { robots: { index: false, follow: true } }),
     alternates: { canonical: pageUrl },
     ...(brand && {
       icons: {
