@@ -5,11 +5,11 @@ import {
   addDays, eachDayOfInterval, isSameDay, format,
 } from "date-fns";
 import { useLang } from "@/i18n";
-import type { Booking, BlockedTime } from "@/types";
+import type { Booking, BlockedTime, Business } from "@/types";
 import { STATUS_COLOR, STATUS_LABEL } from "@/types";
 import {
   PX_PER_HOUR, PX_PER_MIN, TOTAL_H, HOURS, GRID_LINE, GRID_LINE_HALF,
-  timeToMins, firstName, formatRange, packLanes, useGridGestures, useSwipe,
+  timeToMins, formatRange, packLanes, useGridGestures, useSwipe, dayIsOpen,
 } from "./grid";
 
 interface Props {
@@ -17,6 +17,7 @@ interface Props {
   bookings: Booking[];
   blocked: BlockedTime[];
   openHour: number;
+  business: Business | null;
   onSelectBooking: (b: Booking) => void;
   onCreateAt: (date: Date, mins: number) => void;
   onLongPressAt: (date: Date, mins: number) => void;
@@ -27,14 +28,14 @@ interface Props {
 }
 
 export default function WeekView({
-  date, bookings, blocked, openHour,
+  date, bookings, blocked, openHour, business,
   onSelectBooking, onCreateAt, onLongPressAt, onBlockClick, onSelectDay, onPrev, onNext,
 }: Props) {
   const { t, dateLocale } = useLang();
   const scrollRef = useRef<HTMLDivElement>(null);
   const weekStart = date;
   const weekEnd   = addDays(date, 6);
-  const days      = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const allDays   = eachDayOfInterval({ start: weekStart, end: weekEnd });
   const today     = new Date();
   const nowMins   = today.getHours() * 60 + today.getMinutes();
 
@@ -64,6 +65,20 @@ export default function WeekView({
     }
     return map;
   }, [bookings, blocked]);
+
+  // Hide days that are BOTH closed AND empty → wider columns, cleaner grid.
+  // Never hide a day with bookings/blocks (data-safety). Fall back to all 7
+  // if the filter would leave nothing (e.g. brand-new all-closed business).
+  const weekStartMs = weekStart.getTime();
+  const days = useMemo(() => {
+    const kept = allDays.filter((d) => {
+      const bucket = byDay[format(d, "yyyy-MM-dd")];
+      const hasItems = !!(bucket && (bucket.bookings.length || bucket.blocked.length));
+      return dayIsOpen(business, d) || hasItems;
+    });
+    return kept.length ? kept : allDays;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStartMs, byDay, business]);
 
   // Auto-scroll: current time if today is in view, else opening hour.
   useEffect(() => {
@@ -271,7 +286,9 @@ function WeekDayColumn({
         const statusColor = STATUS_COLOR[b.status];
         const borderColor = b.label?.color ?? statusColor;
         const widthPct = 100 / lanes;
-        const tall = height >= 48;
+        // Staged reveal by available height: name always, then service, then time.
+        const showService = height >= 34 && !!b.service?.name;
+        const showTime = height >= 52;
         const isPast = (!isToday && day < new Date()) ||
           (isToday && item.start + duration <= nowMins);
         return (
@@ -288,24 +305,43 @@ function WeekDayColumn({
               borderColor: borderColor,
               background: `${statusColor}1f`,
               boxShadow: "var(--shadow-sm)",
-              padding: "5px 8px",
+              padding: "5px 7px",
               zIndex: 6,
               opacity: isPast ? 0.45 : 1,
             }}
           >
-            <div className="text-[12px] font-semibold leading-tight truncate" style={{ color: "var(--color-dark)" }}>
-              {firstName(b.customer_name)}
+            <div
+              className="text-[12px] font-semibold leading-[1.15]"
+              style={{
+                color: "var(--color-dark)",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                wordBreak: "break-word",
+              }}
+            >
+              {b.customer_name}
             </div>
-            {tall && b.service?.name && (
-              <div className="text-[11px] leading-tight truncate mt-0.5" style={{ color: "var(--color-muted)" }}>
-                {b.service.name}
+            {showService && (
+              <div
+                className="text-[10.5px] leading-[1.2] mt-0.5"
+                style={{
+                  color: "var(--color-muted)",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  wordBreak: "break-word",
+                }}
+              >
+                {b.service!.name}
               </div>
             )}
-            {b.label && (
-              <span
-                className="inline-block w-2 h-2 rounded-full shrink-0"
-                style={{ background: b.label.color }}
-              />
+            {showTime && (
+              <div className="text-[10px] leading-tight mt-0.5 truncate" style={{ color: "var(--color-muted)" }}>
+                {formatRange(b.appointment_time, duration)}
+              </div>
             )}
           </button>
         );

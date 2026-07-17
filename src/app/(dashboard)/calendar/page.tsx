@@ -406,6 +406,7 @@ function CalendarPageInner() {
                 bookings={visibleBookings}
                 blocked={visibleBlocked}
                 openHour={openHour}
+                business={business}
                 onSelectBooking={setSelected}
                 onCreateAt={handleCreateAt}
                 onLongPressAt={handleLongPressAt}

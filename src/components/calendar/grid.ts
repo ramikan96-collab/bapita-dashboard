@@ -20,6 +20,13 @@ const DAY_KEYS: DayKey[] = [
   "thursday", "friday", "saturday",
 ];
 
+// Is the business open on the weekday of `date`?
+export function dayIsOpen(business: Business | null, date: Date): boolean {
+  const hours = business?.business_hours;
+  if (!hours) return true; // no config → assume open (don't hide anything)
+  return !!hours[DAY_KEYS[date.getDay()]]?.open;
+}
+
 export function timeToMins(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + (m || 0);
