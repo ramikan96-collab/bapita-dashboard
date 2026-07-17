@@ -164,19 +164,16 @@ export default function WeekView({
     return map;
   }, [bookings, blocked]);
 
-  // Hide days that are BOTH closed AND empty → wider columns, cleaner grid.
-  // Never hide a day with bookings/blocks (data-safety). Fall back to all 7
-  // if the filter would leave nothing (e.g. brand-new all-closed business).
+  // Columns = the business's OPEN days only, so closing a day widens the grid
+  // (7 → 6 → 5 …) and names get room. A booking on a closed day still shows in
+  // Day view / Agenda / Search, so nothing is lost. Fall back to all 7 if the
+  // business has no open days configured (misconfig / brand-new).
   const weekStartMs = weekStart.getTime();
   const days = useMemo(() => {
-    const kept = allDays.filter((d) => {
-      const bucket = byDay[format(d, "yyyy-MM-dd")];
-      const hasItems = !!(bucket && (bucket.bookings.length || bucket.blocked.length));
-      return dayIsOpen(business, d) || hasItems;
-    });
+    const kept = allDays.filter((d) => dayIsOpen(business, d));
     return kept.length ? kept : allDays;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekStartMs, byDay, business]);
+  }, [weekStartMs, business]);
 
   // Auto-scroll: current time if today is in view, else opening hour.
   useEffect(() => {
@@ -418,13 +415,13 @@ function WeekDayColumn({
         const b = item.booking;
         const duration = b.service?.duration ?? 30;
         const top = item.start * PX_PER_MIN;
-        const height = Math.max(duration * PX_PER_MIN, 24);
+        // Give every card enough room for name + service, even short slots.
+        const height = Math.max(duration * PX_PER_MIN, 46);
         const statusColor = STATUS_COLOR[b.status];
         const borderColor = b.label?.color ?? statusColor;
         const widthPct = 100 / lanes;
-        // Staged reveal by available height: name always, then service, then time.
-        const showService = height >= 34 && !!b.service?.name;
-        const showTime = height >= 52;
+        const showService = !!b.service?.name;
+        const showTime = height >= 62;
         const isPast = (!isToday && day < new Date()) ||
           (isToday && item.start + duration <= nowMins);
         return (
@@ -464,17 +461,7 @@ function WeekDayColumn({
               {b.customer_name}
             </div>
             {showService && (
-              <div
-                className="text-[10.5px] leading-[1.2] mt-0.5"
-                style={{
-                  color: "var(--color-muted)",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                  wordBreak: "break-word",
-                }}
-              >
+              <div className="text-[10.5px] leading-[1.2] mt-0.5 truncate" style={{ color: "var(--color-muted)" }}>
                 {b.service!.name}
               </div>
             )}

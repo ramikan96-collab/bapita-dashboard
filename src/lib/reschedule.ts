@@ -12,14 +12,17 @@ export async function rescheduleBooking(
   newDate: string,
   newTime: string,
 ): Promise<{ error: string | null }> {
+  // Only date + time — mirror the create path (new-booking). Do NOT write
+  // appointment_datetime: the app never sets it on insert and it is either a
+  // generated column or absent, so writing it makes Postgres reject the update.
   const { error } = await supabase
     .from("bookings")
     .update({
       appointment_date: newDate,
       appointment_time: newTime,
-      appointment_datetime: new Date(`${newDate}T${newTime}`).toISOString(),
     })
     .eq("id", bookingId);
+  if (error) console.error("rescheduleBooking failed:", error.message);
   return { error: error ? error.message : null };
 }
 
