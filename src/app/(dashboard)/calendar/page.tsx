@@ -15,6 +15,7 @@ import { useLang } from "@/i18n";
 import { useCalendarChrome, type CalView } from "@/components/calendar/CalendarChrome";
 import DayView from "@/components/calendar/DayView";
 import WeekView from "@/components/calendar/WeekView";
+import ConfirmRescheduleSheet from "@/components/calendar/ConfirmRescheduleSheet";
 import MonthView from "@/components/calendar/MonthView";
 import AgendaView from "@/components/calendar/AgendaView";
 import AgendaList from "@/components/calendar/AgendaList";
@@ -35,6 +36,15 @@ function applyPatch(bookings: Booking[], id: string, patch: Partial<Booking>): B
   return bookings.map((b) => (b.id === id ? { ...b, ...patch } : b));
 }
 
+// A pending drag-to-reschedule move, awaiting the owner's confirmation.
+interface PendingMove {
+  booking: Booking;
+  oldDate: string;
+  oldTime: string;
+  newDate: string;
+  newTime: string;
+}
+
 // Visible date range [start, end] for the active view.
 function rangeFor(view: CalView, date: Date): [Date, Date] {
   if (view === "day") return [date, date];
@@ -48,7 +58,8 @@ function rangeFor(view: CalView, date: Date): [Date, Date] {
 function CalendarPageInner() {
   const { business, loading: bizLoading } = useBusiness();
   const { showToast } = useToast();
-  const emailTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
+  const [savingMove, setSavingMove] = useState(false);
   const { t } = useLang();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -292,8 +303,9 @@ function CalendarPageInner() {
     setSelected((prev) => prev ? { ...prev, ...patch } : null);
   }
 
-  // Drag-to-reschedule drop: validate slot, move optimistically, persist, and
-  // email the customer after a short Undo window (Undo cancels the email).
+  // Drag-to-reschedule drop: validate the slot, then ask the owner to confirm
+  // the new date/time before anything is saved. The card does not move until
+  // confirmed — Cancel simply snaps it back (nothing persisted).
   function handleRescheduleDrop(booking: Booking, newDate: string, newTime: string) {
     const duration = booking.service?.duration ?? 30;
     const start = timeToMins(newTime);
@@ -316,36 +328,31 @@ function CalendarPageInner() {
       return;
     }
 
-    const old = { appointment_date: booking.appointment_date, appointment_time: booking.appointment_time };
-    if (old.appointment_date === newDate && old.appointment_time === newTime) return;
+    if (booking.appointment_date === newDate && booking.appointment_time === newTime) return;
 
-    setBookings((prev) => applyPatch(prev, booking.id, { appointment_date: newDate, appointment_time: newTime }));
-
-    rescheduleBooking(supabase, booking.id, newDate, newTime).then(({ error }) => {
-      if (error) {
-        setBookings((prev) => applyPatch(prev, booking.id, old));
-        showToast("Couldn't reschedule. Please try again.", "error");
-        return;
-      }
-      const timer = setTimeout(() => {
-        emailTimers.current.delete(booking.id);
-        sendRescheduleEmail(booking, old.appointment_date, old.appointment_time, newDate, newTime, business);
-      }, 5000);
-      emailTimers.current.set(booking.id, timer);
-
-      showToast("Moved", "success", {
-        duration: 5000,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            const t = emailTimers.current.get(booking.id);
-            if (t) { clearTimeout(t); emailTimers.current.delete(booking.id); }
-            setBookings((prev) => applyPatch(prev, booking.id, old));
-            rescheduleBooking(supabase, booking.id, old.appointment_date, old.appointment_time);
-          },
-        },
-      });
+    setPendingMove({
+      booking,
+      oldDate: booking.appointment_date,
+      oldTime: booking.appointment_time,
+      newDate,
+      newTime,
     });
+  }
+
+  async function confirmMove() {
+    if (!pendingMove || savingMove) return;
+    const { booking, oldDate, oldTime, newDate, newTime } = pendingMove;
+    setSavingMove(true);
+    const { error } = await rescheduleBooking(supabase, booking.id, newDate, newTime);
+    setSavingMove(false);
+    if (error) {
+      showToast("Couldn't reschedule. Please try again.", "error");
+      return;
+    }
+    setBookings((prev) => applyPatch(prev, booking.id, { appointment_date: newDate, appointment_time: newTime }));
+    sendRescheduleEmail(booking, oldDate, oldTime, newDate, newTime, business);
+    setPendingMove(null);
+    showToast("Rescheduled", "success");
   }
 
   // Tap an empty slot → new booking pre-filled with that date + time.
@@ -514,6 +521,18 @@ function CalendarPageInner() {
           draft={blockDraft}
           onClose={() => setBlockDraft(null)}
           onSaved={fetchBlocked}
+        />
+      )}
+      {pendingMove && (
+        <ConfirmRescheduleSheet
+          booking={pendingMove.booking}
+          oldDate={pendingMove.oldDate}
+          oldTime={pendingMove.oldTime}
+          newDate={pendingMove.newDate}
+          newTime={pendingMove.newTime}
+          saving={savingMove}
+          onConfirm={confirmMove}
+          onCancel={() => setPendingMove(null)}
         />
       )}
     </div>
