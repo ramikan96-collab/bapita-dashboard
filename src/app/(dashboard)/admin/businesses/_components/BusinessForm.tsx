@@ -443,6 +443,14 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           owner_id:       user.id,
         }).select("id").single();
         if (e || !created) { setError(`Slug "${v.slug}": ${e?.message || "insert failed"}`); setSaving(false); return; }
+        // Ping IndexNow for any variant created already-live (fire-and-forget).
+        if (basePayload.status === "live") {
+          fetch("/api/admin/indexnow", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ slug: v.slug.trim() }),
+          }).catch(() => {});
+        }
         // Each variant is its own business, so give it fresh staff ids.
         try {
           await syncStaffTable(supabase, created.id, staffMembers.map(m => ({ ...m, id: crypto.randomUUID() })));
@@ -459,6 +467,15 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       // client can update businesses they don't own.
       const { error: e } = await supabase.from("businesses").update(payload).eq("id", businessId!);
       if (e) { setError(e.message); setSaving(false); return; }
+      // Publishing? Ping IndexNow so Bing crawls the live page within minutes.
+      // Fire-and-forget: never block or fail the save on this.
+      if (form.status === "live") {
+        fetch("/api/admin/indexnow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug: form.slug.trim() }),
+        }).catch(() => {});
+      }
       // Staff persists to the public.staff table, preserving existing ids.
       try {
         await syncStaffTable(supabase, businessId!, staffMembers);
