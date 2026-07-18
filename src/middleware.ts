@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
     );
     const { data: match } = await anon
       .from("businesses")
-      .select("slug")
+      .select("slug, default_lang")
       .eq("custom_domain", bareHost)
       .eq("custom_domain_verified", true)
       .eq("status", "live")
@@ -60,7 +60,15 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect("https://book.bapita.com");
     }
     if (pathname === "/") {
-      return NextResponse.rewrite(new URL(`/${match.slug}`, request.url));
+      // Pass the business locale to the root layout so the crawler gets a
+      // server-rendered lang/dir on its own domain (default HE for custom
+      // domains — Israeli booking pages). Own hosts never set this header,
+      // so the dashboard/marketing stay lang="en".
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-booking-locale", match.default_lang || "he");
+      return NextResponse.rewrite(new URL(`/${match.slug}`, request.url), {
+        request: { headers: requestHeaders },
+      });
     }
     if (isAsset) {
       return NextResponse.next();
