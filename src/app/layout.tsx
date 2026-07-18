@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
 import Script from "next/script";
+import { headers } from "next/headers";
 import "./globals.css";
 import { PushInit } from "@/components/PushInit";
 
@@ -15,13 +16,18 @@ export const metadata: Metadata = {
   description: "Manage your bookings, clients, and business.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Custom-domain booking pages set this via middleware; own hosts (dashboard,
+  // marketing) never do, so they stay lang="en"/dir="ltr" exactly as before.
+  const locale = (await headers()).get("x-booking-locale") ?? "en";
+  const dir = locale === "he" ? "rtl" : "ltr";
+
   return (
-    <html lang="en" className={`${heebo.className} h-full`}>
+    <html lang={locale} dir={dir} className={`${heebo.className} h-full`}>
       <body className="h-full">
         {children}
         <PushInit />
