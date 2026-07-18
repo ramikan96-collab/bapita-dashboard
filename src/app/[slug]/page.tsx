@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import BookingShell from "./BookingShell";
 import type { Business, Service } from "@/types";
@@ -13,6 +14,35 @@ function getPublicClient() {
   );
 }
 
+// Per-business brand assets (favicon + share image) under public/clients/<slug>/.
+const BRAND_ASSET_SLUGS = new Set(["shimi-azut-hairstudio"]);
+
+/**
+ * Resolve the canonical/OG host from the incoming request.
+ *
+ * When a business is served on its verified custom domain, every SEO signal
+ * points at that domain (self-canonical at "/"). Otherwise it keeps the
+ * book.bapita platform slug URL. Driven entirely by verified DB fields, so
+ * book.bapita slug clients are never affected. Metadata + JSON-LD both call
+ * this so they can never disagree.
+ */
+async function resolveCanonical(
+  slug: string,
+  business: { custom_domain?: string | null; custom_domain_verified?: boolean | null }
+) {
+  const host =
+    (await headers()).get("host")?.toLowerCase().replace(/:\d+$/, "") ?? "";
+  const bareHost = host.replace(/^www\./, "");
+  const domain = business.custom_domain?.replace(/^www\./, "") ?? "";
+  const onCustomDomain =
+    !!domain && business.custom_domain_verified === true && bareHost === domain;
+  const canonicalBase = onCustomDomain
+    ? `https://www.${domain}`
+    : "https://book.bapita.com";
+  const pageUrl = onCustomDomain ? `${canonicalBase}/` : `${canonicalBase}/${slug}`;
+  return { onCustomDomain, canonicalBase, pageUrl };
+}
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -23,7 +53,7 @@ export default async function BookPage({ params }: Props) {
 
   const { data: business, error } = await supabase
     .from("businesses")
-    .select("id, name, slug, status, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, business_hours, template_style, tagline, hero_image_url, hero_position, image_focal, gallery_images, gallery_hidden, about_text, accent_color, external_booking_url, show_gallery, show_about, show_hours, show_location, default_lang, stat_years, stat_clients, stat_rating, google_reviews, google_place_id, show_reviews, section_order, name_he, tagline_he, about_text_he, show_services, show_stats, show_open_status, profile_image_url, show_staff, staff_members, heading_font, body_font, gallery_source, instagram_embed")
+    .select("id, name, slug, status, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, business_hours, template_style, tagline, hero_image_url, hero_position, image_focal, gallery_images, gallery_hidden, about_text, accent_color, external_booking_url, show_gallery, show_about, show_hours, show_location, default_lang, stat_years, stat_clients, stat_rating, google_reviews, google_place_id, show_reviews, section_order, name_he, tagline_he, about_text_he, show_services, show_stats, show_open_status, profile_image_url, show_staff, staff_members, heading_font, body_font, gallery_source, instagram_embed, custom_domain, custom_domain_verified")
     .eq("slug", slug)
     .single();
 
@@ -58,7 +88,13 @@ export default async function BookPage({ params }: Props) {
     if (place.total  != null) b.google_review_count = place.total;
   }
 
-  const pageUrl = `https://book.bapita.com/${slug}`;
+  const { canonicalBase, pageUrl } = await resolveCanonical(slug, b);
+
+  // Brand share image, served from the same host as the canonical URL so it
+  // never points off-domain. Falls back to the hero image for non-brand slugs.
+  const schemaImage = BRAND_ASSET_SLUGS.has(slug)
+    ? `${canonicalBase}/clients/${slug}/og.png`
+    : b.hero_image_url;
 
   // Days with valid open hours, mapped to schema.org OpeningHoursSpecification.
   const dayNames: Record<keyof NonNullable<Business["business_hours"]>, string> = {
@@ -95,7 +131,7 @@ export default async function BookPage({ params }: Props) {
     ...(b.phone && { telephone: b.phone }),
     ...(b.email && { email: b.email }),
     ...(b.address && { address: { "@type": "PostalAddress", streetAddress: b.address } }),
-    ...(b.hero_image_url && { image: b.hero_image_url }),
+    ...(schemaImage && { image: schemaImage }),
     ...(b.google_maps_url && { hasMap: b.google_maps_url }),
     ...(sameAs.length > 0 && { sameAs }),
     ...(openingHoursSpecification.length > 0 && { openingHoursSpecification }),
@@ -132,26 +168,26 @@ export async function generateMetadata({ params }: Props) {
   const supabase = getPublicClient();
   const { data } = await supabase
     .from("businesses")
-    .select("name, tagline, hero_image_url, address")
+    .select("name, tagline, hero_image_url, address, custom_domain, custom_domain_verified")
     .eq("slug", slug)
     .single();
 
   if (!data) return { title: "Book an appointment" };
 
+  const { canonicalBase, pageUrl } = await resolveCanonical(slug, data);
+
   const title = `${data.name} | Online Booking`;
   const description =
     data.tagline ||
     `Book an appointment at ${data.name}${data.address ? `, ${data.address}` : ""}. Fast online booking.`;
-  const pageUrl = `https://book.bapita.com/${slug}`;
 
   // Per-business brand assets (favicon + share image). Lives under
   // public/clients/<slug>/. Same per-slug override pattern as customs/.
-  const brandAssetSlugs = new Set(["shimi-azut-hairstudio"]);
-  const brand = brandAssetSlugs.has(slug) ? `/clients/${slug}` : null;
+  const brand = BRAND_ASSET_SLUGS.has(slug) ? `/clients/${slug}` : null;
 
   const image = brand
-    ? `https://book.bapita.com${brand}/og.png`
-    : data.hero_image_url || "https://book.bapita.com/og-image.png";
+    ? `${canonicalBase}${brand}/og.png`
+    : data.hero_image_url || `${canonicalBase}/og-image.png`;
 
   return {
     title,
