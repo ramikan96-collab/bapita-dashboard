@@ -411,12 +411,12 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
                   <SectionTitle title={L.staffTitle} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div className="c-staff-grid" style={{ marginTop: 24 }}>
                     {business.staff_members.map(member => {
-                      // Focal point: dashboard-set image_focal wins; else nudge Maria's crop
-                      // up so the top of her head isn't cut off; else center.
-                      const isMaria = /maria|מריה/i.test(member.name);
+                      // Focal point: dashboard-set image_focal wins; else a uniform
+                      // upper-biased crop so every face is centered the same way and
+                      // no one's head is cut off (these portraits sit high in frame).
                       const memberFocal =
                         (member.photo_url && business.image_focal?.[member.photo_url]) ||
-                        (isMaria ? "center 20%" : "center");
+                        "center 15%";
                       return (
                       <div key={member.id} style={{ background: "#fff", borderRadius: 10, padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center", boxShadow: "0 1px 4px rgba(34,21,16,0.06)", borderInlineStart: `3px solid ${accent}` }}>
                         <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: C.cream2, border: `2px solid ${accent}`, flexShrink: 0 }}>
