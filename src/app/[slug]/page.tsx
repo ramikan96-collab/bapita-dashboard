@@ -261,7 +261,13 @@ export async function generateMetadata({ params }: Props) {
     alternates: { canonical: pageUrl },
     ...(brand && {
       icons: {
-        icon: [{ url: `${brand}/icon-32.png`, type: "image/png", sizes: "32x32" }],
+        // Multiple sizes so Google's SERP favicon crawler has a >=48px square
+        // (it tends to skip a lone 32px icon and keep its old cached one).
+        icon: [
+          { url: `${brand}/icon-32.png`, type: "image/png", sizes: "32x32" },
+          { url: `${brand}/icon-96.png`, type: "image/png", sizes: "96x96" },
+          { url: `${brand}/icon-512.png`, type: "image/png", sizes: "512x512" },
+        ],
         apple: [{ url: `${brand}/icon-180.png`, sizes: "180x180" }],
       },
     }),
