@@ -43,6 +43,11 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith("/api/public") ||
       /\.(svg|png|jpg|jpeg|gif|webp|ico)$/.test(pathname);
 
+    // SEO files must be served ON the custom domain (host-aware handlers in
+    // robots.ts / sitemap.ts), not redirected to book.bapita — otherwise the
+    // domain advertises book.bapita's sitemap and Google can't fetch its own.
+    const isSeoFile = pathname === "/sitemap.xml" || pathname === "/robots.txt";
+
     const anon = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -70,7 +75,7 @@ export async function middleware(request: NextRequest) {
         request: { headers: requestHeaders },
       });
     }
-    if (isAsset) {
+    if (isAsset || isSeoFile) {
       return NextResponse.next();
     }
     return NextResponse.redirect(`https://book.bapita.com${pathname}`);

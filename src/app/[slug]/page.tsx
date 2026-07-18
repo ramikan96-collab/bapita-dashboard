@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import BookingShell from "./BookingShell";
 import type { Business, Service } from "@/types";
@@ -18,29 +17,27 @@ function getPublicClient() {
 const BRAND_ASSET_SLUGS = new Set(["shimi-azut-hairstudio"]);
 
 /**
- * Resolve the canonical/OG host from the incoming request.
+ * Resolve the canonical/OG URL for a business.
  *
- * When a business is served on its verified custom domain, every SEO signal
- * points at that domain (self-canonical at "/"). Otherwise it keeps the
- * book.bapita platform slug URL. Driven entirely by verified DB fields, so
- * book.bapita slug clients are never affected. Metadata + JSON-LD both call
- * this so they can never disagree.
+ * Whenever a business has a verified custom domain, every SEO signal points
+ * at that domain (self-canonical at "/") — even the book.bapita/<slug> copy,
+ * so Google consolidates all authority onto the brand domain instead of the
+ * two hosts competing. Businesses without a verified custom domain keep their
+ * book.bapita slug URL. Keyed purely off verified DB fields, so slug-only
+ * clients are never affected. Metadata + JSON-LD both call this so they can
+ * never disagree.
  */
-async function resolveCanonical(
+function resolveCanonical(
   slug: string,
   business: { custom_domain?: string | null; custom_domain_verified?: boolean | null }
 ) {
-  const host =
-    (await headers()).get("host")?.toLowerCase().replace(/:\d+$/, "") ?? "";
-  const bareHost = host.replace(/^www\./, "");
   const domain = business.custom_domain?.replace(/^www\./, "") ?? "";
-  const onCustomDomain =
-    !!domain && business.custom_domain_verified === true && bareHost === domain;
-  const canonicalBase = onCustomDomain
+  const hasCustomDomain = !!domain && business.custom_domain_verified === true;
+  const canonicalBase = hasCustomDomain
     ? `https://www.${domain}`
     : "https://book.bapita.com";
-  const pageUrl = onCustomDomain ? `${canonicalBase}/` : `${canonicalBase}/${slug}`;
-  return { onCustomDomain, canonicalBase, pageUrl };
+  const pageUrl = hasCustomDomain ? `${canonicalBase}/` : `${canonicalBase}/${slug}`;
+  return { canonicalBase, pageUrl };
 }
 
 /**
@@ -136,7 +133,7 @@ export default async function BookPage({ params }: Props) {
 
   const city = parseCity(b.address);
 
-  const { canonicalBase, pageUrl } = await resolveCanonical(slug, b);
+  const { canonicalBase, pageUrl } = resolveCanonical(slug, b);
 
   // Brand share image, served from the same host as the canonical URL so it
   // never points off-domain. Falls back to the hero image for non-brand slugs.
@@ -238,7 +235,7 @@ export async function generateMetadata({ params }: Props) {
 
   if (!data) return { title: "Book an appointment" };
 
-  const { canonicalBase, pageUrl } = await resolveCanonical(slug, data);
+  const { canonicalBase, pageUrl } = resolveCanonical(slug, data);
 
   // Keyword + location aware copy, HE or EN by default_lang. No dashes.
   const { title, description } = buildSeoCopy({
