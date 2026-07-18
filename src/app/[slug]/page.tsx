@@ -43,6 +43,50 @@ async function resolveCanonical(
   return { onCustomDomain, canonicalBase, pageUrl };
 }
 
+/**
+ * Known cities for DB-driven SEO copy + structured address. Parsed from the
+ * free-text address string (HE or EN) so title/description/schema stay keyed
+ * off DB data, never a client name. Extend as new cities are onboarded.
+ */
+const SEO_CITIES = [
+  { match: /הרצליה|herzl/i, en: "Herzliya", he: "הרצליה", region: "Tel Aviv District" },
+] as const;
+
+type SeoCity = (typeof SEO_CITIES)[number];
+
+function parseCity(address?: string | null): SeoCity | null {
+  if (!address) return null;
+  return SEO_CITIES.find((c) => c.match.test(address)) ?? null;
+}
+
+/**
+ * Human, keyword + location aware title/description. No hyphens or dashes.
+ * HE copy when default_lang === "he", else EN. General helper (name + city
+ * interpolated), shipped with smart defaults; a real meta_title/meta_description
+ * field can override this later.
+ */
+function buildSeoCopy(opts: {
+  name: string;
+  nameHe?: string | null;
+  city: SeoCity | null;
+  lang: "he" | "en";
+}): { title: string; description: string } {
+  const { name, nameHe, city, lang } = opts;
+  if (lang === "he") {
+    const displayName = nameHe || name;
+    const inCity = city ? ` ב${city.he}` : "";
+    return {
+      title: `${displayName} | מספרה וברבר${inCity}`,
+      description: `מספרה של ${displayName}${inCity}. תספורות גבר, עיצוב זקן וטיפוח מקצועי. קבעו תור אונליין בקלות ובכמה קליקים.`,
+    };
+  }
+  const inCity = city ? ` in ${city.en}` : "";
+  return {
+    title: `${name} | Barber and Hair Studio${inCity}`,
+    description: `${name} hair studio${inCity}. Men's cuts, beard styling and grooming. Book your appointment online in seconds.`,
+  };
+}
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -77,6 +121,7 @@ export default async function BookPage({ params }: Props) {
 
   // Merge Google Places reviews (server-side, 1h cache) with manual testimonials,
   // and auto-populate the hero rating + review count straight from Google.
+  let placeLocation: { lat: number; lng: number } | null = null;
   if (b.google_place_id) {
     const place = await fetchPlaceData(b.google_place_id);
     if (place.reviews.length > 0) {
@@ -86,7 +131,10 @@ export default async function BookPage({ params }: Props) {
     // Google's live numbers override the manual stat fields when present.
     if (place.rating != null) b.stat_rating = place.rating.toFixed(1);
     if (place.total  != null) b.google_review_count = place.total;
+    placeLocation = place.location;
   }
+
+  const city = parseCity(b.address);
 
   const { canonicalBase, pageUrl } = await resolveCanonical(slug, b);
 
@@ -123,14 +171,30 @@ export default async function BookPage({ params }: Props) {
 
   const localBusinessSchema = {
     "@context": "https://schema.org",
-    "@type": "LocalBusiness",
+    "@type": ["HairSalon", "BarberShop"],
     name: b.name,
     ...(b.name_he && { alternateName: b.name_he }),
     url: pageUrl,
     ...((b.tagline || b.tagline_he) && { description: b.tagline || b.tagline_he }),
     ...(b.phone && { telephone: b.phone }),
     ...(b.email && { email: b.email }),
-    ...(b.address && { address: { "@type": "PostalAddress", streetAddress: b.address } }),
+    ...(b.address && {
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: b.address,
+        ...(city && { addressLocality: city.en, addressRegion: city.region }),
+        addressCountry: "IL",
+      },
+    }),
+    ...(placeLocation && {
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: placeLocation.lat,
+        longitude: placeLocation.lng,
+      },
+    }),
+    priceRange: "₪₪",
+    ...(city && { areaServed: city.en }),
     ...(schemaImage && { image: schemaImage }),
     ...(b.google_maps_url && { hasMap: b.google_maps_url }),
     ...(sameAs.length > 0 && { sameAs }),
@@ -168,7 +232,7 @@ export async function generateMetadata({ params }: Props) {
   const supabase = getPublicClient();
   const { data } = await supabase
     .from("businesses")
-    .select("name, tagline, hero_image_url, address, custom_domain, custom_domain_verified")
+    .select("name, name_he, tagline, hero_image_url, address, default_lang, custom_domain, custom_domain_verified")
     .eq("slug", slug)
     .single();
 
@@ -176,10 +240,13 @@ export async function generateMetadata({ params }: Props) {
 
   const { canonicalBase, pageUrl } = await resolveCanonical(slug, data);
 
-  const title = `${data.name} | Online Booking`;
-  const description =
-    data.tagline ||
-    `Book an appointment at ${data.name}${data.address ? `, ${data.address}` : ""}. Fast online booking.`;
+  // Keyword + location aware copy, HE or EN by default_lang. No dashes.
+  const { title, description } = buildSeoCopy({
+    name: data.name,
+    nameHe: data.name_he,
+    city: parseCity(data.address),
+    lang: data.default_lang === "he" ? "he" : "en",
+  });
 
   // Per-business brand assets (favicon + share image). Lives under
   // public/clients/<slug>/. Same per-slug override pattern as customs/.
