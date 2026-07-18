@@ -12,8 +12,9 @@ type StatusT = {
 
 type DaysT = Record<DayKey, string>;
 
-function fmt(t: string) {
+function fmt(t: string, use24h: boolean) {
   const [h, m] = t.split(":").map(Number);
+  if (use24h) return `${h}:${String(m).padStart(2,"0")}`;
   return `${h % 12 || 12}:${String(m).padStart(2,"0")} ${h >= 12 ? "PM" : "AM"}`;
 }
 
@@ -21,6 +22,7 @@ export function getOpenStatus(
   hours: BusinessHours | undefined,
   statusT: StatusT,
   daysT: DaysT,
+  use24h = false,
 ): { open: boolean; text: string } | null {
   if (!hours) return null;
   const now = new Date();
@@ -35,7 +37,7 @@ export function getOpenStatus(
     const startMins = sh * 60 + sm;
     const endMins   = eh * 60 + em;
     if (nowMins >= startMins && nowMins < endMins) return { open: true, text: statusT.openNow };
-    if (nowMins < startMins) return { open: false, text: statusT.closedOpensToday(fmt(todayH.start)) };
+    if (nowMins < startMins) return { open: false, text: statusT.closedOpensToday(fmt(todayH.start, use24h)) };
   }
 
   for (let i = 1; i <= 7; i++) {
@@ -43,7 +45,7 @@ export function getOpenStatus(
     const nextH   = hours[nextKey];
     if (nextH.open) {
       const dayLabel = i === 1 ? statusT.tomorrow : daysT[nextKey];
-      return { open: false, text: statusT.closedOpens(dayLabel, fmt(nextH.start)) };
+      return { open: false, text: statusT.closedOpens(dayLabel, fmt(nextH.start, use24h)) };
     }
   }
   return { open: false, text: statusT.closed };

@@ -46,6 +46,15 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
   const t      = translations[lang];
   const isRtl  = lang === "he";
 
+  // Shimi-only label overrides (do not touch shared translations)
+  const L = {
+    heroCta:      isRtl ? "זימון תור" : t.hero.cta,
+    serviceBook:  isRtl ? "לזימון"    : t.services.book,
+    aboutTitle:   isRtl ? "קצת עלינו" : "About Us",
+    staffTitle:   isRtl ? "הצוות שלנו" : "Our Team",
+    galleryTitle: isRtl ? "אינסטגרם"  : "Instagram",
+  };
+
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
 
   // Get carousel images - use gallery if available, otherwise single hero image
@@ -71,7 +80,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
   const accent      = business.accent_color || C.gold;
   const heroImage   = business.hero_image_url || FALLBACK_HERO;
   const heroFocal   = business.image_focal?.[heroImage] || "center";
-  const openStatus  = getOpenStatus(business.business_hours, t.status, t.days);
+  const openStatus  = getOpenStatus(business.business_hours, t.status, t.days, isRtl);
   const waNumber    = business.whatsapp_number?.replace(/\D/g, "");
   const displayName = (isRtl && business.name_he) ? business.name_he : business.name;
   const headingFont = resolveFont(business.heading_font, "'Heebo', sans-serif");
@@ -315,7 +324,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             onMouseEnter={e => { e.currentTarget.style.background = C.dark; e.currentTarget.style.transform = "translateY(-1px)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = accent; e.currentTarget.style.transform = "translateY(0)"; }}
           >
-            {t.hero.cta}
+            {L.heroCta}
           </button>
         </div>
       </section>
@@ -371,7 +380,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
                               onMouseEnter={e => { e.currentTarget.style.background = accent; }}
                               onMouseLeave={e => { e.currentTarget.style.background = C.dark; }}
                             >
-                              {t.services.book}
+                              {L.serviceBook}
                             </button>
                           </div>
                         </div>
@@ -383,7 +392,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             case "about":
               return business.show_about !== false && displayAbout ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.about.title} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
+                  <SectionTitle title={L.aboutTitle} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div className="about-row" style={{ marginTop: 20 }}>
                     {(business.profile_image_url || business.hero_image_url) && (
                       <div style={{ textAlign: "center", flexShrink: 0 }}>
@@ -399,14 +408,21 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
             case "staff":
               return business.show_staff !== false && business.staff_members && business.staff_members.length > 0 ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.staff.title} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
+                  <SectionTitle title={L.staffTitle} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div className="c-staff-grid" style={{ marginTop: 24 }}>
-                    {business.staff_members.map(member => (
+                    {business.staff_members.map(member => {
+                      // Focal point: dashboard-set image_focal wins; else nudge Maria's crop
+                      // up so the top of her head isn't cut off; else center.
+                      const isMaria = /maria|מריה/i.test(member.name);
+                      const memberFocal =
+                        (member.photo_url && business.image_focal?.[member.photo_url]) ||
+                        (isMaria ? "center 20%" : "center");
+                      return (
                       <div key={member.id} style={{ background: "#fff", borderRadius: 10, padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center", boxShadow: "0 1px 4px rgba(34,21,16,0.06)", borderInlineStart: `3px solid ${accent}` }}>
                         <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: C.cream2, border: `2px solid ${accent}`, flexShrink: 0 }}>
                           {member.photo_url
                             /* eslint-disable-next-line @next/next/no-img-element */
-                            ? <img src={member.photo_url} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ? <img src={member.photo_url} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: memberFocal }} />
                             : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: C.dark, opacity: 0.4 }}>👤</div>
                           }
                         </div>
@@ -415,14 +431,15 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
                           {member.role && <div style={{ fontSize: 12, color: C.dark, opacity: 0.75, marginTop: 3 }}>{member.role}</div>}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </section>
               ) : null;
             case "gallery":
               return (showInstaGallery || showImageGallery) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
+                  <SectionTitle title={L.galleryTitle} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div style={{ marginTop: 28 }}>
                     {showInstaGallery
                       ? <InstagramFeed embed={business.instagram_embed!} radius={10} />
@@ -454,7 +471,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.hours.title} accentColor={accent} darkColor={C.dark} fontFamily={headingFont} />
                   <div style={{ marginTop: 20 }}>
-                    <SectionHours hours={business.business_hours} darkColor={C.dark} accentColor={accent} mutedColor="rgba(34,21,16,0.45)" dayLabels={t.days} closedLabel={t.hours.closed} />
+                    <SectionHours hours={business.business_hours} darkColor={C.dark} accentColor={accent} mutedColor="rgba(34,21,16,0.45)" dayLabels={t.days} closedLabel={t.hours.closed} use24h={isRtl} />
                   </div>
                 </section>
               ) : null;
@@ -485,7 +502,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
         />
       </div>
 
-      <FloatingCTA shopName="" bookLabel={t.hero.cta} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
+      <FloatingCTA shopName="" bookLabel={L.heroCta} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
 
       {waNumber && (
         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
