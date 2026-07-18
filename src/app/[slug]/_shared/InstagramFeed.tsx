@@ -80,7 +80,14 @@ export function InstagramFeed({ embed, radius = 10 }: Props) {
   if (!feedId) return null;
 
   return (
-    <div ref={containerRef} style={{ width: "100%", borderRadius: radius, overflow: "hidden" }}>
+    // A placeholder minHeight while empty is essential: a zero-area element never
+    // triggers IntersectionObserver, so without it `visible` would never flip and
+    // the widget (and its hover-to-play videos) would never mount. Drops to the
+    // widget's own height once it renders.
+    <div
+      ref={containerRef}
+      style={{ width: "100%", borderRadius: radius, overflow: "hidden", minHeight: visible ? undefined : 320 }}
+    >
       {visible && <behold-widget feed-id={feedId} />}
     </div>
   );

@@ -9,7 +9,10 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
+      // Allow crawlers to fetch public brand assets (favicons + OG images) that
+      // live under /clients/<slug>/. Without these, "/clients" below blocks the
+      // favicon, so Google shows the generic globe in search results.
+      allow: ["/", "/clients/*/icon-", "/clients/*/og.png"],
       disallow: [
         "/calendar",
         "/clients",
