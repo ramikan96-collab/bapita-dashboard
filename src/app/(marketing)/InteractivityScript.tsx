@@ -23,18 +23,18 @@ export default function InteractivityScript() {
     var I18N = {
       en: {
         'nav.problem': "Problem", 'nav.solution': "Solution", 'nav.addons': "Add-ons", 'nav.faq': "FAQ", 'nav.login': "Login",
-        'cta.talk': "Let's talk", 'cta.book': "Book a free call",
-        'hero.eyebrow': "For appointment based businesses", 'hero.h1a': "Your business, online.", 'hero.h1b': "Done for you.",
-        'hero.sub': "A booking website, owner dashboard, and automations. Built for your business in 48 hours.",
-        'hero.trust': "One 30-minute call. No commitment.",
+        'cta.talk': "Build my site", 'cta.book': "Build my site",
+        'hero.eyebrow': "For appointment based businesses", 'hero.h1a': "Your business online.", 'hero.h1b': "Built for you.",
+        'hero.sub': "A booking website your clients love, a free owner dashboard, and automations. We build it, connect it, and keep it running. You just show up.",
+        'hero.trust': "Live in 48 hours. No tech skills, no commitment.",
         'mock.shop': "Studio Avi", 'mock.barber': "Barbershop", 'mock.service': "Service", 'mock.cut': "Haircut", 'mock.cutbeard': "Cut and beard",
         'mock.min': "min", 'mock.pickday': "Pick a day", 'mock.book': "Book now", 'mock.booked': "Booked!", 'mock.confirm': "A confirmation is on its way.",
         'mock.chip': "Click to book", 'mock.chiptime': "Tomorrow · 11:00",
         'mock.dash.appts': "this week", 'mock.dash.rev': "revenue", 'mock.dash.noshows': "no shows",
         'mock.addon.wa': "Appointment reminders", 'mock.addon.pay': "Collect deposits online", 'mock.addon.ads': "New clients from Meta campaigns",
         'day.mon': "Mon", 'day.tue': "Tue", 'day.wed': "Wed", 'day.thu': "Thu",
-        'proof.1': "Live from your first call", 'proof.2': "Clients book while you sleep",
-        'proof.3num': "1 call", 'proof.3': "All we need from you", 'proof.4num': "0 tech", 'proof.4': "No knowledge required",
+        'proof.1': "Live in 48 hours", 'proof.2': "Clients book while you sleep",
+        'proof.3num': "0 tech", 'proof.3': "Nothing to learn", 'proof.4num': "1 form", 'proof.4': "All we need to start",
         'pain.label': "Sound familiar?", 'pain.title': "The real cost of running things manually",
         'pain.sub': "These aren't one-off annoyances. They repeat every week, quietly costing you clients, hours, and revenue.",
         'pain.0.h': "You are invisible online", 'pain.0.s': "No profile, no search presence. Someone looked for what you do and found three competitors.",
@@ -44,16 +44,16 @@ export default function InteractivityScript() {
         'pain.s0.query': "barber near me", 'pain.s0.empty': "You're not here",
         'pain.s2.day': "Tuesday", 'pain.s2.confirmed': "confirmed", 'pain.s3.header': "WhatsApp",
         'how.label': "The process", 'how.title': "Three steps. Then you are live.",
-        'how.sub': "No tech skills needed, no long onboarding. Just one conversation, and we take care of the rest.",
-        'how.1.h': "We talk", 'how.1.p': "One call, 30 minutes. You tell us about your business: your services, how you handle bookings now, what you want to fix. We take it from there.",
-        'how.2.h': "We build it", 'how.2.p': "Your booking website, owner dashboard, and confirmations, built by us, in your name. No homework on your end. No back and forth.",
-        'how.3.h': "You go live", 'how.3.p': "In 48 hours your system is live. Clients can find you, book online, and get reminders without you doing a thing. We stay on hand for any updates.",
-        'how.closer': "One call. 48 hours. Done.",
+        'how.sub': "No tech skills needed, no long onboarding. You send a few details, and we take care of the rest.",
+        'how.1.h': "You start", 'how.1.p': "Fill a short form or message us directly. Tell us your business, your services, your hours. That is all we need.",
+        'how.2.h': "We build it", 'how.2.p': "We build your booking website and connect everything in your name. No homework, no back and forth. A free owner dashboard comes with it if you want it.",
+        'how.3.h': "You go live", 'how.3.p': "In 48 hours your site is live. Clients find you and book online, and every booking lands on your phone. We stay on for changes.",
+        'how.closer': "One form. 48 hours. Live.",
         'build.label': "What we build for you", 'build.title': "Three layers. One system.",
         'build.sub': "We build and maintain your entire online presence. You just show up and do your job.",
         'build.paid': "The product", 'build.free': "Included free", 'build.grow': "Grow when ready",
         'build.1.h': "Booking Website", 'build.1.p': "A clean, professional page where clients see your services, your availability, and book instantly, any hour of the day.",
-        'build.2.h': "Owner Dashboard", 'build.2.p': "Log in and see your full week at a glance: who is coming, what service, what time. No chasing messages.",
+        'build.2.h': "Owner Dashboard", 'build.2.p': "See your whole week, insights, and reschedules in one place. Prefer pen and paper? Skip it. You still get every booking by email and a notification on your phone.",
         'build.3.h': "Add-ons", 'build.3.p': "Reminders, payments, social, reviews, ads. Layer in what you need, when you need it. Everything runs itself.",
         'addons.label': "Add-ons", 'addons.title': "Layer in what you need.",
         'addons.sub': "Everything below plugs straight into your system. Pick what fits, turn it on, we handle the rest.",
@@ -71,20 +71,26 @@ export default function InteractivityScript() {
         'addons.ads.body': "Click-to-WhatsApp campaigns on Meta that bring new clients straight into your booking flow. <strong>We write, launch, and manage everything</strong>: budget, creative, and targeting. You just check your calendar and see it filling up.",
         'addons.gmb.t': "Google Business Setup", 'addons.gmb.tag': "Full profile setup so you appear when someone nearby searches for what you do",
         'addons.gmb.body': "We claim and fully set up your Google Business Profile so you appear in Google Maps and local search when someone nearby searches for what you do. <strong>Done once, works forever.</strong> Verified profile, photos, hours, and description.",
+        'addons.only.q': "Want add-ons only, without a website?", 'addons.only.cta': "Tell us what you need",
+        'pricing.label': "Pricing", 'pricing.title': "One price. Everything included.",
+        'pricing.plan': "Booking Website", 'pricing.setup': "₪1,500 setup", 'pricing.month': "then ₪200 / month",
+        'pricing.f1': "Booking website in your name", 'pricing.f2': "Hosting and updates", 'pricing.f3': "3 mini edits every month", 'pricing.f4': "Free owner dashboard", 'pricing.f5': "Every booking to your phone",
+        'pricing.note': "Want add-ons only, without a website? Tell us what you need.",
         'test.label': "What owners say", 'test.title': "Real businesses. Real results.",
         'test.shimi.q': "I never had time for any of this, I'm cutting hair all day. Bapita set everything up for me and it worked from day one. Now my clients book themselves and my chair stays full.",
         'test.shimi.n': "Shimi Azut", 'test.shimi.m': "Shimi Azut Hair Studio, Herzliya",
         'test.shimi.rev': "474 Google reviews", 'test.shimi.gpt': "When people ask ChatGPT for the best hair salon in Herzliya, Shimi comes up first.",
-        'faq.label': "Questions", 'faq.title': "Straight answers.", 'faq.sub': "Everything you need to know before the call.",
-        'faq.1.q': "How much does it cost?", 'faq.1.a': "It depends on your business: your services, your size, what you actually need. We do not do one size pricing. Tell us about your setup and we will give you a straight number on the call. No pressure, no pitch.",
-        'faq.2.q': "How long until I am live?", 'faq.2.a': "48 hours from our call. We work fast. If you have custom requests it can take a little longer, and we will tell you that upfront.",
+        'faq.label': "Questions", 'faq.title': "Straight answers.", 'faq.sub': "Everything you need to know before you start.",
+        'faq.1.q': "How much does it cost?", 'faq.1.a': "₪1,500 to set up, then ₪200 a month. That covers your booking website, hosting, updates, three mini edits a month, and your owner dashboard. Add-ons are extra, only if you want them.",
+        'faq.2.q': "How long until I am live?", 'faq.2.a': "About 48 hours after you send your details. If you have custom requests it can take a little longer, and we will tell you that upfront.",
         'faq.3.q': "I already run bookings on WhatsApp. Why change?", 'faq.3.a': "You keep WhatsApp. We add a booking page so clients pick their own slot instead of messaging you for one. The back and forth stops. The bookings do not.",
         'faq.4.q': "Will my clients actually book online?", 'faq.4.a': "They already book haircuts, tables, and doctors online. Yours will be the easy option: open at any hour, no waiting for you to reply at night.",
-        'faq.5.q': "What do I actually need to do?", 'faq.5.a': "One 30 minute call. Tell us your services, prices, and schedule. We build and run everything from there. No homework, no back and forth.",
+        'faq.5.q': "What do I actually need to do?", 'faq.5.a': "Fill a short form or message us. Tell us your services, prices, and hours. We build and run everything from there. No homework.",
         'faq.6.q': "Do I need to know anything about tech?", 'faq.6.a': "Zero. That is the whole point. We build it, we maintain it. New service, new price, something to change? You message us and it is done.",
         'chip.1': "✓ No commitment", 'chip.2': "✓ 48h turnaround",
-        'final.title': "Ready to get started?", 'final.trust': "No forms. No decks. Just a conversation.",
-        'final.p': "One call, 30 minutes. We will learn your business, tell you exactly what we would build, and answer every question you have. No pitch. No commitment.",
+        'final.title': "Ready to go live?", 'final.trust': "Fill the form, or talk to us first. Your call.",
+        'final.p': "Send your details and we start building. Prefer to talk? We are around. No pressure, no commitment.",
+        'modal.talk': "Prefer to talk? Book a call",
         'footer.tagline': "Built for you. Runs without you.", 'footer.col.links': "Links", 'footer.col.for': "Built for", 'footer.col.contact': "Get started",
         'footer.for.barber': "Barber", 'footer.for.salon': "Hair Salon", 'footer.for.nail': "Nail Salon", 'footer.for.spa': "Spa & MedSpa", 'footer.for.massage': "Massage",
         'footer.for.lash': "Lash Studio", 'footer.for.pilates': "Pilates & Yoga", 'footer.for.trainer': "Personal Trainer", 'footer.for.physio': "Physiotherapy", 'footer.for.tattoo': "Tattoo Studio",
@@ -92,18 +98,18 @@ export default function InteractivityScript() {
       },
       he: {
         'nav.problem': "הבעיה", 'nav.solution': "הפתרון", 'nav.addons': "תוספות", 'nav.faq': "שאלות", 'nav.login': "כניסה",
-        'cta.talk': "בוא נדבר", 'cta.book': "לשיחת ייעוץ חינם",
-        'hero.eyebrow': "לעסקים שעובדים עם תורים", 'hero.h1a': "כל העסק שלך אונליין.", 'hero.h1b': "אנחנו דואגים להכל.",
-        'hero.sub': "אתר הזמנות, לוח בקרה לבעל העסק, ואוטומציות. נבנה לעסק שלך תוך 48 שעות.",
-        'hero.trust': "שיחה אחת של 30 דקות. בלי התחייבות.",
+        'cta.talk': "בונים לי אתר", 'cta.book': "בונים לי אתר",
+        'hero.eyebrow': "לעסקים שעובדים עם תורים", 'hero.h1a': "העסק שלך אונליין.", 'hero.h1b': "בנוי בשבילך.",
+        'hero.sub': "אתר הזמנות שהלקוחות שלך אוהבים, לוח בקרה חינם לבעל העסק, ואוטומציות. אנחנו בונים, מחברים, ושומרים שהכל רץ. אתה רק מגיע.",
+        'hero.trust': "באוויר תוך 48 שעות. בלי ידע טכני, בלי התחייבות.",
         'mock.shop': "הסטודיו של אבי", 'mock.barber': "מספרה", 'mock.service': "שירות", 'mock.cut': "תספורת", 'mock.cutbeard': "תספורת וזקן",
         'mock.min': "דק", 'mock.pickday': "בחר יום", 'mock.book': "לקביעת תור", 'mock.booked': "נקבע!", 'mock.confirm': "האישור בדרך אליך.",
         'mock.chip': "נקבע אצל אבי", 'mock.chiptime': "מחר · 11:00",
         'mock.dash.appts': "תורים היום", 'mock.dash.rev': "הכנסה צפויה", 'mock.dash.noshows': "אי הגעות",
         'mock.addon.wa': "תזכורות לפגישות", 'mock.addon.pay': "גביית מקדמות אונליין", 'mock.addon.ads': "לקוחות חדשים מקמפיינים",
         'day.mon': "ב׳", 'day.tue': "ג׳", 'day.wed': "ד׳", 'day.thu': "ה׳",
-        'proof.1': "באוויר מהשיחה הראשונה", 'proof.2': "לקוחות קובעים בזמן שאתה ישן",
-        'proof.3num': "שיחה 1", 'proof.3': "כל מה שצריך ממך", 'proof.4num': "0 טכני", 'proof.4': "לא צריך לדעת כלום",
+        'proof.1': "באוויר תוך 48 שעות", 'proof.2': "לקוחות קובעים בזמן שאתה ישן",
+        'proof.3num': "0 טכני", 'proof.3': "לא צריך ללמוד כלום", 'proof.4num': "טופס 1", 'proof.4': "כל מה שצריך כדי להתחיל",
         'pain.label': "נשמע מוכר?", 'pain.title': "המחיר האמיתי של לנהל הכל ידנית",
         'pain.sub': "אלה לא תקלות חד-פעמיות. הן חוזרות כל שבוע, ושוחקות בשקט לקוחות, שעות, והכנסות.",
         'pain.0.h': "אתה לא קיים אונליין", 'pain.0.s': "אין פרופיל, אין נוכחות בחיפוש. מישהו חיפש את מה שאתה עושה ומצא שלושה מתחרים.",
@@ -113,16 +119,16 @@ export default function InteractivityScript() {
         'pain.s0.query': "ברבר קרוב אלי", 'pain.s0.empty': "אתה לא כאן",
         'pain.s2.day': "שלישי", 'pain.s2.confirmed': "מאושר", 'pain.s3.header': "וואטסאפ",
         'how.label': "התהליך", 'how.title': "שלושה שלבים. ואתה באוויר.",
-        'how.sub': "לא צריך לדעת טכנולוגיה, לא צריך תהליך קליטה ארוך. שיחה אחת, ואנחנו מטפלים בשאר.",
-        'how.1.h': "מדברים", 'how.1.p': "שיחה אחת, 30 דקות. אתה מספר לנו על העסק: השירותים שלך, איך אתה מנהל תורים היום, מה אתה רוצה לסדר. משם אנחנו לוקחים.",
-        'how.2.h': "בונים", 'how.2.p': "אתר ההזמנות, לוח הבקרה, והאישורים שלך, נבנים על ידינו, בשמך. בלי שיעורי בית מצדך. בלי הלוך ושוב.",
-        'how.3.h': "עולה לאוויר", 'how.3.p': "תוך 48 שעות המערכת שלך באוויר. לקוחות מוצאים אותך, קובעים אונליין, ומקבלים תזכורות בלי שתעשה כלום. אנחנו זמינים לכל עדכון.",
-        'how.closer': "שיחה אחת. 48 שעות. גמרנו.",
+        'how.sub': "לא צריך לדעת טכנולוגיה, לא צריך תהליך קליטה ארוך. אתה שולח כמה פרטים, ואנחנו מטפלים בשאר.",
+        'how.1.h': "אתה מתחיל", 'how.1.p': "ממלא טופס קצר או כותב לנו ישירות. מספר לנו על העסק, השירותים שלך, השעות שלך. זה כל מה שצריך.",
+        'how.2.h': "בונים", 'how.2.p': "אנחנו בונים את אתר ההזמנות שלך ומחברים הכל בשמך. בלי שיעורי בית, בלי הלוך ושוב. לוח בקרה חינם לבעל העסק מגיע עם זה אם תרצה.",
+        'how.3.h': "עולה לאוויר", 'how.3.p': "תוך 48 שעות האתר שלך באוויר. לקוחות מוצאים אותך וקובעים אונליין, וכל תור נוחת לך בטלפון. אנחנו זמינים לכל שינוי.",
+        'how.closer': "טופס אחד. 48 שעות. באוויר.",
         'build.label': "מה אנחנו בונים לך", 'build.title': "שלוש שכבות. מערכת אחת.",
         'build.sub': "אנחנו בונים ומנהלים את הנוכחות המקוונת שלך. אתה רק מגיע ועושה את העבודה.",
         'build.paid': "המוצר", 'build.free': "כלול חינם", 'build.grow': "גדל כשמוכן",
         'build.1.h': "אתר הזמנות", 'build.1.p': "עמוד נקי ומקצועי שבו לקוחות רואים את השירותים שלך, את הזמינות שלך, וקובעים מיד, בכל שעה ביום.",
-        'build.2.h': "לוח בקרה לבעל העסק", 'build.2.p': "נכנס ורואה את כל השבוע במבט אחד: מי מגיע, איזה שירות, באיזו שעה. בלי לרדוף אחרי הודעות.",
+        'build.2.h': "לוח בקרה לבעל העסק", 'build.2.p': "רואה את כל השבוע, תובנות, ושינויי תורים במקום אחד. מעדיף דף ועט? דלג על זה. עדיין תקבל כל תור במייל ובהתראה לטלפון.",
         'build.3.h': "תוספות", 'build.3.p': "תזכורות, תשלומים, סושיאל, ביקורות, פרסום. מוסיף מה שצריך, מתי שצריך. הכל עובד לבד.",
         'addons.label': "תוספות", 'addons.title': "הוסף מה שצריך.",
         'addons.sub': "כל אחד מהשירותים למטה מתחבר ישירות למערכת שלך. בחר מה מתאים, אנחנו מטפלים בשאר.",
@@ -142,20 +148,26 @@ export default function InteractivityScript() {
         'addons.ads.body': "קמפיינים של לחיצה לוואטסאפ במטא שמביאים לקוחות חדשים ישר לתוך מערך ההזמנות שלך. <strong>אנחנו כותבים, מעלים ומנהלים הכל</strong>: תקציב, קריאייטיב וטירגוט. אתה רק בודק את היומן ורואה אותו מתמלא.",
         'addons.gmb.t': "הקמת גוגל לעסק", 'addons.gmb.tag': "הקמת פרופיל מלא כך שתופיע כשמישהו קרוב מחפש את מה שאתה עושה",
         'addons.gmb.body': "אנחנו מאמתים ומגדירים את הפרופיל העסקי שלך בגוגל כדי שתופיע בגוגל מפות ובתוצאות המקומיות. <strong>נעשה פעם אחת, עובד לתמיד.</strong> פרופיל מאומת, תמונות, שעות ותיאור עסק.",
+        'addons.only.q': "רוצה תוספות בלבד, בלי אתר?", 'addons.only.cta': "ספר לנו מה אתה צריך",
+        'pricing.label': "מחיר", 'pricing.title': "מחיר אחד. הכל כלול.",
+        'pricing.plan': "אתר הזמנות", 'pricing.setup': "1,500 ₪ הקמה", 'pricing.month': "ואז 200 ₪ לחודש",
+        'pricing.f1': "אתר הזמנות בשמך", 'pricing.f2': "אחסון ועדכונים", 'pricing.f3': "3 עריכות קטנות בכל חודש", 'pricing.f4': "לוח בקרה חינם לבעל העסק", 'pricing.f5': "כל תור נוחת לך בטלפון",
+        'pricing.note': "רוצה תוספות בלבד, בלי אתר? ספר לנו מה אתה צריך.",
         'test.label': "מה בעלי עסקים אומרים", 'test.title': "עסקים אמיתיים. תוצאות אמיתיות.",
         'test.shimi.q': "אין לי זמן לכל זה, אני חותך שיער כל היום. בפיתה הקימו לי הכל וזה עבד מהיום הראשון. עכשיו הלקוחות קובעים לבד והכיסא תמיד מלא.",
         'test.shimi.n': "שימי אזוט", 'test.shimi.m': "מספרת שימי אזוט, הרצליה",
         'test.shimi.rev': "474 ביקורות בגוגל", 'test.shimi.gpt': "כששואלים את ChatGPT מה המספרה הטובה בהרצליה, שימי הראשון שעולה.",
-        'faq.label': "שאלות", 'faq.title': "תשובות ישירות.", 'faq.sub': "כל מה שצריך לדעת לפני השיחה.",
-        'faq.1.q': "כמה זה עולה?", 'faq.1.a': "תלוי בעסק שלך: השירותים, הגודל, מה שאתה באמת צריך. אנחנו לא עובדים במחיר אחיד. ספר לנו על המערך שלך וניתן לך מספר ישיר בשיחה. בלי לחץ, בלי מכירה.",
-        'faq.2.q': "תוך כמה זמן אני באוויר?", 'faq.2.a': "48 שעות מהשיחה. אנחנו עובדים מהר. אם יש בקשות מיוחדות זה יכול לקחת קצת יותר, ונגיד לך את זה מראש.",
+        'faq.label': "שאלות", 'faq.title': "תשובות ישירות.", 'faq.sub': "כל מה שצריך לדעת לפני שמתחילים.",
+        'faq.1.q': "כמה זה עולה?", 'faq.1.a': "1,500 ₪ להקמה, ואז 200 ₪ לחודש. זה כולל את אתר ההזמנות, אחסון, עדכונים, שלוש עריכות קטנות בחודש, ולוח בקרה לבעל העסק. תוספות הן בתשלום נפרד, רק אם תרצה.",
+        'faq.2.q': "תוך כמה זמן אני באוויר?", 'faq.2.a': "בערך 48 שעות אחרי שאתה שולח את הפרטים. אם יש בקשות מיוחדות זה יכול לקחת קצת יותר, ונגיד לך את זה מראש.",
         'faq.3.q': "אני כבר מנהל תורים בוואטסאפ. למה לשנות?", 'faq.3.a': "אתה משאיר את הוואטסאפ. אנחנו מוסיפים עמוד הזמנות כדי שלקוחות יבחרו תור לבד במקום לכתוב לך. ההלוך ושוב נפסק. התורים לא.",
         'faq.4.q': "הלקוחות שלי באמת יקבעו אונליין?", 'faq.4.a': "הם כבר קובעים תספורות, שולחנות ורופאים אונליין. שלך תהיה האפשרות הקלה: פתוח בכל שעה, בלי לחכות שתענה בלילה.",
-        'faq.5.q': "מה אני בעצם צריך לעשות?", 'faq.5.a': "שיחה אחת של 30 דקות. ספר לנו את השירותים, המחירים והלוז. אנחנו בונים ומריצים הכל משם. בלי שיעורי בית, בלי הלוך ושוב.",
+        'faq.5.q': "מה אני בעצם צריך לעשות?", 'faq.5.a': "ממלא טופס קצר או כותב לנו. מספר לנו את השירותים, המחירים והשעות. אנחנו בונים ומריצים הכל משם. בלי שיעורי בית.",
         'faq.6.q': "אני צריך לדעת משהו טכני?", 'faq.6.a': "אפס. זאת כל הנקודה. אנחנו בונים, אנחנו מתחזקים. שירות חדש, מחיר חדש, משהו לשנות? אתה שולח הודעה וזה נעשה.",
         'chip.1': "✓ ללא התחייבות", 'chip.2': "✓ 48 שעות עד לאוויר",
-        'final.title': "מוכן להתחיל?", 'final.trust': "בלי טפסים. בלי מצגות. רק שיחה.",
-        'final.p': "שיחה אחת, 30 דקות. נכיר את העסק שלך, נגיד לך בדיוק מה היינו בונים, ונענה על כל שאלה. בלי מכירה. בלי התחייבות.",
+        'final.title': "מוכן לעלות לאוויר?", 'final.trust': "מלא את הטופס, או דבר איתנו קודם. אתה בוחר.",
+        'final.p': "שלח את הפרטים שלך ואנחנו מתחילים לבנות. מעדיף לדבר? אנחנו כאן. בלי לחץ, בלי התחייבות.",
+        'modal.talk': "מעדיף לדבר? קבע שיחה",
         'footer.tagline': "נבנה בשבילך. עובד בלעדיך.", 'footer.col.links': "קישורים", 'footer.col.for': "נבנה עבור", 'footer.col.contact': "להתחלה",
         'footer.for.barber': "ברבר", 'footer.for.salon': "מספרה", 'footer.for.nail': "ציפורניים", 'footer.for.spa': "ספא ומדי-ספא", 'footer.for.massage': "עיסוי",
         'footer.for.lash': "ריסים", 'footer.for.pilates': "פילאטיס ויוגה", 'footer.for.trainer': "מאמן אישי", 'footer.for.physio': "פיזיותרפיה", 'footer.for.tattoo': "סטודיו לקעקועים",
@@ -466,9 +478,11 @@ export default function InteractivityScript() {
     }
 
     function initConnectModal() {
-      window.openConnectModal = function (e) {
+      window.openConnectModal = function (e, kind) {
         if (e) e.preventDefault();
-        window.showConnectChoice();
+        var kindEl = document.getElementById('bap-f-kind');
+        if (kindEl) kindEl.value = kind || 'website';
+        window.showConnectForm();
         var m = document.getElementById('bap-modal');
         m.style.display = 'flex';
         document.body.style.overflow = 'hidden';
@@ -507,6 +521,10 @@ export default function InteractivityScript() {
         var biz = document.getElementById('bap-f-biz').value.trim();
         var phone = document.getElementById('bap-f-phone').value.trim();
         var email = document.getElementById('bap-f-email').value.trim();
+        var msgEl = document.getElementById('bap-f-msg');
+        var msg = msgEl ? msgEl.value.trim() : '';
+        var kindEl = document.getElementById('bap-f-kind');
+        var kind = kindEl ? kindEl.value : 'website';
         var errEl = document.getElementById('bap-form-err');
         var sb = document.getElementById('bap-submit');
         if (!name || !email) {
@@ -521,7 +539,7 @@ export default function InteractivityScript() {
           var res = await fetch('/api/public/request-access', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, business_name: biz || null, phone: phone || null, email: email, lang: 'en' }),
+            body: JSON.stringify({ name: name, business_name: biz || null, phone: phone || null, email: email, message: msg || null, kind: kind, lang: document.documentElement.lang || 'en' }),
           });
           if (!res.ok) throw new Error('server');
           document.getElementById('bap-screen-form').style.display = 'none';
@@ -549,6 +567,8 @@ export default function InteractivityScript() {
       if (formBtn) formBtn.addEventListener('click', window.showConnectForm);
       var backBtn = document.getElementById('bap-back-btn');
       if (backBtn) backBtn.addEventListener('click', window.showConnectChoice);
+      var talkLink = document.getElementById('bap-talk-link');
+      if (talkLink) talkLink.addEventListener('click', window.openCalendly);
       var bapForm = document.getElementById('bap-form');
       if (bapForm) bapForm.addEventListener('submit', window.submitConnectForm);
       var SKIP_CTAS = ['footer'];
@@ -558,7 +578,7 @@ export default function InteractivityScript() {
         var cta = el.getAttribute('data-cta');
         if (!cta || SKIP_CTAS.indexOf(cta) !== -1) return;
         e.preventDefault();
-        window.openConnectModal(e);
+        window.openConnectModal(e, el.getAttribute('data-connect-kind') || 'website');
       });
       document.querySelectorAll('[data-cta]').forEach(function (el) {
         el.addEventListener('click', function () {

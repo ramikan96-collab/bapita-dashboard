@@ -909,6 +909,19 @@ const pageCss = `
 
 .bp-home .tstrip { background: var(--cream); padding: clamp(5rem,9vw,8rem) 0; overflow: hidden; }
 .bp-home .tstrip-head { max-width: var(--maxw); margin: 0 auto; padding: 0 1.5rem 3rem; text-align: center; }
+.bp-home .pricing { background: var(--cream); }
+.bp-home .pricing-card { max-width: 460px; margin: 0 auto; background: #fff; border: 1px solid rgba(28,24,20,.1); border-radius: 22px; box-shadow: 0 24px 60px -34px rgba(28,24,20,.4); padding: clamp(1.75rem,4vw,2.5rem); text-align: center; }
+.bp-home .pricing-plan { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--amber-dark); margin: 0 0 1rem; }
+.bp-home .pricing-price { display: flex; flex-direction: column; gap: .15rem; margin: 0 0 1.5rem; }
+.bp-home .pricing-setup { font-size: clamp(1.75rem,4vw,2.25rem); font-weight: 800; color: var(--dark); letter-spacing: -.02em; }
+.bp-home .pricing-month { font-size: 1rem; font-weight: 600; color: var(--text-muted); }
+.bp-home .pricing-features { list-style: none; margin: 0 0 1.75rem; padding: 0; display: flex; flex-direction: column; gap: .75rem; text-align: start; }
+.bp-home .pricing-features li { display: flex; align-items: flex-start; gap: .625rem; font-size: .95rem; color: var(--dark); }
+.bp-home .pricing-features li svg { flex-shrink: 0; margin-top: .15rem; }
+.bp-home .pricing-cta { width: 100%; }
+.bp-home .pricing-note { text-align: center; margin: 1.75rem auto 0; font-size: .9rem; }
+.bp-home .pricing-note a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; }
+.bp-home .pricing-note a:hover { color: var(--amber-dark); }
 .bp-home .tfeature { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.5rem,3vw,2.75rem); align-items: center; padding: clamp(1.75rem,3vw,2.75rem); background: #fff; border: 1px solid rgba(28,24,20,.08); border-radius: 24px; box-shadow: 0 30px 80px -40px rgba(28,24,20,.45); }
 .bp-home .tfeature-body { text-align: start; }
 .bp-home .tfeature-stars { color: var(--amber); font-size: 1.05rem; letter-spacing: .18em; }
@@ -1177,24 +1190,24 @@ export default function MarketingHomePage() {
               For appointment based businesses
             </div>
             <h1 className="display">
-              <span data-i18n="hero.h1a">Your business, online.</span>
+              <span data-i18n="hero.h1a">Your business online.</span>
               <br />
               <span className="accent" data-i18n="hero.h1b">
-                Done for you.
+                Built for you.
               </span>
             </h1>
             <p className="hero-sub" data-i18n="hero.sub">
-              A booking website, owner dashboard, and automations. Built for your business in 48
-              hours.
+              A booking website your clients love, a free owner dashboard, and automations. We build
+              it, connect it, and keep it running. You just show up.
             </p>
             <div className="hero-ctas">
-              <a href="#" className="btn-primary lg" data-cta="hero_primary" data-i18n="cta.talk">
-                Let&apos;s talk
+              <a href="#" className="btn-primary lg" data-cta="hero_primary" data-i18n="cta.book">
+                Build my site
               </a>
             </div>
             <p className="hero-trust">
               <CheckIcon />
-              <span data-i18n="hero.trust">One 30-minute call. No commitment.</span>
+              <span data-i18n="hero.trust">Live in 48 hours. No tech skills, no commitment.</span>
             </p>
           </div>
           <div className="hero-visual">
@@ -1358,25 +1371,26 @@ export default function MarketingHomePage() {
       <BuildSection />
       <AddonsSection />
       <TestimonialsSection />
+      <PricingSection />
       <FaqSection />
 
       {/* ─── FINAL CTA ────────────────────────────────────── */}
       <section className="final-cta">
         <div className="final-cta-inner fade-up">
-          <h2 data-i18n="final.title">Ready to get started?</h2>
+          <h2 data-i18n="final.title">Ready to go live?</h2>
           <p data-i18n="final.p">
-            One call, 30 minutes. We will learn your business, tell you exactly what we would
-            build, and answer every question you have. No pitch. No commitment.
+            Send your details and we start building. Prefer to talk? We are around. No pressure, no
+            commitment.
           </p>
           <a href="#" className="btn-primary lg" data-cta="final_cta" data-i18n="cta.book">
-            Book a free call
+            Build my site
           </a>
           <div className="final-trust-chips">
             <span data-i18n="chip.1">✓ No commitment</span>
             <span data-i18n="chip.2">✓ 48h turnaround</span>
           </div>
           <p className="final-cta-trust" data-i18n="final.trust">
-            No forms. No decks. Just a conversation.
+            Fill the form, or talk to us first. Your call.
           </p>
         </div>
       </section>
@@ -2501,6 +2515,59 @@ function TestimonialsSection() {
   );
 }
 
+function PricingSection() {
+  const features = [
+    { key: "pricing.f1", text: "Booking website in your name" },
+    { key: "pricing.f2", text: "Hosting and updates" },
+    { key: "pricing.f3", text: "3 mini edits every month" },
+    { key: "pricing.f4", text: "Free owner dashboard" },
+    { key: "pricing.f5", text: "Every booking to your phone" },
+  ];
+  return (
+    <section className="section pricing" id="pricing">
+      <div className="section-inner">
+        <div className="tstrip-head fade-up">
+          <p className="section-label" data-i18n="pricing.label">
+            Pricing
+          </p>
+          <h2 className="section-title" data-i18n="pricing.title">
+            One price. Everything included.
+          </h2>
+        </div>
+        <div className="pricing-card fade-up">
+          <p className="pricing-plan" data-i18n="pricing.plan">
+            Booking Website
+          </p>
+          <p className="pricing-price">
+            <span className="pricing-setup" data-i18n="pricing.setup">
+              ₪1,500 setup
+            </span>
+            <span className="pricing-month" data-i18n="pricing.month">
+              then ₪200 / month
+            </span>
+          </p>
+          <ul className="pricing-features">
+            {features.map((f) => (
+              <li key={f.key}>
+                <CheckIcon />
+                <span data-i18n={f.key}>{f.text}</span>
+              </li>
+            ))}
+          </ul>
+          <a href="#" className="btn-primary lg pricing-cta" data-cta="pricing_cta" data-i18n="cta.book">
+            Build my site
+          </a>
+        </div>
+        <p className="pricing-note fade-up">
+          <a href="#" data-cta="addons_inquiry" data-connect-kind="addons" data-i18n="pricing.note">
+            Want add-ons only, without a website? Tell us what you need.
+          </a>
+        </p>
+      </div>
+    </section>
+  );
+}
+
 function FaqSection() {
   return (
     <section className="section faq" id="faq">
@@ -2642,10 +2709,12 @@ function ConnectModal() {
             Leave your details
           </p>
           <form id="bap-form" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input id="bap-f-kind" type="hidden" value="website" />
             <input id="bap-f-name" className="bap-input" type="text" required placeholder="Your name" />
             <input id="bap-f-biz" className="bap-input" type="text" placeholder="Business name (optional)" />
             <input id="bap-f-phone" className="bap-input" type="tel" placeholder="Phone" />
             <input id="bap-f-email" className="bap-input" type="email" required placeholder="Email" />
+            <textarea id="bap-f-msg" className="bap-input" rows={3} placeholder="Anything we should know? (optional)" style={{ resize: "vertical", fontFamily: "inherit" }} />
             <p id="bap-form-err" style={{ display: "none", fontSize: 12, color: "#EF4444", margin: 0 }} />
             <button
               id="bap-submit"
@@ -2655,6 +2724,14 @@ function ConnectModal() {
               Send
             </button>
           </form>
+          <button
+            id="bap-talk-link"
+            type="button"
+            style={{ display: "block", width: "100%", marginTop: 14, background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--text-muted)", fontFamily: "inherit" }}
+            data-i18n="modal.talk"
+          >
+            Prefer to talk? Book a call
+          </button>
         </div>
 
         {/* Screen 3: Success */}

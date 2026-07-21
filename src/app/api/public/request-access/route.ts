@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400, headers: CORS });
   }
 
-  const { name, business_name, phone, email, city, message, lang } = body;
+  const { name, business_name, phone, email, city, message, lang, kind } = body;
+  const isAddons = kind === "addons";
 
   if (!name?.trim() || !email?.trim()) {
     return NextResponse.json({ error: "Name and email are required." }, { status: 400, headers: CORS });
@@ -72,10 +73,10 @@ export async function POST(req: NextRequest) {
     await transporter.sendMail({
       from: `Bapita <${process.env.GMAIL_USER}>`,
       to: "info.bapita@gmail.com",
-      subject: `New lead: ${name}${business_name ? ` — ${business_name}` : ""}`,
+      subject: `${isAddons ? "New add-ons inquiry" : "New lead"}: ${name}${business_name ? ` — ${business_name}` : ""}`,
       html: `
         <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;">
-          <h2 style="margin:0 0 20px;color:#1C1814;">New lead from bapita.com</h2>
+          <h2 style="margin:0 0 20px;color:#1C1814;">${isAddons ? "New add-ons inquiry" : "New lead"} from book.bapita.com</h2>
           <table style="width:100%;border-collapse:collapse;font-size:14px;">
             <tr><td style="padding:8px 0;color:#888;width:120px;">Name</td><td style="padding:8px 0;font-weight:600;color:#1C1814;">${esc(name)}</td></tr>
             ${business_name ? `<tr><td style="padding:8px 0;color:#888;">Business</td><td style="padding:8px 0;font-weight:600;color:#1C1814;">${esc(business_name)}</td></tr>` : ""}
