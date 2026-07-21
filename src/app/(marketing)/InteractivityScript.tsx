@@ -72,7 +72,7 @@ export default function InteractivityScript() {
         'addons.gmb.t': "Google Business Setup", 'addons.gmb.tag': "Full profile setup so you appear when someone nearby searches for what you do",
         'addons.gmb.body': "We claim and fully set up your Google Business Profile so you appear in Google Maps and local search when someone nearby searches for what you do. <strong>Done once, works forever.</strong> Verified profile, photos, hours, and description.",
         'test.label': "What owners say", 'test.title': "Real businesses. Real results.",
-        'test.shimi.q': "Honestly I never had time for any of this, I'm cutting hair all day. Bapita set everything up for me and it worked from day one. Now my clients book themselves and my chair stays full.",
+        'test.shimi.q': "I never had time for any of this, I'm cutting hair all day. Bapita set everything up for me and it worked from day one. Now my clients book themselves and my chair stays full.",
         'test.shimi.n': "Shimi Azut", 'test.shimi.m': "Shimi Azut Hair Studio, Herzliya",
         'test.shimi.rev': "474 Google reviews", 'test.shimi.gpt': "When people ask ChatGPT for the best hair salon in Herzliya, Shimi comes up first.",
         'faq.label': "Questions", 'faq.title': "Straight answers.", 'faq.sub': "Everything you need to know before the call.",

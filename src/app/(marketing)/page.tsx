@@ -119,7 +119,7 @@ function StarIcon({ className }: { className?: string }) {
 
 const shimi = {
   quote:
-    "Honestly I never had time for any of this, I'm cutting hair all day. Bapita set everything up for me and it worked from day one. Now my clients book themselves and my chair stays full.",
+    "I never had time for any of this, I'm cutting hair all day. Bapita set everything up for me and it worked from day one. Now my clients book themselves and my chair stays full.",
   name: "Shimi Azut",
   meta: "Shimi Azut Hair Studio, Herzliya",
 };
