@@ -40,7 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const { data: businesses, error } = await supabase
       .from("businesses")
-      .select("slug, created_at")
+      .select("slug, created_at, custom_domain, custom_domain_verified")
       .eq("status", "live");
 
     if (error) {
@@ -51,6 +51,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Exclude demo/template pages: thin, near-duplicate content that would
       // dilute the sitemap and risk duplicate-content signals. Real customers only.
       .filter((b) => !/^demo(-|$)/.test(b.slug))
+      // Exclude businesses with a verified custom domain: their book.bapita URL
+      // 308-redirects to the brand domain (which is self-canonical and ships its
+      // own single-URL sitemap), so listing the redirecting copy here is wrong.
+      .filter((b) => !(b.custom_domain && b.custom_domain_verified === true))
       .map((b) => ({
         url: `https://book.bapita.com/${b.slug}`,
         lastModified: b.created_at ? new Date(b.created_at) : new Date(),
