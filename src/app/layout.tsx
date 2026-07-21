@@ -14,6 +14,14 @@ const heebo = Heebo({
 export const metadata: Metadata = {
   title: "Bapita Dashboard",
   description: "Manage your bookings, clients, and business.",
+  // Default Bapita icons via metadata (NOT the app/icon.svg file convention):
+  // file-convention icons are injected on every route including custom booking
+  // domains, so a brand's own SERP favicon competed with Bapita's. As metadata
+  // they are cleanly overridden by a booking page's per-slug icons.
+  icons: {
+    icon: [{ url: "/bapita-icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/bapita-apple-icon.png" }],
+  },
 };
 
 export default async function RootLayout({
