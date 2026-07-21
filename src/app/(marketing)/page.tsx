@@ -117,148 +117,12 @@ function StarIcon({ className }: { className?: string }) {
   );
 }
 
-type Testimonial = {
-  initial: string;
-  quote: string;
-  quoteKey: string;
-  name: string;
-  meta: string;
-  metaKey: string;
+const shimi = {
+  quote:
+    "Honestly I never had time for any of this, I'm cutting hair all day. Bapita set everything up for me and it worked from day one. Now my clients book themselves and my chair stays full.",
+  name: "Shimi Azout",
+  meta: "Shimi Azut Hair Studio, Herzliya",
 };
-
-const testimonialsRow1: Testimonial[] = [
-  {
-    initial: "A",
-    quote:
-      "Clients book themselves now. I check the dashboard with my morning coffee and I already know how the day looks. I stopped answering WhatsApp at midnight.",
-    quoteKey: "test.1.q",
-    name: "Avi M.",
-    meta: "Barbershop · Herzliya",
-    metaKey: "test.1.m",
-  },
-  {
-    initial: "N",
-    quote:
-      "Three no shows a week used to be normal. The reminders basically ended it. The chair stays full and I am not chasing anyone.",
-    quoteKey: "test.2.q",
-    name: "Noa L.",
-    meta: "Nail Studio · Ramat Gan",
-    metaKey: "test.2.m",
-  },
-  {
-    initial: "E",
-    quote:
-      "Someone searched for a barber near me and found me for the first time. They booked that night while I was closed. That never happened before.",
-    quoteKey: "test.3.q",
-    name: "Eli D.",
-    meta: "Men's Grooming · Tel Aviv",
-    metaKey: "test.3.m",
-  },
-  {
-    initial: "L",
-    quote:
-      "We had three staff and none of us had time to manage bookings. Now the phone barely rings. Clients find us, pick their treatment, and we just show up ready.",
-    quoteKey: "test.4.q",
-    name: "Liora B.",
-    meta: "Day Spa · Ra'anana",
-    metaKey: "test.4.m",
-  },
-  {
-    initial: "T",
-    quote:
-      "No-shows were killing me. The deposit system and reminders ended that overnight. I wish I had done this two years ago.",
-    quoteKey: "test.5.q",
-    name: "Tamar G.",
-    meta: "Lash Studio · Petah Tikva",
-    metaKey: "test.5.m",
-  },
-  {
-    initial: "R",
-    quote:
-      "I train people all day and had zero time for admin. Bapita sorted my schedule, reminders, and payments. I just focus on coaching now.",
-    quoteKey: "test.6.q",
-    name: "Ronen S.",
-    meta: "Personal Trainer · Ramat Hasharon",
-    metaKey: "test.6.m",
-  },
-];
-
-const testimonialsRow2: Testimonial[] = [
-  {
-    initial: "D",
-    quote:
-      "Patients were missing appointments and I had no follow-up system. Now confirmations and reminders run automatically. My front desk does half the work it used to.",
-    quoteKey: "test.7.q",
-    name: "Dani A.",
-    meta: "Physiotherapy · Haifa",
-    metaKey: "test.7.m",
-  },
-  {
-    initial: "S",
-    quote:
-      "I had been putting off a website for three years. Bapita built it in 48 hours and it looked better than anything I would have made myself.",
-    quoteKey: "test.8.q",
-    name: "Shira P.",
-    meta: "Hair Salon · Rishon LeZion",
-    metaKey: "test.8.m",
-  },
-  {
-    initial: "A",
-    quote:
-      "Deposits were always awkward to ask for. Now it is just part of booking. No more ghost appointments. Clients who put money down always show up.",
-    quoteKey: "test.9.q",
-    name: "Amit R.",
-    meta: "Tattoo Studio · Tel Aviv",
-    metaKey: "test.9.m",
-  },
-  {
-    initial: "G",
-    quote:
-      "I work from home and felt too small for a real booking system. Bapita made me feel legitimate. My schedule is finally predictable.",
-    quoteKey: "test.10.q",
-    name: "Gali M.",
-    meta: "Massage Therapy · Netanya",
-    metaKey: "test.10.m",
-  },
-  {
-    initial: "M",
-    quote:
-      "My studio went from word-of-mouth to being found on Google every week. The booking page is beautiful and clients tell me it feels professional.",
-    quoteKey: "test.11.q",
-    name: "Maya K.",
-    meta: "Pilates Studio · Jerusalem",
-    metaKey: "test.11.m",
-  },
-  {
-    initial: "Y",
-    quote:
-      "Admin was eating my evenings. Now I get a notification when someone books, everything is confirmed, and I have zero messages to deal with at night.",
-    quoteKey: "test.12.q",
-    name: "Yossi F.",
-    meta: "Sports Coaching · Beer Sheva",
-    metaKey: "test.12.m",
-  },
-];
-
-function TCard({ t }: { t: Testimonial }) {
-  return (
-    <div className="tcard">
-      <div className="tstars">★★★★★</div>
-      <p className="tquote" data-i18n={t.quoteKey}>
-        {t.quote}
-      </p>
-      <div className="tperson">
-        <div className="tavatar">{t.initial}</div>
-        <div>
-          <div className="tname">{t.name}</div>
-          <div className="tmeta" data-i18n={t.metaKey}>
-            {t.meta}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 const faqs = [
   {
@@ -1045,6 +909,16 @@ const pageCss = `
 
 .bp-home .tstrip { background: var(--cream); padding: clamp(5rem,9vw,8rem) 0; overflow: hidden; }
 .bp-home .tstrip-head { max-width: var(--maxw); margin: 0 auto; padding: 0 1.5rem 3rem; text-align: center; }
+.bp-home .tfeature { max-width: 680px; margin: 0 auto; padding: clamp(2rem,4vw,3rem) clamp(1.5rem,4vw,3rem); background: #fff; border: 1px solid rgba(28,24,20,.08); border-radius: 20px; box-shadow: 0 20px 60px -30px rgba(28,24,20,.35); text-align: center; }
+.bp-home .tfeature-stars { color: var(--amber); font-size: 1.05rem; letter-spacing: .18em; }
+.bp-home .tfeature-quote { margin: 1.25rem 0 1.75rem; font-size: clamp(1.15rem,2.4vw,1.5rem); line-height: 1.5; font-weight: 600; color: var(--dark); }
+.bp-home .tfeature-person { display: flex; align-items: center; justify-content: center; gap: .875rem; }
+.bp-home .tfeature-photo { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.bp-home .tfeature-id { display: flex; flex-direction: column; text-align: start; }
+.bp-home .tfeature-name { font-weight: 700; color: var(--dark); }
+.bp-home .tfeature-meta { font-size: .875rem; color: var(--text-muted); }
+.bp-home .tfeature-proof { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem 1.25rem; margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px solid rgba(28,24,20,.08); font-size: .9rem; color: var(--text-muted); }
+.bp-home .tfeature-proof-item strong { color: var(--dark); font-weight: 800; }
 .bp-home .tmarquee { display: flex; flex-direction: column; gap: 1.25rem; }
 .bp-home .tmarquee-row { overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%); mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%); }
 .bp-home .tmarquee-track { display: flex; gap: 1.25rem; width: max-content; will-change: transform; animation: tscrollL 60s linear infinite; }
@@ -2562,22 +2436,46 @@ function TestimonialsSection() {
           Real businesses. Real results.
         </h2>
       </div>
-      <div className="tmarquee">
-        <div className="tmarquee-row">
-          <div className="tmarquee-track" aria-hidden="true">
-            {[...testimonialsRow1, ...testimonialsRow1].map((t, i) => (
-              <TCard key={`r1-${i}`} t={t} />
-            ))}
-          </div>
+      <figure className="tfeature fade-up">
+        <div className="tfeature-stars">★★★★★</div>
+        <blockquote className="tfeature-quote" data-i18n="test.shimi.q">
+          {shimi.quote}
+        </blockquote>
+        <figcaption className="tfeature-person">
+          <img
+            className="tfeature-photo"
+            src="/img/shimi.png"
+            alt="Shimi Azout, Shimi Azut Hair Studio"
+            width={72}
+            height={72}
+            loading="lazy"
+          />
+          <span className="tfeature-id">
+            <span className="tfeature-name" data-i18n="test.shimi.n">
+              {shimi.name}
+            </span>
+            <span className="tfeature-meta" data-i18n="test.shimi.m">
+              {shimi.meta}
+            </span>
+          </span>
+        </figcaption>
+        <div className="tfeature-proof">
+          <span className="tfeature-proof-item">
+            <strong>4.8</strong>{" "}
+            <span data-i18n="test.shimi.p1">on Google</span>
+          </span>
+          <span className="tfeature-proof-item">
+            <strong>474</strong>{" "}
+            <span data-i18n="test.shimi.p2">reviews</span>
+          </span>
+          <span className="tfeature-proof-item">
+            <strong>#1</strong>{" "}
+            <span data-i18n="test.shimi.p3">
+              on ChatGPT for “best hair salon in Herzliya”
+            </span>
+          </span>
         </div>
-        <div className="tmarquee-row rev">
-          <div className="tmarquee-track" aria-hidden="true">
-            {[...testimonialsRow2, ...testimonialsRow2].map((t, i) => (
-              <TCard key={`r2-${i}`} t={t} />
-            ))}
-          </div>
-        </div>
-      </div>
+      </figure>
     </section>
   );
 }
