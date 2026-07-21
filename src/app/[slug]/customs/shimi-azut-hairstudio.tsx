@@ -401,7 +401,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
                         <span style={{ fontSize: 11, fontVariant: "small-caps", color: accent, fontWeight: 700, letterSpacing: "0.06em" }}>{displayName}</span>
                       </div>
                     )}
-                    <p style={{ fontSize: 16, lineHeight: 1.8, color: C.dark, opacity: 0.82, margin: 0 }}>{displayAbout}</p>
+                    <p style={{ fontSize: 16, lineHeight: 1.8, color: C.dark, opacity: 0.82, margin: 0, whiteSpace: "pre-line" }}>{displayAbout}</p>
                   </div>
                 </section>
               ) : null;

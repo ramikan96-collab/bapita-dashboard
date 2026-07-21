@@ -41,7 +41,7 @@ export function SectionHours({ hours, darkColor, accentColor, mutedColor, dayLab
             <span style={{ fontSize:14, fontWeight: today ? 700 : 400, color: darkColor }}>
               {labels[day]}
             </span>
-            <span style={{ fontSize:13, fontWeight:500, color: h.open ? darkColor : (mutedColor ?? "rgba(0,0,0,0.35)") }}>
+            <span dir="ltr" style={{ fontSize:13, fontWeight:500, color: h.open ? darkColor : (mutedColor ?? "rgba(0,0,0,0.35)") }}>
               {h.open ? `${fmt(h.start, use24h)} – ${fmt(h.end, use24h)}` : closedLabel}
             </span>
           </div>

@@ -18,6 +18,28 @@ function fmt(t: string, use24h: boolean) {
   return `${h % 12 || 12}:${String(m).padStart(2,"0")} ${h >= 12 ? "PM" : "AM"}`;
 }
 
+// Current day-of-week + minutes-since-midnight in Israel (Asia/Jerusalem),
+// independent of where this runs. Matters because the page is SSR'd on Vercel
+// (UTC): computing status from server-local time would render the pill 2-3h off
+// and bake the wrong open/closed state into the HTML. Israeli booking pages must
+// always reflect Israeli wall-clock time.
+function israelNow(): { dayIdx: number; mins: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Jerusalem",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const WD: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const dayIdx = WD[get("weekday")] ?? new Date().getDay();
+  // Intl can emit "24" for midnight under hour12:false — normalise to 0.
+  const hh = (parseInt(get("hour"), 10) || 0) % 24;
+  const mm = parseInt(get("minute"), 10) || 0;
+  return { dayIdx, mins: hh * 60 + mm };
+}
+
 export function getOpenStatus(
   hours: BusinessHours | undefined,
   statusT: StatusT,
@@ -25,11 +47,9 @@ export function getOpenStatus(
   use24h = false,
 ): { open: boolean; text: string } | null {
   if (!hours) return null;
-  const now = new Date();
-  const todayIdx = now.getDay();
+  const { dayIdx: todayIdx, mins: nowMins } = israelNow();
   const todayKey = DAYS[todayIdx];
   const todayH = hours[todayKey];
-  const nowMins = now.getHours() * 60 + now.getMinutes();
 
   if (todayH.open) {
     const [sh, sm] = todayH.start.split(":").map(Number);
