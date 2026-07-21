@@ -78,7 +78,7 @@ export default function ProfilePage() {
       return;
     }
     await supabase.auth.signOut();
-    window.location.href = "https://bapita.com";
+    window.location.href = "https://book.bapita.com";
   }
 
   const mismatch = !!confirmPassword && newPassword !== confirmPassword;
@@ -244,7 +244,7 @@ export default function ProfilePage() {
           {/* Sign out */}
           <div style={{ ...cardStyle, marginBottom: 0, padding: "14px 20px" }}>
             <button
-              onClick={async () => { await supabase.auth.signOut(); window.location.href = "https://bapita.com"; }}
+              onClick={async () => { await supabase.auth.signOut(); window.location.href = "https://book.bapita.com"; }}
               style={{
                 width: "100%",
                 height: 42,

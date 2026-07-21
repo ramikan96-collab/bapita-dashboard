@@ -937,9 +937,9 @@ const pageCss = `
 .bp-home .addon-ico svg { width: 17px; height: 17px; }
 .bp-home .addon-row:hover .addon-ico { transform: scale(1.08); }
 .bp-home .addon-row-text { flex: 1; min-width: 0; }
-.bp-home .addon-row-name { font-size: 1rem; font-weight: 700; color: var(--dark); margin-bottom: .15rem; line-height: 1.3; transition: color .18s; }
+.bp-home .addon-row-name { display: block; font-size: 1rem; font-weight: 700; color: var(--dark); margin-bottom: .15rem; line-height: 1.3; transition: color .18s; }
 .bp-home .addon-row:hover .addon-row-name, .bp-home .addon-item.open .addon-row-name { color: var(--amber-dark); }
-.bp-home .addon-row-tagline { font-size: .85rem; color: var(--text-muted); line-height: 1.4; }
+.bp-home .addon-row-tagline { display: block; font-size: .85rem; color: var(--text-muted); line-height: 1.4; }
 .bp-home .addon-badge { display: inline-flex; align-items: center; padding: .22rem .75rem; border-radius: var(--r-pill); font-size: .6875rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; flex-shrink: 0; }
 .bp-home .addon-badge.monthly { background: rgba(30,26,20,.07); color: var(--text-muted); }
 .bp-home .addon-badge.one-time { background: rgba(212,98,42,.1); color: var(--terra); }

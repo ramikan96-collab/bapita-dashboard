@@ -440,7 +440,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     setDrawerOpen(false);
     try {
       await supabase.auth.signOut();
-      window.location.assign("https://bapita.com");
+      window.location.assign("https://book.bapita.com");
     } catch (error) {
       console.error("Logout error:", error);
       showToast(t("Failed to sign out"), "error");
