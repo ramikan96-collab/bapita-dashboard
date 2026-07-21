@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import BookingShell from "./BookingShell";
 import type { Business, Service } from "@/types";
@@ -15,6 +16,18 @@ function getPublicClient() {
 
 // Per-business brand assets (favicon + share image) under public/clients/<slug>/.
 const BRAND_ASSET_SLUGS = new Set(["shimi-azut-hairstudio"]);
+
+// Per-slug SEO copy overrides. Some businesses run a Hebrew-first site (toggle
+// on-page) but want an ENGLISH SERP entry — Google's global audience reads the
+// English title/description while the page itself stays HE. Keyed by slug so it
+// only ever affects the named business; everyone else keeps buildSeoCopy().
+const BRAND_SEO: Record<string, { title: string; description: string }> = {
+  "shimi-azut-hairstudio": {
+    title: "Shimi Azut | Book online",
+    description:
+      "A luxury hair studio where artistry, expertise and exceptional hospitality come together to create a truly personalized experience. 25+ years of craft in Herzliya. Book online.",
+  },
+};
 
 /**
  * Resolve the canonical/OG URL for a business.
@@ -109,6 +122,19 @@ export default async function BookPage({ params }: Props) {
 
   const b = business as unknown as Business;
 
+  // book.bapita.com/<slug> is a duplicate of the brand's own domain. When the
+  // business has a verified custom domain, send real users (and link equity)
+  // there with a permanent redirect. The custom-domain host reaches this page
+  // via middleware rewrite with its own host header, so the condition is false
+  // there and it renders normally — no redirect loop.
+  const domain = b.custom_domain?.replace(/^www\./, "") ?? "";
+  if (domain && b.custom_domain_verified === true) {
+    const reqHost = (await headers()).get("host")?.toLowerCase().replace(/:\d+$/, "").replace(/^www\./, "") ?? "";
+    if (reqHost === "book.bapita.com") {
+      permanentRedirect(`https://www.${domain}/`);
+    }
+  }
+
   // Hide images flagged as "not in gallery" (e.g. backgrounds/covers) from the
   // public gallery grid. They stay available as hero/cover via hero_image_url.
   if (Array.isArray(b.gallery_hidden) && b.gallery_hidden.length > 0 && Array.isArray(b.gallery_images)) {
@@ -172,7 +198,9 @@ export default async function BookPage({ params }: Props) {
     name: b.name,
     ...(b.name_he && { alternateName: b.name_he }),
     url: pageUrl,
-    ...((b.tagline || b.tagline_he) && { description: b.tagline || b.tagline_he }),
+    ...((BRAND_SEO[slug]?.description || b.tagline || b.tagline_he) && {
+      description: BRAND_SEO[slug]?.description || b.tagline || b.tagline_he,
+    }),
     ...(b.phone && { telephone: b.phone }),
     ...(b.email && { email: b.email }),
     ...(b.address && {
@@ -238,7 +266,9 @@ export async function generateMetadata({ params }: Props) {
   const { canonicalBase, pageUrl } = resolveCanonical(slug, data);
 
   // Keyword + location aware copy, HE or EN by default_lang. No dashes.
-  const { title, description } = buildSeoCopy({
+  // A per-slug BRAND_SEO override wins when present (e.g. English SERP for a
+  // Hebrew-first site).
+  const { title, description } = BRAND_SEO[slug] ?? buildSeoCopy({
     name: data.name,
     nameHe: data.name_he,
     city: parseCity(data.address),
