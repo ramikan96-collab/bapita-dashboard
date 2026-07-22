@@ -36,8 +36,8 @@ const SOURCE_LABELS: Record<string, string> = {
   whatsapp: "WhatsApp",
   facebook: "Facebook",
   tiktok: "TikTok",
-  direct: "Direct",
-  other: "Other",
+  direct: "Direct (typed the address or opened a bookmark)",
+  other: "Other (came from a website we could not identify)",
 };
 
 function distinct(rows: EventRow[], match: (r: EventRow) => boolean): number {
@@ -103,7 +103,7 @@ export default function VisitorsTab({ businessId, start, end }: Props) {
         <Kpi label="Unique visitors" value={visited.toLocaleString()} hint="People who opened your page" />
         <Kpi label="Bookings" value={booked.toLocaleString()} hint="Completed on your page" accent />
         <Kpi label="Conversion rate" value={`${conversion}%`} hint="Visitors who booked" />
-        <Kpi label="No free times" value={noSlots.toLocaleString()} hint="Visitors who found no open slot" />
+        <Kpi label="No free times" value={noSlots.toLocaleString()} hint="Visitors who picked a date with no open times" />
       </div>
 
       {/* Funnel */}

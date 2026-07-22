@@ -1101,16 +1101,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <DrawerItem
               Icon={IconAdmin}
               label={t("Admin")}
-              active={isActive("/admin/businesses")}
+              active={isActive("/admin")}
               onClick={() => go("/admin/businesses")}
-            />
-          )}
-          {isAdmin && (
-            <DrawerItem
-              Icon={IconAdmin}
-              label={t("Analytics")}
-              active={isActive("/admin/analytics")}
-              onClick={() => go("/admin/analytics")}
             />
           )}
         </nav>
