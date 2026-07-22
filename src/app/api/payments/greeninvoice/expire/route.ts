@@ -7,11 +7,14 @@ import { createServiceClient } from "@/lib/supabase/service";
 // for manual/local runs.
 const EXPIRE_MINUTES = Number(process.env.DEPOSIT_EXPIRE_MINUTES || 15);
 
+// Auth: only the CRON_SECRET bearer. Vercel injects `Authorization: Bearer
+// $CRON_SECRET` into scheduled cron invocations when CRON_SECRET is set, so this
+// covers the cron path too. We do NOT trust the `x-vercel-cron` header — it is
+// client-spoofable and would let anyone force-expire pending bookings. Fail closed.
 function authorized(req: NextRequest): boolean {
-  if (req.headers.get("x-vercel-cron")) return true; // Vercel-scheduled invocation
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("authorization") === `Bearer ${secret}`) return true;
-  return false;
+  if (!secret) return false;
+  return req.headers.get("authorization") === `Bearer ${secret}`;
 }
 
 async function run() {

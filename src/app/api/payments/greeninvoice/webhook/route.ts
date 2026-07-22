@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   const { data: booking } = await supabase
     .from("bookings")
-    .select("id, business_id, payment_status, status, customer_name, customer_email, appointment_date, appointment_time, service:services(name, price)")
+    .select("id, business_id, payment_status, status, customer_name, customer_email, appointment_date, appointment_time, service:services(name, price, deposit_required, deposit_type, deposit_value)")
     .eq("id", bookingId)
     .single();
 
@@ -72,6 +72,32 @@ export async function POST(req: NextRequest) {
   if (!verified || !verified.paid) {
     // Not confirmed paid — ack without changing state (GI may retry / customer abandoned).
     return NextResponse.json({ ok: true, paid: false });
+  }
+
+  // SECURITY: bind the verified payment to THIS booking. The `custom` value we
+  // passed when creating the form was the booking id; GI echoes it back on the
+  // payment record. Without this, a real payment for booking A could be replayed
+  // to confirm booking B in the same business. Fail closed on mismatch.
+  if (String(verified.customRef ?? "") !== String(booking.id)) {
+    console.warn("webhook payment/booking mismatch", { bookingId: booking.id, customRef: verified.customRef });
+    return NextResponse.json({ ok: true, paid: false, reason: "reference mismatch" });
+  }
+
+  // SECURITY: re-derive the expected deposit server-side and reject if the paid
+  // amount doesn't match (a caller cannot under-pay and still confirm).
+  const svcRow = Array.isArray(booking.service) ? booking.service[0] : booking.service;
+  const { data: bizDep } = await supabase
+    .from("businesses")
+    .select("deposit_default_type, deposit_default_value")
+    .eq("id", booking.business_id)
+    .single();
+  const dType = (svcRow?.deposit_type as string | null) || (bizDep?.deposit_default_type as string | null) || "percent";
+  const dRaw = svcRow?.deposit_value != null ? Number(svcRow.deposit_value) : Number(bizDep?.deposit_default_value ?? 0);
+  const price = Number(svcRow?.price ?? 0);
+  const expected = Math.round((dType === "percent" ? (price * dRaw) / 100 : dRaw) * 100) / 100;
+  if (expected > 0 && verified.amount != null && Math.abs(Number(verified.amount) - expected) > 1) {
+    console.warn("webhook deposit amount mismatch", { bookingId: booking.id, expected, got: verified.amount });
+    return NextResponse.json({ ok: true, paid: false, reason: "amount mismatch" });
   }
 
   const txnId = providerTxnId || `${bookingId}:${Date.now()}`;

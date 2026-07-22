@@ -218,7 +218,8 @@ export async function createPaymentForm(
 export async function verifyPayment(
   businessId: string,
   providerTxnId: string,
-): Promise<{ paid: boolean; amount?: number; invoiceUrl?: string; raw: Record<string, unknown> } | null> {
+): Promise<{ paid: boolean; amount?: number; invoiceUrl?: string; customRef?: string; raw: Record<string, unknown> } | null> {
+  if (!providerTxnId) return null;
   const { token, apiBase } = await getBusinessGiContext(businessId);
   const res = await fetch(`${apiBase}/documents/payments/search`, {
     method: 'POST',
@@ -228,7 +229,9 @@ export async function verifyPayment(
   const raw = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) return null;
   const items = (raw.items as Array<Record<string, unknown>> | undefined) ?? [];
-  const match = items.find((i) => String(i.id ?? i.paymentId) === String(providerTxnId)) ?? items[0];
+  // SECURITY: require an EXACT id match. No `items[0]` fallback — otherwise a
+  // forged callback with a bogus id would confirm against an unrelated payment.
+  const match = items.find((i) => String(i.id ?? i.paymentId) === String(providerTxnId));
   if (!match) return { paid: false, raw };
   return {
     paid: true,
@@ -237,6 +240,10 @@ export async function verifyPayment(
       typeof match.url === 'string'
         ? (match.url as string)
         : (match.url as { origin?: string } | undefined)?.origin,
+    // The booking id we passed as `custom` when creating the form, echoed back
+    // on the payment record. The webhook binds this to the booking so a real
+    // payment for one booking cannot confirm a different booking.
+    customRef: String(match.custom ?? match.externalKey ?? match.reference ?? ""),
     raw,
   };
 }
