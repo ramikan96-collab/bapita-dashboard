@@ -58,7 +58,8 @@ export default function VisitorsTab({ businessId, start, end }: Props) {
       .select("session_id, event, step, source")
       .eq("business_id", businessId)
       .gte("created_at", start.toISOString())
-      .lte("created_at", endOfDay(end).toISOString());
+      .lte("created_at", endOfDay(end).toISOString())
+      .limit(100000);
     setRows((data ?? []) as EventRow[]);
     setLoading(false);
   }, [supabase, businessId, start, end]);

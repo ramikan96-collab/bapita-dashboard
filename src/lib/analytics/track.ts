@@ -22,10 +22,10 @@ interface FirstTouch {
 function normalizeSource(referrer: string, utmSource?: string): string {
   const ref = (utmSource || referrer || "").toLowerCase();
   if (!ref) return "direct";
-  if (ref.includes("instagram") || ref.includes("ig")) return "instagram";
+  if (ref.includes("instagram")) return "instagram";
   if (ref.includes("google")) return "google";
   if (ref.includes("whatsapp") || ref.includes("wa.me")) return "whatsapp";
-  if (ref.includes("facebook") || ref.includes("fb")) return "facebook";
+  if (ref.includes("facebook") || ref.includes("fb.com") || ref.includes("fb.me")) return "facebook";
   if (ref.includes("tiktok")) return "tiktok";
   // Same-origin referrer (internal navigation) counts as direct.
   try {
