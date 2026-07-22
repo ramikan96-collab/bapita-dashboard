@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ComponentType } from "react";
 import type { Business, Service } from "@/types";
+import { track } from "@/lib/analytics/track";
 import { ClassicPage } from "./themes/classic/ClassicPage";
 import { CleanPage }   from "./themes/clean/CleanPage";
 import { DarkPage }    from "./themes/dark/DarkPage";
@@ -28,6 +29,13 @@ interface Props {
 export default function BookingShell({ business, services }: Props) {
   const initialTheme = (business.template_style as ThemeKey) ?? "classic";
   const [previewTheme, setPreviewTheme] = useState<ThemeKey>(initialTheme);
+
+  // Analytics: one page_view per visit. Fired here (above the custom-page early
+  // return) so custom pages and custom-domain traffic are covered too. No-ops on
+  // draft/preview pages via the track() guard.
+  useEffect(() => {
+    track("page_view", { businessId: business.id, slug: business.slug, status: business.status });
+  }, [business.id, business.slug, business.status]);
 
   // 1. Dedicated custom page for this barber?
   const CustomPage = CUSTOM_PAGES[business.slug ?? ""];

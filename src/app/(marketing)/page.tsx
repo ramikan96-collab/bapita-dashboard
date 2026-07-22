@@ -910,18 +910,24 @@ const pageCss = `
 .bp-home .tstrip { background: var(--cream); padding: clamp(5rem,9vw,8rem) 0; overflow: hidden; }
 .bp-home .tstrip-head { max-width: var(--maxw); margin: 0 auto; padding: 0 1.5rem 3rem; text-align: center; }
 .bp-home .pricing { background: var(--cream); }
-.bp-home .pricing-card { max-width: 460px; margin: 0 auto; background: #fff; border: 1px solid rgba(28,24,20,.1); border-radius: 22px; box-shadow: 0 24px 60px -34px rgba(28,24,20,.4); padding: clamp(1.75rem,4vw,2.5rem); text-align: center; }
-.bp-home .pricing-plan { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--amber-dark); margin: 0 0 1rem; }
-.bp-home .pricing-price { display: flex; flex-direction: column; gap: .15rem; margin: 0 0 1.5rem; }
-.bp-home .pricing-setup { font-size: clamp(1.75rem,4vw,2.25rem); font-weight: 800; color: var(--dark); letter-spacing: -.02em; }
-.bp-home .pricing-month { font-size: 1rem; font-weight: 600; color: var(--text-muted); }
-.bp-home .pricing-features { list-style: none; margin: 0 0 1.75rem; padding: 0; display: flex; flex-direction: column; gap: .75rem; text-align: start; }
-.bp-home .pricing-features li { display: flex; align-items: flex-start; gap: .625rem; font-size: .95rem; color: var(--dark); }
-.bp-home .pricing-features li svg { flex-shrink: 0; margin-top: .15rem; }
+.bp-home .pricing-card { position: relative; max-width: 440px; margin: 0 auto; background: #fff; border: 1px solid rgba(28,24,20,.08); border-radius: 26px; box-shadow: 0 30px 70px -40px rgba(28,24,20,.45); padding: clamp(2rem,4vw,2.75rem); text-align: center; overflow: hidden; transition: transform .4s cubic-bezier(.22,1,.36,1), box-shadow .4s cubic-bezier(.22,1,.36,1); }
+.bp-home .pricing-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--amber), #f5b642, var(--amber)); }
+.bp-home .pricing-card:hover { transform: translateY(-6px); box-shadow: 0 44px 90px -44px rgba(232,146,10,.5); }
+.bp-home .pricing-glow { position: absolute; top: -40%; left: 50%; width: 320px; height: 320px; transform: translateX(-50%); background: radial-gradient(circle, rgba(232,146,10,.14), transparent 70%); pointer-events: none; opacity: 0; transition: opacity .5s ease; }
+.bp-home .pricing-card:hover .pricing-glow { opacity: 1; }
+.bp-home .pricing-plan { position: relative; font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber-dark); margin: 0 0 1.25rem; }
+.bp-home .pricing-price { position: relative; display: flex; flex-direction: column; align-items: center; gap: .4rem; margin: 0 0 1.75rem; }
+.bp-home .pricing-setup { font-size: clamp(2rem,5vw,2.6rem); font-weight: 800; letter-spacing: -.03em; background: linear-gradient(120deg, var(--dark), var(--amber-dark)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.bp-home .pricing-month { font-size: .95rem; font-weight: 600; color: var(--text-muted); background: rgba(232,146,10,.08); padding: .3rem .85rem; border-radius: 999px; }
+.bp-home .pricing-features { position: relative; list-style: none; margin: 0 0 2rem; padding: 1.5rem 0 0; border-top: 1px solid rgba(28,24,20,.07); display: flex; flex-direction: column; gap: 1rem; text-align: start; }
+.bp-home .pricing-features li { display: flex; align-items: center; gap: .75rem; font-size: .975rem; font-weight: 500; color: var(--dark); opacity: 0; transform: translateY(8px); animation: pricingRowIn .5s cubic-bezier(.22,1,.36,1) forwards; }
+.bp-home .pricing-check { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; background: linear-gradient(135deg, var(--amber), #f5b642); color: #fff; box-shadow: 0 2px 8px rgba(232,146,10,.35); }
 .bp-home .pricing-cta { width: 100%; }
 .bp-home .pricing-note { text-align: center; margin: 1.75rem auto 0; font-size: .9rem; }
-.bp-home .pricing-note a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; }
+.bp-home .pricing-note a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; transition: color .2s; }
 .bp-home .pricing-note a:hover { color: var(--amber-dark); }
+@keyframes pricingRowIn { to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .bp-home .pricing-card { transition: none; } .bp-home .pricing-features li { animation: none; opacity: 1; transform: none; } }
 .bp-home .tfeature { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.5rem,3vw,2.75rem); align-items: center; padding: clamp(1.75rem,3vw,2.75rem); background: #fff; border: 1px solid rgba(28,24,20,.08); border-radius: 24px; box-shadow: 0 30px 80px -40px rgba(28,24,20,.45); }
 .bp-home .tfeature-body { text-align: start; }
 .bp-home .tfeature-stars { color: var(--amber); font-size: 1.05rem; letter-spacing: .18em; }
@@ -2535,6 +2541,7 @@ function PricingSection() {
           </h2>
         </div>
         <div className="pricing-card fade-up">
+          <div className="pricing-glow" aria-hidden="true" />
           <p className="pricing-plan" data-i18n="pricing.plan">
             Booking Website
           </p>
@@ -2547,9 +2554,13 @@ function PricingSection() {
             </span>
           </p>
           <ul className="pricing-features">
-            {features.map((f) => (
-              <li key={f.key}>
-                <CheckIcon />
+            {features.map((f, i) => (
+              <li key={f.key} style={{ animationDelay: `${120 + i * 80}ms` }}>
+                <span className="pricing-check" aria-hidden="true">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </span>
                 <span data-i18n={f.key}>{f.text}</span>
               </li>
             ))}
