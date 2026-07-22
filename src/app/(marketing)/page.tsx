@@ -506,6 +506,11 @@ const pageCss = `
   padding: 1.75rem;
   width: 100%;
   max-width: 340px;
+  min-height: 316px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .bp-home .psc-result {
@@ -524,6 +529,8 @@ const pageCss = `
   box-shadow: var(--shadow-sm);
   width: 100%;
   max-width: 340px;
+  min-height: 316px;
+  box-sizing: border-box;
   overflow: hidden;
 }
 .bp-home .psc-map-area { position: relative; width: 100%; }
@@ -1064,7 +1071,7 @@ const pageCss = `
 }
 .bp-home .hiw-scene { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 2rem; opacity: 0; transition: opacity .45s var(--ease); pointer-events: none; }
 .bp-home .hiw-scene.active { opacity: 1; pointer-events: auto; }
-.bp-home .hiw-card { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); padding: 1.75rem; width: 100%; max-width: 300px; }
+.bp-home .hiw-card { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); padding: 1.75rem; width: 100%; max-width: 300px; min-height: 340px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
 
 .bp-home .hiw-call-top { display: flex; align-items: center; gap: .875rem; margin-bottom: 1.25rem; }
 .bp-home .hiw-call-ico { width: 42px; height: 42px; border-radius: 12px; background: var(--amber-soft); color: var(--amber); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -1081,7 +1088,7 @@ const pageCss = `
 .bp-home .hiw-call-meta { font-size: .8rem; color: var(--text-muted); display: flex; align-items: center; gap: .4rem; }
 .bp-home .hiw-call-meta svg { width: 13px; height: 13px; opacity: .6; }
 
-.bp-home .hiw-site-win { width: 100%; max-width: 300px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-md); }
+.bp-home .hiw-site-win { width: 100%; max-width: 300px; min-height: 340px; box-sizing: border-box; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-md); }
 .bp-home .hiw-win-bar { display: flex; align-items: center; gap: 5px; background: var(--cream-2); padding: 9px 12px; border-bottom: 1px solid var(--line); }
 .bp-home .hiw-win-dot { width: 9px; height: 9px; border-radius: 50%; }
 .bp-home .hiw-win-url { margin-inline-start: 8px; font-size: 10px; color: var(--text-muted); background: #fff; border-radius: var(--r-pill); padding: 3px 10px; }
@@ -2527,7 +2534,7 @@ function PricingSection() {
     { key: "pricing.f2", text: "Hosting and updates" },
     { key: "pricing.f3", text: "3 mini edits every month" },
     { key: "pricing.f4", text: "Free owner dashboard" },
-    { key: "pricing.f5", text: "Every booking to your phone" },
+    { key: "pricing.f5", text: "Every booking to your phone and email" },
   ];
   return (
     <section className="section pricing" id="pricing">

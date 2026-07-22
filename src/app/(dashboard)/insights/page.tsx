@@ -9,12 +9,13 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { InsightsSkeleton } from "@/components/LoadingSkeleton";
+import VisitorsTab from "./_components/VisitorsTab";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL, type BookingStatus } from "@/types";
 
 const WA_NUMBER = "972501234567";
 const WA_MSG = "Hi, I want to turn on paid ads to bring in more bookings.";
 
-type Tab = "overview" | "appointments" | "revenue";
+type Tab = "overview" | "appointments" | "revenue" | "visitors";
 type RangeKey = "week" | "month" | "3months" | "custom";
 
 const RANGE_OPTIONS: { key: RangeKey; label: string }[] = [
@@ -350,7 +351,7 @@ export default function InsightsPage() {
 
             {/* Tab bar — amber underline flush with header border */}
             <div style={{ display: "flex", gap: 0, marginBottom: -1 }}>
-              {(["overview", "appointments", "revenue"] as Tab[]).map((t) => (
+              {(["overview", "appointments", "revenue", "visitors"] as Tab[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -396,6 +397,9 @@ export default function InsightsPage() {
             )}
             {tab === "revenue" && (
               <RevenueTab bookings={allBookings} />
+            )}
+            {tab === "visitors" && business && (
+              <VisitorsTab businessId={business.id} start={start} end={end} />
             )}
 
           </div>

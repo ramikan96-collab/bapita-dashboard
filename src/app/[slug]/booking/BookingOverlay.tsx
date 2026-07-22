@@ -10,6 +10,7 @@ import { TimeStep }       from "./steps/TimeStep";
 import { ContactStep }    from "./steps/ContactStep";
 import { SuccessScreen }  from "./steps/SuccessScreen";
 import { translations, type Lang } from "../translations";
+import { track } from "@/lib/analytics/track";
 
 interface Props {
   business: Business;
@@ -63,6 +64,30 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // ─── Analytics (funnel) ───────────────────────────────────────────────────
+  // Overlay opening = booking_started (covers all themes' CTAs). Step changes
+  // log step_reached; the success step logs booking_completed. A chosen date
+  // with zero availability logs no_slots (demand signal).
+  const trackCtx = { businessId: business.id, slug: business.slug, status: business.status, lang };
+
+  useEffect(() => {
+    track("booking_started", trackCtx);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (state.step === "success") track("booking_completed", trackCtx);
+    else track("step_reached", trackCtx, { step: state.step });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.step]);
+
+  useEffect(() => {
+    if (state.step === "time" && state.date && !slotsLoading && slots.length === 0) {
+      track("no_slots", trackCtx, { meta: { date: state.date } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.step, state.date, slotsLoading, slots.length]);
 
   const fromCard   = !!initialService;
   const stepOrder: string[] = [
