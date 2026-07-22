@@ -2,6 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { format, subDays } from "date-fns";
+import { InfoHint } from "@/components/InfoHint";
+
+const NO_TIMES_HINT =
+  "Visitors who picked a date with no open times while trying to book. A sign of unmet demand: consider opening more hours or adding staff.";
 
 // Admin-only cross-tenant analytics, rendered as a tab inside the Admin board.
 // Data comes from /api/admin/analytics (service-role, RLS-bypassing) which
@@ -94,7 +98,7 @@ export function AdminAnalytics() {
             <Kpi label="Visitors" value={data.totals.visitors.toLocaleString()} />
             <Kpi label="Bookings" value={data.totals.bookings.toLocaleString()} accent />
             <Kpi label="Conversion" value={`${data.totals.conversion}%`} />
-            <Kpi label="No free times" value={data.totals.noSlots.toLocaleString()} />
+            <Kpi label="No free times" value={data.totals.noSlots.toLocaleString()} info={NO_TIMES_HINT} />
           </div>
 
           {/* Source mix */}
@@ -109,7 +113,8 @@ export function AdminAnalytics() {
                 <thead>
                   <tr style={{ textAlign: "left", color: "var(--color-muted)" }}>
                     <Th>Business</Th><Th right>Visitors</Th><Th right>Bookings</Th>
-                    <Th right>Conversion</Th><Th right>No times</Th>
+                    <Th right>Conversion</Th>
+                    <Th right><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>No times <InfoHint text={NO_TIMES_HINT} /></span></Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -179,10 +184,13 @@ export function AdminAnalytics() {
 
 // ─── Presentational ────────────────────────────────────────────────────────────
 
-function Kpi({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function Kpi({ label, value, accent, info }: { label: string; value: string; accent?: boolean; info?: string }) {
   return (
     <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", borderRadius: 16, padding: "16px 18px" }}>
-      <div style={{ fontSize: 12, color: "var(--color-muted)", fontWeight: 600, marginBottom: 8 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+        <span style={{ fontSize: 12, color: "var(--color-muted)", fontWeight: 600 }}>{label}</span>
+        {info && <InfoHint text={info} />}
+      </div>
       <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em", color: accent ? "var(--color-amber)" : "var(--color-dark)" }}>{value}</div>
     </div>
   );

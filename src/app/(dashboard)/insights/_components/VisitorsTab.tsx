@@ -3,6 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { endOfDay } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
+import { InfoHint } from "@/components/InfoHint";
+
+const NO_TIMES_HINT =
+  "Visitors who picked a date with no open times while trying to book. A sign of unmet demand: consider opening more hours or adding staff.";
 
 // Owner-facing traffic + funnel view for the booking page. Reads page_events
 // under RLS (owner reads only their own business). All metrics are counts of
@@ -103,7 +107,7 @@ export default function VisitorsTab({ businessId, start, end }: Props) {
         <Kpi label="Unique visitors" value={visited.toLocaleString()} hint="People who opened your page" />
         <Kpi label="Bookings" value={booked.toLocaleString()} hint="Completed on your page" accent />
         <Kpi label="Conversion rate" value={`${conversion}%`} hint="Visitors who booked" />
-        <Kpi label="No free times" value={noSlots.toLocaleString()} hint="Visitors who picked a date with no open times" />
+        <Kpi label="No free times" value={noSlots.toLocaleString()} hint="Visitors who picked a date with no open times" info={NO_TIMES_HINT} />
       </div>
 
       {/* Funnel */}
@@ -166,7 +170,7 @@ export default function VisitorsTab({ businessId, start, end }: Props) {
 
 // ─── Presentational bits (match Insights premium tone) ─────────────────────────
 
-function Kpi({ label, value, hint, accent }: { label: string; value: string; hint: string; accent?: boolean }) {
+function Kpi({ label, value, hint, accent, info }: { label: string; value: string; hint: string; accent?: boolean; info?: string }) {
   return (
     <div style={{
       background: "var(--color-surface)",
@@ -175,7 +179,10 @@ function Kpi({ label, value, hint, accent }: { label: string; value: string; hin
       padding: "18px 20px",
       boxShadow: "var(--shadow-sm, 0 1px 3px rgba(30,26,20,0.06))",
     }}>
-      <div style={{ fontSize: 13, color: "var(--color-muted)", fontWeight: 600, marginBottom: 8 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+        <span style={{ fontSize: 13, color: "var(--color-muted)", fontWeight: 600 }}>{label}</span>
+        {info && <InfoHint text={info} />}
+      </div>
       <div style={{ fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em", color: accent ? "var(--color-amber)" : "var(--color-dark)" }}>{value}</div>
       <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 8 }}>{hint}</div>
     </div>
