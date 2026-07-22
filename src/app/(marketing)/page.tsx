@@ -1223,7 +1223,7 @@ export default function MarketingHomePage() {
             </p>
             <div className="hero-ctas">
               <a href="#" className="btn-primary lg" data-cta="hero_primary" data-i18n="cta.book">
-                Build my website
+                Build My Website
               </a>
             </div>
             <p className="hero-trust">
@@ -1404,7 +1404,7 @@ export default function MarketingHomePage() {
             commitment.
           </p>
           <a href="#" className="btn-primary lg" data-cta="final_cta" data-i18n="cta.book">
-                Build my website
+                Build My Website
               </a>
           <div className="final-trust-chips">
             <span data-i18n="chip.1">✓ No commitment</span>
@@ -2591,7 +2591,7 @@ function PricingSection() {
             ))}
           </ul>
           <a href="#" className="btn-primary lg pricing-cta" data-cta="pricing_cta" data-i18n="cta.book">
-                Build my website
+                Build My Website
               </a>
         </div>
         <p className="pricing-note fade-up">

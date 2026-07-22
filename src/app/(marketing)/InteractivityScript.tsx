@@ -23,7 +23,7 @@ export default function InteractivityScript() {
     var I18N = {
       en: {
         'nav.problem': "Problem", 'nav.solution': "Solution", 'nav.addons': "Add ons", 'nav.pricing': "Pricing", 'nav.faq': "FAQ", 'nav.login': "Login",
-        'cta.talk': "Build my website", 'cta.book': "Build my website",
+        'cta.talk': "Build My Website", 'cta.book': "Build My Website",
         'hero.eyebrow': "For appointment based businesses", 'hero.h1a': "Your business online.", 'hero.h1b': "Built for you.",
         'hero.sub': "A booking website your clients love, and a dashboard for you to manage. We build it, connect it, and keep it running. You just show up.",
         'hero.trust': "Live in 48 hours. No tech skills, no commitment.",
