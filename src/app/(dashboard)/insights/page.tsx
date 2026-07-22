@@ -351,7 +351,7 @@ export default function InsightsPage() {
 
             {/* Tab bar — amber underline flush with header border */}
             <div style={{ display: "flex", gap: 0, marginBottom: -1 }}>
-              {(["overview", "appointments", "revenue", "visitors"] as Tab[]).map((t) => (
+              {(["overview", "visitors", "appointments", "revenue"] as Tab[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}

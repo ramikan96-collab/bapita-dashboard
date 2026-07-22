@@ -208,11 +208,45 @@ function VisitorsSkeleton() {
 }
 
 function VisitorsEmpty() {
+  const ghostCards = [
+    { label: "Unique visitors", value: "0" },
+    { label: "Bookings", value: "0" },
+    { label: "Conversion rate", value: "0%" },
+    { label: "No free times", value: "0" },
+  ];
+  const ghostFunnel = [100, 62, 40, 24, 14, 8];
+
   return (
-    <div style={{ textAlign: "center", padding: "72px 24px", color: "var(--color-muted)" }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>👀</div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-dark)", marginBottom: 6 }}>No visits yet in this range</div>
-      <div style={{ fontSize: 14 }}>Share your booking link — visitor traffic and your funnel will show up here.</div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+      {/* Ghost visitors hero */}
+      <div className="rounded-2xl" style={{ padding: "24px 28px", background: "rgba(232,146,10,0.08)", border: "1.5px dashed rgba(232,146,10,0.25)" }}>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(232,146,10,0.45)", marginBottom: 12 }}>Visitors</p>
+        <p className="earnings-val font-black" style={{ color: "rgba(232,146,10,0.18)" }}>0</p>
+        <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 16 }}>Visitor numbers appear here once people open your booking page.</p>
+      </div>
+
+      {/* Ghost KPI cards */}
+      <div className="ins-grid-2" style={{ gap: 16, opacity: 0.4 }}>
+        {ghostCards.map((c) => (
+          <div key={c.label} style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", borderRadius: 16, padding: "18px 20px" }}>
+            <div style={{ fontSize: 13, color: "var(--color-muted)", fontWeight: 600, marginBottom: 8 }}>{c.label}</div>
+            <div style={{ fontSize: 32, fontWeight: 800, lineHeight: 1, color: "var(--color-dark)" }}>{c.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Ghost funnel */}
+      <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", borderRadius: 16, padding: "20px 22px" }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-dark)", marginBottom: 18 }}>Booking funnel</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, opacity: 0.4 }}>
+          {ghostFunnel.map((w, i) => (
+            <div key={i} style={{ height: 10, borderRadius: 6, background: "var(--color-cream-2)", overflow: "hidden" }}>
+              <div style={{ width: `${w}%`, height: "100%", borderRadius: 6, background: "var(--amber-soft, rgba(232,146,10,0.25))" }} />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
