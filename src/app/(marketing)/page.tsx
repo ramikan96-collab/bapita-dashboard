@@ -70,7 +70,7 @@ const jsonLd = {
       name: "Bapita",
       url: "https://book.bapita.com",
       description:
-        "Bapita builds a booking website, owner dashboard, and automations for appointment-based businesses in 48 hours. No tech skills needed.",
+        "Bapita builds a booking website, owner dashboard, and automations for appointment based businesses in 48 hours. No tech skills needed.",
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       offers: {
@@ -85,7 +85,7 @@ const jsonLd = {
       url: "https://book.bapita.com",
       email: "info.bapita@gmail.com",
       description:
-        "Built for barbers, salons, personal trainers, and other appointment-based businesses in Israel.",
+        "Built for barbers, salons, personal trainers, and other appointment based businesses in Israel.",
       areaServed: "IL",
       sameAs: ["https://instagram.com/bapita", "https://www.facebook.com/bapita"],
     },
@@ -506,7 +506,7 @@ const pageCss = `
   padding: 1.75rem;
   width: 100%;
   max-width: 340px;
-  min-height: 316px;
+  min-height: 392px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -529,7 +529,7 @@ const pageCss = `
   box-shadow: var(--shadow-sm);
   width: 100%;
   max-width: 340px;
-  min-height: 316px;
+  min-height: 392px;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -1071,7 +1071,7 @@ const pageCss = `
 }
 .bp-home .hiw-scene { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 2rem; opacity: 0; transition: opacity .45s var(--ease); pointer-events: none; }
 .bp-home .hiw-scene.active { opacity: 1; pointer-events: auto; }
-.bp-home .hiw-card { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); padding: 1.75rem; width: 100%; max-width: 300px; min-height: 340px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
+.bp-home .hiw-card { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); padding: 1.75rem; width: 100%; max-width: 300px; min-height: 392px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
 
 .bp-home .hiw-call-top { display: flex; align-items: center; gap: .875rem; margin-bottom: 1.25rem; }
 .bp-home .hiw-call-ico { width: 42px; height: 42px; border-radius: 12px; background: var(--amber-soft); color: var(--amber); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -1087,8 +1087,16 @@ const pageCss = `
 .bp-home .hiw-call-divider { height: 1px; background: var(--line); margin: 1.125rem 0; }
 .bp-home .hiw-call-meta { font-size: .8rem; color: var(--text-muted); display: flex; align-items: center; gap: .4rem; }
 .bp-home .hiw-call-meta svg { width: 13px; height: 13px; opacity: .6; }
+.bp-home .hiw-form-rows { display: flex; flex-direction: column; gap: .625rem; margin: 1.25rem 0; }
+.bp-home .hiw-form-field { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .6rem .8rem; border-radius: var(--r-sm); background: var(--surface-2); }
+.bp-home .hiw-form-lbl { font-size: .75rem; font-weight: 600; color: var(--text-muted); }
+.bp-home .hiw-form-val { font-size: .8125rem; font-weight: 700; color: var(--ink); text-align: end; }
+.bp-home .hiw-form-thumbs { display: flex; gap: .3rem; }
+.bp-home .hiw-form-thumb { width: 22px; height: 22px; border-radius: 6px; background: linear-gradient(135deg, var(--amber-soft), rgba(232,146,10,.28)); border: 1px solid rgba(232,146,10,.25); }
+.bp-home .hiw-form-send { display: flex; align-items: center; justify-content: center; gap: .5rem; padding: .7rem; border-radius: var(--r-sm); background: var(--amber-soft); color: var(--amber-dark); font-size: .8125rem; font-weight: 700; }
+.bp-home .hiw-form-send svg { width: 15px; height: 15px; }
 
-.bp-home .hiw-site-win { width: 100%; max-width: 300px; min-height: 340px; box-sizing: border-box; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-md); }
+.bp-home .hiw-site-win { width: 100%; max-width: 300px; min-height: 392px; box-sizing: border-box; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-md); }
 .bp-home .hiw-win-bar { display: flex; align-items: center; gap: 5px; background: var(--cream-2); padding: 9px 12px; border-bottom: 1px solid var(--line); }
 .bp-home .hiw-win-dot { width: 9px; height: 9px; border-radius: 50%; }
 .bp-home .hiw-win-url { margin-inline-start: 8px; font-size: 10px; color: var(--text-muted); background: #fff; border-radius: var(--r-pill); padding: 3px 10px; }
@@ -1452,7 +1460,7 @@ function PainSection() {
             The real cost of running things manually
           </h2>
           <p className="section-sub" data-i18n="pain.sub">
-            These aren&apos;t one-off annoyances. They repeat every week, quietly costing you
+            These aren&apos;t one off annoyances. They repeat every week, quietly costing you
             clients, hours, and revenue.
           </p>
         </div>
@@ -1619,7 +1627,7 @@ function PainSection() {
                 </div>
                 <div className="psc-unanswered">
                   <span className="psc-badge" aria-hidden="true" />
-                  <span>2 no-shows · 2 slots gone</span>
+                  <span>2 no shows · 2 slots gone</span>
                 </div>
               </div>
             </div>
@@ -1760,30 +1768,40 @@ function HowItWorksSection() {
 
           <div className="hiw-right" aria-hidden="true">
             <div className="hiw-scene active" data-hiw={0}>
-              <div className="hiw-card">
+              <div className="hiw-card hiw-form">
                 <div className="hiw-call-top">
                   <div className="hiw-call-ico">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <path d="M16 2v4M8 2v4M3 10h18" />
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
                     </svg>
                   </div>
                   <div>
-                    <div className="hiw-call-label">Intro call</div>
-                    <div className="hiw-call-name">Call with Bapita</div>
+                    <div className="hiw-call-label">Your details</div>
+                    <div className="hiw-call-name" data-i18n="mock.shop">Studio Avi</div>
                   </div>
                 </div>
-                <div className="hiw-call-chip">
-                  <CheckIcon />
-                  <span>Tomorrow · 11:00</span>
+                <div className="hiw-form-rows">
+                  <div className="hiw-form-field">
+                    <span className="hiw-form-lbl">Services</span>
+                    <span className="hiw-form-val" data-i18n="mock.cutbeard">Cut and beard</span>
+                  </div>
+                  <div className="hiw-form-field">
+                    <span className="hiw-form-lbl">Hours</span>
+                    <span className="hiw-form-val">9:00 to 19:00</span>
+                  </div>
+                  <div className="hiw-form-field">
+                    <span className="hiw-form-lbl">Photos</span>
+                    <span className="hiw-form-thumbs" aria-hidden="true">
+                      <span className="hiw-form-thumb" />
+                      <span className="hiw-form-thumb" />
+                      <span className="hiw-form-thumb" />
+                    </span>
+                  </div>
                 </div>
-                <div className="hiw-call-divider" />
-                <div className="hiw-call-meta">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 7v5l3 3" />
-                  </svg>
-                  <span>30 minutes · No commitment</span>
+                <div className="hiw-form-send">
+                  <CheckIcon />
+                  <span>Details sent</span>
                 </div>
               </div>
             </div>
@@ -1794,7 +1812,7 @@ function HowItWorksSection() {
                   <span className="hiw-win-dot" style={{ background: "#ED6A5E" }} />
                   <span className="hiw-win-dot" style={{ background: "#F4BF50" }} />
                   <span className="hiw-win-dot" style={{ background: "#61C554" }} />
-                  <span className="hiw-win-url">studio-avi.bapita.com</span>
+                  <span className="hiw-win-url">studioavi.bapita.com</span>
                 </div>
                 <div className="hiw-win-body">
                   <div className="hiw-win-avatar">A</div>
@@ -2047,7 +2065,7 @@ function BuildSection() {
               </svg>
             </div>
             <div className="bento-h" data-i18n="build.3.h">
-              Add-ons
+              Add ons
             </div>
             <p className="bento-p" data-i18n="build.3.p">
               Reminders, payments, social, reviews, ads. Layer in what you need, when you need it.
@@ -2112,7 +2130,7 @@ function AddonsSection() {
       <div className="section-inner">
         <div className="section-head fade-up">
           <p className="section-label" data-i18n="addons.label">
-            Add-ons
+            Add ons
           </p>
           <h2 className="section-title" data-i18n="addons.title">
             Layer in what you need.
@@ -2141,7 +2159,7 @@ function AddonsSection() {
                     Appointment Reminders
                   </span>
                   <span className="addon-row-tagline" data-i18n="addons.rem.tag">
-                    Automated reminders via WhatsApp, SMS, or Email to reduce no-shows
+                    Automated reminders via WhatsApp, SMS, or Email to reduce no shows
                   </span>
                 </span>
                 <span className="addon-badge monthly" data-i18n="addons.monthly">
@@ -2165,7 +2183,7 @@ function AddonsSection() {
                       }}
                       data-i18n="addons.rem.note"
                     >
-                      Email booking confirmations are included free in every plan. This add-on
+                      Email booking confirmations are included free in every plan. This add on
                       sends reminders on top via WhatsApp, SMS, or email.
                     </p>
                     <div className="addon-channel-tabs" role="tablist">
@@ -2367,7 +2385,7 @@ function AddonsSection() {
               <div className="addon-panel">
                 <div className="addon-panel-inner">
                   <p className="addon-panel-desc" data-i18n="addons.ads.body">
-                    Click-to-WhatsApp campaigns on Meta that bring new clients straight into your
+                    Click to WhatsApp campaigns on Meta that bring new clients straight into your
                     booking flow. <strong>We write, launch, and manage everything</strong>:
                     budget, creative, and targeting. You just check your calendar and see it
                     filling up.
@@ -2578,7 +2596,7 @@ function PricingSection() {
         </div>
         <p className="pricing-note fade-up">
           <a href="#" data-cta="addons_inquiry" data-connect-kind="addons" data-i18n="pricing.note">
-            Want add-ons only, without a website? Tell us what you need.
+            Want add ons only, without a website? Tell us what you need.
           </a>
         </p>
       </div>
