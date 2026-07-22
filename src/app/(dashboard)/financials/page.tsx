@@ -32,13 +32,18 @@ function txStatusColor(s: Transaction["status"]): string {
   return STATUS_COLOR[STATUS_TO_BOOKING[s]];
 }
 
-interface BookingRow {
-  id: string;
+interface TxBooking {
   customer_name: string;
   appointment_date: string;
-  status: BookingStatus;
-  payment_status: string;
-  service: { name?: string; price?: number } | null;
+  service: { name?: string } | { name?: string }[] | null;
+}
+interface TxRow {
+  id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  invoice_url: string | null;
+  booking: TxBooking | TxBooking[] | null;
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -605,16 +610,19 @@ function ConnectedView({
     return () => document.removeEventListener("mousedown", onClickOut);
   }, []);
 
+  // Pass-through model: deposits go straight to the owner's Green Invoice
+  // account. Bapita takes no cut, so there is no platform fee to subtract —
+  // the money collected IS the payout. (Card-processor fees, if any, are billed
+  // on the owner's own GI/clearing account, not visible or owed here.)
   const paid = transactions.filter((t) => t.status === "paid");
   const revenue = paid.reduce((s, t) => s + t.amount, 0);
-  const fees = Math.round(revenue * 0.019);
-  const net = revenue - fees;
+  const avg = paid.length ? Math.round(revenue / paid.length) : 0;
 
   const kpis = [
-    { label: "Revenue", value: `₪${revenue.toLocaleString()}`, amber: true, big: true },
+    { label: "Deposits collected", value: `₪${revenue.toLocaleString()}`, amber: true, big: true },
     { label: "Transactions", value: String(paid.length), amber: false, big: false },
-    { label: "Fees (1.9%)", value: `₪${fees.toLocaleString()}`, amber: false, big: false },
-    { label: "Net payout", value: `₪${net.toLocaleString()}`, amber: true, big: false },
+    { label: "Avg deposit", value: `₪${avg.toLocaleString()}`, amber: false, big: false },
+    { label: "Payout", value: `₪${revenue.toLocaleString()}`, amber: true, big: false },
   ];
 
   const filtered = transactions
@@ -1102,12 +1110,12 @@ function ConnectedView({
 export default function FinancialsPage() {
   const { business, loading: bizLoading } = useBusiness();
   const supabase = createClient();
-  const [stripeActive, setStripeActive] = useState<boolean | null>(null);
+  const [paymentsActive, setPaymentsActive] = useState<boolean | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // One-time: check stripe add-on status
+  // One-time: check the payments add-on status (Green Invoice connected)
   useEffect(() => {
     if (bizLoading) return;
     // Syncing loading flag to the resolved business state (external data gate).
@@ -1118,42 +1126,45 @@ export default function FinancialsPage() {
         .from("addons")
         .select("active")
         .eq("business_id", business.id)
-        .eq("type", "stripe")
-        .single();
-      setStripeActive(addon?.active ?? false);
+        .eq("addon_type", "payments")
+        .maybeSingle();
+      setPaymentsActive(addon?.active ?? false);
       setLoading(false);
     })();
   }, [business?.id, bizLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch transactions whenever stripe is active or month changes
+  // Fetch real deposit transactions for the selected month.
   useEffect(() => {
-    if (!business || !stripeActive) return;
+    if (!business || !paymentsActive) return;
     (async () => {
       const { data } = await supabase
-        .from("bookings")
-        .select("id, customer_name, appointment_date, status, payment_status, service:services(name, price)")
+        .from("transactions")
+        .select("id, amount, status, created_at, invoice_url, booking:bookings(customer_name, appointment_date, service:services(name))")
         .eq("business_id", business.id)
-        .eq("payment_status", "stripe")
-        .gte("appointment_date", format(startOfMonth(currentMonth), "yyyy-MM-dd"))
-        .lte("appointment_date", format(endOfMonth(currentMonth), "yyyy-MM-dd"))
-        .order("appointment_date", { ascending: false });
+        .gte("created_at", startOfMonth(currentMonth).toISOString())
+        .lte("created_at", endOfMonth(currentMonth).toISOString())
+        .order("created_at", { ascending: false });
 
-      const rows = (data as BookingRow[] | null) ?? [];
+      const rows = (data as TxRow[] | null) ?? [];
       setTransactions(
-        rows.map((b) => ({
-          id: b.id,
-          date: b.appointment_date,
-          client_name: b.customer_name,
-          service_name: b.service?.name ?? "",
-          amount: b.service?.price ?? 0,
-          status: b.status === "cancelled" || b.status === "no_show" ? "refunded" : "paid",
-        }))
+        rows.map((r) => {
+          const bk = Array.isArray(r.booking) ? r.booking[0] : r.booking;
+          const svc = bk ? (Array.isArray(bk.service) ? bk.service[0] : bk.service) : null;
+          return {
+            id: r.id,
+            date: bk?.appointment_date ?? r.created_at.slice(0, 10),
+            client_name: bk?.customer_name ?? "",
+            service_name: svc?.name ?? "",
+            amount: Number(r.amount) || 0,
+            status: r.status === "paid" ? "paid" : r.status === "pending" ? "pending" : "refunded",
+          };
+        })
       );
     })();
-  }, [business?.id, stripeActive, currentMonth.getFullYear(), currentMonth.getMonth()]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [business?.id, paymentsActive, currentMonth.getFullYear(), currentMonth.getMonth()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (bizLoading || loading) return <FinancialsSkeleton />;
-  if (!stripeActive) return <NotConnectedView businessId={business?.id ?? ""} businessName={business?.name ?? ""} />;
+  if (!paymentsActive) return <NotConnectedView businessId={business?.id ?? ""} businessName={business?.name ?? ""} />;
 
   return (
     <ConnectedView

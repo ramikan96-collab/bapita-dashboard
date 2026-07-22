@@ -1,5 +1,22 @@
 export type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled" | "no_show";
-export type PaymentStatus = "none" | "cash" | "transfer" | "stripe";
+export type PaymentStatus =
+  | "none" | "cash" | "transfer" | "stripe"
+  | "pending_payment" | "deposit_paid" | "expired";
+
+export type DepositType = "percent" | "fixed";
+
+export interface Transaction {
+  id: string;
+  business_id: string;
+  booking_id: string | null;
+  amount: number;
+  currency: string;
+  provider: string;
+  provider_txn_id: string;
+  invoice_url: string | null;
+  status: "pending" | "paid" | "failed" | "refunded";
+  created_at: string;
+}
 
 export interface Label {
   id: string;
@@ -131,6 +148,10 @@ export interface Business {
   body_font?:          string | null;
   gallery_source?:     "images" | "instagram" | null;
   instagram_embed?:    string | null;
+  // deposit defaults (Green Invoice payments) — per-service overrides win
+  deposit_enabled?:       boolean | null;
+  deposit_default_type?:  DepositType | null;
+  deposit_default_value?: number | null;
 }
 
 export interface StaffMember {
@@ -189,6 +210,10 @@ export interface Service {
   staff_ids?: string[] | null;
   display_order: number;
   created_at?: string;
+  // deposit config (Green Invoice payments)
+  deposit_required?: boolean | null;
+  deposit_type?: DepositType | null;
+  deposit_value?: number | null;
 }
 
 export const STATUS_COLOR: Record<BookingStatus, string> = {

@@ -603,6 +603,9 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
       cash: "Paid — Cash",
       transfer: "Paid — Bank Transfer",
       stripe: "Paid — Stripe",
+      pending_payment: "Awaiting deposit",
+      deposit_paid: "Deposit paid",
+      expired: "Payment expired",
     };
 
     return (

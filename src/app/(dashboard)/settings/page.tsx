@@ -9,10 +9,11 @@ import { FontPicker } from "@/components/FontPicker";
 import { useLang } from "@/i18n";
 import { loadStaff, syncStaffTable } from "@/lib/staff";
 import { SettingsSkeleton } from "@/components/LoadingSkeleton";
+import { PaymentsSection } from "./_components/PaymentsSection";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Section = "business" | "services" | "hours" | "team" | "website" | "content";
+type Section = "business" | "services" | "hours" | "team" | "website" | "content" | "payments";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: "team",     label: "Team" },
   { id: "website",  label: "Website" },
   { id: "content",  label: "Content" },
+  { id: "payments", label: "Payments" },
 ];
 
 function getErrorMessage(error: { code?: string; message?: string }): string {
@@ -2439,6 +2441,7 @@ export default function SettingsPage() {
       case "team":     return <TeamSection business={business!} supabase={supabase} refresh={refresh} />;
       case "website":  return <WebsiteSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} which="website" />;
       case "content":  return <WebsiteSection business={business!} supabase={supabase} refresh={refresh} onDirtyChange={onDirtyChange} which="content" />;
+      case "payments": return <PaymentsSection business={business!} supabase={supabase} refresh={refresh} />;
     }
   }
 

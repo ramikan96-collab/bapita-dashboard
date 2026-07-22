@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
   // overlap guard) or email content (name/price). Scope to businessId to block cross-tenant serviceId.
   const { data: svc, error: svcError } = await supabase
     .from("services")
-    .select("duration, name, price, staff_ids")
+    .select("duration, name, price, staff_ids, deposit_required, deposit_type, deposit_value")
     .eq("id", serviceId)
     .eq("business_id", businessId)
     .single();
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
   // ON  → conflicts are scoped per staff, so two different staff can be booked concurrently.
   const { data: bizChoice } = await supabase
     .from("businesses")
-    .select("allow_staff_choice, business_hours, name")
+    .select("allow_staff_choice, business_hours, name, deposit_enabled, deposit_default_type, deposit_default_value")
     .eq("id", businessId)
     .single();
   const staffChoice = !!bizChoice?.allow_staff_choice;
@@ -267,6 +267,84 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "failed to save customer" }, { status: 500 });
   }
 
+  // ─── Deposit decision (server-side; never trust the client) ──────────────────
+  // A deposit applies only when: the service is flagged deposit_required, the
+  // business enabled deposits, AND payments are connected (addon active). The
+  // amount is computed from the server-fetched svcPrice using the per-service
+  // override, else the business default.
+  let depositAmount = 0;
+  let depositApplies = false;
+  if (svc.deposit_required && bizChoice?.deposit_enabled) {
+    const { data: addon } = await supabase
+      .from("addons")
+      .select("active")
+      .eq("business_id", businessId)
+      .eq("addon_type", "payments")
+      .maybeSingle();
+    if (addon?.active) {
+      const type = (svc.deposit_type as string | null) || (bizChoice.deposit_default_type as string | null) || "percent";
+      const rawValue = svc.deposit_value != null
+        ? Number(svc.deposit_value)
+        : Number(bizChoice.deposit_default_value ?? 0);
+      const amount = type === "percent" ? (svcPrice * rawValue) / 100 : rawValue;
+      depositAmount = Math.round((Number(amount) || 0) * 100) / 100;
+      depositApplies = depositAmount > 0;
+    }
+  }
+
+  // ─── Deposit path: create a pending_payment booking + Green Invoice form ──────
+  if (depositApplies) {
+    const { data: pendingBooking, error: pendErr } = await supabase.from("bookings").insert({
+      business_id: businessId,
+      service_id: serviceId,
+      staff_id: assignedStaffId,
+      customer_id: customer.id,
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      customer_email: customerEmail || null,
+      appointment_date: date,
+      appointment_time: time,
+      status: "pending",
+      payment_status: "pending_payment",
+      notes: null,
+    }).select("id").single();
+
+    if (pendErr || !pendingBooking) {
+      console.error("Pending booking insert error:", pendErr);
+      const msg = pendErr?.code === '23505'
+        ? "This time slot was just taken. Please go back and choose another time."
+        : "failed to create booking";
+      return NextResponse.json({ error: msg }, { status: pendErr?.code === '23505' ? 409 : 500 });
+    }
+
+    try {
+      const { createPaymentForm } = await import("@/lib/greeninvoice");
+      const origin = "https://book.bapita.com";
+      const { url } = await createPaymentForm(businessId, {
+        amount: depositAmount,
+        description: `${svcName} — ${bizName}`,
+        lang: lang === "he" ? "he" : "en",
+        clientName: customerName,
+        clientEmails: customerEmail ? [customerEmail] : [],
+        remarks: `Booking ${pendingBooking.id}`,
+        successUrl: `${origin}/pay/success?b=${pendingBooking.id}`,
+        failureUrl: `${origin}/pay/cancel?b=${pendingBooking.id}`,
+        notifyUrl: `${origin}/api/payments/greeninvoice/webhook`,
+        custom: pendingBooking.id,
+      });
+      return NextResponse.json({ ok: true, requiresPayment: true, redirectUrl: url, bookingId: pendingBooking.id });
+    } catch (e) {
+      // Roll the pending hold back so the slot is not dead-held on a failed form.
+      await supabase.from("bookings").delete().eq("id", pendingBooking.id);
+      console.error("GI payment form failed:", e);
+      return NextResponse.json(
+        { error: "Could not start the payment. Please try again or contact the business." },
+        { status: 502 }
+      );
+    }
+  }
+
+  // ─── No-deposit path: confirm immediately (existing behavior) ─────────────────
   const { error: bookingError } = await supabase.from("bookings").insert({
     business_id: businessId,
     service_id: serviceId,

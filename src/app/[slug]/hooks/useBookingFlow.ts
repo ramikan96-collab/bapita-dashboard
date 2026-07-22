@@ -99,6 +99,10 @@ export function useBookingFlow(initialService?: Service | null, staffChoice = fa
       const data = await res.json();
       if (!res.ok || data.error) {
         setState(prev => ({ ...prev, submitting: false, error: data.error || "Something went wrong. Please try again." }));
+      } else if (data.requiresPayment && data.redirectUrl) {
+        // Deposit required — hand off to Green Invoice's hosted payment page.
+        // The booking stays pending_payment until the webhook confirms.
+        window.location.href = data.redirectUrl as string;
       } else {
         setState(prev => ({ ...prev, submitting: false, step: "success" }));
       }

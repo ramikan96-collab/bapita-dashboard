@@ -170,6 +170,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
   const [showEjectPanel,   setShowEjectPanel]   = useState(false);
   const [copiedStep,       setCopiedStep]       = useState<number | null>(null);
   const [profileImageUrl,  setProfileImageUrl]  = useState<string | null>(null);
+  const [paymentsInfo, setPaymentsInfo] = useState<{ approved: boolean; connected: boolean; enabled: boolean; type: string | null; value: number | null } | null>(null);
+  const [paymentsBusy, setPaymentsBusy] = useState(false);
   const stableId = useRef<string>(businessId || crypto.randomUUID());
 
   useEffect(() => {
@@ -259,6 +261,19 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
         // Staff now lives in the public.staff table.
         setStaffMembers(await loadStaff(supabase, businessId));
       }
+
+      // Payments (Green Invoice): admin approval (addon) + owner connection + deposit config.
+      const [{ data: cred }, { data: payAddon }] = await Promise.all([
+        supabase.from("payment_credentials").select("id").eq("business_id", businessId).eq("provider", "greeninvoice").maybeSingle(),
+        supabase.from("addons").select("active").eq("business_id", businessId).eq("addon_type", "payments").maybeSingle(),
+      ]);
+      setPaymentsInfo({
+        approved: !!payAddon?.active,
+        connected: !!cred,
+        enabled: !!(b?.deposit_enabled),
+        type: (b?.deposit_default_type as string | null) ?? null,
+        value: (b?.deposit_default_value as number | null) ?? null,
+      });
 
       // Load services
       const { data: sv } = await supabase
@@ -1502,6 +1517,49 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   </SectionCard>
                 );
               })()}
+
+              <SectionCard title="Payments — Green Invoice">
+                <p style={{ fontSize:12, color:"var(--color-muted)", marginTop:0, marginBottom:12, fontStyle:"italic" }}>
+                  Open Payments to unlock the owner&apos;s Settings → Payments tab. They then connect their own Green Invoice account.
+                </p>
+                {/* Admin approval toggle */}
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                  <div style={{ fontSize:14, fontWeight:700, color:"var(--color-dark)" }}>
+                    {paymentsInfo?.approved ? "Payments open" : "Payments locked"}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={paymentsBusy || !businessId}
+                    onClick={async () => {
+                      if (!businessId) return;
+                      setPaymentsBusy(true);
+                      const next = !paymentsInfo?.approved;
+                      const { error } = await supabase.from("addons").upsert(
+                        { business_id: businessId, addon_type: "payments", active: next, activated_at: next ? new Date().toISOString() : null },
+                        { onConflict: "business_id,addon_type" }
+                      );
+                      if (!error) setPaymentsInfo((p) => p ? { ...p, approved: next } : p);
+                      setPaymentsBusy(false);
+                    }}
+                    style={{ height:32, padding:"0 16px", borderRadius:9999, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"inherit",
+                      background: paymentsInfo?.approved ? "#22C55E" : "var(--color-cream-2)", color: paymentsInfo?.approved ? "#fff" : "var(--color-muted)" }}
+                  >
+                    {paymentsBusy ? "…" : paymentsInfo?.approved ? "Opened" : "Open payments"}
+                  </button>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                  <span style={{ width:9, height:9, borderRadius:"50%", display:"inline-block", background: paymentsInfo?.connected ? "#22C55E" : "var(--color-cream-2)" }} />
+                  <span style={{ fontSize:13, color:"var(--color-muted)" }}>
+                    Owner {paymentsInfo?.connected ? "connected their account" : "not connected yet"}
+                  </span>
+                </div>
+                <div style={{ fontSize:13, color:"var(--color-muted)", lineHeight:1.6 }}>
+                  Deposits: <strong style={{ color:"var(--color-dark)" }}>{paymentsInfo?.enabled ? "On" : "Off"}</strong>
+                  {paymentsInfo?.enabled && paymentsInfo?.value != null && (
+                    <> · Default {paymentsInfo.type === "fixed" ? `₪${paymentsInfo.value}` : `${paymentsInfo.value}%`}</>
+                  )}
+                </div>
+              </SectionCard>
             </div>
           )}
 
