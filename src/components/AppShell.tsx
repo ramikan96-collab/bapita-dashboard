@@ -988,20 +988,25 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 <IconPlus size={13} />
                 {t("Add staff calendar")}
               </button>
-              {/* Google Calendar — not clickable, quiet "soon" info row (no toast). */}
-              <div
+              {/* Google Calendar — routes to the Extras add-on request flow. */}
+              <button
+                onClick={() => go("/extras")}
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 8,
                   padding: "7px 8px", borderRadius: 8, fontSize: 13, textAlign: "start",
-                  color: "var(--color-muted)", marginTop: 2,
+                  color: "var(--color-muted)", background: "transparent",
+                  border: "none", cursor: "pointer", marginTop: 2,
+                  transition: "background 0.12s",
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-cream-2)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               >
                 <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: "var(--color-cream-2)" }} />
                 {t("Google Calendar")}
                 <span style={{ marginInlineStart: "auto", fontSize: 10, fontWeight: 700, background: "var(--color-cream-2)", padding: "2px 6px", borderRadius: 4, color: "var(--color-muted)", letterSpacing: "0.04em" }}>
                   {t("Soon")}
                 </span>
-              </div>
+              </button>
             </div>
           )}
 

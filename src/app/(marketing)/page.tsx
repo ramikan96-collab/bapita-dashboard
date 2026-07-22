@@ -2471,6 +2471,40 @@ function AddonsSection() {
                 </div>
               </div>
             </div>
+
+            <div className="addon-item">
+              <button className="addon-row" aria-expanded="false">
+                <span className="addon-ico" style={{ background: "rgba(66,133,244,.1)", color: "#4285f4" }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </span>
+                <span className="addon-row-text">
+                  <span className="addon-row-name" data-i18n="addons.gcal.t">
+                    Google Calendar Sync
+                  </span>
+                  <span className="addon-row-tagline" data-i18n="addons.gcal.tag">
+                    Busy times block automatically, new bookings show up on your Google Calendar
+                  </span>
+                </span>
+                <span className="addon-badge one-time" data-i18n="addons.onetime">
+                  One time
+                </span>
+                <span className="addon-chevron" aria-hidden="true" />
+              </button>
+              <div className="addon-panel">
+                <div className="addon-panel-inner">
+                  <p className="addon-panel-desc" data-i18n="addons.gcal.body">
+                    We connect your Google Calendar for you, a one-time concierge setup, not
+                    another monthly bill. <strong>No more double bookings.</strong> Block time on
+                    Google and it blocks on Bapita, and vice versa.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

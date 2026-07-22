@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { ExtrasSkeleton } from "@/components/LoadingSkeleton";
 
-type AddonType = "whatsapp" | "stripe" | "google" | "ads" | "google_business";
+type AddonType = "whatsapp" | "stripe" | "google" | "ads" | "google_business" | "google_calendar";
 
 // Email is a UI-only card — always active, not stored in addons table
 
@@ -17,7 +17,7 @@ interface Addon {
 }
 
 const MONTHLY: AddonType[] = ["whatsapp", "stripe", "google", "ads"];
-const ONETIME: AddonType[] = ["google_business"];
+const ONETIME: AddonType[] = ["google_business", "google_calendar"];
 const ALL_TYPES: AddonType[] = [...MONTHLY, ...ONETIME];
 
 type ChannelUsage = { used: number; total: number; label: string };
@@ -82,6 +82,17 @@ function IconMail({ size = 20 }: IP) {
   );
 }
 
+function IconGCal({ size = 20 }: IP) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+
 function IconCheck({ size = 10 }: IP) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -142,6 +153,14 @@ const CATALOG: Record<AddonType, Entry> = {
     color: "#0F9D58",
     icon: <IconPin />,
     statLabel: "Profile views",
+    recurring: false,
+  },
+  google_calendar: {
+    name: "Google Calendar Sync",
+    blurb: "We connect your Google Calendar so busy times block automatically and new bookings show up there too. One-time concierge setup, done for you.",
+    color: "#4285F4",
+    icon: <IconGCal />,
+    statLabel: "Events synced",
     recurring: false,
   },
 };
