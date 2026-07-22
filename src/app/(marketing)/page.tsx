@@ -1218,12 +1218,12 @@ export default function MarketingHomePage() {
               </span>
             </h1>
             <p className="hero-sub" data-i18n="hero.sub">
-              A booking website your clients love, a free owner dashboard, and automations. We build
-              it, connect it, and keep it running. You just show up.
+              A booking website your clients love, and a dashboard for you to manage. We build it,
+              connect it, and keep it running. You just show up.
             </p>
             <div className="hero-ctas">
               <a href="#" className="btn-primary lg" data-cta="hero_primary" data-i18n="cta.book">
-                Build my site
+                Build my website
               </a>
             </div>
             <p className="hero-trust">
@@ -1404,8 +1404,8 @@ export default function MarketingHomePage() {
             commitment.
           </p>
           <a href="#" className="btn-primary lg" data-cta="final_cta" data-i18n="cta.book">
-            Build my site
-          </a>
+                Build my website
+              </a>
           <div className="final-trust-chips">
             <span data-i18n="chip.1">✓ No commitment</span>
             <span data-i18n="chip.2">✓ 48h turnaround</span>
@@ -2538,7 +2538,7 @@ function TestimonialsSection() {
             />
           </div>
           <p className="tfeature-gpt-cap" data-i18n="test.shimi.gpt">
-            When people ask ChatGPT for the best hair salon in Herzliya, Shimi comes up first.
+            #1 result on ChatGPT for “best hair salon in Herzliya”
           </p>
         </div>
       </figure>
@@ -2591,8 +2591,8 @@ function PricingSection() {
             ))}
           </ul>
           <a href="#" className="btn-primary lg pricing-cta" data-cta="pricing_cta" data-i18n="cta.book">
-            Build my site
-          </a>
+                Build my website
+              </a>
         </div>
         <p className="pricing-note fade-up">
           <a href="#" data-cta="addons_inquiry" data-connect-kind="addons" data-i18n="pricing.note">

@@ -22,10 +22,10 @@ export default function InteractivityScript() {
     // channel-tab labels intentionally have no 'en' counterpart below.
     var I18N = {
       en: {
-        'nav.problem': "Problem", 'nav.solution': "Solution", 'nav.addons': "Add ons", 'nav.faq': "FAQ", 'nav.login': "Login",
-        'cta.talk': "Build my site", 'cta.book': "Build my site",
+        'nav.problem': "Problem", 'nav.solution': "Solution", 'nav.addons': "Add ons", 'nav.pricing': "Pricing", 'nav.faq': "FAQ", 'nav.login': "Login",
+        'cta.talk': "Build my website", 'cta.book': "Build my website",
         'hero.eyebrow': "For appointment based businesses", 'hero.h1a': "Your business online.", 'hero.h1b': "Built for you.",
-        'hero.sub': "A booking website your clients love, a free owner dashboard, and automations. We build it, connect it, and keep it running. You just show up.",
+        'hero.sub': "A booking website your clients love, and a dashboard for you to manage. We build it, connect it, and keep it running. You just show up.",
         'hero.trust': "Live in 48 hours. No tech skills, no commitment.",
         'mock.shop': "Studio Avi", 'mock.barber': "Barbershop", 'mock.service': "Service", 'mock.cut': "Haircut", 'mock.cutbeard': "Cut and beard",
         'mock.min': "min", 'mock.pickday': "Pick a day", 'mock.book': "Book now", 'mock.booked': "Booked!", 'mock.confirm': "A confirmation is on its way.",
@@ -79,7 +79,7 @@ export default function InteractivityScript() {
         'test.label': "What owners say", 'test.title': "Real businesses. Real results.",
         'test.shimi.q': "I never had time for any of this, I'm cutting hair all day. Bapita set everything up for me and it worked from day one. Now my clients book themselves and my chair stays full.",
         'test.shimi.n': "Shimi Azut", 'test.shimi.m': "Shimi Azut Hair Studio, Herzliya",
-        'test.shimi.rev': "474 Google reviews", 'test.shimi.gpt': "When people ask ChatGPT for the best hair salon in Herzliya, Shimi comes up first.",
+        'test.shimi.rev': "474 Google reviews", 'test.shimi.gpt': "#1 result on ChatGPT for “best hair salon in Herzliya”",
         'faq.label': "Questions", 'faq.title': "Straight answers.", 'faq.sub': "Everything you need to know before you start.",
         'faq.1.q': "How much does it cost?", 'faq.1.a': "₪1,500 to set up, then ₪200 a month. That covers your booking website, hosting, updates, three mini edits a month, and your owner dashboard. Add ons are extra, only if you want them.",
         'faq.2.q': "How long until I am live?", 'faq.2.a': "About 48 hours after you send your details. If you have custom requests it can take a little longer, and we will tell you that upfront.",
@@ -99,8 +99,9 @@ export default function InteractivityScript() {
       he: {
         'nav.problem': "הבעיה", 'nav.solution': "הפתרון", 'nav.addons': "תוספות", 'nav.faq': "שאלות", 'nav.login': "כניסה",
         'cta.talk': "בונים לי אתר", 'cta.book': "בונים לי אתר",
+        'nav.pricing': "מחיר",
         'hero.eyebrow': "לעסקים שעובדים עם תורים", 'hero.h1a': "העסק שלך אונליין.", 'hero.h1b': "בנוי בשבילך.",
-        'hero.sub': "אתר הזמנות שהלקוחות שלך אוהבים, לוח בקרה חינם לבעל העסק, ואוטומציות. אנחנו בונים, מחברים, ושומרים שהכל רץ. אתה רק מגיע.",
+        'hero.sub': "אתר הזמנות שהלקוחות שלך אוהבים, ולוח בקרה שאתה מנהל. אנחנו בונים, מחברים, ושומרים שהכל רץ. אתה רק מגיע.",
         'hero.trust': "באוויר תוך 48 שעות. בלי ידע טכני, בלי התחייבות.",
         'mock.shop': "הסטודיו של אבי", 'mock.barber': "מספרה", 'mock.service': "שירות", 'mock.cut': "תספורת", 'mock.cutbeard': "תספורת וזקן",
         'mock.min': "דק", 'mock.pickday': "בחר יום", 'mock.book': "לקביעת תור", 'mock.booked': "נקבע!", 'mock.confirm': "האישור בדרך אליך.",
@@ -156,7 +157,7 @@ export default function InteractivityScript() {
         'test.label': "מה בעלי עסקים אומרים", 'test.title': "עסקים אמיתיים. תוצאות אמיתיות.",
         'test.shimi.q': "אין לי זמן לכל זה, אני חותך שיער כל היום. בפיתה הקימו לי הכל וזה עבד מהיום הראשון. עכשיו הלקוחות קובעים לבד והכיסא תמיד מלא.",
         'test.shimi.n': "שימי אזוט", 'test.shimi.m': "מספרת שימי אזוט, הרצליה",
-        'test.shimi.rev': "474 ביקורות בגוגל", 'test.shimi.gpt': "כששואלים את ChatGPT מה המספרה הטובה בהרצליה, שימי הראשון שעולה.",
+        'test.shimi.rev': "474 ביקורות בגוגל", 'test.shimi.gpt': "תוצאה #1 בChatGPT ל“המספרה הטובה בהרצליה”",
         'faq.label': "שאלות", 'faq.title': "תשובות ישירות.", 'faq.sub': "כל מה שצריך לדעת לפני שמתחילים.",
         'faq.1.q': "כמה זה עולה?", 'faq.1.a': "1,500 ₪ להקמה, ואז 200 ₪ לחודש. זה כולל את אתר ההזמנות, אחסון, עדכונים, שלוש עריכות קטנות בחודש, ולוח בקרה לבעל העסק. תוספות הן בתשלום נפרד, רק אם תרצה.",
         'faq.2.q': "תוך כמה זמן אני באוויר?", 'faq.2.a': "בערך 48 שעות אחרי שאתה שולח את הפרטים. אם יש בקשות מיוחדות זה יכול לקחת קצת יותר, ונגיד לך את זה מראש.",

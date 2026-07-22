@@ -52,7 +52,8 @@ function BapitaLogo({ className = "h-7 w-auto shrink-0" }: { className?: string 
 const SECTION_LINKS: Array<{ href: string; key: string; label: string }> = [
   { href: "#problem", key: "nav.problem", label: "Problem" },
   { href: "#how-it-works", key: "nav.solution", label: "Solution" },
-  { href: "#automations", key: "nav.addons", label: "Add-ons" },
+  { href: "#automations", key: "nav.addons", label: "Add ons" },
+  { href: "#pricing", key: "nav.pricing", label: "Pricing" },
   { href: "#faq", key: "nav.faq", label: "FAQ" },
 ];
 
