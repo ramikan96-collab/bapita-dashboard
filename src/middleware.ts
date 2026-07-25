@@ -15,6 +15,28 @@ const DASHBOARD_ROUTES = [
   "/admin",
 ];
 
+/**
+ * Whether this request's routing depends on who the caller is.
+ *
+ * Middleware runs on nearly every request, so resolving auth unconditionally
+ * meant every public booking page view and every crawler hit paid for a session
+ * lookup it never used. Only the surfaces that actually branch on identity are
+ * listed here; public booking pages (`/[slug]`), the public booking API, the
+ * cancel/pay confirmation pages and SEO files skip auth entirely.
+ *
+ * Deliberately fail-closed: an `/api` route is only treated as public when it
+ * is explicitly under `/api/public`, so a new authenticated route added later
+ * is covered by default rather than silently exposed.
+ */
+function needsAuth(pathname: string): boolean {
+  // "/" branches: logged-in users are sent to the calendar instead of marketing.
+  if (pathname === "/") return true;
+  if (pathname.startsWith("/login") || pathname.startsWith("/auth")) return true;
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return true;
+  if (pathname.startsWith("/api/")) return !pathname.startsWith("/api/public");
+  return DASHBOARD_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
+}
+
 function isKnownHost(bareHost: string): boolean {
   return (
     bareHost === "book.bapita.com" ||
@@ -81,6 +103,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(`https://book.bapita.com${pathname}`);
   }
 
+  // Public surfaces never consult auth — this is the booking-page traffic, i.e.
+  // the overwhelming majority of requests.
+  if (!needsAuth(pathname)) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -104,27 +132,32 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() verifies the access token locally against the project's ES256
+  // signing key (JWKS fetched once, then cached) instead of calling the Auth
+  // server on every request. It still resolves the session first, so an expiring
+  // token is refreshed and the rotated cookies are written exactly as before.
+  //
+  // The tradeoff versus getUser(): a session revoked server-side stays valid
+  // here until the access token expires. That is acceptable for routing — the
+  // /admin layout and every /api/admin handler re-check against the Auth server
+  // themselves, so the gate below is defense-in-depth, not the only barrier.
+  const { data: claimsResult } = await supabase.auth.getClaims();
+  const claims = claimsResult?.claims ?? null;
+  const isLoggedIn = claims !== null;
+  const userEmail = typeof claims?.email === "string" ? claims.email : "";
 
   // Marketing homepage at "/" (own hosts only) — logged-in users skip straight
   // to the calendar instead of seeing the marketing page. Anonymous users fall
   // through and resolve naturally to src/app/(marketing)/page.tsx.
-  if (pathname === "/" && user) {
+  if (pathname === "/" && isLoggedIn) {
     return NextResponse.redirect(new URL("/calendar", request.url));
   }
 
   // Auth pages — redirect logged-in users to dashboard
   if (pathname.startsWith("/login") || pathname.startsWith("/auth")) {
-    if (user) {
+    if (isLoggedIn) {
       return NextResponse.redirect(new URL("/calendar", request.url));
     }
-    return supabaseResponse;
-  }
-
-  // Public API routes
-  if (pathname.startsWith("/api/public")) {
     return supabaseResponse;
   }
 
@@ -135,11 +168,11 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/admin") ||
     pathname === "/admin" ||
     pathname.startsWith("/admin/");
-  if (isAdminPath && !ADMIN_EMAILS.includes(user?.email ?? "")) {
+  if (isAdminPath && !ADMIN_EMAILS.includes(userEmail)) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
-    return NextResponse.redirect(new URL(user ? "/calendar" : "/login", request.url));
+    return NextResponse.redirect(new URL(isLoggedIn ? "/calendar" : "/login", request.url));
   }
 
   // Dashboard routes require auth
@@ -147,11 +180,10 @@ export async function middleware(request: NextRequest) {
     (r) => pathname === r || pathname.startsWith(r + "/")
   );
 
-  if (isDashboard && !user) {
+  if (isDashboard && !isLoggedIn) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Everything else (booking pages at /[slug]) is public
   return supabaseResponse;
 }
 
