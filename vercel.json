@@ -1,8 +1,9 @@
 {
   "crons": [
     {
+      "_comment": "Frees slots held by unpaid deposit bookings. Wants */5 * * * *, but Vercel Hobby rejects any schedule more frequent than daily and fails the whole deploy. Restore the 5-minute schedule when deposits go live (needs Vercel Pro), or drop the cron and filter stale pending_payment bookings at slot-query time instead.",
       "path": "/api/payments/greeninvoice/expire",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }
