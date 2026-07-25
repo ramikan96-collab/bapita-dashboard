@@ -18,6 +18,8 @@
 ## Deploy Gotchas
 1. **Vercel "Invalid Version"** — versionless `unrs-resolver` in package-lock.json causes build failure. Fix: regenerate lockfile.
 2. **Preview env vars** — Supabase vars must be scoped to Preview environment. Add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, + service role key to Vercel Preview.
+3. **Crons must be daily** — the Vercel account is on Hobby, which rejects any cron more frequent than once per day and **fails the whole deploy** before building. `vercel.json` is also schema-strict: no comment keys. The deposit-expiry cron (`/api/payments/greeninvoice/expire`) wants `*/5 * * * *` but is pinned to `0 3 * * *`. Restore the 5-minute schedule when deposits go live (needs Pro), or drop the cron and filter stale `pending_payment` bookings at slot-query time.
+4. **Push does not reliably trigger a build** — the GitHub webhook has silently failed more than once. After pushing, confirm a deployment for your SHA actually exists; if not, deploy with `npx vercel deploy --prod --yes --scope team_8ibtIeAI5bZIZWls7F97nUuD`.
 
 ## Past Security Audits
 - Rate limiting on `/api/public/book` (prevent abuse)
