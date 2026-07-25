@@ -1,5 +1,6 @@
 "use client";
 
+import { SmartImg } from "@/components/SmartImg";
 import { imgStyle, focalPos } from "./tileStyles";
 
 export interface UniformGridProps {
@@ -31,9 +32,10 @@ export function UniformGrid({ photos, cols, rowHeight, gap, borderRadius, focal,
                 key={idx}
                 style={{ flex: "1 1 0", minWidth: 0, height: rowHeight, borderRadius, overflow: "hidden", position: "relative" }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <SmartImg
                   src={photo}
+                  maxWidth={400}
+                  sizes={`(max-width: 700px) ${Math.round(100 / cols)}vw, 400px`}
                   alt={`${altLabel ?? "Gallery"} — photo ${idx + 1}`}
                   style={{ ...imgStyle, objectPosition: focalPos(focal, photo) }}
                   onClick={() => onPhotoClick(idx)}

@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
 import { findPlaceId } from "@/app/actions/find-place-id";
 import { syncStaffTable, loadStaff } from "@/lib/staff";
+import { prepareImageUpload } from "@/lib/image-upload";
+import { SmartImg } from "@/components/SmartImg";
 import { FontPicker } from "@/components/FontPicker";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 
@@ -1080,8 +1082,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                       <div style={{ position:"relative", flexShrink:0 }}>
                         <div style={{ width:52, height:52, borderRadius:"50%", overflow:"hidden", background:"var(--color-cream-2)", border:"1.5px solid var(--color-cream-2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                           {member.photo_url
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            ? <img src={member.photo_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                            ? <SmartImg src={member.photo_url} maxWidth={72} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                             : <span style={{ fontSize:20 }}>👤</span>
                           }
                         </div>
@@ -1097,9 +1098,16 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                               const file = e.target.files?.[0]; e.target.value = "";
                               if (!file) return;
                               setStaffUploading(s => ({ ...s, [member.id]: true }));
-                              const ext = file.name.split(".").pop();
-                              const path = `profiles/staff/${stableId.current}/${member.id}.${ext}`;
-                              const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
+                              let prepared;
+                              try {
+                                prepared = await prepareImageUpload(file);
+                              } catch (err) {
+                                alert(err instanceof Error ? err.message : "Failed to upload photo");
+                                setStaffUploading(s => ({ ...s, [member.id]: false }));
+                                return;
+                              }
+                              const path = `profiles/staff/${stableId.current}/${member.id}.${prepared.ext}`;
+                              const { error } = await supabase.storage.from("business-images").upload(path, prepared.file, { upsert: true, cacheControl: "31536000" });
                               if (!error) {
                                 const { data } = supabase.storage.from("business-images").getPublicUrl(path);
                                 // path is stable (member.id, upsert-overwritten) — cache-bust via query string so a
@@ -1893,9 +1901,16 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
 
   async function uploadProfileImage(file: File) {
     setProfileUploading(true);
-    const ext  = file.name.split(".").pop();
-    const path = `profiles/${businessId || "temp"}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
+    let prepared;
+    try {
+      prepared = await prepareImageUpload(file);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to upload photo");
+      setProfileUploading(false);
+      return;
+    }
+    const path = `profiles/${businessId || "temp"}/${Date.now()}.${prepared.ext}`;
+    const { error } = await supabase.storage.from("business-images").upload(path, prepared.file, { upsert: true, cacheControl: "31536000" });
     if (!error) {
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       setProfileImageUrl(data.publicUrl);
@@ -1919,9 +1934,15 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
     const startIdx = gallery.length;
 
     const results = await Promise.all(files.map(async (file, i) => {
-      const ext  = file.name.split(".").pop();
-      const path = `galleries/${businessId || "temp"}/${Date.now()}-${i}.${ext}`;
-      const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
+      let prepared;
+      try {
+        prepared = await prepareImageUpload(file);
+      } catch (e) {
+        alert(e instanceof Error ? e.message : `Failed to upload ${file.name}`);
+        return null;
+      }
+      const path = `galleries/${businessId || "temp"}/${Date.now()}-${i}.${prepared.ext}`;
+      const { error } = await supabase.storage.from("business-images").upload(path, prepared.file, { upsert: true, cacheControl: "31536000" });
       if (error) return null;
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       return data.publicUrl;
@@ -1988,8 +2009,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
       <div style={{ display:"flex", alignItems:"center", gap:16 }}>
         <div style={{ width:72, height:72, borderRadius:"50%", overflow:"hidden", background:"var(--color-cream-2)", flexShrink:0, border:"2px solid var(--color-cream-2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
           {profileImageUrl
-            /* eslint-disable-next-line @next/next/no-img-element */
-            ? <img src={profileImageUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+            ? <SmartImg src={profileImageUrl} maxWidth={128} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
             : <span style={{ fontSize:24 }}>👤</span>
           }
         </div>
@@ -2039,8 +2059,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
               }}
             >
               {item.url && (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={item.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition: focal[item.url] || "center", display:"block", pointerEvents:"none", opacity: item.hidden ? 0.45 : 1, filter: item.hidden ? "grayscale(0.6)" : "none" }} />
+                <SmartImg src={item.url} maxWidth={240} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition: focal[item.url] || "center", display:"block", pointerEvents:"none", opacity: item.hidden ? 0.45 : 1, filter: item.hidden ? "grayscale(0.6)" : "none" }} />
               )}
               {item.uploading && (
                 <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"var(--color-muted)" }}>
@@ -2170,8 +2189,7 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
                 onClick={e => onFocalClick(e, url)}
                 style={{ position:"relative", width:"100%", maxHeight:"46vh", aspectRatio:"4 / 3", borderRadius:12, overflow:"hidden", cursor:"crosshair", background:"var(--color-cream-2)" }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", pointerEvents:"none" }} />
+                <SmartImg src={url} maxWidth={600} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", pointerEvents:"none" }} />
                 <div style={{
                   position:"absolute", left:`${fx}%`, top:`${fy}%`, transform:"translate(-50%,-50%)",
                   width:26, height:26, borderRadius:"50%", border:"3px solid var(--color-surface)",
@@ -2183,15 +2201,13 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
               <div style={{ display:"flex", gap:12, marginTop:14, alignItems:"flex-start" }}>
                 <div>
                   <div style={{ width:90, aspectRatio:"9 / 16", borderRadius:8, overflow:"hidden", border:"1px solid var(--color-cream-2)" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:pos, display:"block" }} />
+                    <SmartImg src={url} maxWidth={600} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:pos, display:"block" }} />
                   </div>
                   <p style={{ fontSize:11, color:"var(--color-muted)", textAlign:"center", margin:"4px 0 0" }}>Phone</p>
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ width:"100%", aspectRatio:"16 / 9", borderRadius:8, overflow:"hidden", border:"1px solid var(--color-cream-2)" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:pos, display:"block" }} />
+                    <SmartImg src={url} maxWidth={600} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:pos, display:"block" }} />
                   </div>
                   <p style={{ fontSize:11, color:"var(--color-muted)", textAlign:"center", margin:"4px 0 0" }}>Wide</p>
                 </div>

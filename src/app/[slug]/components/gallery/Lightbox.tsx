@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { SmartImg } from "@/components/SmartImg";
+
 export interface LightboxProps {
   photos: string[];
   index: number;
@@ -91,9 +93,12 @@ export function Lightbox({ photos, index, onIndexChange, onClose, altLabel }: Li
         <button aria-label="Next" onClick={(e) => { e.stopPropagation(); go(1); }} style={arrowStyle("right")}>›</button>
       )}
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <SmartImg
         src={photos[index]}
+        maxWidth={1024}
+        quality={90}
+        sizes="90vw"
+        loading="eager"
         alt={`${altLabel ?? "Gallery"} — photo ${index + 1}`}
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: "90vw", maxHeight: "90vh", objectFit: "contain", borderRadius: 4 }}

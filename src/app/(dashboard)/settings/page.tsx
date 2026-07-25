@@ -8,6 +8,8 @@ import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "
 import { FontPicker } from "@/components/FontPicker";
 import { useLang } from "@/i18n";
 import { loadStaff, syncStaffTable } from "@/lib/staff";
+import { prepareImageUpload } from "@/lib/image-upload";
+import { SmartImg } from "@/components/SmartImg";
 import { SettingsSkeleton } from "@/components/LoadingSkeleton";
 import { PaymentsSection } from "./_components/PaymentsSection";
 
@@ -1115,9 +1117,16 @@ function TeamSection({
 
   async function uploadStaffPhoto(memberId: string, memberIdx: number, file: File) {
     setStaffUploading((s) => ({ ...s, [memberId]: true }));
-    const ext  = file.name.split(".").pop();
-    const path = `profiles/staff/${business.id}/${memberId}.${ext}`;
-    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
+    let prepared;
+    try {
+      prepared = await prepareImageUpload(file);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : t("Failed to upload photo"), "error");
+      setStaffUploading((s) => ({ ...s, [memberId]: false }));
+      return;
+    }
+    const path = `profiles/staff/${business.id}/${memberId}.${prepared.ext}`;
+    const { error } = await supabase.storage.from("business-images").upload(path, prepared.file, { upsert: true, cacheControl: "31536000" });
     if (!error) {
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       // path is stable (memberId, upsert-overwritten) — cache-bust via query string so a
@@ -1189,8 +1198,7 @@ function TeamSection({
               <div style={{ position: "relative", flexShrink: 0 }}>
                 <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "var(--color-cream-2)", border: "1.5px solid var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {member.photo_url
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    ? <img src={member.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ? <SmartImg src={member.photo_url} maxWidth={72} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : <span style={{ fontSize: 20 }}>👤</span>
                   }
                 </div>
@@ -1675,9 +1683,16 @@ function WebsiteSection({
   // ── Actions ────────────────────────────────────────────────────────────────
   async function uploadProfileImage(file: File) {
     setProfileUploading(true);
-    const ext  = file.name.split(".").pop();
-    const path = `profiles/${business.id}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
+    let prepared;
+    try {
+      prepared = await prepareImageUpload(file);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Failed to upload photo", "error");
+      setProfileUploading(false);
+      return;
+    }
+    const path = `profiles/${business.id}/${Date.now()}.${prepared.ext}`;
+    const { error } = await supabase.storage.from("business-images").upload(path, prepared.file, { upsert: true, cacheControl: "31536000" });
     if (!error) {
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       setProfileImageUrl(data.publicUrl);
@@ -1689,9 +1704,16 @@ function WebsiteSection({
 
   async function uploadStaffPhoto(memberId: string, memberIdx: number, file: File) {
     setStaffUploading(s => ({ ...s, [memberId]: true }));
-    const ext  = file.name.split(".").pop();
-    const path = `profiles/staff/${business.id}/${memberId}.${ext}`;
-    const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
+    let prepared;
+    try {
+      prepared = await prepareImageUpload(file);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Failed to upload photo", "error");
+      setStaffUploading(s => ({ ...s, [memberId]: false }));
+      return;
+    }
+    const path = `profiles/staff/${business.id}/${memberId}.${prepared.ext}`;
+    const { error } = await supabase.storage.from("business-images").upload(path, prepared.file, { upsert: true, cacheControl: "31536000" });
     if (!error) {
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       // path is stable (memberId, upsert-overwritten) — cache-bust via query string so a
@@ -1714,9 +1736,15 @@ function WebsiteSection({
     const urls: string[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const ext = file.name.split(".").pop();
-      const path = `galleries/${business.id}/${Date.now()}-${i}.${ext}`;
-      const { error } = await supabase.storage.from("business-images").upload(path, file, { upsert: true, cacheControl: "31536000" });
+      let prepared;
+      try {
+        prepared = await prepareImageUpload(file);
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : `Failed to upload ${file.name}`, "error");
+        continue;
+      }
+      const path = `galleries/${business.id}/${Date.now()}-${i}.${prepared.ext}`;
+      const { error } = await supabase.storage.from("business-images").upload(path, prepared.file, { upsert: true, cacheControl: "31536000" });
       if (error) { showToast(`Failed to upload ${file.name}`, "error"); continue; }
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       urls.push(data.publicUrl);
@@ -1899,8 +1927,7 @@ function WebsiteSection({
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: "var(--color-cream-2)", flexShrink: 0, border: "2px solid var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {profileImageUrl
-              /* eslint-disable-next-line @next/next/no-img-element */
-              ? <img src={profileImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ? <SmartImg src={profileImageUrl} maxWidth={128} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               : <span style={{ fontSize: 24 }}>👤</span>
             }
           </div>
@@ -1966,8 +1993,7 @@ function WebsiteSection({
               const isHidden = hidden.includes(url);
               return (
               <div key={url} style={{ position: "relative", borderRadius: 10, overflow: "hidden", aspectRatio: "1" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`Gallery ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: isHidden ? 0.45 : 1, filter: isHidden ? "grayscale(0.6)" : "none", transition: "opacity 0.15s, filter 0.15s" }} />
+                <SmartImg src={url} maxWidth={240} alt={`Gallery ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: isHidden ? 0.45 : 1, filter: isHidden ? "grayscale(0.6)" : "none", transition: "opacity 0.15s, filter 0.15s" }} />
                 {i === 0 && (
                   <div style={{ position: "absolute", top: 4, insetInlineStart: 4, background: "rgba(0,0,0,0.6)", color: "var(--color-surface)", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>Cover</div>
                 )}
@@ -2049,8 +2075,7 @@ function WebsiteSection({
               <div style={{ position: "relative", flexShrink: 0 }}>
                 <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "var(--color-cream-2)", border: "1.5px solid var(--color-cream-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {member.photo_url
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    ? <img src={member.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ? <SmartImg src={member.photo_url} maxWidth={72} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : <span style={{ fontSize: 20 }}>👤</span>
                   }
                 </div>

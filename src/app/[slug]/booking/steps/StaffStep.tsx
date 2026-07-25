@@ -2,6 +2,8 @@
 
 import type { StaffMember } from "@/types";
 
+import { SmartImg } from "@/components/SmartImg";
+
 interface Props {
   staff: StaffMember[];
   onSelect: (staffId: string | null) => void;
@@ -44,8 +46,7 @@ export function StaffStep({ staff, onSelect, accentColor, darkColor, bgColor, st
       {staff.map(m => (
         <button key={m.id} onClick={() => onSelect(m.id)} style={cardStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
           {m.photo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={m.photo_url} alt={m.name} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+            <SmartImg src={m.photo_url} maxWidth={40} alt={m.name} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
           ) : (
             <span style={{
               width: 40, height: 40, borderRadius: "50%", flexShrink: 0,

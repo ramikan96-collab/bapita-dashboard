@@ -17,6 +17,7 @@ import { LangToggle } from "../_shared/LangToggle";
 import { ThemeFooter } from "../_shared/ThemeFooter";
 import { resolveFont } from "../_shared/fonts";
 import { FontLoader } from "../_shared/FontLoader";
+import { SmartImg } from "@/components/SmartImg";
 import { InstagramFeed } from "../_shared/InstagramFeed";
 
 const C = { bg: "#F8F2E8", dark: "#221510", gold: "#B8862A", cream2: "#F0E8D8" };
@@ -183,9 +184,16 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
                   zIndex: isActive ? 1 : 0,
                 }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <SmartImg
                   src={img}
+                  maxWidth={1920}
+                  widths={[640, 828, 1200, 1920, 2048]}
+                  sizes="100vw"
+                  quality={90}
+                  // First slide is the LCP element; the rest are off-screen but
+                  // rotate in on a 1.2s transition, so they still load eagerly.
+                  loading={index === 0 ? "eager" : undefined}
+                  fetchPriority={index === 0 ? "high" : undefined}
                   alt=""
                   className="c-hero-img"
                   style={{
@@ -396,8 +404,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
                   <div className="about-row" style={{ marginTop: 20 }}>
                     {(business.profile_image_url || business.hero_image_url) && (
                       <div style={{ textAlign: "center", flexShrink: 0 }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={business.profile_image_url || business.hero_image_url || ""} alt={displayName} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: `3px solid ${accent}`, display: "block", margin: "0 auto 6px" }} />
+                        <SmartImg src={business.profile_image_url || business.hero_image_url || ""} maxWidth={72} alt={displayName} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: `3px solid ${accent}`, display: "block", margin: "0 auto 6px" }} />
                         <span style={{ fontSize: 11, fontVariant: "small-caps", color: accent, fontWeight: 700, letterSpacing: "0.06em" }}>{displayName}</span>
                       </div>
                     )}
@@ -421,8 +428,7 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
                       <div key={member.id} style={{ background: "#fff", borderRadius: 10, padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center", boxShadow: "0 1px 4px rgba(34,21,16,0.06)", borderInlineStart: `3px solid ${accent}` }}>
                         <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: C.cream2, border: `2px solid ${accent}`, flexShrink: 0 }}>
                           {member.photo_url
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            ? <img src={member.photo_url} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: memberFocal }} />
+                            ? <SmartImg src={member.photo_url} maxWidth={72} alt={member.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: memberFocal }} />
                             : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: C.dark, opacity: 0.4 }}>👤</div>
                           }
                         </div>
