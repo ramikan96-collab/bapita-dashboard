@@ -157,6 +157,40 @@ body {
   }
 }
 
+/* ── Accessibility controls (AccessibilityMenu) ────────────────────────── */
+html[data-a11y-font="large"]  { font-size: 118%; }
+html[data-a11y-font="xlarge"] { font-size: 135%; }
+
+html[data-a11y-contrast="high"] body {
+  background: #fff;
+  color: #000;
+}
+html[data-a11y-contrast="high"] a {
+  text-decoration: underline;
+}
+html[data-a11y-contrast="high"] button,
+html[data-a11y-contrast="high"] .btn {
+  outline: 1.5px solid #000;
+  outline-offset: 1px;
+}
+
+html[data-a11y-motion="reduce"] *,
+html[data-a11y-motion="reduce"] *::before,
+html[data-a11y-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+html[data-a11y-focus="strong"] :focus-visible {
+  outline: 3px solid #005fcc !important;
+  outline-offset: 3px !important;
+}
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 @media print {
   nav,
   aside,

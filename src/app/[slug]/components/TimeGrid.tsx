@@ -14,7 +14,7 @@ export function TimeGrid({ slots, selectedTime, onSelect, accentColor, darkColor
   const isDark = /^#[01]/.test(bgColor ?? "");
   if (loading) {
     return (
-      <div style={{ display:"flex", justifyContent:"center", padding:"32px 0" }}>
+      <div role="status" aria-label="Loading available times" style={{ display:"flex", justifyContent:"center", padding:"32px 0" }}>
         <div style={{
           width:24, height:24, borderRadius:"50%",
           border:`2px solid ${accentColor}`, borderTopColor:"transparent",
@@ -26,7 +26,7 @@ export function TimeGrid({ slots, selectedTime, onSelect, accentColor, darkColor
 
   if (!slots.length) {
     return (
-      <div style={{ textAlign:"center", padding:"32px 0", fontSize:14, color:darkColor, opacity:0.45 }}>
+      <div role="status" style={{ textAlign:"center", padding:"32px 0", fontSize:14, color:darkColor, opacity:0.45 }}>
         No available times
       </div>
     );
@@ -39,7 +39,9 @@ export function TimeGrid({ slots, selectedTime, onSelect, accentColor, darkColor
         return (
           <button
             key={slot}
+            type="button"
             onClick={() => onSelect(slot)}
+            aria-pressed={sel}
             style={{
               padding:"12px 0", borderRadius:10,
               border:`2px solid ${sel ? accentColor : isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)"}`,

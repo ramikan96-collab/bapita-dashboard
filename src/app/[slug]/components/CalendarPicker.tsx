@@ -54,6 +54,8 @@ export function CalendarPicker({ selectedDate, onSelect, businessHours, accentCo
 
   const days = getDays(year, month);
   const monthLabel = `${cal.months[month]} ${year}`;
+  const prevLabel = `${cal.months[month === 0 ? 11 : month - 1]} ${month === 0 ? year - 1 : year}`;
+  const nextLabel = `${cal.months[month === 11 ? 0 : month + 1]} ${month === 11 ? year + 1 : year}`;
 
   const btnBase: React.CSSProperties = {
     width: 36, height: 36, borderRadius: 8,
@@ -66,9 +68,9 @@ export function CalendarPicker({ selectedDate, onSelect, businessHours, accentCo
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-        <button style={btnBase} onClick={prevMonth}>‹</button>
-        <span style={{ fontSize:15, fontWeight:700, color:darkColor }}>{monthLabel}</span>
-        <button style={btnBase} onClick={nextMonth}>›</button>
+        <button type="button" style={btnBase} onClick={prevMonth} aria-label={`Previous month, ${prevLabel}`}>‹</button>
+        <span style={{ fontSize:15, fontWeight:700, color:darkColor }} aria-live="polite">{monthLabel}</span>
+        <button type="button" style={btnBase} onClick={nextMonth} aria-label={`Next month, ${nextLabel}`}>›</button>
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:6 }}>
@@ -88,8 +90,11 @@ export function CalendarPicker({ selectedDate, onSelect, businessHours, accentCo
           return (
             <button
               key={str}
+              type="button"
               disabled={disabled}
               onClick={() => !disabled && onSelect(str)}
+              aria-pressed={selected}
+              aria-label={date.toDateString()}
               style={{
                 height:40, borderRadius:8,
                 border: `2px solid ${selected ? accentColor : "transparent"}`,

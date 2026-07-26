@@ -33,7 +33,7 @@ export function StaffStep({ staff, onSelect, accentColor, darkColor, bgColor, st
       <div style={{ fontSize: 15, fontWeight: 700, color: darkColor }}>{stepTitle}</div>
 
       {/* Any available */}
-      <button onClick={() => onSelect(null)} style={cardStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
+      <button type="button" onClick={() => onSelect(null)} style={cardStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
         <span style={{
           width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -44,7 +44,7 @@ export function StaffStep({ staff, onSelect, accentColor, darkColor, bgColor, st
       </button>
 
       {staff.map(m => (
-        <button key={m.id} onClick={() => onSelect(m.id)} style={cardStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
+        <button key={m.id} type="button" onClick={() => onSelect(m.id)} style={cardStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
           {m.photo_url ? (
             <SmartImg src={m.photo_url} maxWidth={40} alt={m.name} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
           ) : (

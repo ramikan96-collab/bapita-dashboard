@@ -327,7 +327,12 @@ export default function MarketingLayout({
             <p data-i18n="footer.copy" className="text-sm text-white/40">
               © {new Date().getFullYear()} Bapita. All rights reserved.
             </p>
-            <p className="text-sm text-white/40">bapita.com</p>
+            <div className="flex items-center gap-4">
+              <Link href="/accessibility" className="text-sm text-white/40 underline underline-offset-2 hover:text-white/70">
+                Accessibility
+              </Link>
+              <p className="text-sm text-white/40">bapita.com</p>
+            </div>
           </div>
         </div>
       </footer>

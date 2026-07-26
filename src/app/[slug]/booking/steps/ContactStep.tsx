@@ -55,36 +55,45 @@ export function ContactStep({ service, date, time, contact, onChange, onSubmit, 
       />
 
       <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-        {FIELDS.map(({ label, key, type, placeholder }) => (
-          <div key={key}>
-            <label style={{
-              display:"block", fontSize:11, fontWeight:700, textTransform:"uppercase",
-              letterSpacing:"0.05em", color:darkColor, opacity:0.5, marginBottom:6,
-            }}>
-              {label}
-            </label>
-            <input
-              type={type}
-              value={contact[key]}
-              onChange={e => onChange({ [key]: e.target.value })}
-              placeholder={placeholder}
-              style={{
-                width:"100%", height:48, borderRadius:12,
-                border:`1.5px solid ${borderClr}`,
-                background: bgColor, fontSize:15, color:darkColor,
-                padding:"0 14px", outline:"none", fontFamily:"inherit",
-                boxSizing: "border-box",
-              }}
-              onFocus={e => { e.currentTarget.style.borderColor = accentColor; }}
-              onBlur={e  => { e.currentTarget.style.borderColor = borderClr; }}
-            />
-          </div>
-        ))}
+        {FIELDS.map(({ label, key, type, placeholder }) => {
+          const fieldId = `contact-${key}`;
+          const required = key !== "email";
+          return (
+            <div key={key}>
+              <label htmlFor={fieldId} style={{
+                display:"block", fontSize:11, fontWeight:700, textTransform:"uppercase",
+                letterSpacing:"0.05em", color:darkColor, opacity:0.5, marginBottom:6,
+              }}>
+                {label}
+              </label>
+              <input
+                id={fieldId}
+                type={type}
+                value={contact[key]}
+                onChange={e => onChange({ [key]: e.target.value })}
+                placeholder={placeholder}
+                required={required}
+                aria-required={required}
+                autoComplete={key === "name" ? "name" : key === "phone" ? "tel" : "email"}
+                style={{
+                  width:"100%", height:48, borderRadius:12,
+                  border:`1.5px solid ${borderClr}`,
+                  background: bgColor, fontSize:15, color:darkColor,
+                  padding:"0 14px", outline:"none", fontFamily:"inherit",
+                  boxSizing: "border-box",
+                }}
+                onFocus={e => { e.currentTarget.style.borderColor = accentColor; }}
+                onBlur={e  => { e.currentTarget.style.borderColor = borderClr; }}
+              />
+            </div>
+          );
+        })}
       </div>
 
-      {error && <p style={{ fontSize:13, color:"#EF4444", textAlign:"center" }}>{error}</p>}
+      {error && <p role="alert" style={{ fontSize:13, color:"#EF4444", textAlign:"center" }}>{error}</p>}
 
       <button
+        type="button"
         onClick={onSubmit}
         disabled={!canSubmit}
         style={{

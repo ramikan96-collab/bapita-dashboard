@@ -1,5 +1,6 @@
 import type { Business } from "@/types";
 import { IgIcon, WaIcon, FbIcon, TkIcon } from "./icons";
+import { AccessibilityMenu } from "@/components/AccessibilityMenu";
 
 interface Props {
   business: Business;
@@ -82,6 +83,10 @@ export function ThemeFooter({
         <a href="https://bapita.com" style={{ color: accent, textDecoration: "none", fontWeight: 700 }}>
           {brandLabel}
         </a>
+      </div>
+
+      <div style={{ marginTop: 14, color: colors.muted }}>
+        <AccessibilityMenu />
       </div>
     </footer>
   );
