@@ -1131,6 +1131,7 @@ function TeamSection({
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       // path is stable (memberId, upsert-overwritten) — cache-bust via query string so a
       // long Cache-Control on the object doesn't serve a stale photo after replacement.
+      // eslint-disable-next-line react-hooks/purity -- runs in an upload click handler, not render
       const url = `${data.publicUrl}?v=${Date.now()}`;
       setStaff((ms) => ms.map((m, i) => i === memberIdx ? { ...m, photo_url: url } : m));
     } else {
@@ -1718,6 +1719,7 @@ function WebsiteSection({
       const { data } = supabase.storage.from("business-images").getPublicUrl(path);
       // path is stable (memberId, upsert-overwritten) — cache-bust via query string so a
       // long Cache-Control on the object doesn't serve a stale photo after replacement.
+      // eslint-disable-next-line react-hooks/purity -- runs in an upload click handler, not render
       const url = `${data.publicUrl}?v=${Date.now()}`;
       setStaffMembers(ms => ms.map((m, i) => i === memberIdx ? { ...m, photo_url: url } : m));
     } else {
