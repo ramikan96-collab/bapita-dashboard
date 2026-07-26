@@ -1286,7 +1286,7 @@ export default function MarketingHomePage() {
             </h1>
             <p className="hero-sub" data-i18n="hero.sub">
               A booking website for your clients. A dashboard for you. We build both and keep
-              them running. You just do what you do.
+              them running. You just show up.
             </p>
             <div className="hero-ctas">
               <a href="#" className="btn-primary lg" data-cta="hero_primary" data-i18n="cta.book">
