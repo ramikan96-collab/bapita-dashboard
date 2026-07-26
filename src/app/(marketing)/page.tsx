@@ -750,6 +750,17 @@ const pageCss = `
 .bp-home .bento-dash-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .bp-home .bento-dash-name { font-weight: 700; color: var(--ink); flex: 1; }
 .bp-home .bento-dash-time { font-size: .75rem; color: var(--text-muted); }
+.bp-home .bento-dash-traffic { border-top: 1px solid var(--line); background: rgba(232,146,10,.04); padding: .5rem .875rem .6rem; }
+.bp-home .bento-dash-traffic-head { display: flex; align-items: center; gap: .3rem; font-size: .58rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: .4rem; }
+.bp-home .bento-dash-funnel { display: flex; align-items: center; gap: .3rem; }
+.bp-home .bento-dash-funnel-step { flex: 1; min-width: 0; }
+.bp-home .bento-dash-funnel-n { font-size: .8125rem; font-weight: 800; color: var(--dark); line-height: 1; }
+.bp-home .bento-dash-funnel-l { font-size: .55rem; color: var(--text-muted); margin-top: 2px; }
+.bp-home .bento-dash-funnel-arrow { flex-shrink: 0; color: var(--text-muted); opacity: .5; display: flex; }
+[dir="rtl"] .bp-home .bento-dash-funnel-arrow svg { transform: scaleX(-1); }
+.bp-home .bento-dash-funnel-step.win .bento-dash-funnel-n { color: var(--amber); }
+.bp-home .bento-dash-sources { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .45rem; }
+.bp-home .bento-dash-source { font-size: .55rem; font-weight: 700; color: var(--text-muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .12rem .4rem; }
 
 .bp-home .bento-addon-stack { display: flex; flex-direction: column; gap: .375rem; margin-top: 1rem; }
 .bp-home .bento-addon-row { background: var(--surface); border-radius: var(--r-md); border: 1px solid var(--line); padding: .5rem .75rem; display: flex; align-items: center; gap: .625rem; }
@@ -852,16 +863,21 @@ const pageCss = `
 .bp-home .av-reviews-track { flex: 1; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .bp-home .av-reviews-fill { height: 100%; border-radius: 3px; background: var(--amber); }
 
-.bp-home .av-ads { display: flex; flex-direction: column; gap: .4rem; width: 100%; }
-.bp-home .av-ads-header { font-size: .65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
-.bp-home .av-ads-stat-row { display: flex; gap: .5rem; }
-.bp-home .av-ads-stat { flex: 1; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-soft); padding: .4rem .5rem; }
-.bp-home .av-ads-stat-val { font-size: .9rem; font-weight: 900; color: var(--dark); }
-.bp-home .av-ads-stat-label { font-size: .6rem; color: var(--text-muted); }
-.bp-home .av-ads-bar-row { display: flex; align-items: center; gap: .4rem; }
-.bp-home .av-ads-track { flex: 1; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
-.bp-home .av-ads-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--amber) 0%, var(--terra) 100%); width: 72%; }
-.bp-home .av-ads-bar-label { font-size: .65rem; color: var(--text-muted); }
+.bp-home .av-seo { display: flex; flex-direction: column; gap: .4rem; width: 100%; }
+.bp-home .av-seo-search { display: flex; align-items: center; gap: .4rem; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .35rem .7rem; font-size: .7rem; color: var(--text-muted); }
+.bp-home .av-seo-result { display: flex; align-items: center; gap: .5rem; padding: .4rem .5rem; border-radius: var(--r-soft); border: 1px solid transparent; }
+.bp-home .av-seo-result.you { background: rgba(232,146,10,.09); border-color: rgba(232,146,10,.28); }
+.bp-home .av-seo-rank { width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 5px; background: var(--line); color: var(--text-muted); font-size: .6rem; font-weight: 800; }
+.bp-home .av-seo-result.you .av-seo-rank { background: var(--amber); color: #fff; }
+.bp-home .av-seo-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .22rem; }
+.bp-home .av-seo-title { font-size: .72rem; font-weight: 800; color: var(--dark); }
+.bp-home .av-seo-url { font-size: .6rem; color: var(--text-muted); }
+.bp-home .av-seo-line { height: 6px; border-radius: 3px; background: var(--line); display: block; }
+.bp-home .av-seo-line.dim { height: 5px; opacity: .55; }
+.bp-home .av-seo-you { flex-shrink: 0; font-size: .55rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--amber-dark); }
+.bp-home .av-seo-foot { display: flex; align-items: center; gap: .4rem; padding-top: .15rem; }
+.bp-home .av-seo-climb { display: inline-flex; align-items: center; gap: .22rem; font-size: .65rem; font-weight: 800; color: #16a34a; }
+.bp-home .av-seo-foot-label { font-size: .62rem; color: var(--text-muted); }
 
 .bp-home .av-sms { display: flex; flex-direction: column; gap: .45rem; width: 100%; }
 .bp-home .av-sms-bubble { border-radius: 12px; padding: .4rem .65rem; font-size: .7rem; line-height: 1.4; max-width: 85%; }
@@ -935,10 +951,17 @@ const pageCss = `
 .bp-home .pricing-note a:hover { color: var(--amber-dark); }
 .bp-home .pricing-grid { display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 1.5rem; }
 .bp-home .pricing-grid .pricing-card { margin: 0; flex: 1 1 380px; max-width: 420px; }
-.bp-home .pricing-card--custom { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(28,24,20,.02); box-shadow: none; border: 1px dashed rgba(28,24,20,.16); }
-.bp-home .pricing-card--custom::before { display: none; }
-.bp-home .pricing-card--custom:hover { transform: none; box-shadow: none; }
-.bp-home .pricing-custom-desc { font-size: .975rem; color: var(--text-muted); line-height: 1.55; margin: 0 0 1.75rem; }
+.bp-home .pricing-card--custom { display: flex; flex-direction: column; background: linear-gradient(170deg, #fffdf9 0%, #fff 55%); box-shadow: 0 24px 60px -46px rgba(28,24,20,.4); border: 1px solid rgba(28,24,20,.09); }
+.bp-home .pricing-card--custom::before { background: linear-gradient(90deg, rgba(28,24,20,.28), rgba(28,24,20,.1), rgba(28,24,20,.28)); }
+.bp-home .pricing-card--custom:hover { box-shadow: 0 40px 84px -46px rgba(28,24,20,.45); }
+.bp-home .pricing-card--custom .pricing-plan { color: var(--dark); }
+.bp-home .pricing-custom-ico { position: relative; width: 46px; height: 46px; margin: 0 auto .9rem; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: rgba(28,24,20,.05); color: var(--dark); }
+.bp-home .pricing-custom-quote { position: relative; font-size: clamp(1.6rem,3.6vw,2rem); font-weight: 800; letter-spacing: -.03em; color: var(--dark); margin: 0 0 .45rem; }
+.bp-home .pricing-custom-desc { position: relative; font-size: .95rem; color: var(--text-muted); line-height: 1.55; margin: 0 0 1.5rem; }
+.bp-home .pricing-card--custom .pricing-features { margin-bottom: 1.5rem; }
+.bp-home .pricing-card--custom .pricing-check { background: linear-gradient(135deg, #3d3630, var(--dark)); box-shadow: 0 2px 8px rgba(28,24,20,.25); }
+.bp-home .pricing-card--custom .pricing-cta { margin-top: auto; }
+.bp-home .pricing-custom-note { position: relative; margin: .85rem 0 0; font-size: .8rem; color: var(--text-muted); }
 .bp-home .pricing-addon-note { margin: .85rem 0 0; font-size: .8rem; color: var(--text-muted); }
 .bp-home .btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; background: transparent; color: var(--amber-dark); font-family: 'Heebo', sans-serif; font-weight: 700; font-size: 1.0625rem; border: 1.5px solid var(--amber); border-radius: var(--r-pill); padding: 1rem 2.125rem; cursor: pointer; text-decoration: none; line-height: 1.2; transition: background .2s, color .2s, transform .15s var(--ease); }
 .bp-home .btn-outline:hover { background: var(--amber); color: #fff; transform: translateY(-2px); }
@@ -1184,10 +1207,46 @@ const pageCss = `
 @media (prefers-reduced-motion: reduce) { .bp-home { scroll-snap-type: none; } }
 
 /* ── Connect modal ── */
-.bp-home .bap-opt-btn { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border: 1.5px solid var(--cream-3); border-radius: 14px; background: white; cursor: pointer; text-align: start; font-family: inherit; width: 100%; transition: border-color .15s, box-shadow .15s; }
-.bp-home .bap-opt-btn:hover { border-color: var(--amber); box-shadow: 0 4px 16px rgba(232,146,10,.12); }
-.bp-home .bap-input { height: 44px; padding: 0 14px; border-radius: 11px; border: 1.5px solid var(--cream-3); background: white; font-size: 14px; color: var(--dark); outline: none; font-family: inherit; width: 100%; box-sizing: border-box; transition: border-color .15s; }
-.bp-home .bap-input:focus { border-color: var(--amber); }
+#bap-modal { opacity: 0; transition: opacity .22s ease; }
+#bap-modal.is-open { opacity: 1; }
+#bap-box { transform: translateY(14px) scale(.985); opacity: 0; transition: transform .34s cubic-bezier(.22,1,.36,1), opacity .28s ease; }
+#bap-modal.is-open #bap-box { transform: none; opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  #bap-modal, #bap-box { transition: none; }
+  #bap-box { transform: none; opacity: 1; }
+}
+.bp-home .bap-opt-btn { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border: 1.5px solid var(--cream-3); border-radius: 16px; background: #fff; cursor: pointer; text-align: start; font-family: inherit; width: 100%; transition: border-color .18s, box-shadow .18s, transform .18s; }
+.bp-home .bap-opt-btn:hover { border-color: var(--amber); box-shadow: 0 8px 22px -10px rgba(232,146,10,.45); transform: translateY(-1px); }
+.bp-home .bap-opt-btn:focus-visible { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px rgba(232,146,10,.22); }
+
+.bp-home .bap-form { display: flex; flex-direction: column; gap: 12px; }
+.bp-home .bap-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 420px) { .bp-home .bap-row { grid-template-columns: 1fr; } }
+.bp-home .bap-field { position: relative; }
+.bp-home .bap-input { height: 54px; padding: 20px 14px 6px; border-radius: 13px; border: 1.5px solid var(--cream-3); background: #fff; font-size: 14.5px; color: var(--dark); outline: none; font-family: inherit; width: 100%; box-sizing: border-box; transition: border-color .18s, box-shadow .18s, background .18s; }
+.bp-home textarea.bap-input { height: auto; min-height: 84px; padding-top: 24px; line-height: 1.5; resize: vertical; }
+.bp-home .bap-input:hover { border-color: rgba(28,24,20,.22); }
+.bp-home .bap-input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(232,146,10,.16); }
+.bp-home .bap-label { position: absolute; inset-inline-start: 15px; top: 17px; font-size: 14.5px; font-weight: 500; color: var(--text-muted); pointer-events: none; transform-origin: left top; transition: transform .16s ease, color .16s ease; }
+[dir="rtl"] .bp-home .bap-label { transform-origin: right top; }
+.bp-home .bap-input:focus + .bap-label,
+.bp-home .bap-input:not(:placeholder-shown) + .bap-label { transform: translateY(-10px) scale(.74); }
+.bp-home .bap-input:focus + .bap-label { color: var(--amber-dark); }
+.bp-home .bap-optional { font-weight: 500; opacity: .6; }
+.bp-home .bap-field.is-error .bap-input { border-color: #EF4444; box-shadow: 0 0 0 3px rgba(239,68,68,.12); }
+.bp-home .bap-field.is-error .bap-label { color: #EF4444; }
+.bp-home .bap-field-err { display: none; font-size: 11.5px; font-weight: 600; color: #EF4444; margin: 5px 2px 0; }
+.bp-home .bap-field.is-error .bap-field-err { display: block; }
+
+.bp-home .bap-submit { position: relative; height: 50px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--amber) 0%, #f5b642 100%); color: #fff; font-size: 15px; font-weight: 800; letter-spacing: -.01em; cursor: pointer; font-family: inherit; margin-top: 4px; box-shadow: 0 10px 24px -10px rgba(232,146,10,.7); transition: transform .16s, box-shadow .2s, filter .2s; }
+.bp-home .bap-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 30px -10px rgba(232,146,10,.75); }
+.bp-home .bap-submit:active:not(:disabled) { transform: translateY(0); }
+.bp-home .bap-submit:disabled { cursor: default; filter: saturate(.7); box-shadow: none; }
+.bp-home .bap-submit.is-loading .bap-submit-label { opacity: 0; }
+.bp-home .bap-spinner { display: none; position: absolute; inset: 0; margin: auto; width: 18px; height: 18px; border: 2.2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: bapSpin .6s linear infinite; }
+.bp-home .bap-submit.is-loading .bap-spinner { display: block; }
+@keyframes bapSpin { to { transform: rotate(360deg); } }
+.bp-home .bap-trust { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11.5px; color: var(--text-muted); margin: 12px 0 0; }
 `;
 
 export default function MarketingHomePage() {
@@ -1227,8 +1286,8 @@ export default function MarketingHomePage() {
               </span>
             </h1>
             <p className="hero-sub" data-i18n="hero.sub">
-              A booking website, a dashboard to run it. We build it and keep it running. You just
-              do what you do.
+              A booking website and a dashboard to run it. We build it and keep it running. You
+              just do what you do.
             </p>
             <div className="hero-ctas">
               <a href="#" className="btn-primary lg" data-cta="hero_primary" data-i18n="cta.book">
@@ -2019,8 +2078,9 @@ function BuildSection() {
               Owner Dashboard
             </div>
             <p className="bento-p" data-i18n="build.2.p">
-              Log in and see your full week at a glance: who is coming, what service, what time. No
-              chasing messages.
+              See your whole week in one place, plus who visited your page, where they came from,
+              and how many turned into bookings. Prefer pen and paper? Skip it. You still get
+              every booking by email and a notification on your phone.
             </p>
             <div className="bento-dash-mini" aria-hidden="true">
               <div className="bento-dash-stats" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
@@ -2060,6 +2120,44 @@ function BuildSection() {
                   <span className="bento-dash-time">14:15</span>
                 </div>
               </div>
+              <div className="bento-dash-traffic">
+                <div className="bento-dash-traffic-head">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 3v18h18" />
+                    <path d="m7 14 4-4 3 3 5-6" />
+                  </svg>
+                  <span data-i18n="mock.dash.traffic">Who visited this week</span>
+                </div>
+                <div className="bento-dash-funnel">
+                  <div className="bento-dash-funnel-step">
+                    <div className="bento-dash-funnel-n">214</div>
+                    <div className="bento-dash-funnel-l" data-i18n="mock.dash.visitors">visitors</div>
+                  </div>
+                  <div className="bento-dash-funnel-arrow" aria-hidden="true">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                  </div>
+                  <div className="bento-dash-funnel-step">
+                    <div className="bento-dash-funnel-n">61</div>
+                    <div className="bento-dash-funnel-l" data-i18n="mock.dash.started">started</div>
+                  </div>
+                  <div className="bento-dash-funnel-arrow" aria-hidden="true">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                  </div>
+                  <div className="bento-dash-funnel-step win">
+                    <div className="bento-dash-funnel-n">38</div>
+                    <div className="bento-dash-funnel-l" data-i18n="mock.dash.booked">booked</div>
+                  </div>
+                </div>
+                <div className="bento-dash-sources">
+                  <span className="bento-dash-source">Instagram 46%</span>
+                  <span className="bento-dash-source">Google 31%</span>
+                  <span className="bento-dash-source" data-i18n="mock.dash.direct">Direct 23%</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2077,7 +2175,7 @@ function BuildSection() {
               Add ons
             </div>
             <p className="bento-p" data-i18n="build.3.p">
-              Reminders, payments, social, reviews, ads. Layer in what you need, when you need it.
+              Reminders, payments, reviews, SEO. Layer in what you need, when you need it.
               Everything runs itself.
             </p>
             <div className="bento-addon-stack" aria-hidden="true">
@@ -2113,14 +2211,15 @@ function BuildSection() {
               <div className="bento-addon-row">
                 <div className="bento-addon-ico" style={{ background: "rgba(212,98,42,.1)", color: "var(--terra)" }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                    <polyline points="16 7 22 7 22 13" />
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m21 21-4.35-4.35" />
+                    <path d="M8.5 12.5l2 2 4-4.5" />
                   </svg>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="bento-addon-label">Paid Ads</div>
-                  <div className="bento-addon-sub" data-i18n="mock.addon.ads">
-                    New clients from Meta campaigns
+                  <div className="bento-addon-label" data-i18n="mock.addon.seo.t">SEO</div>
+                  <div className="bento-addon-sub" data-i18n="mock.addon.seo">
+                    Found first when people search
                   </div>
                 </div>
                 <div className="bento-addon-toggle off" />
@@ -2145,8 +2244,8 @@ function AddonsSection() {
             Layer in what you need.
           </h2>
           <p className="section-sub" data-i18n="addons.sub">
-            Everything below plugs straight into your system. Pick what fits, turn it on, we
-            handle the rest.
+            Everything below clicks straight into your Bapita. Pick what fits, we switch it on
+            and run it for you.
           </p>
         </div>
 
@@ -2374,16 +2473,17 @@ function AddonsSection() {
               <button className="addon-row" aria-expanded="false">
                 <span className="addon-ico" style={{ background: "rgba(212,98,42,.1)", color: "#d4622a" }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                    <polyline points="16 7 22 7 22 13" />
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m21 21-4.35-4.35" />
+                    <path d="M8.5 12.5l2 2 4-4.5" />
                   </svg>
                 </span>
                 <span className="addon-row-text">
-                  <span className="addon-row-name" data-i18n="addons.ads.t">
-                    Paid Ads
+                  <span className="addon-row-name" data-i18n="addons.seo.t">
+                    SEO Optimization
                   </span>
-                  <span className="addon-row-tagline" data-i18n="addons.ads.tag">
-                    Meta campaigns that bring new clients straight into your booking flow
+                  <span className="addon-row-tagline" data-i18n="addons.seo.tag">
+                    We tune your page every month so people nearby find you before they find anyone else
                   </span>
                 </span>
                 <span className="addon-badge monthly" data-i18n="addons.monthly">
@@ -2393,23 +2493,51 @@ function AddonsSection() {
               </button>
               <div className="addon-panel">
                 <div className="addon-panel-inner">
-                  <p className="addon-panel-desc" data-i18n="addons.ads.body">
-                    Click to WhatsApp campaigns on Meta that bring new clients straight into your
-                    booking flow. <strong>We write, launch, and manage everything</strong>:
-                    budget, creative, and targeting. You just check your calendar and see it
-                    filling up.
+                  <p className="addon-panel-desc" data-i18n="addons.seo.body">
+                    Every month we work on your page so search engines put you in front of the
+                    people already looking for what you do. <strong>You climb, they find you,
+                    they book.</strong> Keywords, page speed, local signals, and fresh content,
+                    all handled for you.
                   </p>
                   <div className="addon-visual">
-                    <div className="av-ads">
-                      <div className="av-ads-header">This week</div>
-                      <div className="av-ads-stat-row">
-                        <div className="av-ads-stat"><div className="av-ads-stat-val">847</div><div className="av-ads-stat-label">Reached</div></div>
-                        <div className="av-ads-stat"><div className="av-ads-stat-val">63</div><div className="av-ads-stat-label">Clicks</div></div>
-                        <div className="av-ads-stat"><div className="av-ads-stat-val" style={{ color: "var(--amber-dark)" }}>12</div><div className="av-ads-stat-label">Booked</div></div>
+                    <div className="av-seo">
+                      <div className="av-seo-search">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                          <circle cx="11" cy="11" r="7" />
+                          <path d="m21 21-4.35-4.35" />
+                        </svg>
+                        <span>barber near me</span>
                       </div>
-                      <div className="av-ads-bar-row">
-                        <div className="av-ads-track"><div className="av-ads-fill" /></div>
-                        <span className="av-ads-bar-label">19% conversion</span>
+                      <div className="av-seo-result you">
+                        <span className="av-seo-rank">1</span>
+                        <span className="av-seo-text">
+                          <span className="av-seo-title">Studio Avi</span>
+                          <span className="av-seo-url">bapita.com/studio-avi</span>
+                        </span>
+                        <span className="av-seo-you">You</span>
+                      </div>
+                      <div className="av-seo-result">
+                        <span className="av-seo-rank">2</span>
+                        <span className="av-seo-text">
+                          <span className="av-seo-line" style={{ width: "62%" }} />
+                          <span className="av-seo-line dim" style={{ width: "44%" }} />
+                        </span>
+                      </div>
+                      <div className="av-seo-result">
+                        <span className="av-seo-rank">3</span>
+                        <span className="av-seo-text">
+                          <span className="av-seo-line" style={{ width: "50%" }} />
+                          <span className="av-seo-line dim" style={{ width: "36%" }} />
+                        </span>
+                      </div>
+                      <div className="av-seo-foot">
+                        <span className="av-seo-climb">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 19V5M5 12l7-7 7 7" />
+                          </svg>
+                          6 places this month
+                        </span>
+                        <span className="av-seo-foot-label">for 14 local searches</span>
                       </div>
                     </div>
                   </div>
@@ -2597,6 +2725,12 @@ function PricingSection() {
     { key: "pricing.f4", text: "Free owner dashboard" },
     { key: "pricing.f5", text: "Every booking to your phone and email" },
   ];
+  const customFeatures = [
+    { key: "pricing.cf1", text: "Multiple pages, built around your business" },
+    { key: "pricing.cf2", text: "Design shaped to your brand" },
+    { key: "pricing.cf3", text: "Your existing site or client list moved over" },
+    { key: "pricing.cf4", text: "Everything in the booking website plan" },
+  ];
   return (
     <section className="section pricing" id="pricing">
       <div className="section-inner">
@@ -2642,12 +2776,34 @@ function PricingSection() {
             </p>
           </div>
           <div className="pricing-card pricing-card--custom fade-up">
+            <div className="pricing-glow" aria-hidden="true" />
             <p className="pricing-plan" data-i18n="pricing.custom.title">
               Custom
             </p>
-            <p className="pricing-custom-desc" data-i18n="pricing.custom.desc">
-              Multiple pages or a custom build? We will price it for you.
+            <div className="pricing-custom-ico" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3l2.4 5.1 5.6.8-4 4 .9 5.6-4.9-2.7-4.9 2.7.9-5.6-4-4 5.6-.8z" />
+              </svg>
+            </div>
+            <p className="pricing-custom-quote" data-i18n="pricing.custom.price">
+              Priced per project
             </p>
+            <p className="pricing-custom-desc" data-i18n="pricing.custom.desc">
+              Bigger build, more pages, something that works differently. Tell us what you have in
+              mind and we will quote it.
+            </p>
+            <ul className="pricing-features">
+              {customFeatures.map((f, i) => (
+                <li key={f.key} style={{ animationDelay: `${120 + i * 80}ms` }}>
+                  <span className="pricing-check" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  </span>
+                  <span data-i18n={f.key}>{f.text}</span>
+                </li>
+              ))}
+            </ul>
             <a
               href="#"
               className="btn-outline pricing-cta"
@@ -2657,6 +2813,9 @@ function PricingSection() {
             >
               Get a quote
             </a>
+            <p className="pricing-custom-note" data-i18n="pricing.custom.note">
+              Free quote, no commitment.
+            </p>
           </div>
         </div>
       </div>
@@ -2711,7 +2870,7 @@ function ConnectModal() {
     >
       <div
         id="bap-backdrop"
-        style={{ position: "absolute", inset: 0, background: "rgba(16,12,8,.72)", backdropFilter: "blur(4px)" }}
+        style={{ position: "absolute", inset: 0, background: "rgba(16,12,8,.72)", backdropFilter: "blur(6px)" }}
       />
       <div
         id="bap-box"
@@ -2719,13 +2878,14 @@ function ConnectModal() {
           position: "relative",
           zIndex: 1,
           width: "calc(100% - 32px)",
-          maxWidth: 420,
+          maxWidth: 440,
           maxHeight: "90vh",
           overflowY: "auto",
-          background: "var(--cream)",
-          borderRadius: 20,
-          boxShadow: "var(--shadow-float)",
-          padding: "32px 28px",
+          background: "linear-gradient(180deg, #fffdf9 0%, var(--cream) 100%)",
+          border: "1px solid rgba(255,255,255,.6)",
+          borderRadius: 24,
+          boxShadow: "0 40px 90px -30px rgba(16,12,8,.6)",
+          padding: "30px 26px 26px",
         }}
       >
         <button
@@ -2733,8 +2893,8 @@ function ConnectModal() {
           aria-label="Close"
           style={{
             position: "absolute",
-            top: 16,
-            right: 16,
+            top: 14,
+            insetInlineEnd: 14,
             background: "none",
             border: "none",
             cursor: "pointer",
@@ -2743,7 +2903,7 @@ function ConnectModal() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            borderRadius: 8,
+            borderRadius: 10,
             color: "var(--text-muted)",
             padding: 0,
           }}
@@ -2755,10 +2915,10 @@ function ConnectModal() {
 
         {/* Screen 1: Choice */}
         <div id="bap-screen-choice">
-          <p style={{ fontSize: 18, fontWeight: 800, color: "var(--dark)", letterSpacing: "-.02em", margin: "0 0 6px", paddingRight: 32 }}>
+          <p style={{ fontSize: 19, fontWeight: 800, color: "var(--dark)", letterSpacing: "-.02em", margin: "0 0 6px", paddingInlineEnd: 32 }} data-i18n="modal.choice.title">
             How would you like to connect?
           </p>
-          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 24px" }}>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 22px" }} data-i18n="modal.choice.sub">
             Pick whichever works for you.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -2770,8 +2930,8 @@ function ConnectModal() {
                 </svg>
               </div>
               <div style={{ textAlign: "start" }}>
-                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)", margin: "0 0 2px" }}>Book a call</p>
-                <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Pick a time, we&apos;ll talk. 30 min</p>
+                <p style={{ fontSize: 14.5, fontWeight: 800, color: "var(--dark)", margin: "0 0 2px" }} data-i18n="modal.opt.call.t">Book a call</p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }} data-i18n="modal.opt.call.s">Pick a time, we talk. 30 min</p>
               </div>
             </button>
             <button id="bap-form-btn" className="bap-opt-btn">
@@ -2782,8 +2942,8 @@ function ConnectModal() {
                 </svg>
               </div>
               <div style={{ textAlign: "start" }}>
-                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--dark)", margin: "0 0 2px" }}>Send your details</p>
-                <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>We&apos;ll reach out to you</p>
+                <p style={{ fontSize: 14.5, fontWeight: 800, color: "var(--dark)", margin: "0 0 2px" }} data-i18n="modal.opt.form.t">Send your details</p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }} data-i18n="modal.opt.form.s">We reach out to you</p>
               </div>
             </button>
           </div>
@@ -2799,27 +2959,53 @@ function ConnectModal() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6" />
             </svg>
-            <span>Back</span>
+            <span data-i18n="modal.back">Back</span>
           </button>
-          <p style={{ fontSize: 17, fontWeight: 800, color: "var(--dark)", margin: "0 0 20px", letterSpacing: "-.02em" }}>
+          <p style={{ fontSize: 19, fontWeight: 800, color: "var(--dark)", margin: "0 0 4px", letterSpacing: "-.02em" }} data-i18n="modal.form.title">
             Leave your details
           </p>
-          <form id="bap-form" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 20px", lineHeight: 1.5 }} data-i18n="modal.form.sub">
+            We get back to you the same day, usually within a couple of hours.
+          </p>
+          <form id="bap-form" className="bap-form" noValidate>
             <input id="bap-f-kind" type="hidden" value="website" />
-            <input id="bap-f-name" className="bap-input" type="text" required placeholder="Your name" />
-            <input id="bap-f-biz" className="bap-input" type="text" placeholder="Business name (optional)" />
-            <input id="bap-f-phone" className="bap-input" type="tel" placeholder="Phone" />
-            <input id="bap-f-email" className="bap-input" type="email" required placeholder="Email" />
-            <textarea id="bap-f-msg" className="bap-input" rows={3} placeholder="Anything we should know? (optional)" style={{ resize: "vertical", fontFamily: "inherit" }} />
-            <p id="bap-form-err" style={{ display: "none", fontSize: 12, color: "#EF4444", margin: 0 }} />
-            <button
-              id="bap-submit"
-              type="submit"
-              style={{ height: 46, borderRadius: 12, border: "none", background: "var(--wash-amber)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginTop: 4, boxShadow: "0 4px 14px rgba(232,146,10,.28)" }}
-            >
-              Send
+            <div className="bap-row">
+              <div className="bap-field" data-field="name">
+                <input id="bap-f-name" className="bap-input" type="text" required placeholder=" " autoComplete="name" />
+                <label htmlFor="bap-f-name" className="bap-label" data-i18n="modal.f.name">Your name</label>
+                <p className="bap-field-err" data-i18n="modal.err.name">Please tell us your name</p>
+              </div>
+              <div className="bap-field" data-field="biz">
+                <input id="bap-f-biz" className="bap-input" type="text" placeholder=" " autoComplete="organization" />
+                <label htmlFor="bap-f-biz" className="bap-label" data-i18n="modal.f.biz">Business name</label>
+              </div>
+            </div>
+            <div className="bap-field" data-field="phone">
+              <input id="bap-f-phone" className="bap-input" type="tel" placeholder=" " autoComplete="tel" inputMode="tel" />
+              <label htmlFor="bap-f-phone" className="bap-label" data-i18n="modal.f.phone">Phone</label>
+            </div>
+            <div className="bap-field" data-field="email">
+              <input id="bap-f-email" className="bap-input" type="email" required placeholder=" " autoComplete="email" inputMode="email" />
+              <label htmlFor="bap-f-email" className="bap-label" data-i18n="modal.f.email">Email</label>
+              <p className="bap-field-err" data-i18n="modal.err.email">Please enter a valid email</p>
+            </div>
+            <div className="bap-field" data-field="msg">
+              <textarea id="bap-f-msg" className="bap-input" rows={3} placeholder=" " />
+              <label htmlFor="bap-f-msg" className="bap-label" data-i18n="modal.f.msg">Anything we should know?</label>
+            </div>
+            <p id="bap-form-err" style={{ display: "none", fontSize: 12.5, fontWeight: 600, color: "#EF4444", margin: 0 }} />
+            <button id="bap-submit" type="submit" className="bap-submit">
+              <span className="bap-submit-label" data-i18n="modal.send">Send</span>
+              <span className="bap-spinner" aria-hidden="true" />
             </button>
           </form>
+          <p className="bap-trust">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0110 0v4" />
+            </svg>
+            <span data-i18n="modal.trust">Your details stay with us. No spam, no commitment.</span>
+          </p>
           <button
             id="bap-talk-link"
             type="button"
@@ -2837,13 +3023,14 @@ function ConnectModal() {
               <path d="M20 6 9 17l-5-5" />
             </svg>
           </div>
-          <p style={{ fontSize: 17, fontWeight: 800, color: "var(--dark)", margin: "0 0 8px" }}>Sent!</p>
-          <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6, margin: "0 0 24px" }}>
-            We&apos;ll be in touch soon.
+          <p style={{ fontSize: 19, fontWeight: 800, color: "var(--dark)", margin: "0 0 8px" }} data-i18n="modal.success.title">Got it</p>
+          <p style={{ fontSize: 13.5, color: "var(--text-muted)", lineHeight: 1.6, margin: "0 0 24px" }} data-i18n="modal.success.sub">
+            We will be in touch shortly.
           </p>
           <button
             id="bap-done"
-            style={{ height: 40, padding: "0 24px", borderRadius: 10, border: "1.5px solid var(--cream-3)", background: "white", fontSize: 13, fontWeight: 600, color: "var(--dark)", cursor: "pointer", fontFamily: "inherit" }}
+            style={{ height: 42, padding: "0 26px", borderRadius: 12, border: "1.5px solid var(--cream-3)", background: "white", fontSize: 13.5, fontWeight: 700, color: "var(--dark)", cursor: "pointer", fontFamily: "inherit" }}
+            data-i18n="modal.done"
           >
             Done
           </button>

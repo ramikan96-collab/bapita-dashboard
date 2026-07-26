@@ -25,13 +25,14 @@ export default function InteractivityScript() {
         'nav.problem': "Problem", 'nav.solution': "Solution", 'nav.addons': "Add ons", 'nav.pricing': "Pricing", 'nav.faq': "FAQ", 'nav.login': "Login",
         'cta.talk': "Build My Website", 'cta.book': "Build My Website",
         'hero.eyebrow': "For appointment based businesses", 'hero.h1a': "Your business online.", 'hero.h1b': "Built for you.",
-        'hero.sub': "A booking website, a dashboard to run it. We build it and keep it running. You just do what you do.",
+        'hero.sub': "A booking website and a dashboard to run it. We build it and keep it running. You just do what you do.",
         'hero.trust': "No tech skills, no commitment.",
         'mock.shop': "Studio Avi", 'mock.barber': "Barbershop", 'mock.service': "Service", 'mock.cut': "Haircut", 'mock.cutbeard': "Cut and beard",
         'mock.min': "min", 'mock.pickday': "Pick a day", 'mock.book': "Book now", 'mock.booked': "Booked!", 'mock.confirm': "A confirmation is on its way.",
         'mock.chip': "Click to book", 'mock.chiptime': "Tomorrow · 11:00",
         'mock.dash.appts': "this week", 'mock.dash.rev': "revenue", 'mock.dash.noshows': "no shows",
-        'mock.addon.wa': "Appointment reminders", 'mock.addon.pay': "Collect deposits online", 'mock.addon.ads': "New clients from Meta campaigns",
+        'mock.dash.traffic': "Who visited this week", 'mock.dash.visitors': "visitors", 'mock.dash.started': "started", 'mock.dash.booked': "booked", 'mock.dash.direct': "Direct 23%",
+        'mock.addon.wa': "Appointment reminders", 'mock.addon.pay': "Collect deposits online", 'mock.addon.seo.t': "SEO", 'mock.addon.seo': "Found first when people search",
         'day.mon': "Mon", 'day.tue': "Tue", 'day.wed': "Wed", 'day.thu': "Thu",
         'proof.1': "Live in 48 hours", 'proof.2': "Clients book while you sleep",
         'proof.3num': "0 tech", 'proof.3': "Nothing to learn", 'proof.4num': "1 form", 'proof.4': "All we need to start",
@@ -53,10 +54,10 @@ export default function InteractivityScript() {
         'build.sub': "We build and maintain your entire online presence. You just show up and do your job.",
         'build.paid': "The product", 'build.free': "Included free", 'build.grow': "Grow when ready",
         'build.1.h': "Booking Website", 'build.1.p': "A clean, professional page where clients see your services, your availability, and book instantly, any hour of the day.",
-        'build.2.h': "Owner Dashboard", 'build.2.p': "See your whole week, insights, and reschedules in one place. Prefer pen and paper? Skip it. You still get every booking by email and a notification on your phone.",
-        'build.3.h': "Add ons", 'build.3.p': "Reminders, payments, social, reviews, ads. Layer in what you need, when you need it. Everything runs itself.",
+        'build.2.h': "Owner Dashboard", 'build.2.p': "See your whole week in one place, plus who visited your page, where they came from, and how many turned into bookings. Prefer pen and paper? Skip it. You still get every booking by email and a notification on your phone.",
+        'build.3.h': "Add ons", 'build.3.p': "Reminders, payments, reviews, SEO. Layer in what you need, when you need it. Everything runs itself.",
         'addons.label': "Add ons", 'addons.title': "Layer in what you need.",
-        'addons.sub': "Everything below plugs straight into your system. Pick what fits, turn it on, we handle the rest.",
+        'addons.sub': "Everything below clicks straight into your Bapita. Pick what fits, we switch it on and run it for you.",
         'addons.group.monthly': "Runs every month", 'addons.group.onetime': "Done once, works forever",
         'addons.monthly': "Monthly", 'addons.onetime': "One time",
         'addons.rem.t': "Appointment Reminders", 'addons.rem.tag': "Automated reminders via WhatsApp, SMS, or Email to reduce no shows",
@@ -67,8 +68,8 @@ export default function InteractivityScript() {
         'addons.pay.body': "Clients pay when they book, deposit or full amount, your choice. <strong>No shows drop overnight</strong> because money on the table means people show up. Payment lands in your account before they walk through the door.",
         'addons.reviews.t': "Google Reviews", 'addons.reviews.tag': "Automatic review requests sent to happy clients at the right moment",
         'addons.reviews.body': "After every visit, we ask happy clients for a Google review at exactly the right moment. <strong>Your rating climbs, you do nothing.</strong> More reviews means more people finding you when they search.",
-        'addons.ads.t': "Paid Ads", 'addons.ads.tag': "Meta campaigns that bring new clients straight into your booking flow",
-        'addons.ads.body': "Click to WhatsApp campaigns on Meta that bring new clients straight into your booking flow. <strong>We write, launch, and manage everything</strong>: budget, creative, and targeting. You just check your calendar and see it filling up.",
+        'addons.seo.t': "SEO Optimization", 'addons.seo.tag': "We tune your page every month so people nearby find you before they find anyone else",
+        'addons.seo.body': "Every month we work on your page so search engines put you in front of the people already looking for what you do. <strong>You climb, they find you, they book.</strong> Keywords, page speed, local signals, and fresh content, all handled for you.",
         'addons.gmb.t': "Google Business Setup", 'addons.gmb.tag': "Full profile setup so you appear when someone nearby searches for what you do",
         'addons.gmb.body': "We claim and fully set up your Google Business Profile so you appear in Google Maps and local search when someone nearby searches for what you do. <strong>Done once, works forever.</strong> Verified profile, photos, hours, and description.",
         'addons.only.q': "Want add ons only, without a website?", 'addons.only.cta': "Tell us what you need",
@@ -77,7 +78,11 @@ export default function InteractivityScript() {
         'pricing.f1': "Booking website in your name", 'pricing.f2': "Hosting and updates", 'pricing.f3': "3 edits every month", 'pricing.f4': "Free owner dashboard", 'pricing.f5': "Every booking to your phone and email",
         'pricing.note': "Want add ons only, without a website? Tell us what you need.",
         'pricing.addon.note': "Add ons not included.",
-        'pricing.custom.title': "Custom", 'pricing.custom.desc': "Multiple pages or a custom build? We will price it for you.", 'pricing.custom.cta': "Get a quote",
+        'pricing.custom.title': "Custom", 'pricing.custom.price': "Priced per project",
+        'pricing.custom.desc': "Bigger build, more pages, something that works differently. Tell us what you have in mind and we will quote it.",
+        'pricing.cf1': "Multiple pages, built around your business", 'pricing.cf2': "Design shaped to your brand",
+        'pricing.cf3': "Your existing site or client list moved over", 'pricing.cf4': "Everything in the booking website plan",
+        'pricing.custom.cta': "Get a quote", 'pricing.custom.note': "Free quote, no commitment.",
         'test.label': "What owners say", 'test.title': "Real businesses. Real results.",
         'test.shimi.q': "Bapita set everything up for me and it worked from day one. Now my clients book themselves and my chair stays full.",
         'test.shimi.n': "Shimi Azut", 'test.shimi.m': "Shimi Azut Hair Studio, Herzliya",
@@ -93,6 +98,16 @@ export default function InteractivityScript() {
         'final.title': "Ready to go live?", 'final.trust': "Fill the form, or talk to us first. Your call.",
         'final.p': "Send your details and we start building. Prefer to talk? We are around.<br/>No pressure, no commitment.",
         'modal.talk': "Prefer to talk? Book a call",
+        'modal.choice.title': "How would you like to connect?", 'modal.choice.sub': "Pick whichever works for you.",
+        'modal.opt.call.t': "Book a call", 'modal.opt.call.s': "Pick a time, we talk. 30 min",
+        'modal.opt.form.t': "Send your details", 'modal.opt.form.s': "We reach out to you",
+        'modal.back': "Back", 'modal.form.title': "Leave your details",
+        'modal.form.sub': "We get back to you the same day, usually within a couple of hours.",
+        'modal.f.name': "Your name", 'modal.f.biz': "Business name", 'modal.f.phone': "Phone", 'modal.f.email': "Email", 'modal.f.msg': "Anything we should know?",
+        'modal.err.name': "Please tell us your name", 'modal.err.email': "Please enter a valid email",
+        'modal.err.server': "Something went wrong. Please try again.",
+        'modal.send': "Send", 'modal.trust': "Your details stay with us. No spam, no commitment.",
+        'modal.success.title': "Got it", 'modal.success.sub': "We will be in touch shortly.", 'modal.done': "Done",
         'footer.tagline': "Built for you. Runs without you.", 'footer.col.links': "Links", 'footer.col.for': "Built for", 'footer.col.contact': "Get started",
         'footer.for.barber': "Barber", 'footer.for.salon': "Hair Salon", 'footer.for.nail': "Nail Salon", 'footer.for.spa': "Spa & MedSpa", 'footer.for.massage': "Massage",
         'footer.for.lash': "Lash Studio", 'footer.for.pilates': "Pilates & Yoga", 'footer.for.trainer': "Personal Trainer", 'footer.for.physio': "Physiotherapy", 'footer.for.tattoo': "Tattoo Studio",
@@ -103,13 +118,14 @@ export default function InteractivityScript() {
         'cta.talk': "בונים לי אתר", 'cta.book': "בונים לי אתר",
         'nav.pricing': "מחיר",
         'hero.eyebrow': "לעסקים שעובדים עם תורים", 'hero.h1a': "העסק שלך אונליין.", 'hero.h1b': "בנוי בשבילך.",
-        'hero.sub': "אתר הזמנות, ולוח בקרה שמנהל אותו. אנחנו בונים אותו ושומרים שהוא רץ. אתה פשוט עושה את שלך.",
+        'hero.sub': "אתר הזמנות ולוח בקרה שמנהל אותו. אנחנו בונים אותו ושומרים שהוא רץ. אתה פשוט עושה את שלך.",
         'hero.trust': "בלי ידע טכני, בלי התחייבות.",
         'mock.shop': "הסטודיו של אבי", 'mock.barber': "מספרה", 'mock.service': "שירות", 'mock.cut': "תספורת", 'mock.cutbeard': "תספורת וזקן",
         'mock.min': "דק", 'mock.pickday': "בחר יום", 'mock.book': "לקביעת תור", 'mock.booked': "נקבע!", 'mock.confirm': "האישור בדרך אליך.",
         'mock.chip': "נקבע אצל אבי", 'mock.chiptime': "מחר · 11:00",
         'mock.dash.appts': "תורים היום", 'mock.dash.rev': "הכנסה צפויה", 'mock.dash.noshows': "אי הגעות",
-        'mock.addon.wa': "תזכורות לפגישות", 'mock.addon.pay': "גביית מקדמות אונליין", 'mock.addon.ads': "לקוחות חדשים מקמפיינים",
+        'mock.dash.traffic': "מי ביקר השבוע", 'mock.dash.visitors': "מבקרים", 'mock.dash.started': "התחילו", 'mock.dash.booked': "קבעו", 'mock.dash.direct': "ישיר 23%",
+        'mock.addon.wa': "תזכורות לפגישות", 'mock.addon.pay': "גביית מקדמות אונליין", 'mock.addon.seo.t': "SEO", 'mock.addon.seo': "מוצאים אותך ראשון בחיפוש",
         'day.mon': "ב׳", 'day.tue': "ג׳", 'day.wed': "ד׳", 'day.thu': "ה׳",
         'proof.1': "באוויר תוך 48 שעות", 'proof.2': "לקוחות קובעים בזמן שאתה ישן",
         'proof.3num': "0 טכני", 'proof.3': "לא צריך ללמוד כלום", 'proof.4num': "טופס 1", 'proof.4': "כל מה שצריך כדי להתחיל",
@@ -131,10 +147,10 @@ export default function InteractivityScript() {
         'build.sub': "אנחנו בונים ומנהלים את הנוכחות המקוונת שלך. אתה רק מגיע ועושה את העבודה.",
         'build.paid': "המוצר", 'build.free': "כלול חינם", 'build.grow': "גדל כשמוכן",
         'build.1.h': "אתר הזמנות", 'build.1.p': "עמוד נקי ומקצועי שבו לקוחות רואים את השירותים שלך, את הזמינות שלך, וקובעים מיד, בכל שעה ביום.",
-        'build.2.h': "לוח בקרה לבעל העסק", 'build.2.p': "רואה את כל השבוע, תובנות, ושינויי תורים במקום אחד. מעדיף דף ועט? דלג על זה. עדיין תקבל כל תור במייל ובהתראה לטלפון.",
-        'build.3.h': "תוספות", 'build.3.p': "תזכורות, תשלומים, סושיאל, ביקורות, פרסום. מוסיף מה שצריך, מתי שצריך. הכל עובד לבד.",
+        'build.2.h': "לוח בקרה לבעל העסק", 'build.2.p': "רואה את כל השבוע במקום אחד, וגם מי ביקר בעמוד שלך, מאיפה הגיעו, וכמה מהם קבעו תור. מעדיף דף ועט? דלג על זה. עדיין תקבל כל תור במייל ובהתראה לטלפון.",
+        'build.3.h': "תוספות", 'build.3.p': "תזכורות, תשלומים, ביקורות, קידום בגוגל. מוסיף מה שצריך, מתי שצריך. הכל עובד לבד.",
         'addons.label': "תוספות", 'addons.title': "הוסף מה שצריך.",
-        'addons.sub': "כל אחד מהשירותים למטה מתחבר ישירות למערכת שלך. בחר מה מתאים, אנחנו מטפלים בשאר.",
+        'addons.sub': "כל מה שלמטה מתחבר ישר לבפיתה שלך. בחר מה מתאים, אנחנו מפעילים ומתפעלים בשבילך.",
         'addons.group.monthly': "רץ כל חודש", 'addons.group.onetime': "נעשה פעם אחת, עובד לתמיד",
         'addons.monthly': "חודשי", 'addons.onetime': "חד פעמי",
         'addons.rem.t': "תזכורות לפגישות", 'addons.rem.tag': "תזכורות אוטומטיות דרך וואטסאפ, SMS, או אימייל להפחתת ביטולים",
@@ -147,8 +163,8 @@ export default function InteractivityScript() {
         'addons.pay.body': "לקוחות משלמים כשהם קובעים, מקדמה או תשלום מלא, אתה בוחר. <strong>ביטולים יורדים בן לילה</strong> כי כסף על השולחן אומר שאנשים מגיעים. התשלום נכנס לחשבון שלך עוד לפני שהם נכנסים.",
         'addons.reviews.t': "ביקורות גוגל", 'addons.reviews.tag': "בקשות ביקורת אוטומטיות שנשלחות ללקוחות מרוצים ברגע הנכון",
         'addons.reviews.body': "אחרי כל ביקור, אנחנו מבקשים מלקוחות מרוצים ביקורת בגוגל בדיוק ברגע הנכון. <strong>הדירוג שלך עולה, אתה לא עושה כלום.</strong> יותר ביקורות זה יותר אנשים שמוצאים אותך בחיפוש.",
-        'addons.ads.t': "פרסום ממומן", 'addons.ads.tag': "קמפיינים במטא שמביאים לקוחות חדשים ישר לתוך מערך ההזמנות שלך",
-        'addons.ads.body': "קמפיינים של לחיצה לוואטסאפ במטא שמביאים לקוחות חדשים ישר לתוך מערך ההזמנות שלך. <strong>אנחנו כותבים, מעלים ומנהלים הכל</strong>: תקציב, קריאייטיב וטירגוט. אתה רק בודק את היומן ורואה אותו מתמלא.",
+        'addons.seo.t': "קידום אורגני", 'addons.seo.tag': "אנחנו משפרים את העמוד שלך כל חודש כדי שאנשים בסביבה ימצאו אותך לפני כל אחד אחר",
+        'addons.seo.body': "כל חודש אנחנו עובדים על העמוד שלך כדי שמנועי החיפוש יציגו אותך בדיוק לאנשים שכבר מחפשים את מה שאתה עושה. <strong>אתה עולה, הם מוצאים, הם קובעים.</strong> מילות חיפוש, מהירות טעינה, איתותים מקומיים ותוכן מעודכן, הכל עלינו.",
         'addons.gmb.t': "הקמת גוגל לעסק", 'addons.gmb.tag': "הקמת פרופיל מלא כך שתופיע כשמישהו קרוב מחפש את מה שאתה עושה",
         'addons.gmb.body': "אנחנו מאמתים ומגדירים את הפרופיל העסקי שלך בגוגל כדי שתופיע בגוגל מפות ובתוצאות המקומיות. <strong>נעשה פעם אחת, עובד לתמיד.</strong> פרופיל מאומת, תמונות, שעות ותיאור עסק.",
         'addons.only.q': "רוצה תוספות בלבד, בלי אתר?", 'addons.only.cta': "ספר לנו מה אתה צריך",
@@ -157,7 +173,11 @@ export default function InteractivityScript() {
         'pricing.f1': "אתר הזמנות בשמך", 'pricing.f2': "אחסון ועדכונים", 'pricing.f3': "3 עריכות בכל חודש", 'pricing.f4': "לוח בקרה חינם לבעל העסק", 'pricing.f5': "כל תור נוחת לך בטלפון ובמייל",
         'pricing.note': "רוצה תוספות בלבד, בלי אתר? ספר לנו מה אתה צריך.",
         'pricing.addon.note': "תוספות לא כלולות.",
-        'pricing.custom.title': "מותאם אישית", 'pricing.custom.desc': "כמה עמודים או בנייה מותאמת אישית? נתמחר את זה בשבילך.", 'pricing.custom.cta': "קבל הצעת מחיר",
+        'pricing.custom.title': "מותאם אישית", 'pricing.custom.price': "תמחור לפי פרויקט",
+        'pricing.custom.desc': "בנייה גדולה יותר, יותר עמודים, או משהו שעובד אחרת. ספר לנו מה בראש שלך ונתמחר.",
+        'pricing.cf1': "כמה עמודים, בנויים סביב העסק שלך", 'pricing.cf2': "עיצוב שמותאם למותג שלך",
+        'pricing.cf3': "העברה של האתר הקיים או רשימת הלקוחות", 'pricing.cf4': "כל מה שיש בתוכנית אתר ההזמנות",
+        'pricing.custom.cta': "קבל הצעת מחיר", 'pricing.custom.note': "הצעת מחיר חינם, בלי התחייבות.",
         'test.label': "מה בעלי עסקים אומרים", 'test.title': "עסקים אמיתיים. תוצאות אמיתיות.",
         'test.shimi.q': "בפיתה הקימו לי הכל וזה עבד מהיום הראשון. עכשיו הלקוחות קובעים לבד והכיסא תמיד מלא.",
         'test.shimi.n': "שימי אזוט", 'test.shimi.m': "מספרת שימי אזוט, הרצליה",
@@ -173,12 +193,29 @@ export default function InteractivityScript() {
         'final.title': "מוכן לעלות לאוויר?", 'final.trust': "מלא את הטופס, או דבר איתנו קודם. אתה בוחר.",
         'final.p': "שלח את הפרטים שלך ואנחנו מתחילים לבנות. מעדיף לדבר? אנחנו כאן.<br/>בלי לחץ, בלי התחייבות.",
         'modal.talk': "מעדיף לדבר? קבע שיחה",
+        'modal.choice.title': "איך נוח לך להתחבר?", 'modal.choice.sub': "בחר מה שמתאים לך.",
+        'modal.opt.call.t': "קביעת שיחה", 'modal.opt.call.s': "בוחר זמן, מדברים. 30 דקות",
+        'modal.opt.form.t': "שליחת פרטים", 'modal.opt.form.s': "אנחנו נחזור אליך",
+        'modal.back': "חזרה", 'modal.form.title': "השאר פרטים",
+        'modal.form.sub': "חוזרים אליך עוד באותו יום, בדרך כלל תוך שעתיים.",
+        'modal.f.name': "השם שלך", 'modal.f.biz': "שם העסק", 'modal.f.phone': "טלפון", 'modal.f.email': "אימייל", 'modal.f.msg': "משהו שכדאי שנדע?",
+        'modal.err.name': "נשמח לדעת איך קוראים לך", 'modal.err.email': "נא להזין אימייל תקין",
+        'modal.err.server': "משהו השתבש. נסה שוב.",
+        'modal.send': "שליחה", 'modal.trust': "הפרטים שלך נשארים אצלנו. בלי ספאם, בלי התחייבות.",
+        'modal.success.title': "קיבלנו", 'modal.success.sub': "נחזור אליך בקרוב.", 'modal.done': "סגירה",
         'footer.tagline': "נבנה בשבילך. עובד בלעדיך.", 'footer.col.links': "קישורים", 'footer.col.for': "נבנה עבור", 'footer.col.contact': "להתחלה",
         'footer.for.barber': "ברבר", 'footer.for.salon': "מספרה", 'footer.for.nail': "ציפורניים", 'footer.for.spa': "ספא ומדי ספא", 'footer.for.massage': "עיסוי",
         'footer.for.lash': "ריסים", 'footer.for.pilates': "פילאטיס ויוגה", 'footer.for.trainer': "מאמן אישי", 'footer.for.physio': "פיזיותרפיה", 'footer.for.tattoo': "סטודיו לקעקועים",
         'footer.copy': "© ${year} Bapita. כל הזכויות שמורות."
       }
     };
+
+    // Runtime lookup for strings that are not rendered from a data-i18n node
+    // (validation messages injected by JS). Falls back to the English copy.
+    function t(key, fallback) {
+      var dict = I18N[document.documentElement.lang] || I18N.en;
+      return dict[key] != null ? dict[key] : fallback;
+    }
 
     function applyLang(lang) {
       var dict = I18N[lang] || I18N.en;
@@ -483,24 +520,43 @@ export default function InteractivityScript() {
     }
 
     function initConnectModal() {
+      var lastFocused = null;
+
+      function clearFieldErrors() {
+        document.querySelectorAll('#bap-form .bap-field.is-error').forEach(function (f) {
+          f.classList.remove('is-error');
+        });
+      }
+      function markFieldError(name) {
+        var f = document.querySelector('#bap-form .bap-field[data-field="' + name + '"]');
+        if (f) f.classList.add('is-error');
+      }
+
       window.openConnectModal = function (e, kind) {
         if (e) e.preventDefault();
+        lastFocused = document.activeElement;
         var kindEl = document.getElementById('bap-f-kind');
         if (kindEl) kindEl.value = kind || 'website';
         window.showConnectForm();
         var m = document.getElementById('bap-modal');
         m.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+        requestAnimationFrame(function () { m.classList.add('is-open'); });
       };
       window.closeConnectModal = function () {
-        document.getElementById('bap-modal').style.display = 'none';
+        var m = document.getElementById('bap-modal');
+        m.classList.remove('is-open');
+        m.style.display = 'none';
         document.body.style.overflow = '';
         var form = document.getElementById('bap-form');
         if (form) form.reset();
+        clearFieldErrors();
         document.getElementById('bap-form-err').style.display = 'none';
         var sb = document.getElementById('bap-submit');
         sb.disabled = false;
-        sb.textContent = 'Send';
+        sb.classList.remove('is-loading');
+        if (lastFocused && lastFocused.focus) lastFocused.focus();
+        lastFocused = null;
       };
       window.showConnectChoice = function () {
         document.getElementById('bap-screen-choice').style.display = 'block';
@@ -532,14 +588,19 @@ export default function InteractivityScript() {
         var kind = kindEl ? kindEl.value : 'website';
         var errEl = document.getElementById('bap-form-err');
         var sb = document.getElementById('bap-submit');
-        if (!name || !email) {
-          errEl.textContent = 'Please fill in your name and email.';
-          errEl.style.display = 'block';
+        var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        clearFieldErrors();
+        if (!name) markFieldError('name');
+        if (!emailOk) markFieldError('email');
+        if (!name || !emailOk) {
+          errEl.style.display = 'none';
+          var firstBad = document.querySelector('#bap-form .bap-field.is-error .bap-input');
+          if (firstBad) firstBad.focus();
           return;
         }
         errEl.style.display = 'none';
         sb.disabled = true;
-        sb.textContent = String.fromCharCode(8230);
+        sb.classList.add('is-loading');
         try {
           var res = await fetch('/api/public/request-access', {
             method: 'POST',
@@ -550,17 +611,30 @@ export default function InteractivityScript() {
           document.getElementById('bap-screen-form').style.display = 'none';
           document.getElementById('bap-screen-success').style.display = 'block';
         } catch (_err) {
-          errEl.textContent = 'Something went wrong. Please try again.';
+          errEl.textContent = t('modal.err.server', 'Something went wrong. Please try again.');
           errEl.style.display = 'block';
           sb.disabled = false;
-          sb.textContent = 'Send';
+          sb.classList.remove('is-loading');
         }
       };
       var backdrop = document.getElementById('bap-backdrop');
       if (backdrop) backdrop.addEventListener('click', window.closeConnectModal);
       document.addEventListener('keydown', function (e) {
         var modal = document.getElementById('bap-modal');
-        if (e.key === 'Escape' && modal && modal.style.display !== 'none') window.closeConnectModal();
+        if (!modal || modal.style.display === 'none') return;
+        if (e.key === 'Escape') { window.closeConnectModal(); return; }
+        if (e.key !== 'Tab') return;
+        // Keep focus inside the dialog while it is open.
+        var focusable = modal.querySelectorAll('button, [href], input:not([type="hidden"]), textarea, select');
+        var visible = [];
+        focusable.forEach(function (el) {
+          if (!el.disabled && el.offsetParent !== null) visible.push(el);
+        });
+        if (!visible.length) return;
+        var first = visible[0];
+        var last = visible[visible.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       });
       var closeBtn = document.getElementById('bap-close');
       if (closeBtn) closeBtn.addEventListener('click', window.closeConnectModal);
@@ -575,7 +649,15 @@ export default function InteractivityScript() {
       var talkLink = document.getElementById('bap-talk-link');
       if (talkLink) talkLink.addEventListener('click', window.openCalendly);
       var bapForm = document.getElementById('bap-form');
-      if (bapForm) bapForm.addEventListener('submit', window.submitConnectForm);
+      if (bapForm) {
+        bapForm.addEventListener('submit', window.submitConnectForm);
+        bapForm.querySelectorAll('.bap-input').forEach(function (input) {
+          input.addEventListener('input', function () {
+            var field = this.closest('.bap-field');
+            if (field) field.classList.remove('is-error');
+          });
+        });
+      }
       var SKIP_CTAS = ['footer'];
       document.addEventListener('click', function (e) {
         var el = e.target.closest('[data-cta]');
