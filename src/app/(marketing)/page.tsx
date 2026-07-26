@@ -119,7 +119,7 @@ function StarIcon({ className }: { className?: string }) {
 
 const shimi = {
   quote:
-    "I never had time for any of this, I'm cutting hair all day. Bapita set everything up for me and it worked from day one. Now my clients book themselves and my chair stays full.",
+    "Bapita set everything up for me and it worked from day one. Now my clients book themselves and my chair stays full.",
   name: "Shimi Azut",
   meta: "Shimi Azut Hair Studio, Herzliya",
 };
@@ -933,6 +933,15 @@ const pageCss = `
 .bp-home .pricing-note { text-align: center; margin: 1.75rem auto 0; font-size: .9rem; }
 .bp-home .pricing-note a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; transition: color .2s; }
 .bp-home .pricing-note a:hover { color: var(--amber-dark); }
+.bp-home .pricing-grid { display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 1.5rem; }
+.bp-home .pricing-grid .pricing-card { margin: 0; flex: 1 1 380px; max-width: 420px; }
+.bp-home .pricing-card--custom { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(28,24,20,.02); box-shadow: none; border: 1px dashed rgba(28,24,20,.16); }
+.bp-home .pricing-card--custom::before { display: none; }
+.bp-home .pricing-card--custom:hover { transform: none; box-shadow: none; }
+.bp-home .pricing-custom-desc { font-size: .975rem; color: var(--text-muted); line-height: 1.55; margin: 0 0 1.75rem; }
+.bp-home .pricing-addon-note { margin: .85rem 0 0; font-size: .8rem; color: var(--text-muted); }
+.bp-home .btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; background: transparent; color: var(--amber-dark); font-family: 'Heebo', sans-serif; font-weight: 700; font-size: 1.0625rem; border: 1.5px solid var(--amber); border-radius: var(--r-pill); padding: 1rem 2.125rem; cursor: pointer; text-decoration: none; line-height: 1.2; transition: background .2s, color .2s, transform .15s var(--ease); }
+.bp-home .btn-outline:hover { background: var(--amber); color: #fff; transform: translateY(-2px); }
 @keyframes pricingRowIn { to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .bp-home .pricing-card { transition: none; } .bp-home .pricing-features li { animation: none; opacity: 1; transform: none; } }
 .bp-home .tfeature { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.5rem,3vw,2.75rem); align-items: center; padding: clamp(1.75rem,3vw,2.75rem); background: #fff; border: 1px solid rgba(28,24,20,.08); border-radius: 24px; box-shadow: 0 30px 80px -40px rgba(28,24,20,.45); }
@@ -1218,8 +1227,8 @@ export default function MarketingHomePage() {
               </span>
             </h1>
             <p className="hero-sub" data-i18n="hero.sub">
-              A booking website your clients love, and a dashboard for you to manage. We build it,
-              connect it, and keep it running. You just show up.
+              A booking website, a dashboard to run it. We build it and keep it running. You just
+              do what you do.
             </p>
             <div className="hero-ctas">
               <a href="#" className="btn-primary lg" data-cta="hero_primary" data-i18n="cta.book">
@@ -1228,7 +1237,7 @@ export default function MarketingHomePage() {
             </div>
             <p className="hero-trust">
               <CheckIcon />
-              <span data-i18n="hero.trust">Live in 48 hours. No tech skills, no commitment.</span>
+              <span data-i18n="hero.trust">No tech skills, no commitment.</span>
             </p>
           </div>
           <div className="hero-visual">
@@ -1400,15 +1409,15 @@ export default function MarketingHomePage() {
         <div className="final-cta-inner fade-up">
           <h2 data-i18n="final.title">Ready to go live?</h2>
           <p data-i18n="final.p">
-            Send your details and we start building. Prefer to talk? We are around. No pressure, no
-            commitment.
+            Send your details and we start building. Prefer to talk? We are around.
+            <br />
+            No pressure, no commitment.
           </p>
           <a href="#" className="btn-primary lg" data-cta="final_cta" data-i18n="cta.book">
                 Build My Website
               </a>
           <div className="final-trust-chips">
             <span data-i18n="chip.1">✓ No commitment</span>
-            <span data-i18n="chip.2">✓ 48h turnaround</span>
           </div>
           <p className="final-cta-trust" data-i18n="final.trust">
             Fill the form, or talk to us first. Your call.
@@ -2584,7 +2593,7 @@ function PricingSection() {
   const features = [
     { key: "pricing.f1", text: "Booking website in your name" },
     { key: "pricing.f2", text: "Hosting and updates" },
-    { key: "pricing.f3", text: "3 mini edits every month" },
+    { key: "pricing.f3", text: "3 edits every month" },
     { key: "pricing.f4", text: "Free owner dashboard" },
     { key: "pricing.f5", text: "Every booking to your phone and email" },
   ];
@@ -2596,43 +2605,60 @@ function PricingSection() {
             Pricing
           </p>
           <h2 className="section-title" data-i18n="pricing.title">
-            One price. Everything included.
+            Pick your plan.
           </h2>
         </div>
-        <div className="pricing-card fade-up">
-          <div className="pricing-glow" aria-hidden="true" />
-          <p className="pricing-plan" data-i18n="pricing.plan">
-            Booking Website
-          </p>
-          <p className="pricing-price">
-            <span className="pricing-setup" data-i18n="pricing.setup">
-              ₪1,500 setup
-            </span>
-            <span className="pricing-month" data-i18n="pricing.month">
-              then ₪200 / month
-            </span>
-          </p>
-          <ul className="pricing-features">
-            {features.map((f, i) => (
-              <li key={f.key} style={{ animationDelay: `${120 + i * 80}ms` }}>
-                <span className="pricing-check" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 6 9 17l-5-5" />
-                  </svg>
-                </span>
-                <span data-i18n={f.key}>{f.text}</span>
-              </li>
-            ))}
-          </ul>
-          <a href="#" className="btn-primary lg pricing-cta" data-cta="pricing_cta" data-i18n="cta.book">
-                Build My Website
-              </a>
+        <div className="pricing-grid">
+          <div className="pricing-card fade-up">
+            <div className="pricing-glow" aria-hidden="true" />
+            <p className="pricing-plan" data-i18n="pricing.plan">
+              Booking Website
+            </p>
+            <p className="pricing-price">
+              <span className="pricing-setup" data-i18n="pricing.setup">
+                ₪1,500 setup
+              </span>
+              <span className="pricing-month" data-i18n="pricing.month">
+                then ₪200 / month
+              </span>
+            </p>
+            <ul className="pricing-features">
+              {features.map((f, i) => (
+                <li key={f.key} style={{ animationDelay: `${120 + i * 80}ms` }}>
+                  <span className="pricing-check" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  </span>
+                  <span data-i18n={f.key}>{f.text}</span>
+                </li>
+              ))}
+            </ul>
+            <a href="#" className="btn-primary lg pricing-cta" data-cta="pricing_cta" data-i18n="cta.book">
+              Build My Website
+            </a>
+            <p className="pricing-addon-note" data-i18n="pricing.addon.note">
+              Add ons not included.
+            </p>
+          </div>
+          <div className="pricing-card pricing-card--custom fade-up">
+            <p className="pricing-plan" data-i18n="pricing.custom.title">
+              Custom
+            </p>
+            <p className="pricing-custom-desc" data-i18n="pricing.custom.desc">
+              Multiple pages or a custom build? We will price it for you.
+            </p>
+            <a
+              href="#"
+              className="btn-outline pricing-cta"
+              data-cta="pricing_custom_cta"
+              data-connect-kind="custom"
+              data-i18n="pricing.custom.cta"
+            >
+              Get a quote
+            </a>
+          </div>
         </div>
-        <p className="pricing-note fade-up">
-          <a href="#" data-cta="addons_inquiry" data-connect-kind="addons" data-i18n="pricing.note">
-            Want add ons only, without a website? Tell us what you need.
-          </a>
-        </p>
       </div>
     </section>
   );

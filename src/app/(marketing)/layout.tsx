@@ -54,7 +54,6 @@ const SECTION_LINKS: Array<{ href: string; key: string; label: string }> = [
   { href: "#how-it-works", key: "nav.solution", label: "Solution" },
   { href: "#automations", key: "nav.addons", label: "Add ons" },
   { href: "#pricing", key: "nav.pricing", label: "Pricing" },
-  { href: "#faq", key: "nav.faq", label: "FAQ" },
 ];
 
 const BUILT_FOR: Array<{ key: string; label: string }> = [
