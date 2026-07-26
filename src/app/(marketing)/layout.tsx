@@ -80,11 +80,11 @@ export default function MarketingLayout({
         id="nav"
         className="sticky top-0 z-50 border-b border-black/[.06] bg-[#FAF5EC]/85 backdrop-blur-md"
       >
-        <div className="mx-auto flex h-[68px] max-w-[1160px] items-center justify-between px-6">
+        <div className="mx-auto grid h-[68px] max-w-[1160px] grid-cols-[1fr_auto_1fr] items-center px-6">
           <Link
             href="/"
             aria-label="Bapita home"
-            className="flex shrink-0 items-center gap-2 no-underline"
+            className="flex shrink-0 items-center gap-2 no-underline justify-self-start"
           >
             <BapitaLogo />
             <span className="text-2xl font-extrabold tracking-tight text-[#1E1A14]">
@@ -92,7 +92,7 @@ export default function MarketingLayout({
             </span>
           </Link>
 
-          <nav aria-label="Section navigation" className="hidden items-center gap-8 md:flex">
+          <nav aria-label="Section navigation" className="hidden items-center gap-8 md:flex justify-self-center">
             {SECTION_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -105,7 +105,7 @@ export default function MarketingLayout({
             ))}
           </nav>
 
-          <div className="hidden items-center gap-4 md:flex">
+          <div className="hidden items-center gap-4 md:flex justify-self-end">
             <button
               type="button"
               className="lang-toggle rounded-full border border-black/10 px-3 py-1.5 text-sm font-semibold text-[#1E1A14]/70 transition-colors hover:border-[#E8920A] hover:bg-[#E8920A]/[.06] hover:text-[#1E1A14]"
@@ -136,7 +136,7 @@ export default function MarketingLayout({
             type="button"
             aria-label="Open menu"
             aria-expanded="false"
-            className="flex h-9 w-9 flex-col items-center justify-center gap-[5px] md:hidden"
+            className="col-start-3 flex h-9 w-9 flex-col items-center justify-center justify-self-end gap-[5px] md:hidden"
           >
             <span aria-hidden="true" className="block h-0.5 w-5 rounded-full bg-[#1E1A14]" />
             <span aria-hidden="true" className="block h-0.5 w-5 rounded-full bg-[#1E1A14]" />

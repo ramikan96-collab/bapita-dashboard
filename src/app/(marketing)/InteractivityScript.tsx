@@ -464,7 +464,8 @@ export default function InteractivityScript() {
       var section = document.getElementById('how-it-works');
       var btn = section && section.querySelector('[data-cta="hiw_cta"]');
       if (!section || !btn) return;
-      var MAX = 10;
+      var MAX_X = 32;
+      var MAX_Y = 12;
       var raf;
       section.addEventListener('mousemove', function (e) {
         cancelAnimationFrame(raf);
@@ -472,8 +473,8 @@ export default function InteractivityScript() {
           var br = btn.getBoundingClientRect();
           var cx = br.left + br.width / 2;
           var cy = br.top + br.height / 2;
-          var dx = Math.max(-MAX, Math.min(MAX, (e.clientX - cx) * 0.25));
-          var dy = Math.max(-MAX, Math.min(MAX, (e.clientY - cy) * 0.25));
+          var dx = Math.max(-MAX_X, Math.min(MAX_X, (e.clientX - cx) * 0.45));
+          var dy = Math.max(-MAX_Y, Math.min(MAX_Y, (e.clientY - cy) * 0.25));
           btn.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
         });
       });
