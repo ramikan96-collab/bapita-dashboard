@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 
-export default function DisconnectButton({ businessId, staffId }: { businessId: string; staffId: string | null }) {
-  const router = useRouter();
+export default function DisconnectButton({ businessId, staffId, onDisconnected }: { businessId: string; staffId: string | null; onDisconnected: () => void }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +19,7 @@ export default function DisconnectButton({ businessId, staffId }: { businessId: 
               body: JSON.stringify({ businessId, staffId }),
             });
             if (!res.ok) { setError("failed"); return; }
-            router.refresh();
+            onDisconnected();
           });
         }}
         style={{

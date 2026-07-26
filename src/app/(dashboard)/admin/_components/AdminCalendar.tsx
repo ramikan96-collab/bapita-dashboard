@@ -1,9 +1,10 @@
-import { createServiceClient } from "@/lib/supabase/service";
-import DisconnectButton from "./_components/DisconnectButton";
-import ConnectButton from "./_components/ConnectButton";
-import SyncModeSelect from "./_components/SyncModeSelect";
+"use client";
 
-export const dynamic = "force-dynamic";
+import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import CalendarConnectButton from "./CalendarConnectButton";
+import CalendarDisconnectButton from "./CalendarDisconnectButton";
+import CalendarSyncModeSelect from "./CalendarSyncModeSelect";
 
 interface Business { id: string; name: string }
 interface Staff { id: string; name: string; business_id: string }
@@ -23,36 +24,41 @@ const ERROR_MESSAGES: Record<string, string> = {
   access_denied: "You declined the Google consent screen.",
 };
 
-export default async function CalendarDevPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ connected?: string; error?: string }>;
-}) {
-  const { connected, error } = await searchParams;
-  const admin = createServiceClient();
+export function AdminCalendar() {
+  const searchParams = useSearchParams();
+  const connected = searchParams.get("connected");
+  const error = searchParams.get("error");
 
-  const [businessesRes, staffRes, connectionsRes] = await Promise.all([
-    admin.from("businesses").select("id, name").order("name"),
-    admin.from("staff").select("id, name, business_id").order("name"),
-    admin.from("calendar_connections").select("business_id, staff_id, connected_email, status, sync_mode"),
-  ]);
-  const businesses = businessesRes.data as Business[] | null;
-  const staff = staffRes.data as Staff[] | null;
-  const connections = connectionsRes.data as Connection[] | null;
+  const [businesses, setBusinesses] = useState<Business[] | null>(null);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/admin/calendar/google/list");
+    if (res.ok) {
+      const data = await res.json();
+      setBusinesses(data.businesses);
+      setStaff(data.staff);
+      setConnections(data.connections);
+    }
+    setLoading(false);
+  }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load(); }, [load]);
 
   const connectionFor = (businessId: string, staffId: string | null) =>
-    (connections ?? []).find((c) => c.business_id === businessId && c.staff_id === staffId) ?? null;
+    connections.find((c) => c.business_id === businessId && c.staff_id === staffId) ?? null;
 
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto", padding: "26px 24px 60px" }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--color-dark)", marginBottom: 4 }}>
-        Google Calendar — connections (Phase 0)
-      </h1>
-      <p style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>
-        Hidden dev-only page. Not linked in navigation. Connect a staff (or a whole business, no staff)
-        to their Google Calendar — pull hides busy slots, push writes new bookings as events. Pick the
-        mode before connecting, or change it any time after. Connect opens Google in a new tab; refresh
-        this page after finishing there.
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: "20px 24px 64px" }}>
+      <p style={{ fontSize: 13, color: "var(--color-muted)", marginBottom: 16 }}>
+        Connect a staff member (or a whole business, no staff) to their Google Calendar — pull hides
+        busy slots on the booking page, push writes new bookings as events. Pick the mode before
+        connecting, or change it any time after. Connect opens Google in a new tab; come back here
+        and hit refresh once you finish there.
       </p>
 
       {connected && (
@@ -66,14 +72,16 @@ export default async function CalendarDevPage({
         </div>
       )}
 
-      {(businesses ?? []).map((biz) => {
-        const bizStaff = (staff ?? []).filter((s) => s.business_id === biz.id);
+      {loading && <div style={{ textAlign: "center", padding: "60px 0", color: "var(--color-muted)", fontSize: 14 }}>Loading…</div>}
+
+      {!loading && (businesses ?? []).map((biz) => {
+        const bizStaff = staff.filter((s) => s.business_id === biz.id);
         const rows: { staffId: string | null; label: string }[] = [
           { staffId: null, label: "Whole business (no staff)" },
           ...bizStaff.map((s) => ({ staffId: s.id, label: s.name })),
         ];
         return (
-          <div key={biz.id} style={{ background: "var(--color-surface)", border: "var(--line)", borderRadius: 12, padding: 16, marginBottom: 12 }}>
+          <div key={biz.id} style={{ background: "var(--color-surface)", border: "1px solid var(--color-cream-2)", borderRadius: 12, padding: 16, marginBottom: 12 }}>
             <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>{biz.name}</div>
             {rows.map((row) => {
               const conn = connectionFor(biz.id, row.staffId);
@@ -90,11 +98,11 @@ export default async function CalendarDevPage({
                   </div>
                   {conn ? (
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <SyncModeSelect businessId={biz.id} staffId={row.staffId} syncMode={conn.sync_mode} />
-                      <DisconnectButton businessId={biz.id} staffId={row.staffId} />
+                      <CalendarSyncModeSelect businessId={biz.id} staffId={row.staffId} syncMode={conn.sync_mode} onChanged={load} />
+                      <CalendarDisconnectButton businessId={biz.id} staffId={row.staffId} onDisconnected={load} />
                     </div>
                   ) : (
-                    <ConnectButton businessId={biz.id} staffId={row.staffId} />
+                    <CalendarConnectButton businessId={biz.id} staffId={row.staffId} />
                   )}
                 </div>
               );

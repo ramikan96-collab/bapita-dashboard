@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 
 const MODES = [
   { value: "both", label: "Pull + push" },
@@ -13,12 +12,13 @@ export default function SyncModeSelect({
   businessId,
   staffId,
   syncMode,
+  onChanged,
 }: {
   businessId: string;
   staffId: string | null;
   syncMode: string;
+  onChanged: () => void;
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +37,7 @@ export default function SyncModeSelect({
               body: JSON.stringify({ businessId, staffId, syncMode: value }),
             });
             if (!res.ok) { setError("failed"); return; }
-            router.refresh();
+            onChanged();
           });
         }}
         style={{ fontSize: 12, border: "1px solid #E5DDD0", borderRadius: 8, padding: "4px 6px" }}

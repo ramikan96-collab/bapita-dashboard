@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
 import type { Business } from "@/types";
 import { AdminAnalytics } from "../_components/AdminAnalytics";
+import { AdminCalendar } from "../_components/AdminCalendar";
 
 const TEMPLATE_LABELS: Record<string, string> = { classic: "Classic", clean: "Clean", dark: "Dark" };
 const TEMPLATE_COLORS: Record<string, string> = { classic: "#B8862A", clean: "#0A0A0A", dark: "#C9A84C" };
 
 
-type Tab = "businesses" | "analytics" | "leads";
+type Tab = "businesses" | "analytics" | "calendar" | "leads";
 
 type Lead = {
   id: string;
@@ -42,12 +43,15 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-export default function AdminPage() {
+function AdminPageInner() {
   const router      = useRouter();
   const supabase    = createClient();
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
 
-  const [tab, setTab] = useState<Tab>("businesses");
+  // Google Calendar OAuth callback lands back here with ?tab=calendar — land
+  // straight on that tab instead of "businesses".
+  const [tab, setTab] = useState<Tab>(() => (searchParams.get("tab") === "calendar" ? "calendar" : "businesses"));
   const [searchQuery, setSearchQuery] = useState("");
 
   // ── Businesses state ──────────────────────────────────────────────────────
@@ -215,6 +219,7 @@ export default function AdminPage() {
   const TABS: { key: Tab; label: string; badge?: number }[] = [
     { key: "businesses", label: "Businesses" },
     { key: "analytics",  label: "Analytics" },
+    { key: "calendar",   label: "Calendar" },
     { key: "leads",      label: "Leads", badge: pendingCount > 0 ? pendingCount : undefined },
   ];
 
@@ -229,7 +234,7 @@ export default function AdminPage() {
               Admin
             </h1>
             <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 4, marginBottom: 0 }}>
-              {tab === "businesses" ? "Each barber you manage." : tab === "analytics" ? "Traffic and booking funnel across all businesses." : "Requests from bapita.com"}
+              {tab === "businesses" ? "Each barber you manage." : tab === "analytics" ? "Traffic and booking funnel across all businesses." : tab === "calendar" ? "Google Calendar connections per business/staff." : "Requests from bapita.com"}
             </p>
           </div>
           {tab === "businesses" && (
@@ -332,6 +337,8 @@ export default function AdminPage() {
       <div style={{ flex: 1, overflowY: "auto" }}>
         {tab === "analytics" ? (
           <AdminAnalytics />
+        ) : tab === "calendar" ? (
+          <AdminCalendar />
         ) : (
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "20px 24px 64px", display: "flex", flexDirection: "column", gap: 10 }}>
 
@@ -535,6 +542,14 @@ export default function AdminPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminPageInner />
+    </Suspense>
   );
 }
 

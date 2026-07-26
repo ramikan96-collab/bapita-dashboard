@@ -37,10 +37,10 @@ export async function GET(req: NextRequest) {
   };
 
   if (error) {
-    return clearNonceCookie(NextResponse.redirect(new URL(`/admin/calendar-dev?error=${encodeURIComponent(error)}`, req.url)));
+    return clearNonceCookie(NextResponse.redirect(new URL(`/admin/businesses?tab=calendar&error=${encodeURIComponent(error)}`, req.url)));
   }
   if (!code || !stateRaw) {
-    return clearNonceCookie(NextResponse.redirect(new URL("/admin/calendar-dev?error=missing_code", req.url)));
+    return clearNonceCookie(NextResponse.redirect(new URL("/admin/businesses?tab=calendar&error=missing_code", req.url)));
   }
 
   let businessId: string, staffId: string | null, syncMode: string;
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       throw new Error("nonce mismatch");
     }
   } catch {
-    return clearNonceCookie(NextResponse.redirect(new URL("/admin/calendar-dev?error=bad_state", req.url)));
+    return clearNonceCookie(NextResponse.redirect(new URL("/admin/businesses?tab=calendar&error=bad_state", req.url)));
   }
 
   const admin = createServiceClient();
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
       // Happens if this Google account already granted consent before without
       // a fresh `prompt=consent` round trip. Surface it plainly — silently
       // reusing an old (possibly absent) token would be worse.
-      return clearNonceCookie(NextResponse.redirect(new URL("/admin/calendar-dev?error=no_refresh_token", req.url)));
+      return clearNonceCookie(NextResponse.redirect(new URL("/admin/businesses?tab=calendar&error=no_refresh_token", req.url)));
     }
     const email = await getUserEmail(tokens.access_token);
 
@@ -108,9 +108,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return clearNonceCookie(NextResponse.redirect(new URL("/admin/calendar-dev?connected=1", req.url)));
+    return clearNonceCookie(NextResponse.redirect(new URL("/admin/businesses?tab=calendar&connected=1", req.url)));
   } catch (e) {
     console.error("Google Calendar callback failed:", (e as Error).message);
-    return clearNonceCookie(NextResponse.redirect(new URL("/admin/calendar-dev?error=exchange_failed", req.url)));
+    return clearNonceCookie(NextResponse.redirect(new URL("/admin/businesses?tab=calendar&error=exchange_failed", req.url)));
   }
 }
