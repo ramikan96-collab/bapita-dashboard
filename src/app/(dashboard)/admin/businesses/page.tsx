@@ -7,12 +7,13 @@ import { useToast } from "@/components/Toast";
 import type { Business } from "@/types";
 import { AdminAnalytics } from "../_components/AdminAnalytics";
 import { AdminCalendar } from "../_components/AdminCalendar";
+import { AdminPayments } from "../_components/AdminPayments";
 
 const TEMPLATE_LABELS: Record<string, string> = { classic: "Classic", clean: "Clean", dark: "Dark" };
 const TEMPLATE_COLORS: Record<string, string> = { classic: "#B8862A", clean: "#0A0A0A", dark: "#C9A84C" };
 
 
-type Tab = "businesses" | "analytics" | "calendar" | "leads";
+type Tab = "businesses" | "analytics" | "calendar" | "payments" | "leads";
 
 type Lead = {
   id: string;
@@ -220,6 +221,7 @@ function AdminPageInner() {
     { key: "businesses", label: "Businesses" },
     { key: "analytics",  label: "Analytics" },
     { key: "calendar",   label: "Calendar" },
+    { key: "payments",   label: "Payments" },
     { key: "leads",      label: "Leads", badge: pendingCount > 0 ? pendingCount : undefined },
   ];
 
@@ -234,7 +236,7 @@ function AdminPageInner() {
               Admin
             </h1>
             <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 4, marginBottom: 0 }}>
-              {tab === "businesses" ? "Each barber you manage." : tab === "analytics" ? "Traffic and booking funnel across all businesses." : tab === "calendar" ? "Google Calendar connections per business/staff." : "Requests from bapita.com"}
+              {tab === "businesses" ? "Each barber you manage." : tab === "analytics" ? "Traffic and booking funnel across all businesses." : tab === "calendar" ? "Google Calendar connections per business/staff." : tab === "payments" ? "Open Green Invoice deposits per business." : "Requests from bapita.com"}
             </p>
           </div>
           {tab === "businesses" && (
@@ -339,6 +341,8 @@ function AdminPageInner() {
           <AdminAnalytics />
         ) : tab === "calendar" ? (
           <AdminCalendar />
+        ) : tab === "payments" ? (
+          <AdminPayments />
         ) : (
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "20px 24px 64px", display: "flex", flexDirection: "column", gap: 10 }}>
 
