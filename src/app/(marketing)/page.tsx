@@ -31,9 +31,9 @@ import InteractivityScript from "./InteractivityScript";
 const SITE_URL = "https://book.bapita.com/";
 const TITLE = "Bapita | Built for you. Runs without you.";
 const DESCRIPTION =
-  "Bapita builds your booking page, dashboard and automations in 48 hours. No tech needed. Built for barbers, salons & coaches in Israel.";
+  "Bapita builds your booking page, dashboard and automations. No tech needed. Built for barbers, salons & coaches in Israel.";
 const OG_DESCRIPTION =
-  "A booking website, owner dashboard, and automations, built for your appointment based business in 48 hours. No tech needed.";
+  "A booking website, owner dashboard, and automations, built for your appointment based business. No tech needed.";
 const OG_IMAGE = "https://book.bapita.com/img/og-image.png?v=2";
 
 export const metadata: Metadata = {
@@ -70,7 +70,7 @@ const jsonLd = {
       name: "Bapita",
       url: "https://book.bapita.com",
       description:
-        "Bapita builds a booking website, owner dashboard, and automations for appointment based businesses in 48 hours. No tech skills needed.",
+        "Bapita builds a booking website, owner dashboard, and automations for appointment based businesses. No tech skills needed.",
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       offers: {
@@ -134,7 +134,7 @@ const faqs = [
   {
     q: "How long until I am live?",
     qKey: "faq.2.q",
-    a: "48 hours from our call. We work fast. If you have custom requests it can take a little longer, and we will tell you that upfront.",
+    a: "Fast, right after our call. If you have custom requests it can take a little longer, and we will tell you that upfront.",
     aKey: "faq.2.a",
   },
   {
@@ -1178,13 +1178,12 @@ const pageCss = `
 }
 
 .bp-home .hiw-closer {
-  display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
+  display: flex; align-items: center; justify-content: center; gap: 1.5rem;
   margin-top: 2.5rem; padding: 1.375rem 1.75rem; background: var(--surface);
   border: 1px solid var(--line); border-inline-start: 3px solid var(--amber);
   border-radius: 0 var(--r-soft) var(--r-soft) 0; box-shadow: var(--shadow-xs);
 }
-.bp-home .hiw-closer-text { font-size: 1rem; font-weight: 700; color: var(--dark); }
-@media (max-width: 600px) { .bp-home .hiw-closer { flex-direction: column; align-items: flex-start; gap: 1rem; } }
+@media (max-width: 600px) { .bp-home .hiw-closer { flex-direction: column; gap: 1rem; } }
 
 @media (max-width: 768px) {
   .bp-home .section { padding: 2.75rem 1.25rem; }
@@ -1286,8 +1285,8 @@ export default function MarketingHomePage() {
               </span>
             </h1>
             <p className="hero-sub" data-i18n="hero.sub">
-              A booking website and a dashboard to run it. We build it and keep it running. You
-              just do what you do.
+              A booking website for your clients. A dashboard for you. We build both and keep
+              them running. You just do what you do.
             </p>
             <div className="hero-ctas">
               <a href="#" className="btn-primary lg" data-cta="hero_primary" data-i18n="cta.book">
@@ -1425,12 +1424,6 @@ export default function MarketingHomePage() {
       <div className="proof-bar" aria-label="Key facts">
         <div className="proof-bar-inner">
           <div className="proof-item fade-up" style={{ transitionDelay: "0ms" }}>
-            <div className="proof-num">48h</div>
-            <div className="proof-lbl" data-i18n="proof.1">
-              Live from your first call
-            </div>
-          </div>
-          <div className="proof-item fade-up" style={{ transitionDelay: "80ms" }}>
             <div className="proof-num">24/7</div>
             <div className="proof-lbl" data-i18n="proof.2">
               Clients book while you sleep
@@ -1478,9 +1471,6 @@ export default function MarketingHomePage() {
           <div className="final-trust-chips">
             <span data-i18n="chip.1">✓ No commitment</span>
           </div>
-          <p className="final-cta-trust" data-i18n="final.trust">
-            Fill the form, or talk to us first. Your call.
-          </p>
         </div>
       </section>
 
@@ -1826,7 +1816,7 @@ function HowItWorksSection() {
                   You go live
                 </div>
                 <div className="hiw-p" data-i18n="how.3.p">
-                  In 48 hours your system is live. Clients can find you, book online, and get
+                  Your system goes live fast. Clients can find you, book online, and get
                   reminders without you doing a thing. We stay on hand for any updates.
                 </div>
               </div>
@@ -1948,9 +1938,6 @@ function HowItWorksSection() {
         </div>
 
         <div className="hiw-closer fade-up">
-          <p className="hiw-closer-text" data-i18n="how.closer">
-            One call. 48 hours. Done.
-          </p>
           <a href="#" className="btn-primary" data-cta="hiw_cta" data-i18n="cta.talk">
             Let&apos;s talk
           </a>

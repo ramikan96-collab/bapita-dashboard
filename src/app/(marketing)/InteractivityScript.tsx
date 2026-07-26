@@ -407,31 +407,6 @@ export default function InteractivityScript() {
       document.querySelectorAll('.fade-up').forEach(function (el) { fadeObs.observe(el); });
     }
 
-    function initProofCount() {
-      var bar = document.querySelector('.proof-bar');
-      if (!bar) return;
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      var data = Array.prototype.slice.call(bar.querySelectorAll('.proof-num')).map(function (el) {
-        var m = el.textContent.trim().match(/^(\d+)([\s\S]*)$/);
-        return m ? { el: el, target: +m[1], suffix: m[2] } : null;
-      }).filter(Boolean);
-      if (!data.length) return;
-      function run() {
-        var dur = 1100, t0 = performance.now();
-        function tick(now) {
-          var p = Math.min((now - t0) / dur, 1);
-          var e = 1 - Math.pow(1 - p, 3);
-          data.forEach(function (d) { d.el.textContent = Math.round(d.target * e) + d.suffix; });
-          if (p < 1) requestAnimationFrame(tick);
-        }
-        requestAnimationFrame(tick);
-      }
-      var obs = new IntersectionObserver(function (es) {
-        es.forEach(function (e) { if (e.isIntersecting) { run(); obs.disconnect(); } });
-      }, { threshold: 0.4 });
-      obs.observe(bar);
-    }
-
     function initHowItWorks() {
       var rows = document.querySelectorAll('.hiw-row');
       var scenes = document.querySelectorAll('.hiw-scene');
@@ -684,7 +659,6 @@ export default function InteractivityScript() {
       initChannelSwitcher();
       initFaqAccordion();
       initFadeUp();
-      initProofCount();
       initHowItWorks();
       cloneScenesToMobile('.hiw-row', '.hiw-scene', 'hiw-mobile-scene');
       initScrollProgress();
