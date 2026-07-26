@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { bookingsForStaff } from "@/lib/availability";
 import type { BusinessHours } from "@/types";
 import nodemailer from "nodemailer";
+import { pushBookingCreated } from "@/lib/google-calendar";
 
 interface ExistingBookingRow {
   appointment_time: string;
@@ -369,10 +370,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: errStatus });
   }
 
-  // Fetch cancel token for the newly inserted booking
+  // Fetch cancel token (+ id for the Google Calendar push) for the newly inserted booking
   const { data: newBooking } = await supabase
     .from("bookings")
-    .select("cancel_token")
+    .select("id, cancel_token")
     .eq("business_id", businessId)
     .eq("appointment_date", date)
     .eq("appointment_time", time)
@@ -382,6 +383,24 @@ export async function POST(req: NextRequest) {
     .single();
   const cancelToken = newBooking?.cancel_token as string | null;
   const cancelUrl = cancelToken ? `https://book.bapita.com/cancel/${cancelToken}` : null;
+
+  // Push to Google Calendar (Phase 0) — best-effort, never blocks the booking.
+  // Runs in `after()` (like the emails below) so the serverless function stays
+  // alive long enough to finish even though the response has already returned.
+  if (newBooking?.id) {
+    const bookingId = newBooking.id;
+    after(() =>
+      pushBookingCreated(supabase, {
+        businessId,
+        staffId: assignedStaffId,
+        bookingId,
+        summary: `${svcName} — ${customerName}`,
+        dateISO: date,
+        timeHHmm: time.slice(0, 5),
+        durationMinutes: svcDuration || 30,
+      }).catch((e) => console.error("Google Calendar push failed:", e))
+    );
+  }
 
   // Defer all email sends after response is returned
   after(async () => {

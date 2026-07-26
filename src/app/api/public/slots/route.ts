@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { bookingsForStaff } from "@/lib/availability";
+import { getGoogleBusyBlocks } from "@/lib/google-calendar";
 
 const DAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
@@ -135,7 +136,8 @@ export async function GET(req: NextRequest) {
 
   if (!staffChoice) {
     // Pre-staff behavior + business-wide blocks. Staff-specific blocks also apply (single calendar).
-    slots = getSlots(requestedDate, duration, bizHours, [...toBooked(allBookings), ...blocksFor(null)], bufferMinutes);
+    const googleBusy = await getGoogleBusyBlocks(supabase, businessId, null, date);
+    slots = getSlots(requestedDate, duration, bizHours, [...toBooked(allBookings), ...blocksFor(null), ...googleBusy], bufferMinutes);
   } else {
     // Load active staff with their own hours (working_hours overrides business hours when set).
     const { data: staffRows } = await supabase
@@ -145,10 +147,14 @@ export async function GET(req: NextRequest) {
       .neq("active", false) as { data: { id: string; working_hours: BusinessHours | null }[] | null };
     const hoursFor = (sid: string) =>
       ((staffRows || []).find((r) => r.id === sid)?.working_hours as BusinessHours | null) || bizHours;
-    const busyFor = (sid: string) => [...toBooked(bookingsForStaff(allBookings, sid)), ...blocksFor(sid)];
+    const busyFor = async (sid: string) => [
+      ...toBooked(bookingsForStaff(allBookings, sid)),
+      ...blocksFor(sid),
+      ...(await getGoogleBusyBlocks(supabase, businessId, sid, date)),
+    ];
 
     if (staffId) {
-      slots = getSlots(requestedDate, duration, hoursFor(staffId), busyFor(staffId), bufferMinutes);
+      slots = getSlots(requestedDate, duration, hoursFor(staffId), await busyFor(staffId), bufferMinutes);
     } else {
       // "Any available" — eligible staff pool = service.staff_ids, else all active staff.
       let eligibleStaffIds: string[] = [];
@@ -160,12 +166,13 @@ export async function GET(req: NextRequest) {
         eligibleStaffIds = (staffRows || []).map((r) => r.id);
       }
       if (eligibleStaffIds.length === 0) {
-        slots = getSlots(requestedDate, duration, bizHours, [...toBooked(allBookings), ...blocksFor(null)], bufferMinutes);
+        const googleBusy = await getGoogleBusyBlocks(supabase, businessId, null, date);
+        slots = getSlots(requestedDate, duration, bizHours, [...toBooked(allBookings), ...blocksFor(null), ...googleBusy], bufferMinutes);
       } else {
         // A slot is offered if at least one eligible staff member is free at it (own hours + own blocks).
         const union = new Set<string>();
         for (const sid of eligibleStaffIds) {
-          for (const s of getSlots(requestedDate, duration, hoursFor(sid), busyFor(sid), bufferMinutes)) union.add(s);
+          for (const s of getSlots(requestedDate, duration, hoursFor(sid), await busyFor(sid), bufferMinutes)) union.add(s);
         }
         slots = Array.from(union).sort();
       }
