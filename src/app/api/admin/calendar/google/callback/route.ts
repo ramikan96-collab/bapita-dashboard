@@ -6,6 +6,7 @@ import { exchangeCodeForTokens, getUserEmail, storeRefreshToken, deleteRefreshTo
 import { OAUTH_STATE_COOKIE } from "../connect/route";
 
 const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
+const VALID_MODES = ["pull", "push", "both"];
 
 function noncesMatch(a: string, b: string): boolean {
   const bufA = Buffer.from(a);
@@ -42,11 +43,12 @@ export async function GET(req: NextRequest) {
     return clearNonceCookie(NextResponse.redirect(new URL("/admin/calendar-dev?error=missing_code", req.url)));
   }
 
-  let businessId: string, staffId: string | null;
+  let businessId: string, staffId: string | null, syncMode: string;
   try {
     const state = JSON.parse(Buffer.from(stateRaw, "base64url").toString("utf8"));
     businessId = state.businessId;
     staffId = state.staffId ?? null;
+    syncMode = VALID_MODES.includes(state.syncMode) ? state.syncMode : "both";
     const nonce = state.nonce;
     if (!businessId) throw new Error("no businessId in state");
     // Binds this callback to the browser that started the /connect flow —
@@ -88,6 +90,7 @@ export async function GET(req: NextRequest) {
         .update({
           refresh_token_secret_id: secretId,
           connected_email: email,
+          sync_mode: syncMode,
           status: "connected",
           updated_at: new Date().toISOString(),
         })
@@ -100,6 +103,7 @@ export async function GET(req: NextRequest) {
         staff_id: staffId,
         refresh_token_secret_id: secretId,
         connected_email: email,
+        sync_mode: syncMode,
         status: "connected",
       });
     }

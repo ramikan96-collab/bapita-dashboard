@@ -1,5 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import DisconnectButton from "./_components/DisconnectButton";
+import ConnectButton from "./_components/ConnectButton";
+import SyncModeSelect from "./_components/SyncModeSelect";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +50,9 @@ export default async function CalendarDevPage({
       </h1>
       <p style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>
         Hidden dev-only page. Not linked in navigation. Connect a staff (or a whole business, no staff)
-        to their Google Calendar — pull hides busy slots, push writes new bookings as events.
+        to their Google Calendar — pull hides busy slots, push writes new bookings as events. Pick the
+        mode before connecting, or change it any time after. Connect opens Google in a new tab; refresh
+        this page after finishing there.
       </p>
 
       {connected && (
@@ -79,20 +83,18 @@ export default async function CalendarDevPage({
                     <div style={{ fontSize: 14 }}>{row.label}</div>
                     {conn && (
                       <div style={{ fontSize: 12, color: conn.status === "connected" ? "#065F46" : "#B45309" }}>
-                        {conn.status === "connected" ? `Connected — ${conn.connected_email ?? "?"} (${conn.sync_mode})` : `Needs reconnect (${conn.connected_email ?? "?"})`}
+                        {conn.status === "connected" ? `Connected — ${conn.connected_email ?? "?"}` : `Needs reconnect (${conn.connected_email ?? "?"})`}
                       </div>
                     )}
                     {!conn && <div style={{ fontSize: 12, color: "#999" }}>Not connected</div>}
                   </div>
                   {conn ? (
-                    <DisconnectButton businessId={biz.id} staffId={row.staffId} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <SyncModeSelect businessId={biz.id} staffId={row.staffId} syncMode={conn.sync_mode} />
+                      <DisconnectButton businessId={biz.id} staffId={row.staffId} />
+                    </div>
                   ) : (
-                    <a
-                      href={`/api/admin/calendar/google/connect?businessId=${biz.id}${row.staffId ? `&staffId=${row.staffId}` : ""}`}
-                      style={{ fontSize: 13, fontWeight: 600, color: "var(--color-surface)", background: "var(--color-amber)", borderRadius: 8, padding: "6px 12px", textDecoration: "none" }}
-                    >
-                      Connect
-                    </a>
+                    <ConnectButton businessId={biz.id} staffId={row.staffId} />
                   )}
                 </div>
               );

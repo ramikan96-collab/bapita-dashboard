@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAuthUrl } from "@/lib/google-calendar";
 
 const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
+const VALID_MODES = ["pull", "push", "both"];
 export const OAUTH_STATE_COOKIE = "gcal_oauth_nonce";
 
 // GET — kicks off the Google OAuth consent flow for one business (+ optional
@@ -25,12 +26,14 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const businessId = searchParams.get("businessId");
   const staffId = searchParams.get("staffId") || null;
+  const syncModeRaw = searchParams.get("syncMode");
+  const syncMode = VALID_MODES.includes(syncModeRaw ?? "") ? syncModeRaw : "both";
   if (!businessId) {
     return NextResponse.json({ error: "missing businessId" }, { status: 400 });
   }
 
   const nonce = crypto.randomBytes(32).toString("base64url");
-  const state = Buffer.from(JSON.stringify({ businessId, staffId, nonce })).toString("base64url");
+  const state = Buffer.from(JSON.stringify({ businessId, staffId, syncMode, nonce })).toString("base64url");
 
   const res = NextResponse.redirect(getAuthUrl(state));
   res.cookies.set(OAUTH_STATE_COOKIE, nonce, {
