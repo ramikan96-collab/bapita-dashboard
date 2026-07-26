@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { exchangeCodeForTokens, getUserEmail, storeRefreshToken, deleteRefreshToken } from "@/lib/google-calendar";
+import { OAUTH_STATE_COOKIE } from "../connect/route";
 
 const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
+
+function noncesMatch(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
+}
 
 // GET — Google redirects here with ?code&state after consent. Admin-only,
 // same gate as /connect. Exchanges the code, stores the refresh token in
@@ -19,12 +27,19 @@ export async function GET(req: NextRequest) {
   const code = searchParams.get("code");
   const stateRaw = searchParams.get("state");
   const error = searchParams.get("error");
+  const cookieNonce = req.cookies.get(OAUTH_STATE_COOKIE)?.value;
+
+  // Cleared on every exit path so a stale nonce never lingers past one attempt.
+  const clearNonceCookie = (res: NextResponse) => {
+    res.cookies.set(OAUTH_STATE_COOKIE, "", { path: "/api/admin/calendar/google", maxAge: 0 });
+    return res;
+  };
 
   if (error) {
-    return NextResponse.redirect(new URL(`/admin/calendar-dev?error=${encodeURIComponent(error)}`, req.url));
+    return clearNonceCookie(NextResponse.redirect(new URL(`/admin/calendar-dev?error=${encodeURIComponent(error)}`, req.url)));
   }
   if (!code || !stateRaw) {
-    return NextResponse.redirect(new URL("/admin/calendar-dev?error=missing_code", req.url));
+    return clearNonceCookie(NextResponse.redirect(new URL("/admin/calendar-dev?error=missing_code", req.url)));
   }
 
   let businessId: string, staffId: string | null;
@@ -32,9 +47,16 @@ export async function GET(req: NextRequest) {
     const state = JSON.parse(Buffer.from(stateRaw, "base64url").toString("utf8"));
     businessId = state.businessId;
     staffId = state.staffId ?? null;
+    const nonce = state.nonce;
     if (!businessId) throw new Error("no businessId in state");
+    // Binds this callback to the browser that started the /connect flow —
+    // without it, `state` is just an unsigned param anyone linking to
+    // /connect?businessId=... fully controls (login-CSRF on the OAuth grant).
+    if (!nonce || !cookieNonce || !noncesMatch(nonce, cookieNonce)) {
+      throw new Error("nonce mismatch");
+    }
   } catch {
-    return NextResponse.redirect(new URL("/admin/calendar-dev?error=bad_state", req.url));
+    return clearNonceCookie(NextResponse.redirect(new URL("/admin/calendar-dev?error=bad_state", req.url)));
   }
 
   const admin = createServiceClient();
@@ -45,7 +67,7 @@ export async function GET(req: NextRequest) {
       // Happens if this Google account already granted consent before without
       // a fresh `prompt=consent` round trip. Surface it plainly — silently
       // reusing an old (possibly absent) token would be worse.
-      return NextResponse.redirect(new URL("/admin/calendar-dev?error=no_refresh_token", req.url));
+      return clearNonceCookie(NextResponse.redirect(new URL("/admin/calendar-dev?error=no_refresh_token", req.url)));
     }
     const email = await getUserEmail(tokens.access_token);
 
@@ -82,9 +104,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return NextResponse.redirect(new URL("/admin/calendar-dev?connected=1", req.url));
+    return clearNonceCookie(NextResponse.redirect(new URL("/admin/calendar-dev?connected=1", req.url)));
   } catch (e) {
     console.error("Google Calendar callback failed:", (e as Error).message);
-    return NextResponse.redirect(new URL("/admin/calendar-dev?error=exchange_failed", req.url));
+    return clearNonceCookie(NextResponse.redirect(new URL("/admin/calendar-dev?error=exchange_failed", req.url)));
   }
 }
