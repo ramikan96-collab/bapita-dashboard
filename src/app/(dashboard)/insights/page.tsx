@@ -12,9 +12,6 @@ import { InsightsSkeleton } from "@/components/LoadingSkeleton";
 import VisitorsTab from "./_components/VisitorsTab";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL, type BookingStatus } from "@/types";
 
-const WA_NUMBER = "972501234567";
-const WA_MSG = "Hi, I want to turn on paid ads to bring in more bookings.";
-
 type Tab = "overview" | "appointments" | "revenue" | "visitors";
 type RangeKey = "week" | "month" | "3months" | "custom";
 
@@ -491,25 +488,6 @@ function OverviewTab({ stats, empty, hasDelta, deltaPct, deltaUp, hasRevenue, ma
             <EmptySection icon={<IconTag />} text="No completed services yet." />
           )}
         </div>
-      </div>
-
-      {/* Ads CTA */}
-      <div className="rounded-2xl" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: 16, background: "var(--wash-sand)", boxShadow: "var(--shadow-sm)" }}>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.40)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-amber)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 11l18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 11-5.8-1.6" />
-          </svg>
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 15, fontWeight: 700, color: "var(--color-dark)" }}>Want more bookings?</p>
-          <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 2 }}>Turn on paid ads and reach new clients.</p>
-        </div>
-        <button
-          onClick={() => window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MSG)}`, "_blank")}
-          style={{ flexShrink: 0, fontSize: 13, fontWeight: 700, color: "var(--color-surface)", padding: "10px 16px", borderRadius: 12, background: "var(--wash-amber)", boxShadow: "var(--shadow-amber)", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}
-        >
-          Turn on
-        </button>
       </div>
     </div>
   );

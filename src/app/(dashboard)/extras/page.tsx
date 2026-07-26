@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { ExtrasSkeleton } from "@/components/LoadingSkeleton";
 
-type AddonType = "whatsapp" | "stripe" | "google" | "ads" | "google_business" | "google_calendar";
+type AddonType = "whatsapp" | "stripe" | "google" | "google_business" | "google_calendar";
 
 // Email is a UI-only card — always active, not stored in addons table
 
@@ -16,7 +16,7 @@ interface Addon {
   activated_at: string | null;
 }
 
-const MONTHLY: AddonType[] = ["whatsapp", "stripe", "google", "ads"];
+const MONTHLY: AddonType[] = ["whatsapp", "stripe", "google"];
 const ONETIME: AddonType[] = ["google_business", "google_calendar"];
 const ALL_TYPES: AddonType[] = [...MONTHLY, ...ONETIME];
 
@@ -53,14 +53,6 @@ function IconStar({ size = 20 }: IP) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-  );
-}
-
-function IconTarget({ size = 20 }: IP) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
     </svg>
   );
 }
@@ -137,14 +129,6 @@ const CATALOG: Record<AddonType, Entry> = {
     color: "#FBBC05",
     icon: <IconStar />,
     statLabel: "Reviews collected",
-    recurring: true,
-  },
-  ads: {
-    name: "Paid Ads",
-    blurb: "Meta campaigns that bring new clients straight into your booking flow.",
-    color: "#0866FF",
-    icon: <IconTarget />,
-    statLabel: "Ad impressions",
     recurring: true,
   },
   google_business: {
