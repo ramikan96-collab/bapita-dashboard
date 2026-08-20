@@ -25,22 +25,29 @@
  *               REQUIRES an active clearing terminal (סליקה) on the account, else
  *               errorCode 2600 "לא נמצא מסוף סליקה פעיל". That is the Flow-A
  *               prerequisite: owner must have Premium + digital payments switched on.
- *   Verify pay  POST /documents/payments/search  (re-fetch by txn/doc; don't trust redirect)
- *   Doc types   320/400/405 require a `payment` array; deposit receipt/invoice auto-issued
+ *   Verify pay  POST /documents/payments/search  (clearing transactions only)
+ *               GET  /documents/{id}             (the issued doc — our fallback)
+ *               POST /documents/search           (list docs; used for reconcile)
+ *   Doc types   320 = invoice/receipt, 400 = receipt. Support depends on the
+ *               owner's business type (עוסק פטור rejects 320 with errorCode 2403).
  *   Token chg   POST /payments/tokens/{id}/charge            (Phase 4 no-show)
  *   Tokens      POST /payments/tokens/search                 (Phase 4)
- *   Webhooks    POST /webhooks {url, events:[...]}  · GET /webhooks/{id} · DELETE /webhooks/{id}
- *               Events: document.paid, payment.received, payment.failed, payment.refunded, ...
  *
- * ── Sandbox verification result (Phase 0) ───────────────────────────────────
- *   ✓ Auth mechanism resolved: classic /account/token {id,secret}.
- *   ✓ /payments/form contract confirmed (field = amount; validation passes to the
- *     clearing-terminal check).
- *   ✓ Webhook subscription endpoint + event names confirmed from API reference.
- *   ✓ Premium grants API access (authenticated + /businesses/me 200).
- *   ⧗ Live hosted-page URL response + live webhook payload can only be observed
- *     once a clearing terminal (סליקה) is active on a test account — GI account
- *     config, not a code blocker. Lock createPaymentForm's response type then.
+ * ── Sandbox verification result (2026-08-20, re-probed live) ────────────────
+ *   ✓ Auth: classic /account/token {id,secret} → JWT ~30 min.
+ *   ✓ /payments/form field contract confirmed (total field = `amount`).
+ *   ✓ Document `url` is an OBJECT: {origin, he} — never a bare string. Both the
+ *     form response and document records use this shape.
+ *   ✓ /documents/payments/search exists (200) but returns ONLY cleared-terminal
+ *     transactions — a document's own `payment[]` rows do NOT appear there. So
+ *     verification falls back to GET /documents/{id} when the search misses.
+ *   ✗ /webhooks does NOT exist on this API (404 on GET and POST). There is no
+ *     subscription to register: the per-form `notifyUrl` IS the callback.
+ *   ✗ Documents carry no `custom` field — only the callback echoes it. Server-side
+ *     binding therefore also matches on `remarks` ("Booking <uuid>"), which the
+ *     issued document does persist.
+ *   ⧗ A live hosted-page URL still needs a clearing terminal (סליקה) on the
+ *     account; without it /payments/form answers 2600 for every doc type.
  */
 
 import crypto from 'node:crypto';
@@ -57,6 +64,34 @@ export const GI_ENDPOINTS: Record<GiEnv, { apiBase: string }> = {
 // while testing against a sandbox account.
 export function giEnv(): GiEnv {
   return process.env.GREENINVOICE_ENV === 'sandbox' ? 'sandbox' : 'production';
+}
+
+// Document type issued when a payment succeeds. 320 = חשבונית מס/קבלה, the right
+// doc for a VAT-registered dealer (עוסק מורשה). Exempt dealers (עוסק פטור) cannot
+// issue 320 and need 400 (קבלה) — GI answers errorCode 2403 for the wrong one.
+// Override per deployment with GREENINVOICE_DOC_TYPE; createPaymentForm also
+// retries with the other type automatically on a 2403.
+export const GI_DOC_TYPE_DEFAULT = 320;
+export const GI_DOC_TYPE_FALLBACK = 400;
+
+export function giDocType(): number {
+  const raw = Number(process.env.GREENINVOICE_DOC_TYPE);
+  return Number.isFinite(raw) && raw > 0 ? raw : GI_DOC_TYPE_DEFAULT;
+}
+
+/**
+ * Green Invoice returns URLs as `{origin, he}` objects on documents and, in some
+ * responses, as a plain string. Read every shape we have seen.
+ */
+export function giUrl(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object') {
+    const o = value as Record<string, unknown>;
+    for (const k of ['origin', 'he', 'en']) {
+      if (typeof o[k] === 'string') return o[k] as string;
+    }
+  }
+  return '';
 }
 
 // ── Secret encryption at rest (AES-256-GCM) ─────────────────────────────────
@@ -173,40 +208,89 @@ export async function createPaymentForm(
 ): Promise<{ url: string; raw: Record<string, unknown> }> {
   if (!(p.amount > 0)) throw new Error('deposit amount must be > 0');
   const { token, apiBase } = await getBusinessGiContext(businessId);
-  const body: Record<string, unknown> = {
-    type: p.type ?? 320,
-    description: p.description,
-    lang: p.lang ?? 'he',
-    currency: 'ILS',
-    vatType: 0,
-    amount: p.amount,
-    maxPayments: 1,
-    client: { name: p.clientName, emails: p.clientEmails ?? [] },
-    income: [{ description: p.description, quantity: 1, price: p.amount, currency: 'ILS', vatType: 0 }],
-    remarks: p.remarks,
-    successUrl: p.successUrl,
-    failureUrl: p.failureUrl,
-    notifyUrl: p.notifyUrl,
-    custom: p.custom,
-  };
-  if (p.pluginId) body.pluginId = p.pluginId;
 
-  const res = await fetch(`${apiBase}/payments/form`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
-  });
-  const raw = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  if (!res.ok) {
-    throw new Error((raw.errorMessage as string) || (raw.error as string) || `GI /payments/form failed (${res.status})`);
+  const build = (docType: number): Record<string, unknown> => {
+    const body: Record<string, unknown> = {
+      type: docType,
+      description: p.description,
+      lang: p.lang ?? 'he',
+      currency: 'ILS',
+      vatType: 0,
+      amount: p.amount,
+      maxPayments: 1,
+      client: { name: p.clientName, emails: p.clientEmails ?? [] },
+      income: [{ description: p.description, quantity: 1, price: p.amount, currency: 'ILS', vatType: 0 }],
+      remarks: p.remarks,
+      successUrl: p.successUrl,
+      failureUrl: p.failureUrl,
+      notifyUrl: p.notifyUrl,
+      custom: p.custom,
+    };
+    if (p.pluginId) body.pluginId = p.pluginId;
+    return body;
+  };
+
+  const post = async (docType: number) => {
+    const res = await fetch(`${apiBase}/payments/form`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(build(docType)),
+    });
+    const raw = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    return { ok: res.ok, status: res.status, raw };
+  };
+
+  const first = p.type ?? giDocType();
+  let out = await post(first);
+
+  // errorCode 2403 = this business type cannot issue that document. Exempt
+  // dealers (עוסק פטור) need 400 instead of 320. Retry once with the other type
+  // so an owner never has to know their GI document taxonomy.
+  if (!out.ok && Number(out.raw.errorCode) === 2403) {
+    const alt = first === GI_DOC_TYPE_FALLBACK ? GI_DOC_TYPE_DEFAULT : GI_DOC_TYPE_FALLBACK;
+    out = await post(alt);
   }
-  // GI returns the hosted URL as `url` (string) or `{ url: { origin } }`; read both.
-  const url =
-    typeof raw.url === 'string'
-      ? (raw.url as string)
-      : (raw.url as { origin?: string } | undefined)?.origin ?? (raw.formUrl as string | undefined) ?? '';
+
+  if (!out.ok) {
+    const msg = (out.raw.errorMessage as string) || (out.raw.error as string) || `GI /payments/form failed (${out.status})`;
+    // 2600 = no active clearing terminal. Surface it plainly; it is the single
+    // most common owner-side misconfiguration and is not a code fault.
+    throw new Error(Number(out.raw.errorCode) === 2600 ? `${msg} (Green Invoice: digital payments / סליקה is not active on this account)` : msg);
+  }
+
+  const url = giUrl(out.raw.url) || giUrl(out.raw.formUrl) || giUrl(out.raw.link);
   if (!url) throw new Error('GI payment form returned no URL');
-  return { url, raw };
+  return { url, raw: out.raw };
+}
+
+/** Fetch one issued document (invoice/receipt) by id. */
+export async function getDocument(
+  businessId: string,
+  docId: string,
+): Promise<Record<string, unknown> | null> {
+  if (!docId) return null;
+  const { token, apiBase } = await getBusinessGiContext(businessId);
+  const res = await fetch(`${apiBase}/documents/${encodeURIComponent(docId)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+  return (await res.json().catch(() => null)) as Record<string, unknown> | null;
+}
+
+/**
+ * Is an issued document actually settled? A receipt (400) or invoice/receipt
+ * (320) carries a `payment[]` array; nothing left open means the money landed.
+ * Cancelled documents (status 3) never count.
+ */
+export function documentIsPaid(doc: Record<string, unknown> | null): boolean {
+  if (!doc) return false;
+  if (Number(doc.status) === 3) return false;
+  const payments = (doc.payment as Array<Record<string, unknown>> | undefined) ?? [];
+  const paidSum = payments.reduce((sum, row) => sum + (Number(row.price ?? row.amount ?? 0) || 0), 0);
+  const amount = Number(doc.amount ?? 0) || 0;
+  const open = Number(doc.amountOpened ?? 0) || 0;
+  if (amount > 0 && open === 0 && paidSum > 0) return true;
+  return paidSum >= amount && amount > 0;
 }
 
 // ── Verify a payment by re-fetching from GI (never trust the redirect) ───────
@@ -215,35 +299,113 @@ export async function createPaymentForm(
  * mark a booking confirmed. Returns the matched payment record or null.
  * Field/endpoint shape is finalised once a live terminal produces a real txn.
  */
+export interface VerifiedPayment {
+  paid: boolean;
+  amount?: number;
+  invoiceUrl?: string;
+  /** Booking id echoed back by GI (`custom`), when the record carries one. */
+  customRef?: string;
+  /** Document remarks — we write "Booking <uuid>" there as a second binding. */
+  remarks?: string;
+  raw: Record<string, unknown>;
+}
+
 export async function verifyPayment(
   businessId: string,
   providerTxnId: string,
-): Promise<{ paid: boolean; amount?: number; invoiceUrl?: string; customRef?: string; raw: Record<string, unknown> } | null> {
+): Promise<VerifiedPayment | null> {
   if (!providerTxnId) return null;
   const { token, apiBase } = await getBusinessGiContext(businessId);
+
+  // 1. Clearing-transaction lookup. Covers payments taken through the terminal.
   const res = await fetch(`${apiBase}/documents/payments/search`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ paymentId: providerTxnId }),
   });
   const raw = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  if (!res.ok) return null;
-  const items = (raw.items as Array<Record<string, unknown>> | undefined) ?? [];
-  // SECURITY: require an EXACT id match. No `items[0]` fallback — otherwise a
-  // forged callback with a bogus id would confirm against an unrelated payment.
-  const match = items.find((i) => String(i.id ?? i.paymentId) === String(providerTxnId));
-  if (!match) return { paid: false, raw };
+  if (res.ok) {
+    const items = (raw.items as Array<Record<string, unknown>> | undefined) ?? [];
+    // SECURITY: require an EXACT id match. No `items[0]` fallback — otherwise a
+    // forged callback with a bogus id would confirm against an unrelated payment.
+    const match = items.find((i) => String(i.id ?? i.paymentId) === String(providerTxnId));
+    if (match) {
+      return {
+        paid: true,
+        amount: Number(match.amount ?? match.price ?? 0) || undefined,
+        invoiceUrl: giUrl(match.url),
+        customRef: String(match.custom ?? match.externalKey ?? match.reference ?? ''),
+        remarks: String(match.remarks ?? ''),
+        raw,
+      };
+    }
+  }
+
+  // 2. Fallback: the id may be a DOCUMENT id (verified in sandbox — a document's
+  //    own payment rows never surface in /documents/payments/search). Fetch it
+  //    directly and decide from its own payment array.
+  const doc = await getDocument(businessId, providerTxnId);
+  if (!doc) return { paid: false, raw };
+  if (!documentIsPaid(doc)) return { paid: false, raw: doc };
+
   return {
     paid: true,
-    amount: Number(match.amount ?? match.price ?? 0) || undefined,
-    invoiceUrl:
-      typeof match.url === 'string'
-        ? (match.url as string)
-        : (match.url as { origin?: string } | undefined)?.origin,
-    // The booking id we passed as `custom` when creating the form, echoed back
-    // on the payment record. The webhook binds this to the booking so a real
-    // payment for one booking cannot confirm a different booking.
-    customRef: String(match.custom ?? match.externalKey ?? match.reference ?? ""),
-    raw,
+    amount: Number(doc.amount ?? 0) || undefined,
+    invoiceUrl: giUrl(doc.url),
+    customRef: String(doc.custom ?? ''),
+    remarks: String(doc.remarks ?? ''),
+    raw: doc,
   };
+}
+
+/**
+ * Reconcile fallback: find a paid document that belongs to one booking.
+ *
+ * Used when the customer returns from the hosted page but the notifyUrl callback
+ * has not arrived (or never will — a blocked webhook must not cost a paying
+ * customer their slot). We list the business's recent documents and match on the
+ * remarks we wrote when creating the form. Matching is exact on the full
+ * "Booking <uuid>" string; a uuid is unguessable, so this cannot cross-bind.
+ */
+export async function findPaidDocumentForBooking(
+  businessId: string,
+  bookingId: string,
+): Promise<VerifiedPayment | null> {
+  if (!bookingId) return null;
+  const { token, apiBase } = await getBusinessGiContext(businessId);
+  const res = await fetch(`${apiBase}/documents/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    // Newest first, one page is plenty: reconcile runs minutes after payment.
+    body: JSON.stringify({ pageSize: 50, page: 1, sort: 'creationDate', order: 'desc' }),
+  });
+  if (!res.ok) return null;
+  const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  const items = (body.items as Array<Record<string, unknown>> | undefined) ?? [];
+
+  const marker = bookingRemark(bookingId);
+  const hit = items.find((d) => String(d.remarks ?? '').trim() === marker && documentIsPaid(d));
+  if (!hit) return null;
+
+  return {
+    paid: true,
+    amount: Number(hit.amount ?? 0) || undefined,
+    invoiceUrl: giUrl(hit.url),
+    customRef: bookingId,
+    remarks: String(hit.remarks ?? ''),
+    raw: hit,
+  };
+}
+
+/**
+ * The remarks string written on every deposit document. Single source of truth —
+ * createPaymentForm callers and the reconcile matcher must not drift apart.
+ */
+export function bookingRemark(bookingId: string): string {
+  return `Booking ${bookingId}`;
+}
+
+/** GI document id for a reconciled payment, when the record carries one. */
+export function documentIdOf(raw: Record<string, unknown> | undefined): string {
+  return raw && typeof raw.id === 'string' ? raw.id : '';
 }

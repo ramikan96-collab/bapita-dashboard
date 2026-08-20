@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { bookingsForStaff } from "@/lib/availability";
 import { getGoogleBusyBlocks } from "@/lib/google-calendar";
+import { withoutExpiredHolds } from "@/lib/payment-holds";
 
 const DAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
@@ -11,6 +12,8 @@ interface BusinessHours { [key: string]: DayHours; }
 interface ExistingBookingRow {
   appointment_time: string;
   staff_id: string | null;
+  payment_status?: string | null;
+  created_at?: string | null;
   service: { duration: number } | { duration: number }[] | null;
 }
 
@@ -95,12 +98,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ slots: [] });
   }
 
-  const { data: existingBookings } = await supabase
+  const { data: existingBookingRows } = await supabase
     .from("bookings")
-    .select("appointment_time, staff_id, service:services(duration)")
+    .select("appointment_time, staff_id, payment_status, created_at, service:services(duration)")
     .eq("business_id", businessId)
     .eq("appointment_date", date)
     .in("status", ["confirmed", "pending"]) as { data: ExistingBookingRow[] | null };
+
+  // Unpaid deposit holds stop blocking the slot once their window lapses — the
+  // daily cron is far too slow to be the only thing freeing them.
+  const existingBookings = withoutExpiredHolds(existingBookingRows || []);
 
   const toBooked = (rows: ExistingBookingRow[]) =>
     rows.map((b) => ({

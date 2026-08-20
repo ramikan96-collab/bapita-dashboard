@@ -297,8 +297,29 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Money already collected online for this booking (Green Invoice deposit or
+  // full prepay). Staff MUST see this or they will charge the customer twice.
+  const [onlinePayment, setOnlinePayment] = useState<{ amount: number; invoice_url: string | null } | null>(null);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const settled = current.payment_status === "deposit_paid";
+    (async () => {
+      if (!settled) { if (!cancelled) setOnlinePayment(null); return; }
+      const { data } = await supabase
+        .from("transactions")
+        .select("amount, invoice_url")
+        .eq("booking_id", current.id)
+        .eq("status", "paid")
+        .maybeSingle();
+      if (!cancelled && data) {
+        setOnlinePayment({ amount: Number(data.amount) || 0, invoice_url: (data.invoice_url as string | null) ?? null });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [supabase, current.id, current.payment_status]);
 
 
   const [prevBooking, setPrevBooking] = useState<PrevBooking | null | "loading">(
@@ -598,15 +619,26 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
     const price = current.service?.price;
     const ps = current.payment_status;
 
+    const paidOnline = onlinePayment?.amount ?? 0;
+    const balance = price != null ? Math.max(0, Math.round((Number(price) - paidOnline) * 100) / 100) : 0;
+    const fullyPaidOnline = ps === "deposit_paid" && balance <= 0;
+
     const paymentLabel: Record<PaymentStatus, string> = {
       none: "Unpaid",
       cash: "Paid — Cash",
       transfer: "Paid — Bank Transfer",
       stripe: "Paid — Stripe",
-      pending_payment: "Awaiting deposit",
-      deposit_paid: "Deposit paid",
+      pending_payment: "Awaiting payment",
+      deposit_paid: fullyPaidOnline ? "Paid online — in full" : "Paid online — deposit",
       expired: "Payment expired",
     };
+
+    // pending/expired are not "settled": showing them in the paid-green would
+    // tell staff money arrived when it did not.
+    const labelColor =
+      ps === "none" || ps === "expired" ? "var(--color-danger)"
+        : ps === "pending_payment" ? "var(--color-amber)"
+        : STATUS_COLOR.completed;
 
     return (
       <div className="flex flex-col gap-3">
@@ -636,24 +668,40 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
             <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>
               Payment
             </span>
-            <span
-              className="text-[15px] font-bold"
-              style={{
-                color:
-                  ps === "none" ? "var(--color-danger)" : STATUS_COLOR.completed,
-              }}
-            >
+            <span className="text-[15px] font-bold" style={{ color: labelColor }}>
               {paymentLabel[ps]}
             </span>
           </div>
+          {ps === "deposit_paid" && onlinePayment && (
+            <div style={{ padding: "14px 18px", borderTop: "1px solid var(--color-cream-2)" }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>Paid online</span>
+                <span className="text-[15px] font-bold" style={{ color: STATUS_COLOR.completed }}>₪{paidOnline}</span>
+              </div>
+              <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
+                <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>
+                  {balance > 0 ? "Collect at the salon" : "Nothing left to collect"}
+                </span>
+                <span className="text-[15px] font-bold" style={{ color: balance > 0 ? "var(--color-dark)" : STATUS_COLOR.completed }}>
+                  {balance > 0 ? `₪${balance}` : "—"}
+                </span>
+              </div>
+              {onlinePayment.invoice_url && (
+                <a href={onlinePayment.invoice_url} target="_blank" rel="noopener noreferrer"
+                  className="text-[13px] font-semibold" style={{ color: "var(--color-amber)", display: "inline-block", marginTop: 10 }}>
+                  View invoice →
+                </a>
+              )}
+            </div>
+          )}
         </div>
-        {ps === "none" && (
+        {(ps === "none" || (ps === "deposit_paid" && balance > 0)) && (
           <button
             onClick={() => setShowCheckout(true)}
             className="w-full rounded-2xl text-[15px] font-bold"
             style={{ background: "rgba(232,146,10,0.12)", color: "var(--color-amber)", padding: "15px 0" }}
           >
-            Mark as paid →
+            {ps === "deposit_paid" ? `Collect ₪${balance} →` : "Mark as paid →"}
           </button>
         )}
       </div>

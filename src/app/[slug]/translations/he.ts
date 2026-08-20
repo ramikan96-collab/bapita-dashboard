@@ -21,6 +21,17 @@ export const he = {
     sunday: "ראשון", monday: "שני", tuesday: "שלישי",
     wednesday: "רביעי", thursday: "חמישי", friday: "שישי", saturday: "שבת",
   },
+  payment: {
+    depositBadge: (amount: string) => `מקדמה ${amount}`,
+    prepaidBadge: "תשלום אונליין",
+    dueNow: (amount: string) => `${amount} לתשלום עכשיו`,
+    balanceAtVenue: (amount: string) => `${amount} בעסק`,
+    payFull: (amount: string) => `תשלום ${amount} עכשיו לאישור התור`,
+    payDeposit: (amount: string, balance: string) => `מקדמה ${amount} עכשיו לאישור התור · ${balance} בעסק`,
+    redirectNote: "תועברו לעמוד תשלום מאובטח. התור מאושר ברגע שהתשלום עובר.",
+    payAndConfirm: (amount: string) => `לתשלום ${amount} ואישור`,
+    redirecting: "פותח תשלום…",
+  },
   overlay: { stepOf: (n: number, t: number) => `${n} מתוך ${t}` },
   steps: {
     service: { title: "בחר שירות" },

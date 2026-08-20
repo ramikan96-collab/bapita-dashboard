@@ -591,11 +591,15 @@ function ConnectedView({
   currentMonth,
   onPrevMonth,
   onNextMonth,
+  onRefund,
+  refunding,
 }: {
   transactions: Transaction[];
   currentMonth: Date;
   onPrevMonth: () => void;
   onNextMonth: () => void;
+  onRefund: (tx: Transaction) => void;
+  refunding: string | null;
 }) {
   const [activeTab, setActiveTab] = useState<"overview" | "invoices">("overview");
   const [txFilter, setTxFilter] = useState<TxStatusFilter>("all");
@@ -619,9 +623,9 @@ function ConnectedView({
   const avg = paid.length ? Math.round(revenue / paid.length) : 0;
 
   const kpis = [
-    { label: "Deposits collected", value: `₪${revenue.toLocaleString()}`, amber: true, big: true },
+    { label: "Collected online", value: `₪${revenue.toLocaleString()}`, amber: true, big: true },
     { label: "Transactions", value: String(paid.length), amber: false, big: false },
-    { label: "Avg deposit", value: `₪${avg.toLocaleString()}`, amber: false, big: false },
+    { label: "Avg payment", value: `₪${avg.toLocaleString()}`, amber: false, big: false },
     { label: "Payout", value: `₪${revenue.toLocaleString()}`, amber: true, big: false },
   ];
 
@@ -649,7 +653,7 @@ function ConnectedView({
     transition: "border-color 0.15s",
   };
 
-  const TABLE_COLS = "100px 70px 1fr 80px";
+  const TABLE_COLS = "100px 70px 1fr 80px 92px";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-cream)" }}>
@@ -977,9 +981,9 @@ function ConnectedView({
                     borderBottom: "1px solid var(--color-cream-2)",
                   }}
                 >
-                  {["STATUS", "DATE", "CLIENT / SERVICE", "AMOUNT"].map((col) => (
+                  {["STATUS", "DATE", "CLIENT / SERVICE", "AMOUNT", ""].map((col) => (
                     <span
-                      key={col}
+                      key={col || "actions"}
                       style={{
                         fontSize: 10,
                         fontWeight: 700,
@@ -1059,6 +1063,22 @@ function ConnectedView({
                       <span style={{ fontSize: 14, fontWeight: 700, color: "var(--color-dark)" }}>
                         ₪{tx.amount.toLocaleString()}
                       </span>
+                      {tx.status === "paid" ? (
+                        <button
+                          onClick={() => onRefund(tx)}
+                          disabled={refunding === tx.id}
+                          style={{
+                            fontSize: 12, fontWeight: 700, padding: "6px 10px", borderRadius: 8,
+                            border: "1px solid var(--color-cream-2)", background: "transparent",
+                            color: "var(--color-muted)", cursor: refunding === tx.id ? "default" : "pointer",
+                            whiteSpace: "nowrap" as const,
+                          }}
+                        >
+                          {refunding === tx.id ? "…" : "Refunded"}
+                        </button>
+                      ) : (
+                        <span />
+                      )}
                     </div>
                   );
                 })}
@@ -1112,6 +1132,7 @@ export default function FinancialsPage() {
   const supabase = createClient();
   const [paymentsActive, setPaymentsActive] = useState<boolean | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [refunding, setRefunding] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -1163,6 +1184,25 @@ export default function FinancialsPage() {
     })();
   }, [business?.id, paymentsActive, currentMonth.getFullYear(), currentMonth.getMonth()]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Refunds happen in the owner's own Green Invoice account (pass-through
+  // money). This only records the outcome so the numbers stop counting it.
+  async function markRefunded(tx: Transaction) {
+    if (!window.confirm(`Mark ₪${tx.amount} for ${tx.client_name || "this client"} as refunded? Issue the actual refund in Green Invoice first.`)) return;
+    setRefunding(tx.id);
+    try {
+      const res = await fetch("/api/payments/transactions/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transactionId: tx.id }),
+      });
+      if (res.ok) {
+        setTransactions((rows) => rows.map((r) => (r.id === tx.id ? { ...r, status: "refunded" } : r)));
+      }
+    } finally {
+      setRefunding(null);
+    }
+  }
+
   if (bizLoading || loading) return <FinancialsSkeleton />;
   if (!paymentsActive) return <NotConnectedView businessId={business?.id ?? ""} businessName={business?.name ?? ""} />;
 
@@ -1172,6 +1212,8 @@ export default function FinancialsPage() {
       currentMonth={currentMonth}
       onPrevMonth={() => setCurrentMonth((m) => subMonths(m, 1))}
       onNextMonth={() => setCurrentMonth((m) => addMonths(m, 1))}
+      onRefund={markRefunded}
+      refunding={refunding}
     />
   );
 }

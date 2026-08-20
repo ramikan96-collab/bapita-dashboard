@@ -3,6 +3,7 @@
 import { BookingSummaryCard } from "../../components/BookingSummaryCard";
 import type { Service } from "@/types";
 import type { ContactInfo } from "../../hooks/useBookingFlow";
+import { formatIls, type ResolvedPayment } from "@/lib/payments";
 
 interface ContactT {
   title: string;
@@ -14,6 +15,18 @@ interface ContactT {
   emailPlaceholder: string;
   confirm: string;
   confirming: string;
+}
+
+export interface PaymentT {
+  dueNow: (amount: string) => string;
+  balanceAtVenue: (amount: string) => string;
+  payFull: (amount: string) => string;
+  payDeposit: (amount: string, balance: string) => string;
+  redirectNote: string;
+  payAndConfirm: (amount: string) => string;
+  redirecting: string;
+  depositBadge: (amount: string) => string;
+  prepaidBadge: string;
 }
 
 interface Props {
@@ -29,9 +42,18 @@ interface Props {
   darkColor: string;
   bgColor: string;
   t: ContactT;
+  /** Null when this service takes no online payment. */
+  payment?: ResolvedPayment | null;
+  payT: PaymentT;
 }
 
-export function ContactStep({ service, date, time, contact, onChange, onSubmit, submitting, error, accentColor, darkColor, bgColor, t }: Props) {
+export function ContactStep({ service, date, time, contact, onChange, onSubmit, submitting, error, accentColor, darkColor, bgColor, t, payment, payT }: Props) {
+  const paying = !!payment && payment.mode !== "none";
+  const dueLabel = paying
+    ? (payment!.mode === "full"
+        ? payT.payFull(formatIls(payment!.amountDue))
+        : payT.payDeposit(formatIls(payment!.amountDue), formatIls(payment!.balanceDue)))
+    : "";
   const canSubmit  = !!contact.name.trim() && contact.phone.trim().length >= 7 && !submitting;
   const isDark     = /^#[01]/.test(bgColor);
   const borderClr  = isDark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.12)";
@@ -53,6 +75,18 @@ export function ContactStep({ service, date, time, contact, onChange, onSubmit, 
         date={date} time={time}
         accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
       />
+
+      {paying && (
+        <div style={{
+          borderRadius:12, padding:"12px 14px",
+          background:`${accentColor}14`, border:`1.5px solid ${accentColor}40`,
+        }}>
+          <div style={{ fontSize:14, fontWeight:800, color:darkColor }}>{dueLabel}</div>
+          <div style={{ fontSize:12, color:darkColor, opacity:0.6, marginTop:4, lineHeight:1.5 }}>
+            {payT.redirectNote}
+          </div>
+        </div>
+      )}
 
       <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
         {FIELDS.map(({ label, key, type, placeholder }) => {
@@ -104,7 +138,9 @@ export function ContactStep({ service, date, time, contact, onChange, onSubmit, 
           transition:"all 0.2s ease", fontFamily:"inherit",
         }}
       >
-        {submitting ? t.confirming : t.confirm}
+        {submitting
+          ? (paying ? payT.redirecting : t.confirming)
+          : (paying ? payT.payAndConfirm(formatIls(payment!.amountDue)) : t.confirm)}
       </button>
     </div>
   );

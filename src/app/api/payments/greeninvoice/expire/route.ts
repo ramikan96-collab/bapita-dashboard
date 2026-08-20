@@ -20,9 +20,13 @@ function authorized(req: NextRequest): boolean {
 async function run() {
   const supabase = createServiceClient();
   const cutoff = new Date(Date.now() - EXPIRE_MINUTES * 60 * 1000).toISOString();
+  // Delete rather than cancel: `bookings_slot_unique` ignores status, so a
+  // cancelled hold would keep its slot unbookable forever. Availability reads
+  // already ignore expired holds (lib/payment-holds.ts), so this cron is only a
+  // janitor — correctness does not depend on how often it runs.
   const { data, error } = await supabase
     .from("bookings")
-    .update({ status: "cancelled", payment_status: "expired" })
+    .delete()
     .eq("payment_status", "pending_payment")
     .lt("created_at", cutoff)
     .select("id");

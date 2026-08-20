@@ -11,6 +11,7 @@ import { ContactStep }    from "./steps/ContactStep";
 import { SuccessScreen }  from "./steps/SuccessScreen";
 import { translations, type Lang } from "../translations";
 import { track } from "@/lib/analytics/track";
+import { resolvePayment, formatIls } from "@/lib/payments";
 
 interface Props {
   business: Business;
@@ -37,6 +38,10 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
   const localizedServices = services.map(localize);
   const localizedInitial = initialService ? localize(initialService) : null;
 
+  // What each service costs online. Same resolver the booking API uses, so the
+  // amount shown here is the amount actually charged.
+  const paymentFor = (s: Service) => resolvePayment(s, business, !!business.payments_active);
+
   const staffMembers = business.staff_members ?? [];
   const staffChoice = !!business.allow_staff_choice && staffMembers.length > 0;
 
@@ -48,6 +53,8 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
     state.service?.id ?? null,
     state.staffId
   );
+
+  const selectedPayment = state.service ? paymentFor(state.service) : null;
 
   // Staff eligible for the chosen service (empty staff_ids = anyone).
   const eligibleStaff = state.service?.staff_ids?.length
@@ -199,6 +206,22 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: darkColor }}>{s.name}</div>
                     <div style={{ fontSize: 13, color: darkColor, opacity: 0.5, marginTop: 2 }}>{s.duration} {t.min}</div>
+                    {(() => {
+                      // Tell the customer BEFORE they pick that this service is
+                      // paid online — never surprise them with a payment page.
+                      const pay = paymentFor(s);
+                      if (pay.mode === "none") return null;
+                      const label = pay.mode === "full"
+                        ? t.payment.prepaidBadge
+                        : t.payment.depositBadge(formatIls(pay.amountDue));
+                      return (
+                        <div style={{
+                          display: "inline-block", marginTop: 6, padding: "3px 8px", borderRadius: 6,
+                          background: `${accentColor}1A`, color: accentColor,
+                          fontSize: 11, fontWeight: 800, letterSpacing: "0.02em",
+                        }}>{label}</div>
+                      );
+                    })()}
                   </div>
                   <div style={{ fontSize: 17, fontWeight: 900, color: accentColor }}>₪{s.price}</div>
                 </button>
@@ -246,6 +269,8 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
               submitting={state.submitting} error={state.error}
               accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
               t={t.steps.contact}
+              payment={selectedPayment}
+              payT={t.payment}
             />
           )}
 

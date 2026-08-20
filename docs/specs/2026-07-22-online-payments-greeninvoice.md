@@ -1,6 +1,6 @@
 # Online Deposits via Green Invoice — Build Doc & Todo
 
-**Status:** decisions locked, ready to build. This is the running tracker for the build chat — check off TODO items as they land, add sandbox findings under "Open items."
+**Status:** built and shipped through Phase 3.5 (2026-08-20). Everything works end to end against the Green Invoice sandbox; the ONE remaining unknown is the hosted payment page itself, which needs a clearing terminal (סליקה) on a real account. Phase 4 (no-show token charge) is still not built.
 
 ---
 
@@ -86,7 +86,7 @@ Owner-facing (Settings → Payments); admin (Rami) can also do it from the admin
 
 ### Phase 0 — verify + schema
 - [x] Sandbox: confirmed GI endpoints live (2026-07-22). See "Sandbox findings" below. Endpoints written into `src/lib/greeninvoice.ts` header; `getGreenInvoiceToken()` implemented.
-- [x] Migration `docs/migrations/2026-07-22-payments.sql` written (NOT yet applied): `transactions`, `payment_credentials`, per-service deposit fields, business deposit defaults, `bookings.payment_status` new values, `addons` `payments` type. RLS: owner-only creds. Billing-column leak fix included as a commented review-before-apply block (risky prod RLS change, kept out of the additive txn — separate `payment_credentials` table already keeps secrets off the leaky row).
+- [x] Migration `docs/migrations/2026-07-22-payments.sql` written and **APPLIED to prod** (verified 2026-08-20: `transactions`, `payment_credentials`, the deposit columns and the widened `payment_status` check all exist): `transactions`, `payment_credentials`, per-service deposit fields, business deposit defaults, `bookings.payment_status` new values, `addons` `payments` type. RLS: owner-only creds. Billing-column leak fix included as a commented review-before-apply block (risky prod RLS change, kept out of the additive txn — separate `payment_credentials` table already keeps secrets off the leaky row).
 
 ### Phase 1 — owner connect + config ✅
 - [x] Settings → Payments UI: enter GI API ID+Secret → validate via token exchange → show Connected. (`settings/_components/PaymentsSection.tsx`, `api/payments/greeninvoice/connect`)
@@ -104,8 +104,55 @@ Owner-facing (Settings → Payments); admin (Rami) can also do it from the admin
 - [x] Financials page → real `transactions` data (dropped `revenue*0.019` stub; gate fixed to `addon_type='payments'`).
 - [x] Admin business view: Payments-connected + deposit config (read-only card in `BusinessForm.tsx`).
 
+### Phase 3.5 — full prepay, disclosure + reconcile (2026-08-20) ✅
+- [x] **Payment mode per service: none / deposit / full.** No new column — "full" is a
+      100% deposit, resolved by `src/lib/payments.ts` (`resolvePayment`), the single
+      source of truth shared by the booking API, the public page, Settings, the admin
+      board and the webhook. Settings shows a 3-way dropdown per service with a live
+      "customer pays X online, Y at the business" preview.
+- [x] **Customer disclosure before paying** — badge on each service in the booking
+      overlay ("₪50 deposit" / "Pay online") and a payment notice + "Pay ₪50 & Confirm"
+      button on the contact step. EN + HE. Previously the customer was redirected to a
+      payment page with no warning at all.
+- [x] **`/pay/success` tells the truth** — polls `api/public/payment-status` until the
+      booking is really settled instead of claiming success on arrival; bilingual, with
+      a back-to-business link. `/pay/cancel` likewise.
+- [x] **Reconcile safety net** — `findPaidDocumentForBooking` matches the paid GI
+      document by its `Booking <uuid>` remarks, so a customer who paid is confirmed even
+      if the notifyUrl callback never arrives. Throttled to one GI call per booking per 4s.
+- [x] **Expired holds are DELETED, not cancelled.** `bookings_slot_unique` is
+      (business_id, date, time) with no status predicate, so a cancelled hold locked its
+      slot forever. Availability reads also ignore expired holds, so the daily-cron
+      limitation no longer affects correctness.
+- [x] Abandoned/expired attempts no longer count toward the 2-per-phone booking limit.
+- [x] Staff see money: BookingDrawer shows "Paid online ₪X", the balance to collect and
+      the invoice link, so nobody charges a prepaid customer twice.
+- [x] Refunds: `POST /api/payments/transactions/refund` (owner-scoped) marks a
+      transaction refunded and clears the booking's payment flag; button in Financials.
+- [x] **"Test payment setup"** in Settings → Payments (`api/payments/greeninvoice/diagnose`)
+      reports the real GI answer: keys rejected, no clearing terminal (2600), wrong doc
+      type (2403), or ready.
+- [x] Doc-type retry: 320 → 400 on errorCode 2403 (עוסק פטור cannot issue 320).
+
 ### Phase 4 — no-show protection (LATER — not built)
 - [ ] Save card token at booking (with consent) → charge on no-show via GI token charge (`POST /payments/tokens/{id}/charge`). Deferred: needs a live clearing terminal to test + explicit consent UX. Endpoints already documented in `src/lib/greeninvoice.ts`.
+
+## Sandbox findings (2026-08-20 re-probe, verified live)
+- **`url` is an object**, never a bare string: `{origin, he}`. Read via `giUrl()`.
+- **`/webhooks` does not exist** on this API (404 on GET and POST). There is no
+  subscription to register — the per-form `notifyUrl` IS the callback. The old note
+  below claiming a webhook endpoint was wrong.
+- **`/documents/payments/search` only returns cleared-terminal transactions.** A
+  document's own `payment[]` rows never appear there, so `verifyPayment` falls back to
+  `GET /documents/{id}` and decides from `amountOpened` + the payment array.
+- **Documents carry no `custom` field** — only the callback echoes it. Binding therefore
+  also accepts an exact `remarks` match ("Booking <uuid>").
+- **Doc type depends on business type**: this sandbox account (type 3) rejects 320 with
+  errorCode 2403 and accepts 400. `createPaymentForm` retries with the other type.
+- **סליקה still not enabled** on the sandbox account: `/payments/form` answers 2600 for
+  every doc type. The hosted page itself remains the one untested hop.
+- E2E harness (15 checks: settle, idempotency, underpayment, cross-booking replay,
+  forged id, reconcile, hold expiry, cleanup) passes against sandbox + a local build.
 
 ## Sandbox findings (2026-07-22, verified live)
 - **Auth:** `POST /account/token {id,secret}` → `{token, expires}` (unix, ~30 min JWT). Classic GI auth — the owner Developer-Tools keys use this, not the Morning OAuth path the old Airbnb Apps Script used. Sandbox base `https://sandbox.d.greeninvoice.co.il/api/v1`; prod host rejects the sandbox key (401, as expected).

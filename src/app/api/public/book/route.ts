@@ -4,10 +4,15 @@ import { bookingsForStaff } from "@/lib/availability";
 import type { BusinessHours } from "@/types";
 import nodemailer from "nodemailer";
 import { pushBookingCreated } from "@/lib/google-calendar";
+import { resolvePayment, NO_PAYMENT } from "@/lib/payments";
+import { withoutExpiredHolds, releaseExpiredHolds } from "@/lib/payment-holds";
+import { loadBusinessPaymentsConfig } from "@/lib/payments-server";
 
 interface ExistingBookingRow {
   appointment_time: string;
   staff_id: string | null;
+  payment_status?: string | null;
+  created_at?: string | null;
   service: { duration: number } | { duration: number }[] | null;
 }
 
@@ -135,7 +140,11 @@ export async function POST(req: NextRequest) {
     .select("*", { count: "exact", head: true })
     .eq("business_id", businessId)
     .eq("customer_phone", customerPhone)
-    .gte("created_at", twoHoursAgo);
+    .gte("created_at", twoHoursAgo)
+    // Abandoned or expired deposit attempts must not count against the customer:
+    // otherwise two failed card attempts lock them out of booking for 2 hours.
+    .not("payment_status", "in", '("expired")')
+    .neq("status", "cancelled");
   if ((recentCount ?? 0) >= 2) {
     return NextResponse.json(
       { error: "You already have a booking. Contact the business to make changes." },
@@ -159,15 +168,20 @@ export async function POST(req: NextRequest) {
   const svcPrice = Number(svc.price) || 0;
   const svcStaffIds = (svc.staff_ids as string[] | null) || [];
 
+  // Free any dead deposit holds on this date first, so a slot abandoned at the
+  // payment page is bookable again immediately (and the unique double-booking
+  // index cannot reject this booking over a stale row).
+  await releaseExpiredHolds(supabase, businessId, date);
+
   // Load same-day bookings for conflict checking + staff resolution.
   const { data: existingBookings } = await supabase
     .from("bookings")
-    .select("appointment_time, staff_id, service:services(duration)")
+    .select("appointment_time, staff_id, payment_status, created_at, service:services(duration)")
     .eq("business_id", businessId)
     .eq("appointment_date", date)
     .in("status", ["confirmed", "pending"]) as { data: ExistingBookingRow[] | null };
 
-  const bookedRows = existingBookings || [];
+  const bookedRows = withoutExpiredHolds(existingBookings || []);
   const newStart = svcDuration ? toMins(time) : 0;
   const newEnd = newStart + svcDuration;
   const overlaps = (rows: ExistingBookingRow[]) => rows.some((b) => {
@@ -198,7 +212,7 @@ export async function POST(req: NextRequest) {
   // ON  → conflicts are scoped per staff, so two different staff can be booked concurrently.
   const { data: bizChoice } = await supabase
     .from("businesses")
-    .select("allow_staff_choice, business_hours, name, deposit_enabled, deposit_default_type, deposit_default_value")
+    .select("allow_staff_choice, business_hours, name, slug, deposit_enabled, deposit_default_type, deposit_default_value")
     .eq("id", businessId)
     .single();
   const staffChoice = !!bizChoice?.allow_staff_choice;
@@ -273,25 +287,15 @@ export async function POST(req: NextRequest) {
   // business enabled deposits, AND payments are connected (addon active). The
   // amount is computed from the server-fetched svcPrice using the per-service
   // override, else the business default.
-  let depositAmount = 0;
-  let depositApplies = false;
+  let payment = NO_PAYMENT;
   if (svc.deposit_required && bizChoice?.deposit_enabled) {
-    const { data: addon } = await supabase
-      .from("addons")
-      .select("active")
-      .eq("business_id", businessId)
-      .eq("addon_type", "payments")
-      .maybeSingle();
-    if (addon?.active) {
-      const type = (svc.deposit_type as string | null) || (bizChoice.deposit_default_type as string | null) || "percent";
-      const rawValue = svc.deposit_value != null
-        ? Number(svc.deposit_value)
-        : Number(bizChoice.deposit_default_value ?? 0);
-      const amount = type === "percent" ? (svcPrice * rawValue) / 100 : rawValue;
-      depositAmount = Math.round((Number(amount) || 0) * 100) / 100;
-      depositApplies = depositAmount > 0;
-    }
+    // Same "active" definition the public page uses (addon approved AND Green
+    // Invoice connected), so what the customer was shown is what we charge.
+    const cfg = await loadBusinessPaymentsConfig(businessId);
+    payment = resolvePayment({ ...svc, price: svcPrice }, bizChoice, cfg.active);
   }
+  const depositAmount = payment.amountDue;
+  const depositApplies = payment.mode !== "none";
 
   // ─── Deposit path: create a pending_payment booking + Green Invoice form ──────
   if (depositApplies) {
@@ -319,21 +323,30 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const { createPaymentForm } = await import("@/lib/greeninvoice");
+      const { createPaymentForm, bookingRemark } = await import("@/lib/greeninvoice");
       const origin = "https://book.bapita.com";
+      const bizSlug = (bizChoice?.slug as string | null) || "";
       const { url } = await createPaymentForm(businessId, {
         amount: depositAmount,
         description: `${svcName} — ${bizName}`,
         lang: lang === "he" ? "he" : "en",
         clientName: customerName,
         clientEmails: customerEmail ? [customerEmail] : [],
-        remarks: `Booking ${pendingBooking.id}`,
-        successUrl: `${origin}/pay/success?b=${pendingBooking.id}`,
-        failureUrl: `${origin}/pay/cancel?b=${pendingBooking.id}`,
+        remarks: bookingRemark(pendingBooking.id),
+        successUrl: `${origin}/pay/success?b=${pendingBooking.id}&lang=${lang === "he" ? "he" : "en"}${bizSlug ? `&s=${bizSlug}` : ""}`,
+        failureUrl: `${origin}/pay/cancel?b=${pendingBooking.id}&lang=${lang === "he" ? "he" : "en"}${bizSlug ? `&s=${bizSlug}` : ""}`,
         notifyUrl: `${origin}/api/payments/greeninvoice/webhook`,
         custom: pendingBooking.id,
       });
-      return NextResponse.json({ ok: true, requiresPayment: true, redirectUrl: url, bookingId: pendingBooking.id });
+      return NextResponse.json({
+        ok: true,
+        requiresPayment: true,
+        redirectUrl: url,
+        bookingId: pendingBooking.id,
+        paymentMode: payment.mode,
+        amountDue: payment.amountDue,
+        balanceDue: payment.balanceDue,
+      });
     } catch (e) {
       // Roll the pending hold back so the slot is not dead-held on a failed form.
       await supabase.from("bookings").delete().eq("id", pendingBooking.id);

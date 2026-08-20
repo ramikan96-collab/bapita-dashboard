@@ -1,18 +1,75 @@
-// Return page after a successful Green Invoice deposit payment.
-// The booking is confirmed asynchronously by the webhook; this page just
-// reassures the customer. No secrets, no data fetch required.
-export const dynamic = "force-static";
+"use client";
+
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { PayCard, BackLink, usePaymentStatus, type PayLang } from "../PayResult";
+
+// Return page after a Green Invoice payment.
+//
+// It does NOT claim the booking is confirmed on arrival: the booking is settled
+// server-side by the callback, so this page polls until it really is (and that
+// same endpoint reconciles with Green Invoice, which rescues a paid booking when
+// the callback never lands).
+
+const COPY = {
+  en: {
+    waitTitle: "Confirming your payment…",
+    waitBody: "Payment received. We're confirming your booking with the payment provider — this takes a few seconds.",
+    okTitle: "Payment received",
+    okBody: "Your booking is confirmed and an invoice has been sent to your email. You can close this window.",
+    slowTitle: "Payment received",
+    slowBody: "Your payment went through. Confirmation is taking longer than usual — the business will see your booking, and your invoice will arrive by email.",
+    expiredTitle: "Booking not confirmed",
+    expiredBody: "We could not confirm a payment for this booking, so the time slot was released. If you were charged, contact the business and they will sort it out.",
+    back: "Back to booking page",
+  },
+  he: {
+    waitTitle: "מאשרים את התשלום…",
+    waitBody: "התשלום התקבל. אנחנו מאשרים את ההזמנה מול חברת הסליקה — זה לוקח כמה שניות.",
+    okTitle: "התשלום התקבל",
+    okBody: "ההזמנה אושרה וחשבונית נשלחה למייל שלך. אפשר לסגור את החלון.",
+    slowTitle: "התשלום התקבל",
+    slowBody: "התשלום עבר. האישור לוקח יותר זמן מהרגיל — העסק יראה את ההזמנה שלך והחשבונית תגיע במייל.",
+    expiredTitle: "ההזמנה לא אושרה",
+    expiredBody: "לא הצלחנו לאתר תשלום להזמנה הזו והתור שוחרר. אם חויבת, פנה לעסק והם יטפלו בזה.",
+    back: "חזרה לעמוד העסק",
+  },
+} as const;
+
+function SuccessInner() {
+  const params = useSearchParams();
+  const bookingId = params.get("b") || "";
+  const slug = params.get("s") || "";
+  const lang: PayLang = params.get("lang") === "he" ? "he" : "en";
+  const t = COPY[lang];
+
+  const { status, timedOut } = usePaymentStatus(bookingId);
+
+  // No booking reference (someone opened the URL directly) — show the plain
+  // acknowledgement rather than a misleading error.
+  if (!bookingId) {
+    return <PayCard lang={lang} icon="✅" title={t.okTitle} body={t.okBody}><BackLink slug={slug} label={t.back} /></PayCard>;
+  }
+
+  if (status === "paid" || status === "confirmed") {
+    return <PayCard lang={lang} icon="✅" title={t.okTitle} body={t.okBody}><BackLink slug={slug} label={t.back} /></PayCard>;
+  }
+
+  if (status === "expired") {
+    return <PayCard lang={lang} icon="⚠️" title={t.expiredTitle} body={t.expiredBody}><BackLink slug={slug} label={t.back} /></PayCard>;
+  }
+
+  if (timedOut) {
+    return <PayCard lang={lang} icon="✅" title={t.slowTitle} body={t.slowBody}><BackLink slug={slug} label={t.back} /></PayCard>;
+  }
+
+  return <PayCard lang={lang} icon="⏳" title={t.waitTitle} body={t.waitBody} />;
+}
 
 export default function PaySuccessPage() {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FAF5EC", padding: 24, direction: "rtl" }}>
-      <div style={{ maxWidth: 420, width: "100%", background: "#fff", borderRadius: 20, boxShadow: "0 2px 16px rgba(30,26,20,0.08)", padding: 32, textAlign: "center" }}>
-        <div style={{ fontSize: 44, marginBottom: 8 }}>✅</div>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1E1A14", margin: "0 0 8px" }}>התשלום התקבל</h1>
-        <p style={{ fontSize: 15, color: "#6B6257", margin: 0, lineHeight: 1.6 }}>
-          המקדמה שולמה וההזמנה שלך אושרה. חשבונית נשלחה למייל שלך. אפשר לסגור את החלון הזה.
-        </p>
-      </div>
-    </div>
+    <Suspense fallback={<PayCard lang="en" icon="⏳" title={COPY.en.waitTitle} body={COPY.en.waitBody} />}>
+      <SuccessInner />
+    </Suspense>
   );
 }

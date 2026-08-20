@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { resolvePayment, formatIls } from "@/lib/payments";
 import { createClient } from "@/lib/supabase/client";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
 import { findPlaceId } from "@/app/actions/find-place-id";
@@ -1567,6 +1568,39 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     <> · Default {paymentsInfo.type === "fixed" ? `₪${paymentsInfo.value}` : `${paymentsInfo.value}%`}</>
                   )}
                 </div>
+                {/* Which services actually charge, and how much — the config that
+                    decides what a customer is asked to pay. */}
+                {paymentsInfo?.enabled && (() => {
+                  const charging = services
+                    .map((sv) => ({
+                      sv,
+                      pay: resolvePayment(sv, {
+                        deposit_enabled: paymentsInfo.enabled,
+                        deposit_default_type: paymentsInfo.type,
+                        deposit_default_value: paymentsInfo.value,
+                      }, !!paymentsInfo.connected),
+                    }))
+                    .filter((r) => r.pay.mode !== "none");
+                  if (charging.length === 0) {
+                    return (
+                      <div style={{ fontSize:13, color:"var(--color-muted)", marginTop:6 }}>
+                        No service is set to charge online yet.
+                      </div>
+                    );
+                  }
+                  return (
+                    <div style={{ fontSize:13, color:"var(--color-muted)", lineHeight:1.7, marginTop:6 }}>
+                      {charging.map(({ sv, pay }) => (
+                        <div key={sv.id}>
+                          {sv.name}: <strong style={{ color:"var(--color-dark)" }}>
+                            {pay.mode === "full" ? `full ${formatIls(pay.amountDue)}` : `${formatIls(pay.amountDue)} deposit`}
+                          </strong>
+                          {pay.mode === "deposit" && <> · {formatIls(pay.balanceDue)} at the salon</>}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </SectionCard>
             </div>
           )}

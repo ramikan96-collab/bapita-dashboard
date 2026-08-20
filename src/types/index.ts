@@ -88,6 +88,9 @@ export interface Business {
   status: "draft" | "live";
   custom_domain?: string | null;
   custom_domain_verified?: boolean | null;
+  // Computed server-side on the public page (payments addon approved AND Green
+  // Invoice connected). Not a DB column — see lib/payments-server.ts.
+  payments_active?: boolean;
   business_hours?: BusinessHours;
   // booking page fields
   template_style?: string | null;

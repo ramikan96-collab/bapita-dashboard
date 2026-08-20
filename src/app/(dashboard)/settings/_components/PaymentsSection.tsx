@@ -6,6 +6,7 @@ import { useBusiness } from "@/hooks/useBusiness";
 import { useLang } from "@/i18n";
 import { useToast } from "@/components/Toast";
 import type { Service, DepositType } from "@/types";
+import { resolvePayment, formatIls, type PaymentMode } from "@/lib/payments";
 
 type BusinessT = NonNullable<ReturnType<typeof useBusiness>["business"]>;
 
@@ -145,6 +146,28 @@ export function PaymentsSection({
     }
   }
 
+  // "Test payment setup" — asks Green Invoice directly whether this account can
+  // actually take money (keys valid + סליקה active), instead of finding out when
+  // a customer fails to pay.
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  async function testSetup() {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/payments/greeninvoice/diagnose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId: business.id }),
+      });
+      const body = await res.json().catch(() => ({}));
+      setTestResult({ ok: !!body.ok, message: body.message || body.error || t("Could not run the test.") });
+    } finally {
+      setTesting(false);
+    }
+  }
+
   async function disconnect() {
     if (!window.confirm(t("Disconnect Green Invoice? Customers will no longer be able to pay deposits."))) return;
     setConnecting(true);
@@ -190,10 +213,30 @@ export function PaymentsSection({
   }, [supabase, business.id]);
   useEffect(() => { loadServices(); }, [loadServices]);
 
-  async function toggleServiceDeposit(s: Service) {
-    const next = !s.deposit_required;
-    setServices((arr) => arr.map((x) => (x.id === s.id ? { ...x, deposit_required: next } : x)));
-    const { error } = await supabase.from("services").update({ deposit_required: next }).eq("id", s.id);
+  // The three modes an owner picks per service. There is no payment_mode column:
+  // "full" is expressed as a 100% deposit, which every downstream consumer already
+  // resolves to mode "full" (see lib/payments.ts).
+  function modeOf(s: Service): PaymentMode {
+    if (!s.deposit_required) return "none";
+    const type = (s.deposit_type as DepositType) || depType;
+    const value = s.deposit_value != null ? Number(s.deposit_value) : depValue;
+    if (type === "percent" && value >= 100) return "full";
+    if (type === "fixed" && Number(s.price) > 0 && value >= Number(s.price)) return "full";
+    return "deposit";
+  }
+
+  async function setServiceMode(s: Service, mode: PaymentMode) {
+    const patch: Partial<Service> =
+      mode === "none"
+        ? { deposit_required: false }
+        : mode === "full"
+          ? { deposit_required: true, deposit_type: "percent", deposit_value: 100 }
+          // Back to a partial deposit: clear a leftover 100% so it does not read
+          // as "full" and fall back to the business default instead.
+          : { deposit_required: true, deposit_type: null, deposit_value: null };
+
+    setServices((arr) => arr.map((x) => (x.id === s.id ? { ...x, ...patch } : x)));
+    const { error } = await supabase.from("services").update(patch).eq("id", s.id);
     if (error) { showToast(t("Failed to save."), "error"); loadServices(); }
   }
 
@@ -261,6 +304,18 @@ export function PaymentsSection({
               <p style={{ fontSize: 12, color: "var(--color-muted)", margin: 0 }}>
                 {t("API ID")}: <code style={{ fontSize: 12 }}>{apiId}</code>
               </p>
+              <button onClick={testSetup} disabled={testing} style={btn("var(--color-dark)", "var(--color-surface)")}>
+                {testing ? t("Testing…") : t("Test payment setup")}
+              </button>
+              {testResult && (
+                <div style={{
+                  fontSize: 13, lineHeight: 1.5, padding: "10px 12px", borderRadius: 10,
+                  background: testResult.ok ? "rgba(34,197,94,0.10)" : "rgba(245,158,11,0.12)",
+                  color: "var(--color-dark)",
+                }}>
+                  {testResult.ok ? "✓ " : "⚠ "}{testResult.message}
+                </div>
+              )}
               <button onClick={disconnect} disabled={connecting}
                 style={btn("transparent", "#991B1B")}>
                 {connecting ? "…" : t("Disconnect")}
@@ -310,6 +365,16 @@ export function PaymentsSection({
         </div>
       </div>
 
+      {/* Nothing is charged unless Green Invoice is connected — say so plainly
+          rather than letting an owner think deposits are live when they are not. */}
+      {depEnabled && !connected && (
+        <div style={{ ...card, borderColor: "#F59E0B" }}>
+          <div style={{ padding: "14px 20px", fontSize: 13, color: "var(--color-dark)", lineHeight: 1.6 }}>
+            {t("Deposits are configured but Green Invoice is not connected yet, so customers are booking without paying. Connect your account above to start collecting.")}
+          </div>
+        </div>
+      )}
+
       {/* Per-service */}
       <div style={card}>
         <div style={cardHead}><h3 style={headText}>{t("Per-service deposit")}</h3></div>
@@ -319,13 +384,30 @@ export function PaymentsSection({
           )}
           {services.map((s) => {
             const effType = (s.deposit_type as DepositType) || depType;
+            const mode = modeOf(s);
+            // Exactly what the customer will be asked to pay for this service.
+            const preview = resolvePayment(
+              s,
+              { deposit_enabled: depEnabled, deposit_default_type: depType, deposit_default_value: depValue },
+              connected && depEnabled,
+            );
             return (
               <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12, borderBottom: "1px solid var(--color-cream-2)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>{s.name}</div>
-                  <Toggle on={!!s.deposit_required} onChange={() => toggleServiceDeposit(s)} />
+                  <select
+                    value={mode}
+                    onChange={(e) => setServiceMode(s, e.target.value as PaymentMode)}
+                    aria-label={t("Online payment")}
+                    style={{ ...input, width: 170, height: 38 }}
+                  >
+                    <option value="none">{t("No online payment")}</option>
+                    <option value="deposit">{t("Deposit")}</option>
+                    <option value="full">{t("Full price upfront")}</option>
+                  </select>
                 </div>
-                {s.deposit_required && (
+
+                {mode === "deposit" && (
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <select value={s.deposit_type ?? ""} onChange={(e) => setServiceOverride(s, (e.target.value || null) as DepositType | null, s.deposit_value ?? null)}
                       style={{ ...input, width: 150, height: 38 }}>
@@ -338,6 +420,14 @@ export function PaymentsSection({
                       onChange={(e) => setServiceOverride(s, s.deposit_type ?? null, e.target.value === "" ? null : Number(e.target.value))}
                       placeholder={`${t("Default")} (${unit(effType)})`}
                       style={{ ...input, height: 38 }} />
+                  </div>
+                )}
+
+                {preview.mode !== "none" && (
+                  <div style={{ fontSize: 12, color: "var(--color-muted)" }}>
+                    {preview.mode === "full"
+                      ? `${t("Customer pays")} ${formatIls(preview.amountDue)} ${t("online — nothing left to pay at the business")}`
+                      : `${t("Customer pays")} ${formatIls(preview.amountDue)} ${t("online")} · ${formatIls(preview.balanceDue)} ${t("at the business")}`}
                   </div>
                 )}
               </div>

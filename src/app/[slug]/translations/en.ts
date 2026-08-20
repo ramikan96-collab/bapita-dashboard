@@ -21,6 +21,17 @@ export const en = {
     sunday: "Sunday", monday: "Monday", tuesday: "Tuesday",
     wednesday: "Wednesday", thursday: "Thursday", friday: "Friday", saturday: "Saturday",
   },
+  payment: {
+    depositBadge: (amount: string) => `${amount} deposit`,
+    prepaidBadge: "Pay online",
+    dueNow: (amount: string) => `${amount} due now`,
+    balanceAtVenue: (amount: string) => `${amount} at the business`,
+    payFull: (amount: string) => `Pay ${amount} now to confirm`,
+    payDeposit: (amount: string, balance: string) => `Pay a ${amount} deposit now to confirm · ${balance} at the business`,
+    redirectNote: "You'll be taken to a secure payment page. Your booking is confirmed once the payment goes through.",
+    payAndConfirm: (amount: string) => `Pay ${amount} & Confirm`,
+    redirecting: "Opening payment…",
+  },
   overlay: { stepOf: (n: number, t: number) => `${n} of ${t}` },
   steps: {
     service: { title: "Choose a service" },

@@ -1,3 +1,4 @@
+import { loadBusinessPaymentsConfig } from "@/lib/payments-server";
 import { notFound, permanentRedirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
@@ -120,7 +121,19 @@ export default async function BookPage({ params }: Props) {
     .eq("active", true)
     .order("display_order");
 
-  const b = business as unknown as Business;
+  // Online-payment config. The anon key cannot read the deposit columns or the
+  // addons table (by design), so this comes from the service client and is
+  // merged onto the business object the themes already receive. Only booleans
+  // and amounts cross to the browser — never credentials.
+  const paymentsCfg = await loadBusinessPaymentsConfig((business as unknown as Business).id);
+
+  const b = {
+    ...(business as unknown as Business),
+    payments_active: paymentsCfg.active,
+    deposit_enabled: paymentsCfg.deposit_enabled,
+    deposit_default_type: paymentsCfg.deposit_default_type as Business["deposit_default_type"],
+    deposit_default_value: paymentsCfg.deposit_default_value,
+  } as Business;
 
   // book.bapita.com/<slug> is a duplicate of the brand's own domain. When the
   // business has a verified custom domain, send real users (and link equity)
