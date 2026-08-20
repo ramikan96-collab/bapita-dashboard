@@ -42,8 +42,17 @@ export function PayCard({
   );
 }
 
+// A business slug: lowercase letters, digits and dashes only — the same charset
+// the booking pages use.
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
 export function BackLink({ slug, label }: { slug: string; label: string }) {
-  if (!slug) return null;
+  // SECURITY: `slug` arrives from the ?s= query parameter, which anyone can set.
+  // Interpolating it unchecked lets `?s=/evil.com` render href="//evil.com" — a
+  // protocol-relative link that leaves the site entirely. On a payment return
+  // page that is a ready-made phishing hop, so anything that is not a plain
+  // slug renders no link at all.
+  if (!SLUG_RE.test(slug)) return null;
   return (
     <a
       href={`/${slug}`}
