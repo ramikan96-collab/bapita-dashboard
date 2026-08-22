@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     password,
     options: {
       data: { full_name: name ?? "" },
-      redirectTo: "https://dashboard.bapita.com/auth/callback",
+      redirectTo: "https://book.bapita.com/auth/callback",
     },
   });
 

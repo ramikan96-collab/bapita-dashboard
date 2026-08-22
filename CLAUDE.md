@@ -1,6 +1,6 @@
 # Bapita Dashboard — Multi-Tenant Booking Platform
 
-**Next.js 16.2.7**, Supabase backend, multi-tenant SaaS. dashboard.bapita.com. Deploy: Vercel project `bapita-dashboard`.
+**Next.js 16.2.7**, Supabase backend, multi-tenant SaaS. book.bapita.com (`dashboard.bapita.com` is retired and 308-redirects). Deploy: Vercel project `bapita-book`.
 
 ## Stack
 - React 19.2.4, Tailwind 4

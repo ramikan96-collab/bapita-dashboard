@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
             ${city ? `<tr><td style="padding:8px 0;color:#888;">City</td><td style="padding:8px 0;font-weight:600;color:#1C1814;">${esc(city)}</td></tr>` : ""}
             ${message ? `<tr><td style="padding:8px 0;color:#888;vertical-align:top;">Message</td><td style="padding:8px 0;color:#1C1814;">${esc(message)}</td></tr>` : ""}
           </table>
-          <a href="https://dashboard.bapita.com/admin/leads" style="display:inline-block;margin-top:24px;background:#E8920A;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">View in Admin →</a>
+          <a href="https://book.bapita.com/admin/leads" style="display:inline-block;margin-top:24px;background:#E8920A;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">View in Admin →</a>
         </div>
       `,
     });

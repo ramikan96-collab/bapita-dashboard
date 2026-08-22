@@ -55,7 +55,10 @@ export async function middleware(request: NextRequest) {
   // Retired subdomain: dashboard.bapita.com → book.bapita.com (root goes to /login).
   if (bareHost === "dashboard.bapita.com") {
     const dest = pathname === "/" ? "/login" : pathname;
-    return NextResponse.redirect(`https://book.bapita.com${dest}`, 308);
+    // Keep the query string: auth callbacks already sent out carry `code` and
+    // `next`, and dropping them breaks password reset mid-flow.
+    const search = request.nextUrl.search;
+    return NextResponse.redirect(`https://book.bapita.com${dest}${search}`, 308);
   }
 
   // Custom-domain routing — runs before auth/dashboard logic, and never touches it.
