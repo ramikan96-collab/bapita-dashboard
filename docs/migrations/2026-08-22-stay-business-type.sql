@@ -66,20 +66,27 @@ create index if not exists bookings_stay_range_idx
   on public.bookings (business_id, service_id, appointment_date, check_out)
   where check_out is not null;
 
--- 4. bookings_slot_unique --> appointments only -----------------------------
+-- 4. bookings_slot_unique --> exempt stays, keep the status predicate ---------
 --
--- CRITICAL. The existing index is (business_id, appointment_date, appointment_time)
--- with no predicate. Every stay checks in at the same default time (15:00), so
--- three units booked for the same night would collide on it and only the first
--- would insert. Re-creating it as a partial index over check_out IS NULL keeps
--- the appointment guarantee byte-for-byte identical (see CLAUDE.md gotcha #5 —
--- cancelled rows still hold their slot, expired holds are DELETED not cancelled)
--- while exempting stays, whose overlap rule is a range test, not an equality
--- test, and is therefore enforced in the API (src/lib/stay.ts).
+-- CRITICAL, and verified against production before writing (2026-08-22) rather
+-- than against CLAUDE.md, which was stale: the live index is
+--
+--   (business_id, appointment_date, appointment_time)
+--   WHERE status = ANY (ARRAY['confirmed','pending'])
+--
+-- The status predicate matters — it is what stops a cancelled row from holding
+-- its slot forever — so it is CARRIED OVER, not replaced. We only AND in the
+-- stay exemption. Every stay checks in at the same default time (15:00), so
+-- without `check_out IS NULL` three units booked for the same night would
+-- collide and only the first would insert.
+--
+-- Stay overlap is a range test, not an equality test, and cannot be expressed
+-- as a unique index. It is enforced in the API (src/lib/stay.ts).
 drop index if exists public.bookings_slot_unique;
 create unique index bookings_slot_unique
   on public.bookings (business_id, appointment_date, appointment_time)
-  where check_out is null;
+  where check_out is null
+    and status = any (array['confirmed'::text, 'pending'::text]);
 
 -- 5. seed -------------------------------------------------------------------
 update public.businesses
@@ -91,4 +98,4 @@ commit;
 -- Verify (run separately after commit):
 --   select slug, business_type from businesses where slug = 'kasa-herzeliya';
 --   select indexdef from pg_indexes where indexname = 'bookings_slot_unique';
---     -> must end with: WHERE (check_out IS NULL)
+--     -> must end with: WHERE ((check_out IS NULL) AND (status = ANY (...)))
