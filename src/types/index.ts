@@ -108,6 +108,12 @@ export interface Business {
    * unit stays in the shared gallery section.
    */
   gallery_groups?: Record<string, string[]> | null;
+  /**
+   * How the public gallery SECTION renders: true = one block per unit with the
+   * unit name as a heading, false = a single flat grid. Unit cards always use
+   * their own cover photo regardless.
+   */
+  gallery_grouped?: boolean | null;
   custom_domain?: string | null;
   custom_domain_verified?: boolean | null;
   // Computed server-side on the public page (payments addon approved AND Green
