@@ -67,6 +67,8 @@ export const he = {
     checkOut: "צ׳ק אאוט",
     pickCheckIn: "בחרו תאריך הגעה",
     pickCheckOut: "בחרו תאריך יציאה",
+    pickCheckOutFrom: (d: string) => `יציאה אחרי ${d}`,
+    earliestCheckOut: (d: string) => `היציאה המוקדמת ביותר היא ${d}`,
     nights: (n: number) => (n === 1 ? "לילה אחד" : `${n} לילות`),
     guests: "אורחים",
     total: "סה״כ",

@@ -6,7 +6,7 @@ import type { Business, Service } from "@/types";
 import { StayRangePicker } from "../components/StayRangePicker";
 import { translations, type Lang } from "../translations";
 import { track } from "@/lib/analytics/track";
-import { nightsBetween, stayTotal, validateStayRequest } from "@/lib/stay";
+import { addDaysIso, nightsBetween, stayTotal, validateStayRequest } from "@/lib/stay";
 
 interface Props {
   business: Business;
@@ -124,6 +124,14 @@ export function StayOverlay({
 
   const stepNum = step === "success" ? STEP_ORDER.length : STEP_ORDER.indexOf(step) + 1;
   const isFirst = step === "checkin";
+
+  /** Drops the range and returns to the first date step. */
+  function clearDates() {
+    setError("");
+    setCheckIn(null);
+    setCheckOut(null);
+    setStep("checkin");
+  }
 
   function goBack() {
     setError("");
@@ -341,7 +349,7 @@ export function StayOverlay({
               </div>
 
               <div>
-                <span style={label}>{t.stay.pickCheckOut}</span>
+                <span style={label}>{t.stay.pickCheckOutFrom(fmtDate(checkIn))}</span>
                 <StayRangePicker
                   checkIn={checkIn}
                   checkOut={checkOut}
@@ -350,12 +358,21 @@ export function StayOverlay({
                   accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
                   calendarT={t.calendar}
                   nightsLabel={t.stay.nights}
+                  loading={availLoading}
                 />
-                {minNights > 1 && (
-                  <p style={{ marginTop: 10, fontSize: 12, color: darkColor, opacity: 0.5, textAlign: "center" }}>
-                    {t.stay.minNights(minNights)}
-                  </p>
-                )}
+                <p style={{ marginTop: 10, fontSize: 12, color: darkColor, opacity: 0.5, textAlign: "center" }}>
+                  {t.stay.earliestCheckOut(fmtDate(addDaysIso(checkIn, minNights)))}
+                  {minNights > 1 ? ` · ${t.stay.minNights(minNights)}` : ""}
+                </p>
+                <button
+                  type="button"
+                  onClick={clearDates}
+                  style={{
+                    display: "block", margin: "12px auto 0", background: "none", border: "none",
+                    padding: "6px 8px", color: darkColor, opacity: 0.55, fontSize: 13, fontWeight: 600,
+                    textDecoration: "underline", cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >{t.stay.clearDates}</button>
               </div>
 
               {error && <div style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{error}</div>}

@@ -86,6 +86,8 @@ export function CleanPage({ business, services }: Props) {
   const photoGroups = stayMode ? groupedGallery(business, services) : [];
   const groupedView = business.gallery_grouped !== false && photoGroups.length > 1;
   const showFlatGallery = showImageGallery && (galleryPhotos.length > 0 || groupedView);
+  // A stay is not an appointment — every CTA on the page has to say so.
+  const ctaLabel = stayMode ? t.stay.heroCta : t.hero.cta;
 
   const socialProofText = getSocialProof(business, isRtl, (business.business_type === "stay" ? t.social.happyGuests : t.social.happyClients));
   const displayTag   = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
@@ -132,7 +134,7 @@ export function CleanPage({ business, services }: Props) {
           style={{ flexShrink: 0, height: 36, padding: "0 18px", borderRadius: 9999, background: accent, color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}
           onMouseEnter={e => { e.currentTarget.style.opacity = "0.82"; }}
           onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
-        >{t.hero.cta}</button>
+        >{ctaLabel}</button>
       </div>
 
       {/* Split hero */}
@@ -192,7 +194,7 @@ export function CleanPage({ business, services }: Props) {
             onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = "#fff"; e.currentTarget.style.transform = "translateY(-1px)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = P.panel; e.currentTarget.style.transform = "translateY(0)"; }}
           >
-            {t.hero.cta}
+            {ctaLabel}
           </button>
 
           {/* IG handle */}
@@ -367,7 +369,7 @@ export function CleanPage({ business, services }: Props) {
         />
       </div>
 
-      <FloatingCTA shopName={displayName} bookLabel={t.hero.cta} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
+      <FloatingCTA shopName={displayName} bookLabel={ctaLabel} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
 
       {waNumber && (
         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
