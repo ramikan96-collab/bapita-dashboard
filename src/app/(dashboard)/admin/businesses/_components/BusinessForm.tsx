@@ -61,6 +61,7 @@ interface FormData {
   name_he:            string;
   slug:               string;
   template_style:     string;
+  business_type:      string;
   default_lang:       string;
   tagline:            string;
   tagline_he:         string;
@@ -79,6 +80,7 @@ interface FormData {
   about_text_he:      string;
   accent_color:       string;
   image_focal:        Record<string, string>;
+  gallery_groups:     Record<string, string[]>;
   show_gallery:       boolean;
   show_about:         boolean;
   show_hours:         boolean;
@@ -123,11 +125,11 @@ interface Stats {
 type Tab = "profile" | "design" | "gallery" | "services" | "plan" | "hours" | "reviews";
 
 const EMPTY_FORM: FormData = {
-  name: "", name_he: "", slug: "", template_style: "classic", default_lang: "he",
+  name: "", name_he: "", slug: "", template_style: "classic", business_type: "appointment", default_lang: "he",
   tagline: "", tagline_he: "", phone: "", address: "", email: "", owner_email: "",
   instagram_url: "", facebook_url: "", tiktok_url: "", whatsapp_number: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
-  about_text: "", about_text_he: "", accent_color: "#B8862A", image_focal: {},
+  about_text: "", about_text_he: "", accent_color: "#B8862A", image_focal: {}, gallery_groups: {},
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
   show_stats: true, show_open_status: true, show_services: true, show_reviews: true, show_staff: true,
   status: "draft",
@@ -187,6 +189,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           name_he:            b.name_he            || "",
           slug:               b.slug               || "",
           template_style:     b.template_style      || "classic",
+          business_type:      b.business_type       || "appointment",
           default_lang:       b.default_lang        || "he",
           tagline:            b.tagline             || "",
           tagline_he:         b.tagline_he          || "",
@@ -205,6 +208,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           about_text_he:      b.about_text_he       || "",
           accent_color:       b.accent_color        || "#B8862A",
           image_focal:        (b.image_focal as Record<string, string>) || {},
+          gallery_groups:     ((b as unknown as { gallery_groups?: Record<string, string[]> | null }).gallery_groups) || {},
           show_gallery:       b.show_gallery        ?? true,
           show_about:         b.show_about          ?? true,
           show_hours:         b.show_hours          ?? true,
@@ -422,7 +426,9 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       hero_image_url:     urls[0]                 || null,
       profile_image_url:  profileImageUrl         || null,
       image_focal:        form.image_focal,
+      gallery_groups:     form.gallery_groups,
       section_order:      sectionOrder,
+      business_type:      form.business_type      || "appointment",
       plan_tier:          form.plan_tier           || null,
       plan_price:         form.plan_price          ? Number(form.plan_price) : null,
       plan_setup_price:   form.plan_setup_price    ? Number(form.plan_setup_price) : null,
@@ -553,7 +559,9 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       hero_image_url:     urls[0]                 || null,
       profile_image_url:  profileImageUrl         || null,
       image_focal:        form.image_focal,
+      gallery_groups:     form.gallery_groups,
       section_order:      sectionOrder,
+      business_type:      form.business_type      || "appointment",
       plan_tier:          form.plan_tier           || null,
       plan_price:         form.plan_price          ? Number(form.plan_price) : null,
       plan_setup_price:   form.plan_setup_price    ? Number(form.plan_setup_price) : null,
@@ -609,7 +617,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     ...(mode === "edit" ? [{ id: "design" as Tab, label: "Design" }] : []),
     { id: "gallery", label: `Gallery${gallery.filter(g => !g.uploading).length > 0 ? ` (${gallery.filter(g => !g.uploading).length})` : ""}` },
     ...(mode === "edit" ? [
-      { id: "services" as Tab, label: `Services (${services.length})`                        },
+      { id: "services" as Tab, label: `${form.business_type === "stay" ? "Units" : "Services"} (${services.length})` },
       { id: "hours"    as Tab, label: "Hours"                                                },
       { id: "reviews"  as Tab, label: `Reviews (${adminReviews.length})`                    },
       { id: "plan"     as Tab, label: "Stats"                                               },
@@ -966,6 +974,17 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     )}
                   </div>
                 )}
+
+                <Field label="Business Type">
+                  <select value={form.business_type} onChange={e => set("business_type", e.target.value)} style={inputStyle}>
+                    <option value="appointment">Appointments (barber, salon, clinic)</option>
+                    <option value="stay">Stays (Airbnb, apartments, guest rooms)</option>
+                  </select>
+                  <p style={{ fontSize:11, color:"var(--color-muted)", marginTop:6, marginBottom:0 }}>
+                    Stays turn services into rentable units (price = per night), swap the booking widget for a date range,
+                    hide opening hours and staff, and default the dashboard calendar to month view.
+                  </p>
+                </Field>
 
                 <Field label="Default Language">
                   <select value={form.default_lang} onChange={e => set("default_lang", e.target.value)} style={inputStyle}>
@@ -1326,12 +1345,20 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
               {/* stableId holds a render-stable value; reading .current here is intentional */}
               {/* eslint-disable-next-line react-hooks/refs */}
               <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} focal={form.image_focal} setFocal={f => set("image_focal", f)} profileImageUrl={profileImageUrl} setProfileImageUrl={setProfileImageUrl} />
+              {form.business_type === "stay" && (
+                <UnitPhotoGroups
+                  units={services}
+                  photos={gallery.filter(g => !g.uploading && g.url).map(g => g.url)}
+                  groups={form.gallery_groups}
+                  setGroups={g => set("gallery_groups", g)}
+                />
+              )}
             </div>
           )}
 
           {/* ── SERVICES ── */}
           {tab === "services" && mode === "edit" && businessId && (
-            <ServicesPanel businessId={businessId} services={services} setServices={setServices} />
+            <ServicesPanel businessId={businessId} services={services} setServices={setServices} stayMode={form.business_type === "stay"} />
           )}
 
           {/* ── HOURS ── */}
@@ -2270,12 +2297,121 @@ function GalleryManager({ gallery, setGallery, businessId, focal, setFocal, prof
   );
 }
 
+// ─── Unit Photo Groups (stay businesses) ──────────────────────────────────────
+
+/**
+ * Assign gallery photos to units.
+ *
+ * A photo may belong to at most one unit — a shot of the Big Kasa is not also a
+ * shot of the Quiet Studio, and letting one image sit in two groups would make
+ * "which cover does this card use?" ambiguous. Selecting it for a second unit
+ * therefore moves it. Whatever is left unassigned stays in the shared gallery
+ * section on the public page.
+ */
+function UnitPhotoGroups({ units, photos, groups, setGroups }: {
+  units:  Service[];
+  photos: string[];
+  groups: Record<string, string[]>;
+  setGroups: (g: Record<string, string[]>) => void;
+}) {
+  const ownerOf = (url: string) =>
+    Object.keys(groups).find((unitId) => (groups[unitId] ?? []).includes(url)) ?? null;
+
+  function toggle(unitId: string, url: string) {
+    const next: Record<string, string[]> = {};
+    for (const [id, urls] of Object.entries(groups)) {
+      next[id] = (urls ?? []).filter((u) => u !== url);
+    }
+    if (ownerOf(url) !== unitId) {
+      next[unitId] = [...(next[unitId] ?? []), url];
+    }
+    // Drop empty groups so the stored JSON stays a clean picture of reality.
+    for (const id of Object.keys(next)) if (next[id].length === 0) delete next[id];
+    setGroups(next);
+  }
+
+  const assigned = new Set(Object.values(groups).flat());
+  const leftover = photos.filter((u) => !assigned.has(u));
+
+  return (
+    <SectionCard title="Photos per unit">
+      <p style={{ fontSize:12, color:"var(--color-muted)", margin:"0 0 14px" }}>
+        The first photo you pick for a unit becomes its card cover. A photo can belong to one unit only —
+        picking it again moves it. Unassigned photos stay in the shared gallery section below the units.
+      </p>
+
+      {units.length === 0 && (
+        <p style={{ fontSize:13, color:"var(--color-muted)", textAlign:"center", padding:"12px 0" }}>
+          Add units on the Units tab first.
+        </p>
+      )}
+
+      <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+        {units.map((unit) => {
+          const mine = groups[unit.id] ?? [];
+          return (
+            <div key={unit.id}>
+              <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:8 }}>
+                <span style={{ fontSize:13, fontWeight:700, color:"var(--color-dark)" }}>{unit.name}</span>
+                <span style={{ fontSize:11, color:"var(--color-muted)" }}>{mine.length} photo{mine.length === 1 ? "" : "s"}</span>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(72px, 1fr))", gap:6 }}>
+                {photos.map((url) => {
+                  const owner = ownerOf(url);
+                  const isMine = owner === unit.id;
+                  const takenByOther = !!owner && !isMine;
+                  const order = isMine ? mine.indexOf(url) + 1 : 0;
+                  return (
+                    <button
+                      key={url}
+                      type="button"
+                      onClick={() => toggle(unit.id, url)}
+                      title={takenByOther ? "Assigned to another unit — click to move it here" : undefined}
+                      style={{
+                        position:"relative", aspectRatio:"1 / 1", borderRadius:8, overflow:"hidden",
+                        border: isMine ? "2.5px solid var(--color-amber)" : "1.5px solid var(--color-cream-2)",
+                        padding:0, cursor:"pointer", background:"var(--color-cream)",
+                        opacity: takenByOther ? 0.32 : 1,
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                      {isMine && (
+                        <span style={{
+                          position:"absolute", top:4, insetInlineStart:4,
+                          width:18, height:18, borderRadius:"50%",
+                          background:"var(--color-amber)", color:"var(--color-surface)",
+                          fontSize:10, fontWeight:800,
+                          display:"flex", alignItems:"center", justifyContent:"center",
+                        }}>{order}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {units.length > 0 && (
+        <p style={{ fontSize:12, color:"var(--color-muted)", margin:"16px 0 0" }}>
+          {leftover.length} photo{leftover.length === 1 ? "" : "s"} left in the shared gallery.
+        </p>
+      )}
+    </SectionCard>
+  );
+}
+
 // ─── Services Panel ───────────────────────────────────────────────────────────
 
-function ServicesPanel({ businessId, services, setServices }: {
+function ServicesPanel({ businessId, services, setServices, stayMode }: {
   businessId: string;
   services:   Service[];
   setServices: (s: Service[]) => void;
+  /** Stay businesses: a "service" is a rentable unit. Price is per night and
+   *  duration is meaningless, so the form asks for nights and guests instead. */
+  stayMode:   boolean;
 }) {
   const supabase   = createClient();
   const [adding,   setAdding]   = useState(false);
@@ -2286,6 +2422,8 @@ function ServicesPanel({ businessId, services, setServices }: {
   const [duration, setDuration] = useState("");
   const [desc,     setDesc]     = useState("");
   const [descHe,   setDescHe]   = useState("");
+  const [minNights, setMinNights] = useState("");
+  const [maxGuests, setMaxGuests] = useState("");
   const [saving,   setSaving]   = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -2317,17 +2455,25 @@ function ServicesPanel({ businessId, services, setServices }: {
     if (results.some((r) => r.error)) setServices(prev);
   }
 
-  function startAdd()             { setEditing(null); setName(""); setNameHe(""); setPrice(""); setDuration(""); setDesc(""); setDescHe(""); setAdding(true); }
-  function startEdit(s: Service)  { setEditing(s); setName(s.name); setNameHe(s.name_he || ""); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(s.description || ""); setDescHe(s.description_he || ""); setAdding(true); }
+  function startAdd()             { setEditing(null); setName(""); setNameHe(""); setPrice(""); setDuration(""); setDesc(""); setDescHe(""); setMinNights(""); setMaxGuests(""); setAdding(true); }
+  function startEdit(s: Service)  { setEditing(s); setName(s.name); setNameHe(s.name_he || ""); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(s.description || ""); setDescHe(s.description_he || ""); setMinNights(s.min_nights != null ? String(s.min_nights) : ""); setMaxGuests(s.max_guests != null ? String(s.max_guests) : ""); setAdding(true); }
   function cancelAdd()            { setAdding(false); setEditing(null); }
 
   async function saveService() {
-    if (!name.trim() || !price || !duration) return;
+    // A unit has no duration to ask for, so stay mode stamps the full-day value
+    // the column still requires rather than blocking the save on an empty field.
+    if (!name.trim() || !price || (!stayMode && !duration)) return;
+    const durationValue = stayMode ? 1440 : Number(duration);
+    const stayFields = {
+      min_nights: stayMode ? Math.max(1, Number(minNights) || 1) : undefined,
+      max_guests: stayMode ? (maxGuests ? Number(maxGuests) : null) : undefined,
+    };
+    const stayPatch = stayMode ? { min_nights: stayFields.min_nights, max_guests: stayFields.max_guests } : {};
     setSaving(true);
     if (editing) {
-      await supabase.from("services").update({ name: name.trim(), name_he: nameHe.trim() || null, price: Number(price), duration: Number(duration), description: desc || null, description_he: descHe.trim() || null }).eq("id", editing.id);
+      await supabase.from("services").update({ name: name.trim(), name_he: nameHe.trim() || null, price: Number(price), duration: durationValue, description: desc || null, description_he: descHe.trim() || null, ...stayPatch }).eq("id", editing.id);
     } else {
-      await supabase.from("services").insert({ business_id: businessId, name: name.trim(), name_he: nameHe.trim() || null, price: Number(price), duration: Number(duration), description: desc || null, description_he: descHe.trim() || null, active: true, display_order: services.length + 1 });
+      await supabase.from("services").insert({ business_id: businessId, name: name.trim(), name_he: nameHe.trim() || null, price: Number(price), duration: durationValue, description: desc || null, description_he: descHe.trim() || null, active: true, display_order: services.length + 1, ...stayPatch });
     }
     await reload();
     setSaving(false); setAdding(false); setEditing(null);
@@ -2344,10 +2490,10 @@ function ServicesPanel({ businessId, services, setServices }: {
   }
 
   return (
-    <SectionCard title="Services">
+    <SectionCard title={stayMode ? "Units" : "Services"}>
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
         {services.length === 0 && !adding && (
-          <p style={{ fontSize:13, color:"var(--color-muted)", textAlign:"center", padding:"16px 0" }}>No services yet.</p>
+          <p style={{ fontSize:13, color:"var(--color-muted)", textAlign:"center", padding:"16px 0" }}>No {stayMode ? "units" : "services"} yet.</p>
         )}
         {services.map((s, i) => (
           <div
@@ -2363,7 +2509,11 @@ function ServicesPanel({ businessId, services, setServices }: {
             <span style={{ color:"var(--color-muted)", fontSize:14, userSelect:"none", flexShrink:0 }} aria-hidden>⠿</span>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:14, fontWeight:700, color:"var(--color-dark)" }}>{s.name}</div>
-              <div style={{ fontSize:12, color:"var(--color-muted)", marginTop:2 }}>{s.duration} min · ₪{s.price}</div>
+              <div style={{ fontSize:12, color:"var(--color-muted)", marginTop:2 }}>
+                {stayMode
+                  ? `₪${s.price} / night${s.max_guests ? ` · sleeps ${s.max_guests}` : ""}${s.min_nights && s.min_nights > 1 ? ` · min ${s.min_nights} nights` : ""}`
+                  : `${s.duration} min · ₪${s.price}`}
+              </div>
             </div>
             <button onClick={() => toggleActive(s)} style={{ fontSize:11, fontWeight:700, padding:"3px 8px", borderRadius:20, border:"none", cursor:"pointer", background: s.active ? "#D1FAE5" : "var(--color-cream-2)", color: s.active ? "#065F46" : "var(--color-muted)", fontFamily:"inherit" }}>
               {s.active ? "Active" : "Hidden"}
@@ -2388,21 +2538,26 @@ function ServicesPanel({ businessId, services, setServices }: {
         {adding && (
           <div style={{ background:"var(--color-cream)", borderRadius:12, padding:"16px", border:"1.5px solid var(--color-amber)", display:"flex", flexDirection:"column", gap:10 }}>
             <p style={{ fontSize:13, fontWeight:700, color:"var(--color-dark)", margin:0 }}>
-              {editing ? "Edit service" : "New service"}
+              {editing ? `Edit ${stayMode ? "unit" : "service"}` : `New ${stayMode ? "unit" : "service"}`}
             </p>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
-              <div><label style={labelStyle}>Name *</label><input value={name} onChange={e => setName(e.target.value)} placeholder="Haircut" style={inputStyle} /></div>
-              <div><label style={labelStyle}>Price (₪) *</label><input value={price} onChange={e => setPrice(e.target.value)} type="number" placeholder="80" style={inputStyle} /></div>
-              <div><label style={labelStyle}>Duration (min) *</label><input value={duration} onChange={e => setDuration(e.target.value)} type="number" placeholder="30" style={inputStyle} /></div>
+              <div><label style={labelStyle}>Name *</label><input value={name} onChange={e => setName(e.target.value)} placeholder={stayMode ? "Big Kasa" : "Haircut"} style={inputStyle} /></div>
+              <div><label style={labelStyle}>{stayMode ? "Price per night (₪) *" : "Price (₪) *"}</label><input value={price} onChange={e => setPrice(e.target.value)} type="number" placeholder={stayMode ? "650" : "80"} style={inputStyle} /></div>
+              {stayMode
+                ? <div><label style={labelStyle}>Sleeps</label><input value={maxGuests} onChange={e => setMaxGuests(e.target.value)} type="number" placeholder="4" style={inputStyle} /></div>
+                : <div><label style={labelStyle}>Duration (min) *</label><input value={duration} onChange={e => setDuration(e.target.value)} type="number" placeholder="30" style={inputStyle} /></div>}
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
               <div><label style={labelStyle}>Description (EN)</label><input value={desc} onChange={e => setDesc(e.target.value)} placeholder="Short description" style={inputStyle} /></div>
               <div><label style={labelStyle}>Description (HE) — תיאור</label><input value={descHe} onChange={e => setDescHe(e.target.value)} placeholder="תיאור קצר" dir="rtl" style={inputStyle} /></div>
             </div>
-            <div><label style={labelStyle}>Name (HE) — שם בעברית</label><input value={nameHe} onChange={e => setNameHe(e.target.value)} placeholder="תספורת" dir="rtl" style={inputStyle} /></div>
+            {stayMode && (
+              <div><label style={labelStyle}>Minimum nights</label><input value={minNights} onChange={e => setMinNights(e.target.value)} type="number" min="1" placeholder="1" style={inputStyle} /></div>
+            )}
+            <div><label style={labelStyle}>Name (HE) — שם בעברית</label><input value={nameHe} onChange={e => setNameHe(e.target.value)} placeholder={stayMode ? "קאסה גדולה" : "תספורת"} dir="rtl" style={inputStyle} /></div>
             <div style={{ display:"flex", gap:8 }}>
               <button onClick={saveService} disabled={saving} style={{ height:34, padding:"0 16px", borderRadius:9, border:"none", background:"var(--color-amber)", color:"var(--color-surface)", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                {saving ? "Saving…" : editing ? "Update" : "Add Service"}
+                {saving ? "Saving…" : editing ? "Update" : stayMode ? "Add Unit" : "Add Service"}
               </button>
               <button onClick={cancelAdd} style={{ height:34, padding:"0 16px", borderRadius:9, border:"1.5px solid var(--color-cream-2)", background:"transparent", color:"var(--color-muted)", fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                 Cancel
@@ -2417,7 +2572,7 @@ function ServicesPanel({ businessId, services, setServices }: {
             onMouseEnter={e => { e.currentTarget.style.borderColor="var(--color-amber)"; e.currentTarget.style.color="var(--color-amber)"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor="var(--color-cream-2)"; e.currentTarget.style.color="var(--color-muted)"; }}
           >
-            + Add Service
+            + Add {stayMode ? "Unit" : "Service"}
           </button>
         )}
       </div>

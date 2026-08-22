@@ -81,17 +81,33 @@ function buildSeoCopy(opts: {
   nameHe?: string | null;
   city: SeoCity | null;
   lang: "he" | "en";
+  businessType?: string | null;
 }): { title: string; description: string } {
-  const { name, nameHe, city, lang } = opts;
+  const { name, nameHe, city, lang, businessType } = opts;
+  const stay = businessType === "stay";
+
   if (lang === "he") {
     const displayName = nameHe || name;
     const inCity = city ? ` ב${city.he}` : "";
+    if (stay) {
+      return {
+        title: `${displayName} | דירות נופש${inCity}`,
+        description: `${displayName}${inCity}. דירות אירוח פרטיות להזמנה ישירה מול המארח. בדקו זמינות ושלחו בקשה אונליין.`,
+      };
+    }
     return {
       title: `${displayName} | מספרה וברבר${inCity}`,
       description: `מספרה של ${displayName}${inCity}. תספורות גבר, עיצוב זקן וטיפוח מקצועי. קבעו תור אונליין בקלות ובכמה קליקים.`,
     };
   }
+
   const inCity = city ? ` in ${city.en}` : "";
+  if (stay) {
+    return {
+      title: `${name} | Holiday Apartments${inCity}`,
+      description: `${name}${inCity}. Private self contained apartments booked directly with the host. Check availability and request your dates online.`,
+    };
+  }
   return {
     title: `${name} | Barber and Hair Studio${inCity}`,
     description: `${name} hair studio${inCity}. Men's cuts, beard styling and grooming. Book your appointment online in seconds.`,
@@ -108,7 +124,7 @@ export default async function BookPage({ params }: Props) {
 
   const { data: business, error } = await supabase
     .from("businesses")
-    .select("id, name, slug, status, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, business_hours, template_style, tagline, hero_image_url, hero_position, image_focal, gallery_images, gallery_hidden, about_text, accent_color, external_booking_url, show_gallery, show_about, show_hours, show_location, default_lang, stat_years, stat_clients, stat_rating, google_reviews, google_place_id, show_reviews, section_order, name_he, tagline_he, about_text_he, show_services, show_stats, show_open_status, profile_image_url, show_staff, staff_members, heading_font, body_font, gallery_source, instagram_embed, custom_domain, custom_domain_verified")
+    .select("id, name, slug, status, business_type, gallery_groups, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, business_hours, template_style, tagline, hero_image_url, hero_position, image_focal, gallery_images, gallery_hidden, about_text, accent_color, external_booking_url, show_gallery, show_about, show_hours, show_location, default_lang, stat_years, stat_clients, stat_rating, google_reviews, google_place_id, show_reviews, section_order, name_he, tagline_he, about_text_he, show_services, show_stats, show_open_status, profile_image_url, show_staff, staff_members, heading_font, body_font, gallery_source, instagram_embed, custom_domain, custom_domain_verified")
     .eq("slug", slug)
     .single();
 
@@ -170,6 +186,11 @@ export default async function BookPage({ params }: Props) {
     placeLocation = place.location;
   }
 
+  // A short-term rental is lodging, not a salon. Emitting HairSalon on a
+  // property page is worse than emitting nothing: it tells Google the page is
+  // about something it is not.
+  const isStayBusiness = b.business_type === "stay";
+
   const city = parseCity(b.address);
 
   const { canonicalBase, pageUrl } = resolveCanonical(slug, b);
@@ -190,7 +211,7 @@ export default async function BookPage({ params }: Props) {
     saturday: "Saturday",
     sunday: "Sunday",
   };
-  const openingHoursSpecification = b.business_hours
+  const openingHoursSpecification = !isStayBusiness && b.business_hours
     ? (Object.keys(dayNames) as (keyof typeof dayNames)[])
         .filter((day) => b.business_hours?.[day]?.open)
         .map((day) => ({
@@ -207,7 +228,7 @@ export default async function BookPage({ params }: Props) {
 
   const localBusinessSchema = {
     "@context": "https://schema.org",
-    "@type": ["HairSalon", "BarberShop"],
+    "@type": isStayBusiness ? ["LodgingBusiness"] : ["HairSalon", "BarberShop"],
     name: b.name,
     ...(b.name_he && { alternateName: b.name_he }),
     url: pageUrl,
@@ -270,7 +291,7 @@ export async function generateMetadata({ params }: Props) {
   const supabase = getPublicClient();
   const { data } = await supabase
     .from("businesses")
-    .select("name, name_he, tagline, hero_image_url, address, default_lang, custom_domain, custom_domain_verified")
+    .select("name, name_he, tagline, hero_image_url, address, default_lang, business_type, custom_domain, custom_domain_verified")
     .eq("slug", slug)
     .single();
 
@@ -286,6 +307,7 @@ export async function generateMetadata({ params }: Props) {
     nameHe: data.name_he,
     city: parseCity(data.address),
     lang: data.default_lang === "he" ? "he" : "en",
+    businessType: data.business_type,
   });
 
   // Per-business brand assets (favicon + share image). Lives under

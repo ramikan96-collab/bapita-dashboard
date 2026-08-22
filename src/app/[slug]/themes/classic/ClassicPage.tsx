@@ -6,6 +6,9 @@ import type { Business, Service } from "@/types";
 import { getSocialProof } from "@/lib/social-proof";
 import { FloatingCTA }    from "../../components/FloatingCTA";
 import { SectionGallery }  from "../../components/gallery/SectionGallery";
+import { SectionUnits }    from "../../components/SectionUnits";
+import { StayOverlay }     from "../../booking/StayOverlay";
+import { isStay, ungroupedPhotos, unitPhotos } from "@/lib/stay";
 import { SectionHours }    from "../../components/SectionHours";
 import { SectionLocation } from "../../components/SectionLocation";
 import { SectionReviews }  from "../../components/SectionReviews";
@@ -69,6 +72,11 @@ export function ClassicPage({ business, services }: Props) {
   const bodyFont    = resolveFont(business.body_font, "'Heebo', sans-serif");
   const showInstaGallery = business.show_gallery !== false && business.gallery_source === "instagram" && !!business.instagram_embed;
   const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
+  // Stay mode: services are rentable units and the widget is a date range.
+  // See lib/stay.ts and themes/dark/DarkPage.tsx for the same wiring.
+  const stayMode      = isStay(business);
+  const galleryPhotos = stayMode ? ungroupedPhotos(business) : (business.gallery_images ?? []);
+  const showFlatGallery = showImageGallery && galleryPhotos.length > 0;
 
   const socialProofText = getSocialProof(business, isRtl, t.social.happyClients);
   const displayTag  = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
@@ -106,7 +114,7 @@ export function ClassicPage({ business, services }: Props) {
         <div style={{ position: "absolute", inset: 0, background: "rgba(34,21,16,0.65)" }} />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", width: "100%", maxWidth: 640 }}>
           <div className="c-pill" style={{ marginBottom: 18, display: "flex", justifyContent: "center" }}>
-            {(business.show_open_status !== false && openStatus) ? (
+            {(!stayMode && business.show_open_status !== false && openStatus) ? (
               <span style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)", color: "#fff", borderRadius: 9999, padding: "5px 14px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: openStatus.open ? "#22c55e" : "#888", display: "inline-block" }} />
                 {openStatus.text}
@@ -173,7 +181,16 @@ export function ClassicPage({ business, services }: Props) {
             case "services":
               return business.show_services !== false ? (
                 <section key={key} ref={servicesRef} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.services.title} accentColor={accent} darkColor={C.dark} />
+                  <SectionTitle title={stayMode ? t.stay.sectionTitle : t.services.title} accentColor={accent} darkColor={C.dark} />
+                  {stayMode ? (
+                    <div style={{ marginTop: 28 }}>
+                      <SectionUnits
+                        business={business} units={services} t={t} isRtl={isRtl}
+                        tokens={{ surface: "#fff", raised: C.cream2, border: "rgba(34,21,16,0.10)", text: C.dark, muted: "rgba(34,21,16,0.62)", accent, radius: 10, displayFont: headingFont }}
+                        onSelect={openFromService}
+                      />
+                    </div>
+                  ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 28 }}>
                     {services.map((s, i) => {
                       const hovered = hoveredCard === s.id;
@@ -203,6 +220,7 @@ export function ClassicPage({ business, services }: Props) {
                       );
                     })}
                   </div>
+                  )}
                 </section>
               ) : null;
             case "about":
@@ -243,13 +261,13 @@ export function ClassicPage({ business, services }: Props) {
                 </section>
               ) : null;
             case "gallery":
-              return (showInstaGallery || showImageGallery) ? (
+              return (showInstaGallery || showFlatGallery) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} />
                   <div style={{ marginTop: 28 }}>
                     {showInstaGallery
                       ? <InstagramFeed embed={business.instagram_embed!} radius={10} />
-                      : <SectionGallery photos={business.gallery_images!} mobileCols={2} desktopCols={2} initialCount={4} desktopInitialCount={4} focal={business.image_focal ?? undefined} altLabel={displayName} />}
+                      : <SectionGallery photos={galleryPhotos} mobileCols={2} desktopCols={2} initialCount={4} desktopInitialCount={4} focal={business.image_focal ?? undefined} altLabel={displayName} />}
                   </div>
                 </section>
               ) : null;
@@ -321,7 +339,14 @@ export function ClassicPage({ business, services }: Props) {
       )}
 
       {overlayOpen && (
-        <BookingOverlay business={business} services={services} initialService={selectedService} onClose={closeOverlay} accentColor={accent} darkColor={C.dark} bgColor={C.bg} lang={lang} />
+        (stayMode
+          ? (() => {
+              const unit = selectedService ?? services[0] ?? null;
+              return unit ? (
+                <StayOverlay business={business} unit={unit} photos={unitPhotos(business, unit.id)} onClose={closeOverlay} accentColor={accent} darkColor={C.dark} bgColor={C.bg} lang={lang} />
+              ) : null;
+            })()
+          : <BookingOverlay business={business} services={services} initialService={selectedService} onClose={closeOverlay} accentColor={accent} darkColor={C.dark} bgColor={C.bg} lang={lang} />)
       )}
     </div>
   );
