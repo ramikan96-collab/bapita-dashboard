@@ -10,9 +10,12 @@ import type { Booking } from "@/types";
 import { STATUS_COLOR } from "@/types";
 import { firstName, useSwipe } from "./grid";
 import AgendaList from "./AgendaList";
+import { isStayBooking, nightsInRange } from "@/lib/stay";
 
 interface Props {
   date: Date;
+  /** Stay businesses render occupied NIGHTS, not single-day appointment chips. */
+  stayMode?: boolean;
   bookings: Booking[];
   onSelectDay: (d: Date) => void;
   onSelectBooking: (b: Booking) => void;
@@ -23,7 +26,7 @@ interface Props {
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MAX_CHIPS = 3;
 
-export default function MonthView({ date, bookings, onSelectDay, onSelectBooking, onPrev, onNext }: Props) {
+export default function MonthView({ date, bookings, stayMode, onSelectDay, onSelectBooking, onPrev, onNext }: Props) {
   const { t, dateLocale } = useLang();
   const today = new Date();
   const swipe = useSwipe(onNext, onPrev);
@@ -35,13 +38,22 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
   const byDay = useMemo(() => {
     const map: Record<string, Booking[]> = {};
     bookings.forEach((b) => {
-      (map[b.appointment_date] ??= []).push(b);
+      if (stayMode && isStayBooking(b)) {
+        // A stay occupies every night from check-in up to (not including)
+        // checkout, so it appears in each of those cells. Checkout day is left
+        // free — that is the day the next guest can arrive.
+        for (const night of nightsInRange({ start: b.appointment_date, end: b.check_out! })) {
+          (map[night] ??= []).push(b);
+        }
+      } else {
+        (map[b.appointment_date] ??= []).push(b);
+      }
     });
     Object.values(map).forEach((list) =>
       list.sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
     );
     return map;
-  }, [bookings]);
+  }, [bookings, stayMode]);
 
   return (
     <div
@@ -144,16 +156,29 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
                   <div className="flex flex-col gap-1 mt-1 w-full">
                     {chips.map((b) => {
                       const color = STATUS_COLOR[b.status];
+                      const stay  = stayMode && isStayBooking(b);
+                      // On a stay the leading number is the unit, not a clock
+                      // time — every stay checks in at the same hour, so showing
+                      // "15:00" on every cell would be pure noise.
+                      const lead  = stay ? (b.service?.name ?? "") : b.appointment_time.slice(0, 5);
+                      const isArrival = stay && b.appointment_date === key;
                       return (
                         <div
-                          key={b.id}
+                          key={`${b.id}-${key}`}
                           className="flex items-center gap-1.5 truncate"
-                          style={{ fontSize: 11, lineHeight: "15px", color: "var(--color-dark)" }}
+                          style={{
+                            fontSize: 11, lineHeight: "15px", color: "var(--color-dark)",
+                            // Occupied nights read as a filled band; the arrival
+                            // night is the one that carries the guest's name.
+                            ...(stay ? { background: `${color}22`, borderRadius: 3, paddingInline: 4 } : null),
+                          }}
                         >
                           <span className="shrink-0 rounded-full" style={{ width: 6, height: 6, background: color }} />
                           <span className="truncate">
-                            <span style={{ fontWeight: 600 }}>{b.appointment_time.slice(0, 5)}</span>{" "}
-                            <span style={{ color: "var(--color-muted)" }}>{firstName(b.customer_name)}</span>
+                            <span style={{ fontWeight: 600 }}>{lead}</span>{" "}
+                            <span style={{ color: "var(--color-muted)" }}>
+                              {stay && !isArrival ? "" : firstName(b.customer_name)}
+                            </span>
                           </span>
                         </div>
                       );
@@ -176,7 +201,7 @@ export default function MonthView({ date, bookings, onSelectDay, onSelectBooking
         <AgendaList
           bookings={bookings}
           onSelectBooking={onSelectBooking}
-          emptyMessage="No appointments this month"
+          emptyMessage={stayMode ? "No stays this month" : "No appointments this month"}
         />
       </div>
     </div>

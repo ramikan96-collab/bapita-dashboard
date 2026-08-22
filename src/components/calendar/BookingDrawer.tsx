@@ -6,6 +6,7 @@ import { Phone, Mail, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/types";
+import { isStayBooking, nightsBetween, stayTotal } from "@/lib/stay";
 import RescheduleSheet from "./RescheduleSheet";
 import EditBookingSheet from "./EditBookingSheet";
 import LabelPickerSheet from "./LabelPickerSheet";
@@ -419,6 +420,12 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
   const timeStart = formatTime(current.appointment_time);
   const timeEnd = formatEndTime(current.appointment_time, duration);
 
+  // Stay bookings: the headline is the date range and the night count, and the
+  // price is nightly rate x nights rather than a flat service price.
+  const stay = isStayBooking(current);
+  const nights = stay ? nightsBetween(current.appointment_date, current.check_out!) : 0;
+  const stayCheckOut = stay ? parseISO(current.check_out!) : null;
+
   // ── Action buttons per status ──────────────────────────────────────────────
 
   function renderActions() {
@@ -616,7 +623,10 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
   }
 
   function renderPayment() {
-    const price = current.service?.price;
+    // Nightly rate x nights for a stay; the flat service price otherwise.
+    const price = stay && current.service?.price != null
+      ? stayTotal(Number(current.service.price), nights)
+      : current.service?.price;
     const ps = current.payment_status;
 
     const paidOnline = onlinePayment?.amount ?? 0;
@@ -655,7 +665,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
             style={{ padding: "14px 18px", borderBottom: "1px solid var(--color-cream-2)" }}
           >
             <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>
-              Service price
+              {stay ? "Stay total" : "Service price"}
             </span>
             <span
               className="text-[15px] font-bold"
@@ -895,13 +905,17 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
                 className="text-[18px] font-black"
                 style={{ color: "var(--color-dark)" }}
               >
-                {timeStart}–{timeEnd}
+                {stay && stayCheckOut
+                  ? `${format(date, "d MMM")} → ${format(stayCheckOut, "d MMM")}`
+                  : `${timeStart}–${timeEnd}`}
                 <span
                   className="text-[14px] font-normal"
                   style={{ color: "var(--color-muted)" }}
                 >
                   {" "}
-                  · {duration} min
+                  · {stay
+                    ? `${nights === 1 ? "1 night" : `${nights} nights`}${current.guests ? ` · ${current.guests} guests` : ""}`
+                    : `${duration} min`}
                 </span>
               </p>
               {current.service?.name && (

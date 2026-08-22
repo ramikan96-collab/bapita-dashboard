@@ -1,4 +1,11 @@
 export type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled" | "no_show";
+
+/**
+ * What kind of business this is. Drives public-page vocabulary, the booking
+ * widget (time slots vs date range) and the dashboard's default calendar view.
+ * Set by Bapita staff in the admin board, not by the customer.
+ */
+export type BusinessType = "appointment" | "stay";
 export type PaymentStatus =
   | "none" | "cash" | "transfer" | "stripe"
   | "pending_payment" | "deposit_paid" | "expired";
@@ -50,6 +57,14 @@ export interface Booking {
   label?: Label | null;
   staff_id?: string | null;
   staff?: StaffMember | null;
+  /**
+   * Stay bookings only. When set, `appointment_date` is the check-in date and
+   * this is the checkout date (exclusive). NULL means this row is an ordinary
+   * appointment and every appointment code path applies unchanged.
+   */
+  check_out?: string | null;
+  /** Stay bookings only: number of guests. */
+  guests?: number | null;
 }
 
 export interface DayHours {
@@ -86,6 +101,13 @@ export interface Business {
   google_maps_url: string | null;
   waze_url: string | null;
   status: "draft" | "live";
+  business_type?: BusinessType | null;
+  /**
+   * Stay businesses: per-unit photo grouping for the public gallery,
+   * { "<service_id>": [imageUrl, ...] }. Any gallery image not listed under a
+   * unit stays in the shared gallery section.
+   */
+  gallery_groups?: Record<string, string[]> | null;
   custom_domain?: string | null;
   custom_domain_verified?: boolean | null;
   // Computed server-side on the public page (payments addon approved AND Green
@@ -217,6 +239,12 @@ export interface Service {
   deposit_required?: boolean | null;
   deposit_type?: DepositType | null;
   deposit_value?: number | null;
+  // stay mode (business_type = "stay"): a service row IS a rentable unit.
+  // `price` is the nightly rate and `duration` is unused.
+  /** Minimum nights per reservation. Defaults to 1. */
+  min_nights?: number | null;
+  /** Sleeps up to N guests. Null = not specified, no cap enforced. */
+  max_guests?: number | null;
 }
 
 export const STATUS_COLOR: Record<BookingStatus, string> = {

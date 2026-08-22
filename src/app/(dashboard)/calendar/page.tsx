@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useLang } from "@/i18n";
 import { useCalendarChrome, type CalView } from "@/components/calendar/CalendarChrome";
+import { isStay, MAX_STAY_NIGHTS } from "@/lib/stay";
 import DayView from "@/components/calendar/DayView";
 import WeekView from "@/components/calendar/WeekView";
 import ConfirmRescheduleSheet from "@/components/calendar/ConfirmRescheduleSheet";
@@ -63,7 +64,13 @@ function CalendarPageInner() {
   const { t } = useLang();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [view, setView]           = useState<CalView>("week");
+  // Week is the right default for a barber's day-of-appointments. A host thinks
+  // in occupied nights across a month, so stay businesses open on month.
+  //
+  // Derived rather than stored: `business` loads async, so seeding state from it
+  // would need an effect that writes state on mount. An explicit choice wins
+  // whenever there is one, and until then the default follows the business type.
+  const [viewChoice, setView]     = useState<CalView | null>(null);
   const [date, setDate]           = useState<Date>(new Date());
   const [bookings, setBookings]   = useState<Booking[]>([]);
   const [blocked, setBlocked]     = useState<BlockedTime[]>([]);
@@ -79,20 +86,36 @@ function CalendarPageInner() {
   const supabase                  = createClient();
   const { setChrome }             = useCalendarChrome();
 
+  const view: CalView = viewChoice ?? (isStay(business) ? "month" : "week");
+
   const fetchBookings = useCallback(async () => {
     if (!business) return;
     setLoading(true);
     const [s, e] = rangeFor(view, date);
 
+    // A stay is a RANGE. One that checked in before the visible window but runs
+    // into it still occupies nights on screen, so the lower bound is pulled back
+    // by the longest stay we allow rather than clipped to the window start.
+    // Appointments are points and keep the exact window.
+    const stayMode = isStay(business);
+    const lowerBound = stayMode ? addDays(s, -MAX_STAY_NIGHTS) : s;
+
     const { data } = await supabase
       .from("bookings")
       .select("*, service:services(name, duration, price), label:labels(id,name,color), staff:staff(id,name,color)")
       .eq("business_id", business.id)
-      .gte("appointment_date", format(s, "yyyy-MM-dd"))
+      .gte("appointment_date", format(lowerBound, "yyyy-MM-dd"))
       .lte("appointment_date", format(e, "yyyy-MM-dd"))
       .order("appointment_time");
 
-    setBookings((data as Booking[]) ?? []);
+    const rows = (data as Booking[]) ?? [];
+    // Drop the over-fetched rows that turned out not to reach the window.
+    const windowStart = format(s, "yyyy-MM-dd");
+    setBookings(
+      stayMode
+        ? rows.filter((b) => !b.check_out || b.check_out > windowStart || b.appointment_date >= windowStart)
+        : rows
+    );
     setLoading(false);
   }, [business, view, date, supabase]);
 
@@ -487,6 +510,7 @@ function CalendarPageInner() {
             {view === "month" && (
               <MonthView
                 date={date}
+                stayMode={isStay(business)}
                 bookings={visibleBookings}
                 onSelectDay={handleSelectDay}
                 onSelectBooking={setSelected}

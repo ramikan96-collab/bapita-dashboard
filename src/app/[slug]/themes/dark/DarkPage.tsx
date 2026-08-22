@@ -6,6 +6,9 @@ import type { Business, Service } from "@/types";
 import { getSocialProof } from "@/lib/social-proof";
 import { FloatingCTA }    from "../../components/FloatingCTA";
 import { SectionGallery }  from "../../components/gallery/SectionGallery";
+import { SectionUnits }    from "../../components/SectionUnits";
+import { StayOverlay }     from "../../booking/StayOverlay";
+import { isStay, ungroupedPhotos, unitPhotos } from "@/lib/stay";
 import { SectionHours }    from "../../components/SectionHours";
 import { SectionLocation } from "../../components/SectionLocation";
 import { SectionReviews }  from "../../components/SectionReviews";
@@ -117,6 +120,18 @@ export function DarkPage({ business, services }: Props) {
   const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
   const displayAbout = (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
+  // Stay mode: this business rents places by the night, so a "service" is a unit
+  // and the booking widget is a date range. Everything appointment-shaped (the
+  // open/closed pill, staff, the "min" duration) is suppressed rather than
+  // relabelled — a property has no opening hours.
+  const stayMode      = isStay(business);
+  // Photos claimed by a unit already appear on that unit's card, so the flat
+  // gallery below shows only what is left over.
+  const galleryPhotos = stayMode ? ungroupedPhotos(business) : (business.gallery_images ?? []);
+  // After grouping, a stay business can have every photo claimed by a unit —
+  // then there is nothing left for the flat grid and the section is dropped.
+  const showFlatGallery = showImageGallery && galleryPhotos.length > 0;
+
   function openFromService(s: Service) { setSelectedService(s); setOverlayOpen(true); }
   function openFromCTA()               { setSelectedService(null); setOverlayOpen(true); }
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
@@ -162,7 +177,7 @@ export function DarkPage({ business, services }: Props) {
           style={{ fontFamily: headingFont, flexShrink: 0, height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
           onMouseEnter={e => { e.currentTarget.style.background = "#fff"; }}
           onMouseLeave={e => { e.currentTarget.style.background = accent; }}
-        >{t.hero.bookNow}</button>
+        >{stayMode ? t.stay.heroCta : t.hero.bookNow}</button>
       </div>
 
       {/* Hero */}
@@ -173,7 +188,7 @@ export function DarkPage({ business, services }: Props) {
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(13,13,13,0.6) 0%, rgba(13,13,13,0.1) 30%, rgba(13,13,13,0.1) 55%, rgba(13,13,13,0.88) 100%)" }} />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", width: "100%", maxWidth: 720 }}>
           <div className="dk-pill" style={{ marginBottom: 22, display: "flex", justifyContent: "center" }}>
-            {(business.show_open_status !== false && openStatus) ? (
+            {(!stayMode && business.show_open_status !== false && openStatus) ? (
               <span style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", color: "#fff", borderRadius: 9999, padding: "5px 16px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,0.14)" }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#4ade80" : "#555", display: "inline-block" }} />
                 {openStatus.text}
@@ -220,7 +235,7 @@ export function DarkPage({ business, services }: Props) {
             onMouseEnter={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = accent; e.currentTarget.style.transform = "translateY(-2px)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = D.bg; e.currentTarget.style.transform = "translateY(0)"; }}
           >
-            {t.hero.bookNow}
+            {stayMode ? t.stay.heroCta : t.hero.bookNow}
           </button>
         </div>
       </section>
@@ -240,7 +255,21 @@ export function DarkPage({ business, services }: Props) {
                 <div key={key}>
                   <GoldDivider accent={accent} />
                   <section ref={servicesRef} style={{ paddingTop: 0 }}>
-                    <DarkSectionTitle title={t.services.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
+                    <DarkSectionTitle title={stayMode ? t.stay.sectionTitle : t.services.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
+                    {stayMode ? (
+                      <SectionUnits
+                        business={business}
+                        units={services}
+                        t={t}
+                        isRtl={isRtl}
+                        tokens={{
+                          surface: D.surface, raised: D.raised, border: D.border,
+                          text: D.text, muted: D.muted, accent,
+                          radius: 2, displayFont: headingFont, ctaUppercase: true,
+                        }}
+                        onSelect={openFromService}
+                      />
+                    ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {services.map((s, i) => {
                         const hovered = hoveredCard === s.id;
@@ -280,6 +309,7 @@ export function DarkPage({ business, services }: Props) {
                         );
                       })}
                     </div>
+                    )}
                   </section>
                 </div>
               ) : null;
@@ -325,13 +355,13 @@ export function DarkPage({ business, services }: Props) {
                 </div>
               ) : null;
             case "gallery":
-              return (showInstaGallery || showImageGallery) ? (
+              return (showInstaGallery || showFlatGallery) ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
                   <DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
                   {showInstaGallery
                     ? <InstagramFeed embed={business.instagram_embed!} radius={2} />
-                    : <SectionGallery photos={business.gallery_images!} borderRadius={2} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} ui={{ btnBorder: "rgba(255,255,255,0.18)", btnBorderHover: accent, btnText: "rgba(255,255,255,0.72)", btnTextHover: "#fff" }} />}
+                    : <SectionGallery photos={galleryPhotos} borderRadius={2} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} ui={{ btnBorder: "rgba(255,255,255,0.18)", btnBorderHover: accent, btnText: "rgba(255,255,255,0.72)", btnTextHover: "#fff" }} />}
                 </div>
               ) : null;
             case "reviews":
@@ -391,7 +421,7 @@ export function DarkPage({ business, services }: Props) {
         />
       </div>
 
-      <FloatingCTA shopName={displayName} bookLabel={t.hero.bookNow} onBook={openFromCTA} bgColor={accent} textColor={D.bg} />
+      <FloatingCTA shopName={displayName} bookLabel={stayMode ? t.stay.heroCta : t.hero.bookNow} onBook={openFromCTA} bgColor={accent} textColor={D.bg} />
 
       {waNumber && (
         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
@@ -400,7 +430,28 @@ export function DarkPage({ business, services }: Props) {
         </a>
       )}
 
-      {overlayOpen && <BookingOverlay business={business} services={services} initialService={selectedService} onClose={closeOverlay} accentColor={accent} darkColor={D.text} bgColor={D.surface} lang={lang} />}
+      {overlayOpen && (stayMode
+        ? (
+          // Stay CTAs always resolve to a unit: the hero/floating CTA has no unit
+          // of its own, so it opens the first one rather than a dead modal.
+          (() => {
+            const unit = selectedService ?? services[0] ?? null;
+            return unit ? (
+              <StayOverlay
+                business={business}
+                unit={unit}
+                photos={unitPhotos(business, unit.id)}
+                onClose={closeOverlay}
+                accentColor={accent}
+                darkColor={D.text}
+                bgColor={D.surface}
+                lang={lang}
+              />
+            ) : null;
+          })()
+        )
+        : <BookingOverlay business={business} services={services} initialService={selectedService} onClose={closeOverlay} accentColor={accent} darkColor={D.text} bgColor={D.surface} lang={lang} />
+      )}
     </div>
   );
 }

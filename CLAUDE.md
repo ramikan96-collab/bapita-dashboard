@@ -9,8 +9,17 @@
 - TypeScript 5, ESLint 9
 
 ## Public APIs
-- `src/app/api/public/book` — booking creation endpoint
-- `src/app/api/public/slots` — availability queries
+- `src/app/api/public/book` — booking creation endpoint (branches to a stay-request path when `business_type = 'stay'`)
+- `src/app/api/public/slots` — appointment time-slot availability
+- `src/app/api/public/stay-availability` — blocked nights per rentable unit
+
+## Business types
+`businesses.business_type` is `appointment` (default) or `stay`, set by Bapita staff in the admin board.
+A **stay** business reuses `services` as rentable units (`price` = nightly rate, `duration` unused) and
+`bookings` as reservations (`appointment_date` = check-in, `check_out` set). All date logic lives in
+`src/lib/stay.ts` — public page, booking API and dashboard all call it so availability cannot disagree
+with itself. Checkout dates are **exclusive**: the checkout day is bookable as the next guest's check-in.
+Run `npm run verify:stay` after touching that file.
 
 ## Git
 - Remote: github.com/ramikan96-collab/bapita-dashboard (legacy org; slated for migration to info-bapita)
@@ -19,7 +28,8 @@
 1. **Vercel "Invalid Version"** — versionless `unrs-resolver` in package-lock.json causes build failure. Fix: regenerate lockfile.
 2. **Preview env vars** — Supabase vars must be scoped to Preview environment. Add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, + service role key to Vercel Preview.
 3. **Crons must be daily** — the Vercel account is on Hobby, which rejects any cron more frequent than once per day and **fails the whole deploy** before building. `vercel.json` is also schema-strict: no comment keys. The deposit-expiry cron (`/api/payments/greeninvoice/expire`) is pinned to `0 3 * * *` and is now only a janitor: availability reads ignore expired unpaid holds and `api/public/book` deletes them just-in-time (`src/lib/payment-holds.ts`), so slot correctness does not depend on cron frequency.
-5. **`bookings_slot_unique` has no status predicate** — it is (business_id, appointment_date, appointment_time), so a *cancelled* row still blocks that slot forever. Expired deposit holds are therefore DELETED, not cancelled. Keep it that way.
+5. **`bookings_slot_unique` is a partial index — read it before you touch it.** As of 2026-08-22 it is `(business_id, appointment_date, appointment_time) WHERE check_out IS NULL AND status IN ('confirmed','pending')`. Two separate predicates, each load-bearing: the **status** half is what stops a cancelled row from holding its slot forever (expired deposit holds are still DELETED, not cancelled — keep it that way); the **check_out** half exempts stays, which all share a check-in time and would otherwise collide across units. Stay overlap is a range test and is enforced in `src/lib/stay.ts`, not by this index. This entry previously claimed the index had no status predicate, which was already false in production and nearly caused a regression — **verify against `pg_indexes` before writing a migration that touches it.**
+
 4. **Push does not reliably trigger a build** — the GitHub webhook has silently failed more than once. After pushing, confirm a deployment for your SHA actually exists; if not, deploy with `npx vercel deploy --prod --yes --scope team_8ibtIeAI5bZIZWls7F97nUuD`.
 
 ## Past Security Audits

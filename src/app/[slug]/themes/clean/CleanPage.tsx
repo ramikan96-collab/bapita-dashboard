@@ -6,6 +6,9 @@ import type { Business, Service } from "@/types";
 import { getSocialProof } from "@/lib/social-proof";
 import { FloatingCTA }    from "../../components/FloatingCTA";
 import { SectionGallery }  from "../../components/gallery/SectionGallery";
+import { SectionUnits }    from "../../components/SectionUnits";
+import { StayOverlay }     from "../../booking/StayOverlay";
+import { isStay, ungroupedPhotos, unitPhotos } from "@/lib/stay";
 import { SectionHours }    from "../../components/SectionHours";
 import { SectionLocation } from "../../components/SectionLocation";
 import { SectionReviews }  from "../../components/SectionReviews";
@@ -72,6 +75,11 @@ export function CleanPage({ business, services }: Props) {
   const bodyFont    = resolveFont(business.body_font, plusJakartaSans.style.fontFamily);
   const showInstaGallery = business.show_gallery !== false && business.gallery_source === "instagram" && !!business.instagram_embed;
   const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
+  // Stay mode: services are rentable units and the widget is a date range.
+  // See lib/stay.ts and themes/dark/DarkPage.tsx for the same wiring.
+  const stayMode      = isStay(business);
+  const galleryPhotos = stayMode ? ungroupedPhotos(business) : (business.gallery_images ?? []);
+  const showFlatGallery = showImageGallery && galleryPhotos.length > 0;
 
   const socialProofText = getSocialProof(business, isRtl, t.social.happyClients);
   const displayTag   = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
@@ -133,7 +141,7 @@ export function CleanPage({ business, services }: Props) {
 
           {/* Open status / city pill */}
           <div className="cl-pill" style={{ marginBottom: 20 }}>
-            {(business.show_open_status !== false && openStatus) ? (
+            {(!stayMode && business.show_open_status !== false && openStatus) ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.1)", borderRadius: 9999, padding: "5px 13px", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: openStatus.open ? "#4ade80" : "#9CA3AF", flexShrink: 0 }} />
                 {openStatus.text}
@@ -214,7 +222,14 @@ export function CleanPage({ business, services }: Props) {
             case "services":
               return business.show_services !== false ? (
                 <section key={key} ref={servicesRef} style={{ paddingTop: 52 }}>
-                  <SectionTitle title={t.services.title} accent={accent} headingFont={headingFont} />
+                  <SectionTitle title={stayMode ? t.stay.sectionTitle : t.services.title} accent={accent} headingFont={headingFont} />
+                  {stayMode ? (
+                    <SectionUnits
+                      business={business} units={services} t={t} isRtl={isRtl}
+                      tokens={{ surface: P.bg, raised: P.surface, border: P.border, text: P.text, muted: P.muted, accent, radius: 10, displayFont: headingFont }}
+                      onSelect={openFromService}
+                    />
+                  ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {services.map((s, i) => {
                       const hovered = hoveredCard === s.id;
@@ -246,6 +261,7 @@ export function CleanPage({ business, services }: Props) {
                       );
                     })}
                   </div>
+                  )}
                 </section>
               ) : null;
             case "about":
@@ -284,12 +300,12 @@ export function CleanPage({ business, services }: Props) {
                 </section>
               ) : null;
             case "gallery":
-              return (showInstaGallery || showImageGallery) ? (
+              return (showInstaGallery || showFlatGallery) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
                   <SectionTitle title={t.gallery.title} accent={accent} headingFont={headingFont} />
                   {showInstaGallery
                     ? <InstagramFeed embed={business.instagram_embed!} radius={10} />
-                    : <SectionGallery photos={business.gallery_images!} borderRadius={10} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} />}
+                    : <SectionGallery photos={galleryPhotos} borderRadius={10} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} />}
                 </section>
               ) : null;
             case "reviews":
@@ -352,7 +368,14 @@ export function CleanPage({ business, services }: Props) {
         </a>
       )}
 
-      {overlayOpen && <BookingOverlay business={business} services={services} initialService={selectedService} onClose={closeOverlay} accentColor={accent} darkColor={P.text} bgColor={P.bg} lang={lang} />}
+      {overlayOpen && (stayMode
+          ? (() => {
+              const unit = selectedService ?? services[0] ?? null;
+              return unit ? (
+                <StayOverlay business={business} unit={unit} photos={unitPhotos(business, unit.id)} onClose={closeOverlay} accentColor={accent} darkColor={P.text} bgColor={P.bg} lang={lang} />
+              ) : null;
+            })()
+          : <BookingOverlay business={business} services={services} initialService={selectedService} onClose={closeOverlay} accentColor={accent} darkColor={P.text} bgColor={P.bg} lang={lang} />)}
     </div>
   );
 }

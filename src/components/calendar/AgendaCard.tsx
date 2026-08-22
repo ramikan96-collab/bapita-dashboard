@@ -2,6 +2,7 @@
 
 import type { Booking } from "@/types";
 import { STATUS_COLOR, STATUS_LABEL } from "@/types";
+import { isStayBooking, nightsBetween } from "@/lib/stay";
 
 interface Props {
   booking: Booking;
@@ -17,6 +18,16 @@ function endTime(time: string, duration: number): string {
 export default function AgendaCard({ booking: b, onClick }: Props) {
   const color = STATUS_COLOR[b.status];
   const duration = b.service?.duration ?? 30;
+
+  // A stay is a range: the left block shows the two dates, not a clock time,
+  // because every stay checks in at the same hour and the useful number is
+  // how many nights it runs.
+  const stay = isStayBooking(b);
+  const nights = stay ? nightsBetween(b.appointment_date, b.check_out!) : 0;
+  const md = (iso: string) => {
+    const [, m, d] = iso.split("-");
+    return `${Number(d)}/${Number(m)}`;
+  };
 
   return (
     <button
@@ -34,10 +45,10 @@ export default function AgendaCard({ booking: b, onClick }: Props) {
       {/* Time block */}
       <div className="shrink-0 flex flex-col justify-center px-4 py-4" style={{ minWidth: 72 }}>
         <div className="text-[18px] font-bold leading-none tracking-tight" style={{ color: "var(--color-dark)" }}>
-          {b.appointment_time.slice(0, 5)}
+          {stay ? md(b.appointment_date) : b.appointment_time.slice(0, 5)}
         </div>
         <div className="text-[12px] mt-1 leading-none font-medium" style={{ color: "var(--color-muted)" }}>
-          {endTime(b.appointment_time, duration)}
+          {stay ? md(b.check_out!) : endTime(b.appointment_time, duration)}
         </div>
       </div>
 
@@ -51,7 +62,9 @@ export default function AgendaCard({ booking: b, onClick }: Props) {
         </div>
         {b.service?.name && (
           <div className="text-[13px] mt-0.5 leading-snug truncate" style={{ color: "var(--color-muted)" }}>
-            {b.service.name} · {duration}min
+            {b.service.name} · {stay
+              ? `${nights === 1 ? "1 night" : `${nights} nights`}${b.guests ? ` · ${b.guests} guests` : ""}`
+              : `${duration}min`}
           </div>
         )}
       </div>

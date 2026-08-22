@@ -7,6 +7,11 @@ import { pushBookingCreated } from "@/lib/google-calendar";
 import { resolvePayment, NO_PAYMENT } from "@/lib/payments";
 import { withoutExpiredHolds, releaseExpiredHolds } from "@/lib/payment-holds";
 import { loadBusinessPaymentsConfig } from "@/lib/payments-server";
+import {
+  STAY_CHECK_IN_TIME, isIsoDate, nightsBetween, stayTotal,
+  unavailableRanges, validateStayRequest,
+  type StayBookingRow, type StayValidationError,
+} from "@/lib/stay";
 
 interface ExistingBookingRow {
   appointment_time: string;
@@ -111,6 +116,7 @@ export async function POST(req: NextRequest) {
     date, time,
     customerName, customerPhone, customerEmail,
     lang, staffId,
+    checkOut, guests, notes,
   } = await req.json();
 
   if (!businessId || !serviceId || !date || !time || !customerName || !customerPhone) {
@@ -150,6 +156,28 @@ export async function POST(req: NextRequest) {
       { error: "You already have a booking. Contact the business to make changes." },
       { status: 429 }
     );
+  }
+
+  // ─── Stay branch (business_type = "stay") ───────────────────────────────────
+  // Short-term rentals are date RANGES, not time slots, so they take their own
+  // path and return before any appointment logic runs. `date` is the check-in
+  // and `checkOut` is the checkout; `appointment_time` is stamped with a fixed
+  // check-in time purely so the column stays non-null and the row renders in
+  // every existing bookings list unchanged.
+  const { data: bizType } = await supabase
+    .from("businesses")
+    .select("business_type, blocked_dates, name, notification_email")
+    .eq("id", businessId)
+    .single();
+
+  if (bizType?.business_type === "stay") {
+    return handleStayRequest({
+      supabase, businessId, serviceId,
+      checkIn: date, checkOut,
+      guests, customerName, customerPhone, customerEmail, notes,
+      lang: lang === "he" ? "he" : "en",
+      business: bizType,
+    });
   }
 
   // Server-fetch service fields — never trust client for booking logic (duration gates the
@@ -475,4 +503,216 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ ok: true });
+}
+
+
+// ─── Stay request handling ────────────────────────────────────────────────────
+
+type ServiceClient = ReturnType<typeof createServiceClient>;
+
+interface StayBiz {
+  name: string | null;
+  blocked_dates: string[] | null;
+  notification_email: string | null;
+}
+
+interface StayArgs {
+  supabase: ServiceClient;
+  businessId: string;
+  serviceId: string;
+  checkIn: string;
+  checkOut: unknown;
+  guests: unknown;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  notes: unknown;
+  lang: "he" | "en";
+  business: StayBiz;
+}
+
+const STAY_ERROR_COPY: Record<StayValidationError, { en: string; he: string }> = {
+  invalid_dates:   { en: "Please choose a check in and a check out date.", he: "בחרו תאריך הגעה ותאריך יציאה." },
+  past_date:       { en: "That date has already passed.", he: "התאריך הזה כבר עבר." },
+  too_short:       { en: "That stay is shorter than the minimum for this place.", he: "השהייה קצרה מהמינימום של הדירה הזו." },
+  too_long:        { en: "That stay is too long to request online. Please contact the host.", he: "השהייה ארוכה מדי לבקשה אונליין. צרו קשר עם המארח." },
+  too_many_guests: { en: "That is more guests than this place sleeps.", he: "מספר האורחים גדול מהקיבולת של הדירה." },
+  unavailable:     { en: "Those dates are no longer available. Please pick another range.", he: "התאריכים האלה כבר לא זמינים. בחרו טווח אחר." },
+};
+
+/**
+ * Create a stay REQUEST (phase 1: no payment, no instant confirmation).
+ *
+ * The row lands as `pending` and the host confirms it in the dashboard. Nothing
+ * is pushed to Google Calendar here — a request is not yet a reservation, and
+ * writing unconfirmed holds into the host's calendar would make it useless.
+ */
+async function handleStayRequest(args: StayArgs) {
+  const {
+    supabase, businessId, serviceId, checkIn, checkOut, guests,
+    customerName, customerPhone, customerEmail, notes, lang, business,
+  } = args;
+
+  const fail = (code: StayValidationError, status = 400) =>
+    NextResponse.json({ error: STAY_ERROR_COPY[code][lang] }, { status });
+
+  if (!isIsoDate(checkIn) || !isIsoDate(checkOut)) return fail("invalid_dates");
+
+  // Unit must belong to this business — blocks a cross-tenant serviceId.
+  const { data: unit } = await supabase
+    .from("services")
+    .select("id, name, price, min_nights, max_guests")
+    .eq("id", serviceId)
+    .eq("business_id", businessId)
+    .single();
+  if (!unit) return NextResponse.json({ error: "invalid unit" }, { status: 400 });
+
+  const guestCount = Number.isFinite(Number(guests)) ? Math.max(1, Math.trunc(Number(guests))) : 1;
+
+  // Re-read availability server-side. The client greyed out dates when the modal
+  // opened; this is the guard that actually decides.
+  const { data: rows } = await supabase
+    .from("bookings")
+    .select("appointment_date, check_out, service_id")
+    .eq("business_id", businessId)
+    .eq("service_id", serviceId)
+    .eq("status", "confirmed")
+    .not("check_out", "is", null) as { data: StayBookingRow[] | null };
+
+  const invalid = validateStayRequest({
+    start: checkIn,
+    end: checkOut,
+    guests: guestCount,
+    unit,
+    unavailable: unavailableRanges(rows ?? [], business.blocked_dates, serviceId),
+  });
+  if (invalid) return fail(invalid, invalid === "unavailable" ? 409 : 400);
+
+  const nights = nightsBetween(checkIn, checkOut);
+  const total  = stayTotal(Number(unit.price) || 0, nights);
+
+  const { data: customer, error: customerError } = await supabase
+    .from("customers")
+    .upsert(
+      { business_id: businessId, name: customerName, phone: customerPhone, email: customerEmail || null },
+      { onConflict: "business_id,phone", ignoreDuplicates: false }
+    )
+    .select("id")
+    .single();
+  if (customerError || !customer) {
+    console.error("Stay customer upsert error:", customerError);
+    return NextResponse.json({ error: "failed to save customer" }, { status: 500 });
+  }
+
+  const { error: insertError } = await supabase.from("bookings").insert({
+    business_id: businessId,
+    service_id: serviceId,
+    customer_id: customer.id,
+    customer_name: customerName,
+    customer_phone: customerPhone,
+    customer_email: customerEmail || null,
+    appointment_date: checkIn,
+    appointment_time: STAY_CHECK_IN_TIME,
+    check_out: checkOut,
+    guests: guestCount,
+    status: "pending",
+    payment_status: "none",
+    // Guest-supplied free text (arrival time, requests). Trimmed and capped so a
+    // request cannot be used to stuff the host's dashboard.
+    notes: typeof notes === "string" && notes.trim() ? notes.trim().slice(0, 1000) : null,
+  });
+
+  if (insertError) {
+    console.error("Stay booking insert error:", insertError);
+    return NextResponse.json({ error: "failed to create request" }, { status: 500 });
+  }
+
+  const bizName = business.name ?? "";
+  const unitName = (unit.name as string | null) ?? "";
+
+  after(async () => {
+    const { data: bizData } = await supabase
+      .from("businesses")
+      .select("notification_email, owner_email")
+      .eq("id", businessId)
+      .single();
+    const hostEmail =
+      bizData?.notification_email || bizData?.owner_email || process.env.GMAIL_USER || "info.bapita@gmail.com";
+
+    const locale = lang === "he" ? "he-IL" : "en-US";
+    const fmt = (d: string) =>
+      new Date(d + "T12:00:00").toLocaleDateString(locale, { weekday: "short", month: "long", day: "numeric", year: "numeric" });
+
+    const rowsHtml = (labels: [string, string][]) =>
+      labels.map(([k, v]) => `<div style="margin-bottom:8px;"><strong>${esc(k)}:</strong> ${esc(v)}</div>`).join("");
+
+    // Host notification — always sent, this is the whole point of the request flow.
+    try {
+      await transporter.sendMail({
+        from: `Bapita <${process.env.GMAIL_USER}>`,
+        to: hostEmail,
+        subject: `בקשת אירוח חדשה — ${customerName} | ${unitName}`,
+        html: `
+          <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;direction:rtl;text-align:right;">
+            <h2 style="margin:0 0 8px;">בקשת אירוח חדשה 🏠</h2>
+            <div style="background:#FAF5EC;border-radius:12px;padding:20px;margin-bottom:20px;">
+              ${rowsHtml([
+                ["אורח", customerName],
+                ["טלפון", customerPhone],
+                ["דירה", unitName],
+                ["צ׳ק אין", fmt(checkIn)],
+                ["צ׳ק אאוט", fmt(checkOut as string)],
+                ["לילות", String(nights)],
+                ["אורחים", String(guestCount)],
+                ["סה״כ", `₪${total}`],
+              ])}
+            </div>
+            <p style="color:#888;font-size:13px;">אשרו או דחו את הבקשה בלוח הבקרה.</p>
+          </div>
+        `,
+      });
+    } catch (e) {
+      console.error("Stay host notification failed:", e);
+    }
+
+    // Guest acknowledgement — only when they gave a valid address.
+    const emailValid = typeof customerEmail === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail);
+    if (customerEmail && emailValid) {
+      const he = lang === "he";
+      try {
+        await transporter.sendMail({
+          from: `Bapita <${process.env.GMAIL_USER}>`,
+          to: customerEmail,
+          subject: he ? `הבקשה שלך התקבלה — ${bizName}` : `We got your request — ${bizName}`,
+          html: `
+            <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;${he ? "direction:rtl;text-align:right;" : ""}">
+              <h2 style="margin:0 0 8px;">${he ? "הבקשה התקבלה" : "Request received"}</h2>
+              <p style="color:#555;margin:0 0 24px;">${
+                he
+                  ? `שלום ${esc(customerName)}, המארח קיבל את הבקשה ויחזור אליך בהקדם לאישור.`
+                  : `Hi ${esc(customerName)}, the host has your request and will confirm shortly.`
+              }</p>
+              <div style="background:#FAF5EC;border-radius:12px;padding:20px;margin-bottom:20px;">
+                ${rowsHtml([
+                  [he ? "דירה" : "Place", unitName],
+                  [he ? "צ׳ק אין" : "Check in", fmt(checkIn)],
+                  [he ? "צ׳ק אאוט" : "Check out", fmt(checkOut as string)],
+                  [he ? "לילות" : "Nights", String(nights)],
+                  [he ? "אורחים" : "Guests", String(guestCount)],
+                  [he ? "סה״כ" : "Total", `₪${total}`],
+                ])}
+              </div>
+              <p style="color:#888;font-size:13px;">${
+                he ? "זו בקשה בלבד ואינה מהווה אישור הזמנה." : "This is a request, not a confirmed reservation yet."
+              }</p>
+            </div>
+          `,
+        });
+      } catch (e) {
+        console.error("Stay guest email failed:", e);
+      }
+    }
+  });
+
+  return NextResponse.json({ ok: true, stay: true, nights, total });
 }
