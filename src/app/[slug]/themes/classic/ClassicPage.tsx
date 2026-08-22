@@ -83,6 +83,8 @@ export function ClassicPage({ business, services }: Props) {
   const photoGroups = stayMode ? groupedGallery(business, services) : [];
   const groupedView = business.gallery_grouped !== false && photoGroups.length > 1;
   const showFlatGallery = showImageGallery && (galleryPhotos.length > 0 || groupedView);
+  // A stay is not an appointment — every CTA on the page has to say so.
+  const ctaLabel = stayMode ? t.stay.heroCta : t.hero.cta;
 
   const socialProofText = getSocialProof(business, isRtl, (business.business_type === "stay" ? t.social.happyGuests : t.social.happyClients));
   const displayTag  = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
@@ -171,7 +173,7 @@ export function ClassicPage({ business, services }: Props) {
             onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.borderColor = accent; e.currentTarget.style.color = "#fff"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#fff"; e.currentTarget.style.color = C.dark; }}
           >
-            {t.hero.cta}
+            {ctaLabel}
           </button>
         </div>
       </section>
@@ -334,7 +336,7 @@ export function ClassicPage({ business, services }: Props) {
         />
       </div>
 
-      <FloatingCTA shopName={displayName} bookLabel={t.hero.cta} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
+      <FloatingCTA shopName={displayName} bookLabel={ctaLabel} onBook={openFromCTA} bgColor={accent} textColor="#fff" />
 
       {waNumber && (
         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"

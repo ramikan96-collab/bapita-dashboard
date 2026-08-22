@@ -67,6 +67,8 @@ export const en = {
     checkOut: "Check out",
     pickCheckIn: "Select your check in date",
     pickCheckOut: "Select your check out date",
+    pickCheckOutFrom: (d: string) => `Check out after ${d}`,
+    earliestCheckOut: (d: string) => `Earliest check out is ${d}`,
     nights: (n: number) => (n === 1 ? "1 night" : `${n} nights`),
     guests: "Guests",
     total: "Total",

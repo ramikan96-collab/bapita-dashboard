@@ -49,10 +49,25 @@ export function StayRangePicker({
   const cal = calendarT ?? en.calendar;
   const isDark = /^#[01]/.test(bgColor ?? "");
   const today = todayIso();
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth());
+  // The two date steps are sibling branches, so this component remounts between
+  // them. Anchoring the visible month on checkIn is what stops the check-out
+  // calendar from opening on today's month after a check-in months away.
+  const anchor = new Date(`${checkIn ?? today}T12:00:00`);
+  const [year, setYear] = useState(anchor.getFullYear());
+  const [month, setMonth] = useState(anchor.getMonth());
+  const [syncedTo, setSyncedTo] = useState(checkIn);
   const [hover, setHover] = useState<string | null>(null);
+
+  // Follow a check-in that changed under us (restarting the range). Selecting
+  // from the visible month is a no-op re-render; only a jump actually moves it.
+  if (checkIn !== syncedTo) {
+    setSyncedTo(checkIn);
+    if (checkIn) {
+      const d = new Date(`${checkIn}T12:00:00`);
+      setYear(d.getFullYear());
+      setMonth(d.getMonth());
+    }
+  }
 
   function prevMonth() {
     if (month === 0) { setMonth(11); setYear((y) => y - 1); } else setMonth((m) => m - 1);
@@ -100,7 +115,10 @@ export function StayRangePicker({
     display: "flex", alignItems: "center", justifyContent: "center",
   };
 
-  const nights = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
+  // Counts the previewed range as well as a settled one — on the check-out step
+  // the range is committed the instant it is valid, so a confirmed range is never
+  // on screen long enough to read.
+  const nights = checkIn && rangeEnd ? nightsBetween(checkIn, rangeEnd) : 0;
 
   return (
     <div style={{ opacity: loading ? 0.5 : 1, transition: "opacity 0.2s ease" }}>
