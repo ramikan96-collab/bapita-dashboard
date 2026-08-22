@@ -132,7 +132,7 @@ The client copy of the check is UX (it disables the button). The server copy is 
 ## 5. Status
 
 ### Done
-- [x] Migration written (**not yet applied** — see below)
+- [x] Migration written **and applied** (verified 2026-08-22: the public stay page returns 200)
 - [x] `business_type` end to end: admin → DB → public page → dashboard
 - [x] Units with nightly rate, min nights, sleeps
 - [x] Per-unit photo groups; leftovers stay in the shared gallery
@@ -144,7 +144,7 @@ The client copy of the check is UX (it disables the button). The server copy is 
       `PaymentsSection` errors · 43/43 logic assertions pass
 
 ### Blocking, before the site works
-- [ ] **Run the migration.** Nothing else in this document functions until it is applied.
+- [x] **Run the migration.** Applied 2026-08-22.
 
 ### Deliberately out of scope
 - [ ] Payments — reuse the existing `deposit_required` machinery, deposit = first night

@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     type: "recovery",
     email,
     options: {
-      redirectTo: "https://dashboard.bapita.com/auth/callback?next=/profile",
+      redirectTo: "https://book.bapita.com/auth/callback?next=/profile",
     },
   });
 
