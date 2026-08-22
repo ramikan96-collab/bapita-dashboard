@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import type { Business, Service } from "@/types";
 import { StayRangePicker } from "../components/StayRangePicker";
 import { translations, type Lang } from "../translations";
 import { track } from "@/lib/analytics/track";
-import { addDaysIso, nightsBetween, stayTotal, validateStayRequest } from "@/lib/stay";
+import { addDaysIso, nightsBetween, stayTotal, unitPhotos, validateStayRequest } from "@/lib/stay";
 
 interface Props {
   business: Business;
-  unit: Service;
-  /** Photos for this unit, from business.gallery_groups; empty falls back to the hero. */
-  photos: string[];
+  /** Every rentable unit, for the picker step. */
+  units: Service[];
+  /** Pre-chosen unit when the guest opened from a unit card; null from a page CTA. */
+  unit: Service | null;
   onClose: () => void;
   accentColor: string;
   darkColor: string;
@@ -21,28 +22,32 @@ interface Props {
 }
 
 interface Availability {
+  /** Which unit this snapshot belongs to — switching units invalidates it. */
+  unitId: string;
   nights: string[];
   minNights: number;
   maxGuests: number | null;
 }
 
-type Step = "checkin" | "checkout" | "guests" | "contact" | "success";
-
-const STEP_ORDER: Step[] = ["checkin", "checkout", "guests", "contact"];
+type Step = "unit" | "dates" | "guests" | "contact" | "success";
 
 /**
  * Stay request modal, one decision per screen.
  *
  * Deliberately mirrors BookingOverlay's step chrome — back arrow, "2 of 4", one
  * question at a time — so the appointment flow and the stay flow read as the
- * same product rather than two bolted-together booking widgets. On a phone it
- * also keeps the calendar above the fold, which one long form does not.
+ * same product rather than two bolted-together booking widgets.
+ *
+ * Check-in and check-out share one screen and one calendar. They used to be two
+ * sibling steps, which remounted the picker between them and reset the visible
+ * month; a single screen with two date lines is both the fix and the shape every
+ * booking site has trained guests to expect.
  *
  * Phase 1 creates a PENDING request, never a confirmed reservation, and the
  * copy on the last step says so.
  */
 export function StayOverlay({
-  business, unit, photos, onClose, accentColor, darkColor, bgColor, lang = "en",
+  business, units, unit: initialUnit, onClose, accentColor, darkColor, bgColor, lang = "en",
 }: Props) {
   const t = translations[lang];
   const isDark = /^#[01]/.test(bgColor);
@@ -51,13 +56,19 @@ export function StayOverlay({
   const dividerClr = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
   const btnBg = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.06)";
   const dateLocale = lang === "he" ? "he-IL" : "en-US";
+  const isRtl = lang === "he";
 
-  const unitName = lang === "he" && unit.name_he ? unit.name_he : unit.name;
-  const unitDesc = lang === "he" && unit.description_he ? unit.description_he : unit.description;
+  // A page-level CTA carries no unit, so the guest picks one first. With a single
+  // unit there is nothing to pick and the step is skipped.
+  const needsPicker = !initialUnit && units.length > 1;
+  const STEP_ORDER = useMemo<Step[]>(
+    () => (needsPicker ? ["unit", "dates", "guests", "contact"] : ["dates", "guests", "contact"]),
+    [needsPicker],
+  );
 
-  const [step, setStep] = useState<Step>("checkin");
+  const [unit, setUnit] = useState<Service | null>(initialUnit ?? (needsPicker ? null : units[0] ?? null));
+  const [step, setStep] = useState<Step>(needsPicker ? "unit" : "dates");
   const [avail, setAvail] = useState<Availability | null>(null);
-  const [availLoading, setAvailLoading] = useState(true);
   const [checkIn, setCheckIn] = useState<string | null>(null);
   const [checkOut, setCheckOut] = useState<string | null>(null);
   const [guests, setGuests] = useState(2);
@@ -68,6 +79,13 @@ export function StayOverlay({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [photoIdx, setPhotoIdx] = useState(0);
+
+  // On the picker step there is no unit yet, so the header falls back to the business.
+  const unitName = unit
+    ? (lang === "he" && unit.name_he ? unit.name_he : unit.name)
+    : (isRtl && business.name_he ? business.name_he : business.name);
+  const unitDesc = unit && lang === "he" && unit.description_he ? unit.description_he : unit?.description;
+  const photos = unit ? unitPhotos(business, unit.id) : [];
 
   const trackCtx = { businessId: business.id, slug: business.slug, status: business.status, lang };
 
@@ -83,96 +101,108 @@ export function StayOverlay({
   }, [onClose]);
 
   useEffect(() => {
-    track("booking_started", trackCtx, { meta: { unit: unit.id } });
+    track("booking_started", trackCtx, { meta: { unit: initialUnit?.id } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (step === "success") track("booking_completed", trackCtx, { meta: { unit: unit.id } });
+    if (step === "success") track("booking_completed", trackCtx, { meta: { unit: unit?.id } });
     else track("step_reached", trackCtx, { step });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
+  const unitId = unit?.id;
+  const unitMinNights = unit?.min_nights;
+  const unitMaxGuests = unit?.max_guests;
+
   useEffect(() => {
+    if (!unitId) return;
     let cancelled = false;
-    fetch(`/api/public/stay-availability?businessId=${business.id}&unitId=${unit.id}`)
+    fetch(`/api/public/stay-availability?businessId=${business.id}&unitId=${unitId}`)
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
         setAvail({
+          unitId,
           nights: Array.isArray(d.nights) ? d.nights : [],
           minNights: Number(d.minNights) || 1,
           maxGuests: d.maxGuests ?? null,
         });
-        setAvailLoading(false);
       })
       .catch(() => {
         if (cancelled) return;
         // Availability is an optimization, not the guard — the server revalidates
         // on submit. Failing open beats blocking a guest behind a fetch error.
-        setAvail({ nights: [], minNights: unit.min_nights ?? 1, maxGuests: unit.max_guests ?? null });
-        setAvailLoading(false);
+        setAvail({ unitId, nights: [], minNights: unitMinNights ?? 1, maxGuests: unitMaxGuests ?? null });
       });
     return () => { cancelled = true; };
-  }, [business.id, unit.id, unit.min_nights, unit.max_guests]);
+  }, [business.id, unitId, unitMinNights, unitMaxGuests]);
 
-  const unavailableSet = new Set(avail?.nights ?? []);
+  // A snapshot for another unit is not just stale, it is wrong — so the calendar
+  // reads as loading until this unit's availability lands.
+  const activeAvail = avail && avail.unitId === unitId ? avail : null;
+  const availLoading = !unitId || !activeAvail;
+  const unavailableSet = useMemo(() => new Set(activeAvail?.nights ?? []), [activeAvail]);
   const nights = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
-  const total = stayTotal(unit.price, nights);
-  const maxGuests = avail?.maxGuests ?? unit.max_guests ?? null;
-  const minNights = avail?.minNights ?? unit.min_nights ?? 1;
+  const total = stayTotal(unit?.price ?? 0, nights);
+  const maxGuests = activeAvail?.maxGuests ?? unitMaxGuests ?? null;
+  const minNights = activeAvail?.minNights ?? unitMinNights ?? 1;
 
-  const stepNum = step === "success" ? STEP_ORDER.length : STEP_ORDER.indexOf(step) + 1;
-  const isFirst = step === "checkin";
+  const stepNum = step === "success" ? STEP_ORDER.length : Math.max(1, STEP_ORDER.indexOf(step) + 1);
+  const isFirst = step === STEP_ORDER[0];
 
-  /** Drops the range and returns to the first date step. */
+  /** Drops the range without leaving the date screen. */
   function clearDates() {
     setError("");
     setCheckIn(null);
     setCheckOut(null);
-    setStep("checkin");
+  }
+
+  function chooseUnit(u: Service) {
+    setUnit(u);
+    setPhotoIdx(0);
+    clearDates();
+    setStep("dates");
   }
 
   function goBack() {
     setError("");
     if (step === "contact") setStep("guests");
-    else if (step === "guests") setStep("checkout");
-    else if (step === "checkout") { setStep("checkin"); setCheckOut(null); }
+    else if (step === "guests") setStep("dates");
+    else if (step === "dates" && needsPicker) setStep("unit");
   }
 
   /**
-   * The picker is shared between both date steps. On the check-in step it only
-   * ever reports a start; on the check-out step a tap on or before the current
-   * check-in resets the start rather than erroring, which is the forgiving
-   * behaviour every booking site has trained guests to expect.
+   * Both dates live on one screen, so this is the only place a range is settled.
+   * A tap on or before the current check-in restarts the range rather than
+   * erroring — the forgiving behaviour every booking site has trained guests to
+   * expect. A complete, valid range advances straight to the guest count.
    */
   function onPickDates(ci: string | null, co: string | null) {
     setError("");
     setCheckIn(ci);
     setCheckOut(co);
 
-    if (step === "checkin" && ci && !co) { setStep("checkout"); return; }
+    if (!ci || !co) return;
 
-    if (step === "checkout" && ci && co) {
-      const invalid = validateStayRequest({
-        start: ci, end: co, guests,
-        unit: { min_nights: minNights, max_guests: maxGuests },
-        // Night conflicts are impossible here: the picker refuses to build a
-        // range spanning a blocked night. This only checks the rules it cannot
-        // express, such as the minimum stay.
-        unavailable: [],
-      });
-      if (invalid) { setError(t.stay.errors[invalid]); setCheckOut(null); return; }
-      setStep("guests");
-    }
+    const invalid = validateStayRequest({
+      start: ci, end: co, guests,
+      unit: { min_nights: minNights, max_guests: maxGuests },
+      // Night conflicts are impossible here: the picker refuses to build a
+      // range spanning a blocked night. This only checks the rules it cannot
+      // express, such as the minimum stay.
+      unavailable: [],
+    });
+    if (invalid) { setError(t.stay.errors[invalid]); setCheckOut(null); return; }
+    setStep("guests");
   }
 
   const canSubmit =
-    !!checkIn && !!checkOut && nights >= minNights &&
+    !!unit && !!checkIn && !!checkOut && nights >= minNights &&
     name.trim().length > 1 && phone.trim().length > 5 && !submitting;
 
   async function submit() {
-    if (!canSubmit) return;
+    if (!canSubmit || !unit) return;
     setSubmitting(true);
     setError("");
     try {
@@ -232,11 +262,13 @@ export function StayOverlay({
       <style>{`
         @keyframes stiSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         @keyframes stiPopIn { from { opacity:0; transform: translate(-50%,-50%) scale(0.96); } to { opacity:1; transform: translate(-50%,-50%) scale(1); } }
+        @keyframes stiLineIn { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform: translateY(0); } }
         .bap-stay-sheet {
           position: fixed; inset-inline-start: 0; inset-inline-end: 0; bottom: 0;
           z-index: 101; border-radius: 20px 20px 0 0; max-height: 92svh;
           display: flex; flex-direction: column; animation: stiSlideUp 0.35s ease;
         }
+        .bap-stay-line-in { animation: stiLineIn 0.22s ease; }
         @media (min-width: 768px) {
           .bap-stay-sheet {
             inset-inline-start: unset; inset-inline-end: unset; bottom: unset;
@@ -245,7 +277,9 @@ export function StayOverlay({
             border-radius: 20px; animation: stiPopIn 0.28s ease;
           }
         }
-        @media (prefers-reduced-motion: reduce) { .bap-stay-sheet { animation: none; } }
+        @media (prefers-reduced-motion: reduce) {
+          .bap-stay-sheet, .bap-stay-line-in { animation: none; }
+        }
       `}</style>
 
       <div onClick={onClose} style={{
@@ -281,9 +315,137 @@ export function StayOverlay({
 
         <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 40px" }}>
 
-          {/* ── 1. Check in ─────────────────────────────────────────────── */}
-          {step === "checkin" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* ── 1. Which place ──────────────────────────────────────────── */}
+          {step === "unit" && (
+            <div>
+              <span style={label}>{t.stay.pickUnit}</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {units.map((u) => {
+                  const uPhotos = unitPhotos(business, u.id);
+                  const cover = uPhotos[0] ?? business.hero_image_url ?? null;
+                  const uName = lang === "he" && u.name_he ? u.name_he : u.name;
+                  const uDesc = lang === "he" && u.description_he ? u.description_he : u.description;
+                  return (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => chooseUnit(u)}
+                      style={{
+                        display: "flex", alignItems: "stretch", gap: 12, textAlign: "start",
+                        background: cardBg, border: `1px solid ${borderClr}`, borderRadius: 12,
+                        padding: 0, overflow: "hidden", cursor: "pointer", fontFamily: "inherit",
+                      }}
+                    >
+                      {cover && (
+                        <div style={{ position: "relative", width: 96, flexShrink: 0, background: btnBg }}>
+                          <Image
+                            src={cover}
+                            alt={uName}
+                            fill
+                            sizes="96px"
+                            style={{ objectFit: "cover", objectPosition: business.image_focal?.[cover] || "center" }}
+                          />
+                        </div>
+                      )}
+                      <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flex: 1 }}>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: darkColor }}>{uName}</span>
+                        {uDesc && (
+                          <span style={{ fontSize: 12, color: darkColor, opacity: 0.55, lineHeight: 1.45 }}>{uDesc}</span>
+                        )}
+                        <span style={{ marginTop: "auto", paddingTop: 6, fontSize: 15, fontWeight: 800, color: accentColor }}>
+                          ₪{u.price}
+                          <span style={{ fontSize: 12, fontWeight: 500, color: darkColor, opacity: 0.5 }}> / {t.stay.perNight}</span>
+                          {u.max_guests ? (
+                            <span style={{ fontSize: 12, fontWeight: 500, color: darkColor, opacity: 0.5 }}> · {t.stay.sleeps(u.max_guests)}</span>
+                          ) : null}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── 2. Dates — both lines on one screen, one calendar ────────── */}
+          {step === "dates" && unit && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {needsPicker && (
+                <button
+                  type="button"
+                  onClick={() => setStep("unit")}
+                  style={{
+                    alignSelf: "flex-start", background: "none", border: "none", padding: 0,
+                    color: accentColor, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >{t.stay.changeUnit}</button>
+              )}
+
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: accentColor }}>
+                  ₪{unit.price}
+                  <span style={{ fontSize: 13, fontWeight: 500, color: darkColor, opacity: 0.5 }}> / {t.stay.perNight}</span>
+                </span>
+                {maxGuests ? <span style={{ fontSize: 13, color: darkColor, opacity: 0.5 }}>{t.stay.sleeps(maxGuests)}</span> : null}
+              </div>
+
+              {/* The two date lines. Check-out only appears once check-in is set —
+                  it is the affordance that says the range is half made. */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <DateLine
+                  k={t.stay.checkIn}
+                  v={checkIn ? fmtDate(checkIn) : t.stay.selectDate}
+                  active={!checkIn}
+                  filled={!!checkIn}
+                  onClick={clearDates}
+                  accentColor={accentColor} darkColor={darkColor} cardBg={cardBg} borderClr={borderClr}
+                />
+                {checkIn && (
+                  <DateLine
+                    className="bap-stay-line-in"
+                    k={t.stay.checkOut}
+                    v={checkOut ? fmtDate(checkOut) : t.stay.selectDate}
+                    active={!checkOut}
+                    filled={!!checkOut}
+                    onClick={() => { setError(""); setCheckOut(null); }}
+                    accentColor={accentColor} darkColor={darkColor} cardBg={cardBg} borderClr={borderClr}
+                  />
+                )}
+              </div>
+
+              <div>
+                <StayRangePicker
+                  checkIn={checkIn}
+                  checkOut={checkOut}
+                  unavailable={unavailableSet}
+                  onChange={onPickDates}
+                  accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
+                  calendarT={t.calendar}
+                  nightsLabel={t.stay.nights}
+                  loading={availLoading}
+                />
+                <p style={{ marginTop: 10, fontSize: 12, color: darkColor, opacity: 0.5, textAlign: "center" }}>
+                  {checkIn
+                    ? t.stay.earliestCheckOut(fmtDate(addDaysIso(checkIn, minNights)))
+                    : minNights > 1 ? t.stay.minNights(minNights) : t.stay.pickCheckIn}
+                </p>
+                {checkIn && (
+                  <button
+                    type="button"
+                    onClick={clearDates}
+                    style={{
+                      display: "block", margin: "12px auto 0", background: "none", border: "none",
+                      padding: "6px 8px", color: darkColor, opacity: 0.55, fontSize: 13, fontWeight: 600,
+                      textDecoration: "underline", cursor: "pointer", fontFamily: "inherit",
+                    }}
+                  >{t.stay.clearDates}</button>
+                )}
+              </div>
+
+              {error && <div style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{error}</div>}
+
+              {/* Photos sit under the calendar: the guest came here to check dates,
+                  and on a phone the grid has to be the first thing on screen. */}
               {photos.length > 0 && (
                 <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3", borderRadius: 14, overflow: "hidden", background: btnBg }}>
                   <Image
@@ -292,7 +454,6 @@ export function StayOverlay({
                     fill
                     sizes="(max-width: 768px) 100vw, 460px"
                     style={{ objectFit: "cover" }}
-                    priority
                   />
                   {photos.length > 1 && (
                     <>
@@ -311,76 +472,11 @@ export function StayOverlay({
               {unitDesc && (
                 <p style={{ fontSize: 14, lineHeight: 1.6, color: darkColor, opacity: 0.7, margin: 0 }}>{unitDesc}</p>
               )}
-
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-                <span style={{ fontSize: 18, fontWeight: 800, color: accentColor }}>
-                  ₪{unit.price}
-                  <span style={{ fontSize: 13, fontWeight: 500, color: darkColor, opacity: 0.5 }}> / {t.stay.perNight}</span>
-                </span>
-                {maxGuests ? <span style={{ fontSize: 13, color: darkColor, opacity: 0.5 }}>{t.stay.sleeps(maxGuests)}</span> : null}
-              </div>
-
-              <div>
-                <span style={label}>{t.stay.pickCheckIn}</span>
-                <StayRangePicker
-                  checkIn={null}
-                  checkOut={null}
-                  unavailable={unavailableSet}
-                  onChange={onPickDates}
-                  accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
-                  calendarT={t.calendar}
-                  nightsLabel={t.stay.nights}
-                  loading={availLoading}
-                />
-                {minNights > 1 && (
-                  <p style={{ marginTop: 10, fontSize: 12, color: darkColor, opacity: 0.5, textAlign: "center" }}>
-                    {t.stay.minNights(minNights)}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ── 2. Check out ────────────────────────────────────────────── */}
-          {step === "checkout" && checkIn && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-              <div style={{ background: cardBg, border: `1px solid ${borderClr}`, borderRadius: 12, padding: "12px 16px" }}>
-                <Row k={t.stay.checkIn} v={fmtDate(checkIn)} darkColor={darkColor} bold />
-              </div>
-
-              <div>
-                <span style={label}>{t.stay.pickCheckOutFrom(fmtDate(checkIn))}</span>
-                <StayRangePicker
-                  checkIn={checkIn}
-                  checkOut={checkOut}
-                  unavailable={unavailableSet}
-                  onChange={onPickDates}
-                  accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
-                  calendarT={t.calendar}
-                  nightsLabel={t.stay.nights}
-                  loading={availLoading}
-                />
-                <p style={{ marginTop: 10, fontSize: 12, color: darkColor, opacity: 0.5, textAlign: "center" }}>
-                  {t.stay.earliestCheckOut(fmtDate(addDaysIso(checkIn, minNights)))}
-                  {minNights > 1 ? ` · ${t.stay.minNights(minNights)}` : ""}
-                </p>
-                <button
-                  type="button"
-                  onClick={clearDates}
-                  style={{
-                    display: "block", margin: "12px auto 0", background: "none", border: "none",
-                    padding: "6px 8px", color: darkColor, opacity: 0.55, fontSize: 13, fontWeight: 600,
-                    textDecoration: "underline", cursor: "pointer", fontFamily: "inherit",
-                  }}
-                >{t.stay.clearDates}</button>
-              </div>
-
-              {error && <div style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{error}</div>}
             </div>
           )}
 
           {/* ── 3. Guests ───────────────────────────────────────────────── */}
-          {step === "guests" && checkIn && checkOut && (
+          {step === "guests" && unit && checkIn && checkOut && (
             <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
               <div style={{ background: cardBg, border: `1px solid ${borderClr}`, borderRadius: 12, padding: 16 }}>
                 <Row k={t.stay.checkIn} v={fmtDate(checkIn)} darkColor={darkColor} />
@@ -477,6 +573,39 @@ export function StayOverlay({
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * One date row. `active` marks the field the calendar is currently filling, which
+ * is what makes a two-line control legible without a second calendar.
+ */
+function DateLine({
+  k, v, active, filled, onClick, accentColor, darkColor, cardBg, borderClr, className,
+}: {
+  k: string; v: string; active: boolean; filled: boolean; onClick: () => void;
+  accentColor: string; darkColor: string; cardBg: string; borderClr: string; className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={className}
+      onClick={onClick}
+      disabled={!filled}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+        width: "100%", padding: "12px 14px", borderRadius: 10,
+        background: cardBg,
+        border: `1.5px solid ${active ? accentColor : borderClr}`,
+        boxShadow: active ? `0 0 0 3px ${accentColor}22` : "none",
+        cursor: filled ? "pointer" : "default",
+        fontFamily: "inherit", textAlign: "start",
+        transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+      }}
+    >
+      <span style={{ fontSize: 12, fontWeight: 700, color: darkColor, opacity: 0.55 }}>{k}</span>
+      <span style={{ fontSize: 14, fontWeight: 700, color: filled ? darkColor : accentColor }}>{v}</span>
+    </button>
   );
 }
 

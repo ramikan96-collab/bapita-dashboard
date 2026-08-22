@@ -9,7 +9,7 @@ import { SectionGallery }  from "../../components/gallery/SectionGallery";
 import { SectionUnits }    from "../../components/SectionUnits";
 import { SectionGalleryGrouped } from "../../components/gallery/SectionGalleryGrouped";
 import { StayOverlay }     from "../../booking/StayOverlay";
-import { isStay, ungroupedPhotos, unitPhotos, groupedGallery } from "@/lib/stay";
+import { isStay, ungroupedPhotos, groupedGallery } from "@/lib/stay";
 import { SectionHours }    from "../../components/SectionHours";
 import { SectionLocation } from "../../components/SectionLocation";
 import { SectionReviews }  from "../../components/SectionReviews";
@@ -440,15 +440,15 @@ export function DarkPage({ business, services }: Props) {
 
       {overlayOpen && (stayMode
         ? (
-          // Stay CTAs always resolve to a unit: the hero/floating CTA has no unit
-          // of its own, so it opens the first one rather than a dead modal.
+          // A page CTA carries no unit, so the overlay opens on its own picker
+          // step. A unit card passes its unit and the picker is skipped.
           (() => {
-            const unit = selectedService ?? services[0] ?? null;
-            return unit ? (
+            const unit = selectedService ?? null;
+            return services.length > 0 ? (
               <StayOverlay
                 business={business}
+                units={services}
                 unit={unit}
-                photos={unitPhotos(business, unit.id)}
                 onClose={closeOverlay}
                 accentColor={accent}
                 darkColor={D.text}
