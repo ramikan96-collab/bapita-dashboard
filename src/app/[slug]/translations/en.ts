@@ -8,7 +8,7 @@ export const en = {
   reviews: { title: "What Clients Say", leaveReview: "Leave a review on Google", showMore: "Show more", showLess: "Show less" },
   staff: { title: "Team" },
   footer: { poweredBy: "Powered by", brand: "Bapita" },
-  social: { happyClients: "4.9 · 340 happy clients" },
+  social: { happyClients: "4.9 · 340 happy clients", happyGuests: "Booked directly with the host" },
   min: "min",
   status: {
     openNow: "Open now",

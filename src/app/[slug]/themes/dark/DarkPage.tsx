@@ -95,7 +95,7 @@ export function DarkPage({ business, services }: Props) {
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
 
-  const socialProofText = getSocialProof(business, isRtl, t.social.happyClients);
+  const socialProofText = getSocialProof(business, isRtl, (business.business_type === "stay" ? t.social.happyGuests : t.social.happyClients));
 
   useEffect(() => {
     const onScroll = () => {

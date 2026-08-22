@@ -1,0 +1,31 @@
+-- Hotfix: grant anon SELECT on the two stay columns
+-- Follows: 2026-08-22-stay-business-type.sql
+-- Project: ixihybsstplqavbpbrlo (prod)
+--
+-- INCIDENT (2026-08-22): every public tenant page returned 404 immediately
+-- after the stay deploy — kasa-herzeliya, shimi-azut-hairstudio, the demos,
+-- all of them.
+--
+-- Cause: `anon` does not hold a table-level SELECT on public.businesses. It
+-- holds COLUMN-LEVEL grants on a fixed list of 69 columns, from the cross-tenant
+-- read tightening in 2026-07-08-custom-domain-grants.sql. Postgres does not add
+-- new columns to a column-level grant, so the moment src/app/[slug]/page.tsx
+-- selected business_type and gallery_groups, the anon query failed with a
+-- permission error — and that page turns any query error into notFound().
+--
+-- Both columns are already public information: the business type is visible in
+-- the page layout, and gallery_groups is a map of image URLs the page renders.
+-- Granting exactly these two keeps the tightening intact.
+--
+-- LESSON: adding a column to the [slug] page's select list is a two-part change.
+-- The column must also be granted to anon or every public page 404s. See
+-- CLAUDE.md.
+
+grant select (business_type, gallery_groups) on public.businesses to anon;
+
+-- Verify:
+--   select column_name from information_schema.column_privileges
+--    where table_schema='public' and table_name='businesses'
+--      and grantee='anon' and privilege_type='SELECT'
+--      and column_name in ('business_type','gallery_groups');
+--   -> must return both rows

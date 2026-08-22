@@ -78,7 +78,7 @@ export function ClassicPage({ business, services }: Props) {
   const galleryPhotos = stayMode ? ungroupedPhotos(business) : (business.gallery_images ?? []);
   const showFlatGallery = showImageGallery && galleryPhotos.length > 0;
 
-  const socialProofText = getSocialProof(business, isRtl, t.social.happyClients);
+  const socialProofText = getSocialProof(business, isRtl, (business.business_type === "stay" ? t.social.happyGuests : t.social.happyClients));
   const displayTag  = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
   const displayAbout= (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
