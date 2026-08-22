@@ -1597,6 +1597,23 @@ function GooglePlaceIdCard({
   );
 }
 
+/** Drop group entries whose photo no longer exists, and empty groups with them. */
+function pruneGroups(groups: Record<string, string[]> | null | undefined, images: string[]) {
+  const live = new Set(images);
+  const out: Record<string, string[]> = {};
+  for (const [unitId, urls] of Object.entries(groups ?? {})) {
+    const kept = (urls ?? []).filter(u => live.has(u));
+    if (kept.length > 0) out[unitId] = kept;
+  }
+  return out;
+}
+
+/** Drop focal points for photos that no longer exist. */
+function pruneFocal(focal: Record<string, string> | null | undefined, images: string[]) {
+  const live = new Set(images);
+  return Object.fromEntries(Object.entries(focal ?? {}).filter(([u]) => live.has(u)));
+}
+
 // ─── Website section (booking link + language + gallery + reviews) ────────────
 
 function WebsiteSection({
@@ -1620,6 +1637,7 @@ function WebsiteSection({
   const [images, setImages]                   = useState<string[]>(business.gallery_images || []);
   const [hidden, setHidden]                   = useState<string[]>(business.gallery_hidden || []);
   const [showGallery, setShowGallery]         = useState(business.show_gallery !== false);
+  const [galleryGrouped, setGalleryGrouped]   = useState(business.gallery_grouped !== false);
   const [tiktokUrl, setTiktokUrl]             = useState(business.tiktok_url || "");
   const [instagramUrl, setInstagramUrl]       = useState(business.instagram_url || "");
   const [facebookUrl, setFacebookUrl]         = useState(business.facebook_url || "");
@@ -1647,6 +1665,7 @@ function WebsiteSection({
   const origImages           = JSON.stringify(business.gallery_images || []);
   const origHidden           = JSON.stringify(business.gallery_hidden || []);
   const origShowGallery      = business.show_gallery !== false;
+  const origGalleryGrouped   = business.gallery_grouped !== false;
   const origTiktokUrl        = business.tiktok_url || "";
   const origInstagramUrl     = business.instagram_url || "";
   const origFacebookUrl      = business.facebook_url || "";
@@ -1662,7 +1681,7 @@ function WebsiteSection({
   const origGallerySource    = ((business as unknown as { gallery_source?: string | null }).gallery_source as "images" | "instagram") || "images";
   const origInstagramEmbed   = (business as unknown as { instagram_embed?: string | null }).instagram_embed || "";
   const dirty = slug !== origSlug || defaultLang !== origLang ||
-                JSON.stringify(images) !== origImages || JSON.stringify(hidden) !== origHidden || showGallery !== origShowGallery ||
+                JSON.stringify(images) !== origImages || JSON.stringify(hidden) !== origHidden || showGallery !== origShowGallery || galleryGrouped !== origGalleryGrouped ||
                 tiktokUrl !== origTiktokUrl || instagramUrl !== origInstagramUrl ||
                 facebookUrl !== origFacebookUrl || whatsappNumber !== origWhatsappNumber ||
                 googleReviewLink !== origGoogleReviewLink || googleMapsUrl !== origGoogleMapsUrl ||
@@ -1779,6 +1798,11 @@ function WebsiteSection({
       default_lang:       defaultLang,
       gallery_images:     images,
       gallery_hidden:     hidden.filter(u => images.includes(u)),
+      gallery_grouped:    galleryGrouped,
+      // A deleted photo must not linger in a unit group or the focal map —
+      // an orphan there resurfaces later as a broken image on the unit card.
+      gallery_groups:     pruneGroups(business.gallery_groups, images),
+      image_focal:        pruneFocal(business.image_focal, images),
       hero_image_url:     images[0] || null,
       show_gallery:       showGallery,
       tiktok_url:         tiktokUrl.trim() || null,
@@ -1960,6 +1984,27 @@ function WebsiteSection({
           </div>
           <Toggle on={showGallery} onChange={() => setShowGallery(g => !g)} />
         </div>
+        {business.business_type === "stay" && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>Gallery layout</div>
+              <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 2 }}>
+                {galleryGrouped
+                  ? "Grouped — one block per place, with its name as a heading"
+                  : "Normal — every photo in one grid"}
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", borderRadius: 9999, padding: "3px", gap: 2, background: "var(--color-cream-2)", flexShrink: 0 }}>
+              {([["Grouped", true], ["Normal", false]] as const).map(([lbl, val]) => (
+                <button
+                  key={lbl}
+                  onClick={() => setGalleryGrouped(val)}
+                  style={{ padding: "6px 12px", borderRadius: 9999, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s, color 0.15s", background: galleryGrouped === val ? "var(--color-amber)" : "transparent", color: galleryGrouped === val ? "var(--color-surface)" : "var(--color-muted)" }}
+                >{lbl}</button>
+              ))}
+            </div>
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)" }}>Gallery content</div>

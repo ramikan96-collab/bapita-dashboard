@@ -7,8 +7,9 @@ import { getSocialProof } from "@/lib/social-proof";
 import { FloatingCTA }    from "../../components/FloatingCTA";
 import { SectionGallery }  from "../../components/gallery/SectionGallery";
 import { SectionUnits }    from "../../components/SectionUnits";
+import { SectionGalleryGrouped } from "../../components/gallery/SectionGalleryGrouped";
 import { StayOverlay }     from "../../booking/StayOverlay";
-import { isStay, ungroupedPhotos, unitPhotos } from "@/lib/stay";
+import { isStay, ungroupedPhotos, unitPhotos, groupedGallery } from "@/lib/stay";
 import { SectionHours }    from "../../components/SectionHours";
 import { SectionLocation } from "../../components/SectionLocation";
 import { SectionReviews }  from "../../components/SectionReviews";
@@ -76,9 +77,14 @@ export function ClassicPage({ business, services }: Props) {
   // See lib/stay.ts and themes/dark/DarkPage.tsx for the same wiring.
   const stayMode      = isStay(business);
   const galleryPhotos = stayMode ? ungroupedPhotos(business) : (business.gallery_images ?? []);
-  const showFlatGallery = showImageGallery && galleryPhotos.length > 0;
+  // Grouped gallery: one block per unit. Only meaningful once photos are
+  // actually assigned, so an empty gallery_groups falls back to the flat grid
+  // no matter what the toggle says.
+  const photoGroups = stayMode ? groupedGallery(business, services) : [];
+  const groupedView = business.gallery_grouped !== false && photoGroups.length > 1;
+  const showFlatGallery = showImageGallery && (galleryPhotos.length > 0 || groupedView);
 
-  const socialProofText = getSocialProof(business, isRtl, t.social.happyClients);
+  const socialProofText = getSocialProof(business, isRtl, (business.business_type === "stay" ? t.social.happyGuests : t.social.happyClients));
   const displayTag  = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
   const displayAbout= (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
@@ -267,7 +273,9 @@ export function ClassicPage({ business, services }: Props) {
                   <div style={{ marginTop: 28 }}>
                     {showInstaGallery
                       ? <InstagramFeed embed={business.instagram_embed!} radius={10} />
-                      : <SectionGallery photos={galleryPhotos} mobileCols={2} desktopCols={2} initialCount={4} desktopInitialCount={4} focal={business.image_focal ?? undefined} altLabel={displayName} />}
+                      : (groupedView
+                        ? <SectionGalleryGrouped groups={photoGroups} initialCount={4} desktopInitialCount={4} focal={business.image_focal ?? undefined} altLabel={displayName} headingColor={C.dark} mutedColor="rgba(34,21,16,0.55)" headingFont={headingFont} />
+                        : <SectionGallery photos={galleryPhotos} mobileCols={2} desktopCols={2} initialCount={4} desktopInitialCount={4} focal={business.image_focal ?? undefined} altLabel={displayName} />)}
                   </div>
                 </section>
               ) : null;

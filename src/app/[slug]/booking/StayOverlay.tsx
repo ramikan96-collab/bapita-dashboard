@@ -11,7 +11,7 @@ import { nightsBetween, stayTotal, validateStayRequest } from "@/lib/stay";
 interface Props {
   business: Business;
   unit: Service;
-  /** Photos for this unit, from business.gallery_groups; empty falls back to the shared gallery. */
+  /** Photos for this unit, from business.gallery_groups; empty falls back to the hero. */
   photos: string[];
   onClose: () => void;
   accentColor: string;
@@ -26,12 +26,20 @@ interface Availability {
   maxGuests: number | null;
 }
 
+type Step = "checkin" | "checkout" | "guests" | "contact" | "success";
+
+const STEP_ORDER: Step[] = ["checkin", "checkout", "guests", "contact"];
+
 /**
- * Stay request modal: unit photos, date range, guests, contact details.
+ * Stay request modal, one decision per screen.
  *
- * Phase 1 creates a PENDING request — no payment, no instant confirmation. The
- * copy says so plainly, because a guest who thinks they hold a reservation and
- * does not is the worst outcome this flow can produce.
+ * Deliberately mirrors BookingOverlay's step chrome — back arrow, "2 of 4", one
+ * question at a time — so the appointment flow and the stay flow read as the
+ * same product rather than two bolted-together booking widgets. On a phone it
+ * also keeps the calendar above the fold, which one long form does not.
+ *
+ * Phase 1 creates a PENDING request, never a confirmed reservation, and the
+ * copy on the last step says so.
  */
 export function StayOverlay({
   business, unit, photos, onClose, accentColor, darkColor, bgColor, lang = "en",
@@ -47,6 +55,7 @@ export function StayOverlay({
   const unitName = lang === "he" && unit.name_he ? unit.name_he : unit.name;
   const unitDesc = lang === "he" && unit.description_he ? unit.description_he : unit.description;
 
+  const [step, setStep] = useState<Step>("checkin");
   const [avail, setAvail] = useState<Availability | null>(null);
   const [availLoading, setAvailLoading] = useState(true);
   const [checkIn, setCheckIn] = useState<string | null>(null);
@@ -58,7 +67,6 @@ export function StayOverlay({
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [done, setDone] = useState(false);
   const [photoIdx, setPhotoIdx] = useState(0);
 
   const trackCtx = { businessId: business.id, slug: business.slug, status: business.status, lang };
@@ -79,11 +87,14 @@ export function StayOverlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load this unit's blocked nights.
+  useEffect(() => {
+    if (step === "success") track("booking_completed", trackCtx, { meta: { unit: unit.id } });
+    else track("step_reached", trackCtx, { step });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
   useEffect(() => {
     let cancelled = false;
-    // No setAvailLoading(true) here: it starts true and this effect runs once
-    // per unit, which is once per modal.
     fetch(`/api/public/stay-availability?businessId=${business.id}&unitId=${unit.id}`)
       .then((r) => r.json())
       .then((d) => {
@@ -111,22 +122,46 @@ export function StayOverlay({
   const maxGuests = avail?.maxGuests ?? unit.max_guests ?? null;
   const minNights = avail?.minNights ?? unit.min_nights ?? 1;
 
-  const rangeError = checkIn && checkOut
-    ? validateStayRequest({
-        start: checkIn, end: checkOut, guests,
+  const stepNum = step === "success" ? STEP_ORDER.length : STEP_ORDER.indexOf(step) + 1;
+  const isFirst = step === "checkin";
+
+  function goBack() {
+    setError("");
+    if (step === "contact") setStep("guests");
+    else if (step === "guests") setStep("checkout");
+    else if (step === "checkout") { setStep("checkin"); setCheckOut(null); }
+  }
+
+  /**
+   * The picker is shared between both date steps. On the check-in step it only
+   * ever reports a start; on the check-out step a tap on or before the current
+   * check-in resets the start rather than erroring, which is the forgiving
+   * behaviour every booking site has trained guests to expect.
+   */
+  function onPickDates(ci: string | null, co: string | null) {
+    setError("");
+    setCheckIn(ci);
+    setCheckOut(co);
+
+    if (step === "checkin" && ci && !co) { setStep("checkout"); return; }
+
+    if (step === "checkout" && ci && co) {
+      const invalid = validateStayRequest({
+        start: ci, end: co, guests,
         unit: { min_nights: minNights, max_guests: maxGuests },
-        // Night conflicts are already impossible here — the picker refuses to
-        // build a range that spans a blocked night. This call is only for the
-        // rules the picker cannot express, so it gets an empty blocklist.
+        // Night conflicts are impossible here: the picker refuses to build a
+        // range spanning a blocked night. This only checks the rules it cannot
+        // express, such as the minimum stay.
         unavailable: [],
-      })
-    : null;
-  const shownRangeError = rangeError && rangeError !== "unavailable" ? t.stay.errors[rangeError] : "";
+      });
+      if (invalid) { setError(t.stay.errors[invalid]); setCheckOut(null); return; }
+      setStep("guests");
+    }
+  }
 
   const canSubmit =
     !!checkIn && !!checkOut && nights >= minNights &&
-    name.trim().length > 1 && phone.trim().length > 5 &&
-    !shownRangeError && !submitting;
+    name.trim().length > 1 && phone.trim().length > 5 && !submitting;
 
   async function submit() {
     if (!canSubmit) return;
@@ -157,9 +192,8 @@ export function StayOverlay({
         setSubmitting(false);
         return;
       }
-      track("booking_completed", trackCtx, { meta: { unit: unit.id, nights } });
-      setDone(true);
       setSubmitting(false);
+      setStep("success");
     } catch {
       setError("Network error. Please try again.");
       setSubmitting(false);
@@ -167,14 +201,23 @@ export function StayOverlay({
   }
 
   const fmtDate = (d: string) =>
-    new Date(d + "T12:00:00").toLocaleDateString(dateLocale, { month: "short", day: "numeric" });
+    new Date(d + "T12:00:00").toLocaleDateString(dateLocale, { weekday: "short", month: "short", day: "numeric" });
 
-  const label: React.CSSProperties = { fontSize: 12, fontWeight: 700, color: darkColor, opacity: 0.6, marginBottom: 6, display: "block" };
+  const label: React.CSSProperties = { fontSize: 15, fontWeight: 700, color: darkColor, marginBottom: 14, display: "block" };
+  const fieldLabel: React.CSSProperties = { fontSize: 12, fontWeight: 700, color: darkColor, opacity: 0.6, marginBottom: 6, display: "block" };
   const input: React.CSSProperties = {
     width: "100%", padding: "12px 14px", borderRadius: 10,
     border: `1.5px solid ${borderClr}`, background: cardBg, color: darkColor,
     fontSize: 15, fontFamily: "inherit", outline: "none",
   };
+  const primaryBtn = (enabled: boolean): React.CSSProperties => ({
+    width: "100%", padding: "16px", borderRadius: 12, border: "none",
+    background: enabled ? accentColor : btnBg,
+    color: enabled ? "#fff" : `${darkColor}66`,
+    fontSize: 16, fontWeight: 800,
+    cursor: enabled ? "pointer" : "default",
+    fontFamily: "inherit", transition: "background 0.15s ease",
+  });
 
   return (
     <>
@@ -190,10 +233,11 @@ export function StayOverlay({
           .bap-stay-sheet {
             inset-inline-start: unset; inset-inline-end: unset; bottom: unset;
             top: 50%; left: 50%; transform: translate(-50%,-50%);
-            width: min(480px, calc(100vw - 48px)); max-height: 88svh;
+            width: min(460px, calc(100vw - 48px)); max-height: 88svh;
             border-radius: 20px; animation: stiPopIn 0.28s ease;
           }
         }
+        @media (prefers-reduced-motion: reduce) { .bap-stay-sheet { animation: none; } }
       `}</style>
 
       <div onClick={onClose} style={{
@@ -202,75 +246,57 @@ export function StayOverlay({
       }} />
 
       <div className="bap-stay-sheet" style={{ background: bgColor }}>
-        {/* Header */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "18px 20px 14px", borderBottom: `1px solid ${dividerClr}`, flexShrink: 0,
-        }}>
-          <div style={{ minWidth: 36 }} />
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: darkColor }}>{unitName}</div>
-            <div style={{ fontSize: 12, color: darkColor, opacity: 0.45, marginTop: 2 }}>
-              ₪{unit.price} / {t.stay.perNight}
+        {/* Header — same shape as the appointment overlay */}
+        {step !== "success" && (
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "18px 20px 14px", borderBottom: `1px solid ${dividerClr}`, flexShrink: 0,
+          }}>
+            <button
+              onClick={isFirst ? onClose : goBack}
+              aria-label={isFirst ? "Close" : "Back"}
+              style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: btnBg, cursor: "pointer", fontSize: 18, color: darkColor, fontFamily: "inherit" }}
+            >←</button>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: darkColor }}>{unitName}</div>
+              <div style={{ fontSize: 12, color: darkColor, opacity: 0.45, marginTop: 2 }}>
+                {t.overlay.stepOf(stepNum, STEP_ORDER.length)}
+              </div>
             </div>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: btnBg, cursor: "pointer", fontSize: 20, color: darkColor, fontFamily: "inherit" }}
+            >×</button>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: btnBg, cursor: "pointer", fontSize: 20, color: darkColor, fontFamily: "inherit" }}
-          >×</button>
-        </div>
+        )}
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 48px" }}>
-          {done ? (
-            <div style={{ textAlign: "center", padding: "32px 0" }}>
-              <div style={{ fontSize: 44, marginBottom: 12 }}>✓</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: darkColor, marginBottom: 8 }}>
-                {t.stay.requestedTitle}
-              </div>
-              <p style={{ fontSize: 14, color: darkColor, opacity: 0.6, lineHeight: 1.6, margin: "0 0 24px" }}>
-                {t.stay.requestedBody(name.trim().split(" ")[0])}
-              </p>
-              <div style={{ background: cardBg, border: `1px solid ${borderClr}`, borderRadius: 12, padding: 16, textAlign: "start" }}>
-                <Row k={unitName} v="" darkColor={darkColor} bold />
-                <Row k={t.stay.checkIn} v={fmtDate(checkIn!)} darkColor={darkColor} />
-                <Row k={t.stay.checkOut} v={fmtDate(checkOut!)} darkColor={darkColor} />
-                <Row k={t.stay.guests} v={String(guests)} darkColor={darkColor} />
-                <Row k={t.stay.total} v={`₪${total}`} darkColor={darkColor} bold />
-              </div>
-              <button
-                onClick={onClose}
-                style={{ marginTop: 20, width: "100%", padding: "14px", borderRadius: 12, border: "none", background: accentColor, color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}
-              >
-                {lang === "he" ? "סגירה" : "Done"}
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-              {/* Photos */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 40px" }}>
+
+          {/* ── 1. Check in ─────────────────────────────────────────────── */}
+          {step === "checkin" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               {photos.length > 0 && (
-                <div>
-                  <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3", borderRadius: 14, overflow: "hidden", background: btnBg }}>
-                    <Image
-                      src={photos[photoIdx]}
-                      alt={`${unitName} — ${photoIdx + 1}`}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 480px"
-                      style={{ objectFit: "cover" }}
-                      priority={photoIdx === 0}
-                    />
-                    {photos.length > 1 && (
-                      <>
-                        <PhotoNav side="start" onClick={() => setPhotoIdx((i) => (i - 1 + photos.length) % photos.length)} />
-                        <PhotoNav side="end" onClick={() => setPhotoIdx((i) => (i + 1) % photos.length)} />
-                        <div style={{
-                          position: "absolute", bottom: 10, insetInlineEnd: 10,
-                          background: "rgba(0,0,0,0.55)", color: "#fff",
-                          fontSize: 11, fontWeight: 700, padding: "4px 8px", borderRadius: 20,
-                        }}>{photoIdx + 1} / {photos.length}</div>
-                      </>
-                    )}
-                  </div>
+                <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3", borderRadius: 14, overflow: "hidden", background: btnBg }}>
+                  <Image
+                    src={photos[photoIdx]}
+                    alt={`${unitName} — ${photoIdx + 1}`}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 460px"
+                    style={{ objectFit: "cover" }}
+                    priority
+                  />
+                  {photos.length > 1 && (
+                    <>
+                      <PhotoNav side="start" onClick={() => setPhotoIdx((i) => (i - 1 + photos.length) % photos.length)} />
+                      <PhotoNav side="end" onClick={() => setPhotoIdx((i) => (i + 1) % photos.length)} />
+                      <div style={{
+                        position: "absolute", bottom: 10, insetInlineEnd: 10,
+                        background: "rgba(0,0,0,0.55)", color: "#fff",
+                        fontSize: 11, fontWeight: 700, padding: "4px 8px", borderRadius: 20,
+                      }}>{photoIdx + 1} / {photos.length}</div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -278,76 +304,117 @@ export function StayOverlay({
                 <p style={{ fontSize: 14, lineHeight: 1.6, color: darkColor, opacity: 0.7, margin: 0 }}>{unitDesc}</p>
               )}
 
-              {/* Dates */}
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: accentColor }}>
+                  ₪{unit.price}
+                  <span style={{ fontSize: 13, fontWeight: 500, color: darkColor, opacity: 0.5 }}> / {t.stay.perNight}</span>
+                </span>
+                {maxGuests ? <span style={{ fontSize: 13, color: darkColor, opacity: 0.5 }}>{t.stay.sleeps(maxGuests)}</span> : null}
+              </div>
+
               <div>
-                <span style={label}>{checkIn && !checkOut ? t.stay.pickCheckOut : t.stay.pickCheckIn}</span>
+                <span style={label}>{t.stay.pickCheckIn}</span>
                 <StayRangePicker
-                  checkIn={checkIn}
-                  checkOut={checkOut}
+                  checkIn={null}
+                  checkOut={null}
                   unavailable={unavailableSet}
-                  onChange={(ci, co) => { setCheckIn(ci); setCheckOut(co); setError(""); }}
-                  accentColor={accentColor}
-                  darkColor={darkColor}
-                  bgColor={bgColor}
+                  onChange={onPickDates}
+                  accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
                   calendarT={t.calendar}
                   nightsLabel={t.stay.nights}
                   loading={availLoading}
                 />
                 {minNights > 1 && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: darkColor, opacity: 0.5, textAlign: "center" }}>
+                  <p style={{ marginTop: 10, fontSize: 12, color: darkColor, opacity: 0.5, textAlign: "center" }}>
                     {t.stay.minNights(minNights)}
-                  </div>
+                  </p>
                 )}
-                {(checkIn || checkOut) && (
-                  <button
-                    type="button"
-                    onClick={() => { setCheckIn(null); setCheckOut(null); }}
-                    style={{ marginTop: 10, background: "none", border: "none", color: accentColor, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0 }}
-                  >{t.stay.clearDates}</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── 2. Check out ────────────────────────────────────────────── */}
+          {step === "checkout" && checkIn && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <div style={{ background: cardBg, border: `1px solid ${borderClr}`, borderRadius: 12, padding: "12px 16px" }}>
+                <Row k={t.stay.checkIn} v={fmtDate(checkIn)} darkColor={darkColor} bold />
+              </div>
+
+              <div>
+                <span style={label}>{t.stay.pickCheckOut}</span>
+                <StayRangePicker
+                  checkIn={checkIn}
+                  checkOut={checkOut}
+                  unavailable={unavailableSet}
+                  onChange={onPickDates}
+                  accentColor={accentColor} darkColor={darkColor} bgColor={bgColor}
+                  calendarT={t.calendar}
+                  nightsLabel={t.stay.nights}
+                />
+                {minNights > 1 && (
+                  <p style={{ marginTop: 10, fontSize: 12, color: darkColor, opacity: 0.5, textAlign: "center" }}>
+                    {t.stay.minNights(minNights)}
+                  </p>
                 )}
               </div>
 
-              {/* Guests */}
+              {error && <div style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{error}</div>}
+            </div>
+          )}
+
+          {/* ── 3. Guests ───────────────────────────────────────────────── */}
+          {step === "guests" && checkIn && checkOut && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+              <div style={{ background: cardBg, border: `1px solid ${borderClr}`, borderRadius: 12, padding: 16 }}>
+                <Row k={t.stay.checkIn} v={fmtDate(checkIn)} darkColor={darkColor} />
+                <Row k={t.stay.checkOut} v={fmtDate(checkOut)} darkColor={darkColor} />
+                <div style={{ height: 1, background: dividerClr, margin: "10px 0" }} />
+                <Row k={`₪${unit.price} × ${t.stay.nights(nights)}`} v={`₪${total}`} darkColor={darkColor} bold />
+              </div>
+
               <div>
                 <span style={label}>{t.stay.guests}{maxGuests ? ` · ${t.stay.sleeps(maxGuests)}` : ""}</span>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                   <Stepper label="−" onClick={() => setGuests((g) => Math.max(1, g - 1))} disabled={guests <= 1} bg={btnBg} color={darkColor} />
-                  <span style={{ fontSize: 17, fontWeight: 800, color: darkColor, minWidth: 24, textAlign: "center" }}>{guests}</span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: darkColor, minWidth: 28, textAlign: "center" }}>{guests}</span>
                   <Stepper label="+" onClick={() => setGuests((g) => (maxGuests ? Math.min(maxGuests, g + 1) : g + 1))} disabled={!!maxGuests && guests >= maxGuests} bg={btnBg} color={darkColor} />
                 </div>
               </div>
 
-              {/* Total */}
-              {nights > 0 && (
-                <div style={{ background: cardBg, border: `1px solid ${borderClr}`, borderRadius: 12, padding: 16 }}>
-                  <Row k={`₪${unit.price} × ${t.stay.nights(nights)}`} v={`₪${total}`} darkColor={darkColor} />
-                  <div style={{ height: 1, background: dividerClr, margin: "10px 0" }} />
-                  <Row k={t.stay.total} v={`₪${total}`} darkColor={darkColor} bold />
-                </div>
-              )}
+              <button onClick={() => setStep("contact")} style={primaryBtn(true)}>
+                {lang === "he" ? "המשך" : "Continue"}
+              </button>
+            </div>
+          )}
 
-              {shownRangeError && (
-                <div style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{shownRangeError}</div>
-              )}
+          {/* ── 4. Your details ─────────────────────────────────────────── */}
+          {step === "contact" && checkIn && checkOut && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <div style={{ background: cardBg, border: `1px solid ${borderClr}`, borderRadius: 12, padding: 16 }}>
+                <Row k={t.stay.checkIn} v={fmtDate(checkIn)} darkColor={darkColor} />
+                <Row k={t.stay.checkOut} v={fmtDate(checkOut)} darkColor={darkColor} />
+                <Row k={t.stay.guests} v={String(guests)} darkColor={darkColor} />
+                <div style={{ height: 1, background: dividerClr, margin: "10px 0" }} />
+                <Row k={t.stay.total} v={`₪${total}`} darkColor={darkColor} bold />
+              </div>
 
-              {/* Contact */}
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div>
-                  <span style={label}>{t.steps.contact.name}</span>
+                  <span style={fieldLabel}>{t.steps.contact.name}</span>
                   <input style={input} value={name} onChange={(e) => setName(e.target.value)} placeholder={t.steps.contact.namePlaceholder} autoComplete="name" />
                 </div>
                 <div>
-                  <span style={label}>{t.steps.contact.phone}</span>
+                  <span style={fieldLabel}>{t.steps.contact.phone}</span>
                   <input style={input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t.steps.contact.phonePlaceholder} inputMode="tel" autoComplete="tel" />
                 </div>
                 <div>
-                  <span style={label}>{t.steps.contact.email}</span>
+                  <span style={fieldLabel}>{t.steps.contact.email}</span>
                   <input style={input} value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.steps.contact.emailPlaceholder} inputMode="email" autoComplete="email" />
                 </div>
                 <div>
-                  <span style={label}>{lang === "he" ? "הערות (רשות)" : "Notes (optional)"}</span>
+                  <span style={fieldLabel}>{lang === "he" ? "הערות (רשות)" : "Notes (optional)"}</span>
                   <textarea
-                    style={{ ...input, minHeight: 72, resize: "vertical" }}
+                    style={{ ...input, minHeight: 68, resize: "vertical" }}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder={lang === "he" ? "שעת הגעה, בקשות מיוחדות…" : "Arrival time, special requests…"}
@@ -358,24 +425,36 @@ export function StayOverlay({
               {error && <div style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{error}</div>}
 
               <div>
-                <button
-                  onClick={submit}
-                  disabled={!canSubmit}
-                  style={{
-                    width: "100%", padding: "16px", borderRadius: 12, border: "none",
-                    background: canSubmit ? accentColor : btnBg,
-                    color: canSubmit ? "#fff" : `${darkColor}66`,
-                    fontSize: 16, fontWeight: 800,
-                    cursor: canSubmit ? "pointer" : "default",
-                    fontFamily: "inherit", transition: "background 0.15s ease",
-                  }}
-                >
+                <button onClick={submit} disabled={!canSubmit} style={primaryBtn(canSubmit)}>
                   {submitting ? t.stay.requesting : t.stay.request}
                 </button>
                 <p style={{ marginTop: 10, fontSize: 12, lineHeight: 1.5, color: darkColor, opacity: 0.5, textAlign: "center" }}>
                   {t.stay.notice}
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* ── Success ─────────────────────────────────────────────────── */}
+          {step === "success" && checkIn && checkOut && (
+            <div style={{ textAlign: "center", padding: "28px 0" }}>
+              <div style={{ fontSize: 44, marginBottom: 12, color: accentColor }}>✓</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: darkColor, marginBottom: 8 }}>
+                {t.stay.requestedTitle}
+              </div>
+              <p style={{ fontSize: 14, color: darkColor, opacity: 0.6, lineHeight: 1.6, margin: "0 0 24px" }}>
+                {t.stay.requestedBody(name.trim().split(" ")[0])}
+              </p>
+              <div style={{ background: cardBg, border: `1px solid ${borderClr}`, borderRadius: 12, padding: 16, textAlign: "start" }}>
+                <Row k={unitName} v="" darkColor={darkColor} bold />
+                <Row k={t.stay.checkIn} v={fmtDate(checkIn)} darkColor={darkColor} />
+                <Row k={t.stay.checkOut} v={fmtDate(checkOut)} darkColor={darkColor} />
+                <Row k={t.stay.guests} v={String(guests)} darkColor={darkColor} />
+                <Row k={t.stay.total} v={`₪${total}`} darkColor={darkColor} bold />
+              </div>
+              <button onClick={onClose} style={{ ...primaryBtn(true), marginTop: 20 }}>
+                {lang === "he" ? "סגירה" : "Done"}
+              </button>
             </div>
           )}
         </div>
@@ -401,8 +480,8 @@ function Stepper({ label, onClick, disabled, bg, color }: { label: string; onCli
       disabled={disabled}
       aria-label={label === "+" ? "Add guest" : "Remove guest"}
       style={{
-        width: 38, height: 38, borderRadius: "50%", border: "none", background: bg,
-        color, fontSize: 19, cursor: disabled ? "default" : "pointer",
+        width: 42, height: 42, borderRadius: "50%", border: "none", background: bg,
+        color, fontSize: 20, cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.35 : 1, fontFamily: "inherit",
       }}
     >{label}</button>

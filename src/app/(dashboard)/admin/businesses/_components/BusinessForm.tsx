@@ -81,6 +81,7 @@ interface FormData {
   accent_color:       string;
   image_focal:        Record<string, string>;
   gallery_groups:     Record<string, string[]>;
+  gallery_grouped:    boolean;
   show_gallery:       boolean;
   show_about:         boolean;
   show_hours:         boolean;
@@ -129,7 +130,7 @@ const EMPTY_FORM: FormData = {
   tagline: "", tagline_he: "", phone: "", address: "", email: "", owner_email: "",
   instagram_url: "", facebook_url: "", tiktok_url: "", whatsapp_number: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
-  about_text: "", about_text_he: "", accent_color: "#B8862A", image_focal: {}, gallery_groups: {},
+  about_text: "", about_text_he: "", accent_color: "#B8862A", image_focal: {}, gallery_groups: {}, gallery_grouped: true,
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
   show_stats: true, show_open_status: true, show_services: true, show_reviews: true, show_staff: true,
   status: "draft",
@@ -209,6 +210,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           accent_color:       b.accent_color        || "#B8862A",
           image_focal:        (b.image_focal as Record<string, string>) || {},
           gallery_groups:     ((b as unknown as { gallery_groups?: Record<string, string[]> | null }).gallery_groups) || {},
+          gallery_grouped:    (b as unknown as { gallery_grouped?: boolean | null }).gallery_grouped !== false,
           show_gallery:       b.show_gallery        ?? true,
           show_about:         b.show_about          ?? true,
           show_hours:         b.show_hours          ?? true,
@@ -425,8 +427,15 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       gallery_hidden:     hiddenUrls,
       hero_image_url:     urls[0]                 || null,
       profile_image_url:  profileImageUrl         || null,
-      image_focal:        form.image_focal,
-      gallery_groups:     form.gallery_groups,
+      // Prune anything pointing at a photo that has been removed from the
+      // gallery, so deleting a photo really deletes every reference to it.
+      image_focal:        Object.fromEntries(Object.entries(form.image_focal).filter(([u]) => urls.includes(u))),
+      gallery_groups:     Object.fromEntries(
+                            Object.entries(form.gallery_groups)
+                              .map(([id, list]) => [id, (list ?? []).filter(u => urls.includes(u))] as const)
+                              .filter(([, list]) => list.length > 0)
+                          ),
+      gallery_grouped:    form.gallery_grouped,
       section_order:      sectionOrder,
       business_type:      form.business_type      || "appointment",
       plan_tier:          form.plan_tier           || null,
@@ -558,8 +567,15 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       gallery_hidden:     hiddenUrls,
       hero_image_url:     urls[0]                 || null,
       profile_image_url:  profileImageUrl         || null,
-      image_focal:        form.image_focal,
-      gallery_groups:     form.gallery_groups,
+      // Prune anything pointing at a photo that has been removed from the
+      // gallery, so deleting a photo really deletes every reference to it.
+      image_focal:        Object.fromEntries(Object.entries(form.image_focal).filter(([u]) => urls.includes(u))),
+      gallery_groups:     Object.fromEntries(
+                            Object.entries(form.gallery_groups)
+                              .map(([id, list]) => [id, (list ?? []).filter(u => urls.includes(u))] as const)
+                              .filter(([, list]) => list.length > 0)
+                          ),
+      gallery_grouped:    form.gallery_grouped,
       section_order:      sectionOrder,
       business_type:      form.business_type      || "appointment",
       plan_tier:          form.plan_tier           || null,
@@ -1345,6 +1361,20 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
               {/* stableId holds a render-stable value; reading .current here is intentional */}
               {/* eslint-disable-next-line react-hooks/refs */}
               <GalleryManager gallery={gallery} setGallery={setGallery} businessId={stableId.current} focal={form.image_focal} setFocal={f => set("image_focal", f)} profileImageUrl={profileImageUrl} setProfileImageUrl={setProfileImageUrl} />
+              {form.business_type === "stay" && (
+                <SectionCard title="Gallery layout">
+                  <Field label="How the gallery section renders on the booking page">
+                    <select value={form.gallery_grouped ? "grouped" : "normal"} onChange={e => set("gallery_grouped", e.target.value === "grouped")} style={inputStyle}>
+                      <option value="grouped">Grouped — one block per unit, with its name as a heading</option>
+                      <option value="normal">Normal — every photo in a single grid</option>
+                    </select>
+                    <p style={{ fontSize:11, color:"var(--color-muted)", marginTop:6, marginBottom:0 }}>
+                      Unit cards always use their own cover photo either way. Grouped needs at least two units
+                      with photos assigned below, otherwise it falls back to a single grid.
+                    </p>
+                  </Field>
+                </SectionCard>
+              )}
               {form.business_type === "stay" && (
                 <UnitPhotoGroups
                   units={services}

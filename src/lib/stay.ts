@@ -219,3 +219,69 @@ export function ungroupedPhotos(
   if (grouped.size === 0) return business.gallery_images ?? [];
   return (business.gallery_images ?? []).filter((u) => !grouped.has(u));
 }
+
+/**
+ * A gallery photo, paired with the unit it belongs to.
+ *
+ * Units keep the host's ordering; anything unassigned lands in a final
+ * untitled group so no photo is ever silently dropped from the page.
+ */
+export interface PhotoGroup {
+  unitId: string | null;
+  title: string | null;
+  photos: string[];
+}
+
+export function groupedGallery(
+  business: Pick<Business, "gallery_groups" | "gallery_images">,
+  units: { id: string; name: string }[],
+): PhotoGroup[] {
+  const visible = new Set(business.gallery_images ?? []);
+  const groups: PhotoGroup[] = [];
+
+  for (const unit of units) {
+    // Only photos still present in gallery_images — a deleted photo must not
+    // linger here just because its id is still listed under a unit.
+    const photos = unitPhotos(business, unit.id).filter((u) => visible.has(u));
+    if (photos.length > 0) groups.push({ unitId: unit.id, title: unit.name, photos });
+  }
+
+  const leftover = ungroupedPhotos(business);
+  if (leftover.length > 0) groups.push({ unitId: null, title: null, photos: leftover });
+
+  return groups;
+}
+
+/**
+ * Remove a photo everywhere it is referenced.
+ *
+ * A URL lives in up to four places — the gallery list, the hidden list, the
+ * focal-point map and a unit group. Deleting it from only the first leaves
+ * orphans that resurface as broken images later, so this returns a patch for
+ * all of them at once. The file itself is left in storage; see the design note.
+ */
+export function removePhotoEverywhere(
+  business: Pick<Business, "gallery_images" | "gallery_hidden" | "image_focal" | "gallery_groups">,
+  url: string,
+): {
+  gallery_images: string[];
+  gallery_hidden: string[];
+  image_focal: Record<string, string>;
+  gallery_groups: Record<string, string[]>;
+} {
+  const focal = { ...(business.image_focal ?? {}) };
+  delete focal[url];
+
+  const groups: Record<string, string[]> = {};
+  for (const [unitId, urls] of Object.entries(business.gallery_groups ?? {})) {
+    const kept = (urls ?? []).filter((u) => u !== url);
+    if (kept.length > 0) groups[unitId] = kept;
+  }
+
+  return {
+    gallery_images: (business.gallery_images ?? []).filter((u) => u !== url),
+    gallery_hidden: (business.gallery_hidden ?? []).filter((u) => u !== url),
+    image_focal: focal,
+    gallery_groups: groups,
+  };
+}

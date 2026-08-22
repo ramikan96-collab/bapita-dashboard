@@ -32,6 +32,8 @@ Run `npm run verify:stay` after touching that file.
 
 4. **Push does not reliably trigger a build** — the GitHub webhook has silently failed more than once. After pushing, confirm a deployment for your SHA actually exists; if not, deploy with `npx vercel deploy --prod --yes --scope team_8ibtIeAI5bZIZWls7F97nUuD`.
 
+6. **`anon` reads `businesses` through a COLUMN-LEVEL grant allowlist, not a table grant.** Adding a column to the `src/app/[slug]/page.tsx` select is therefore a TWO-part change: the column must also be `grant select (col) on public.businesses to anon`, or the anon query errors and that page turns every error into `notFound()` — a 404 on **every** public tenant page at once. This shipped as a live outage on 2026-08-22 (see `docs/migrations/2026-08-22-stay-anon-column-grants.sql`). Local `npm run build` will NOT catch it: builds use the service-role key, which bypasses column grants. Verify with an anon request or by checking `information_schema.column_privileges`.
+
 ## Past Security Audits
 - Rate limiting on `/api/public/book` (prevent abuse)
 - Unique DB index against double-booking

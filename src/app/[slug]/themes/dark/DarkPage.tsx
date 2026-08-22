@@ -7,8 +7,9 @@ import { getSocialProof } from "@/lib/social-proof";
 import { FloatingCTA }    from "../../components/FloatingCTA";
 import { SectionGallery }  from "../../components/gallery/SectionGallery";
 import { SectionUnits }    from "../../components/SectionUnits";
+import { SectionGalleryGrouped } from "../../components/gallery/SectionGalleryGrouped";
 import { StayOverlay }     from "../../booking/StayOverlay";
-import { isStay, ungroupedPhotos, unitPhotos } from "@/lib/stay";
+import { isStay, ungroupedPhotos, unitPhotos, groupedGallery } from "@/lib/stay";
 import { SectionHours }    from "../../components/SectionHours";
 import { SectionLocation } from "../../components/SectionLocation";
 import { SectionReviews }  from "../../components/SectionReviews";
@@ -95,7 +96,7 @@ export function DarkPage({ business, services }: Props) {
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
 
-  const socialProofText = getSocialProof(business, isRtl, t.social.happyClients);
+  const socialProofText = getSocialProof(business, isRtl, (business.business_type === "stay" ? t.social.happyGuests : t.social.happyClients));
 
   useEffect(() => {
     const onScroll = () => {
@@ -130,7 +131,12 @@ export function DarkPage({ business, services }: Props) {
   const galleryPhotos = stayMode ? ungroupedPhotos(business) : (business.gallery_images ?? []);
   // After grouping, a stay business can have every photo claimed by a unit —
   // then there is nothing left for the flat grid and the section is dropped.
-  const showFlatGallery = showImageGallery && galleryPhotos.length > 0;
+  // Grouped gallery: one block per unit. Only meaningful once photos are
+  // actually assigned, so an empty gallery_groups falls back to the flat grid
+  // no matter what the toggle says.
+  const photoGroups = stayMode ? groupedGallery(business, services) : [];
+  const groupedView = business.gallery_grouped !== false && photoGroups.length > 1;
+  const showFlatGallery = showImageGallery && (galleryPhotos.length > 0 || groupedView);
 
   function openFromService(s: Service) { setSelectedService(s); setOverlayOpen(true); }
   function openFromCTA()               { setSelectedService(null); setOverlayOpen(true); }
@@ -361,7 +367,9 @@ export function DarkPage({ business, services }: Props) {
                   <DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
                   {showInstaGallery
                     ? <InstagramFeed embed={business.instagram_embed!} radius={2} />
-                    : <SectionGallery photos={galleryPhotos} borderRadius={2} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} ui={{ btnBorder: "rgba(255,255,255,0.18)", btnBorderHover: accent, btnText: "rgba(255,255,255,0.72)", btnTextHover: "#fff" }} />}
+                    : (groupedView
+                        ? <SectionGalleryGrouped groups={photoGroups} borderRadius={2} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} headingColor={accent} mutedColor={D.muted} headingFont={headingFont} ui={{ btnBorder: "rgba(255,255,255,0.18)", btnBorderHover: accent, btnText: "rgba(255,255,255,0.72)", btnTextHover: "#fff" }} />
+                        : <SectionGallery photos={galleryPhotos} borderRadius={2} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} ui={{ btnBorder: "rgba(255,255,255,0.18)", btnBorderHover: accent, btnText: "rgba(255,255,255,0.72)", btnTextHover: "#fff" }} />)}
                 </div>
               ) : null;
             case "reviews":
