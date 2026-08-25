@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
-import { SITE_HOST, SITE_URL } from "@/lib/site-url";
+import { BOOKING_HOST, BOOKING_URL, SITE_HOST, SITE_URL } from "@/lib/site-url";
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   // Point the sitemap line at the requesting host, so a custom domain
@@ -10,7 +10,11 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   const host = (await headers()).get("host")?.toLowerCase().replace(/:\d+$/, "") ?? SITE_HOST;
   const bareHost = host.replace(/^www\./, "");
   const sitemapUrl =
-    bareHost === SITE_HOST ? `${SITE_URL}/sitemap.xml` : `https://${host}/sitemap.xml`;
+    bareHost === SITE_HOST
+      ? `${SITE_URL}/sitemap.xml`
+      : bareHost === BOOKING_HOST
+        ? `${BOOKING_URL}/sitemap.xml`
+        : `https://${host}/sitemap.xml`;
 
   return {
     rules: {

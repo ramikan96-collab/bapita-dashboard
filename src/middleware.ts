@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { SITE_HOST, SITE_URL } from "@/lib/site-url";
+import { BOOKING_HOST, BOOKING_URL, SITE_HOST, SITE_URL } from "@/lib/site-url";
 
 // Dashboard routes that require auth — everything else is a public booking page
 const DASHBOARD_ROUTES = [
@@ -39,11 +39,12 @@ function needsAuth(pathname: string): boolean {
 }
 
 // Hosts this app owns. Anything NOT listed here is treated as a customer's
-// custom domain and looked up in `businesses` — so bapita.com MUST be here, or
-// the marketing site would fail that lookup and redirect to the apex forever.
+// custom domain and looked up in `businesses` — so both of our own hosts MUST
+// be here, or the marketing site would fail that lookup and bounce forever.
 function isKnownHost(bareHost: string): boolean {
   return (
     bareHost === SITE_HOST ||
+    bareHost === BOOKING_HOST ||
     bareHost === "localhost" ||
     bareHost === "127.0.0.1" ||
     bareHost.endsWith(".vercel.app")
@@ -51,29 +52,60 @@ function isKnownHost(bareHost: string): boolean {
 }
 
 /**
- * Subdomains that used to serve this app and no longer do.
- *
- * Everything — marketing, dashboard, and every `/[slug]` tenant page — now
- * lives on the apex. These two hosts are kept alive only to forward: every
- * path maps 1:1 to the same path on bapita.com, so old bookmarks, old QR
- * codes and the auth links already sitting in people's inboxes still land.
- *
- * 308/301 (permanent) on purpose: bapita.com is confirmed serving this app,
- * so permanent is what tells Google the move is canonical.
+ * Fully retired. Nothing is served here; every path forwards to the apex.
+ * 308 rather than 301 only because it is the method-preserving twin — both are
+ * permanent, which is what tells Google the move is canonical.
  */
-const RETIRED_HOSTS = new Set(["book.bapita.com", "dashboard.bapita.com"]);
+const RETIRED_HOST = "dashboard.bapita.com";
+
+/**
+ * The split between our two hosts.
+ *
+ * book.bapita.com keeps the job it was named for: `/[slug]` booking pages —
+ * book.bapita.com/kasa-herzeliya — plus the public API, assets and SEO files
+ * those pages need. That is also the URL `[slug]/page.tsx` declares as
+ * canonical for a business without its own domain, so moving it would throw
+ * away the indexing every one of those pages has accumulated.
+ *
+ * What left that host is everything aimed at the OWNER rather than at their
+ * customers: the marketing pages, `/login`, `/auth` and the dashboard. Those
+ * are listed here and forward to the apex, so there is exactly one login URL
+ * and exactly one session cookie domain.
+ *
+ * The list is explicit rather than a slug-shaped regex on purpose: a new
+ * dashboard route added later and forgotten here still WORKS on the booking
+ * host — it is only in the wrong place — whereas a slug that a pattern
+ * misjudged would 404 a live customer's page.
+ */
+const OWNER_ONLY_PATHS = [
+  "/hub",
+  "/legacy",
+  "/privacy",
+  "/terms",
+  "/login",
+  "/auth",
+  ...DASHBOARD_ROUTES,
+];
+
+function belongsOnApex(pathname: string): boolean {
+  return (
+    pathname === "/" ||
+    OWNER_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))
+  );
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host")?.toLowerCase() ?? "";
   const bareHost = host.replace(/:\d+$/, "").replace(/^www\./, "");
 
-  // Retired subdomains → the apex, path for path. Runs before anything else so
-  // a stale bookmark never reaches auth, tenant lookup or the dashboard gate.
+  // Retired subdomain, and the owner-facing paths that moved off the booking
+  // host → the apex, path for path. Runs before anything else so a stale
+  // bookmark never reaches auth, tenant lookup or the dashboard gate.
   //
   // The query string is kept deliberately: auth callbacks already sent out
   // carry `code` and `next`, and dropping them breaks password reset mid-flow.
-  if (RETIRED_HOSTS.has(bareHost)) {
+  if (bareHost === RETIRED_HOST || (bareHost === BOOKING_HOST && belongsOnApex(pathname))) {
     return NextResponse.redirect(
       `${SITE_URL}${pathname}${request.nextUrl.search}`,
       308
@@ -122,7 +154,7 @@ export async function middleware(request: NextRequest) {
     if (isAsset || isSeoFile) {
       return NextResponse.next();
     }
-    return NextResponse.redirect(`${SITE_URL}${pathname}`);
+    return NextResponse.redirect(`${BOOKING_URL}${pathname}`);
   }
 
   // Public surfaces never consult auth — this is the booking-page traffic, i.e.
