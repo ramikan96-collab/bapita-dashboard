@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
+import { SITE_HOST, siteUrl } from "@/lib/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createClient(
@@ -11,22 +12,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const host = (await headers()).get("host")?.toLowerCase().replace(/:\d+$/, "") ?? "";
   const bareHost = host.replace(/^www\./, "");
 
-  // The apex is the marketing site and has no tenant pages of its own: its
-  // sitemap is the marketing routes only. Tenant pages stay listed under
-  // book.bapita.com, which is still where they live.
-  if (bareHost === "bapita.com") {
-    const now = new Date();
-    return [
-      { url: "https://bapita.com/", lastModified: now, changeFrequency: "monthly", priority: 1 },
-      { url: "https://bapita.com/privacy", lastModified: now, changeFrequency: "yearly", priority: 0.2 },
-      { url: "https://bapita.com/terms", lastModified: now, changeFrequency: "yearly", priority: 0.2 },
-    ];
-  }
+  // The apex is now the whole product: marketing pages AND every tenant
+  // booking page. book.bapita.com is retired and 308s here, so these are the
+  // only tenant URLs that exist — they must be listed on this host or nothing
+  // gets indexed at all.
+  const marketingRoutes: MetadataRoute.Sitemap =
+    bareHost === SITE_HOST
+      ? (() => {
+          const now = new Date();
+          return [
+            { url: siteUrl("/"), lastModified: now, changeFrequency: "monthly" as const, priority: 1 },
+            { url: siteUrl("/privacy"), lastModified: now, changeFrequency: "yearly" as const, priority: 0.2 },
+            { url: siteUrl("/terms"), lastModified: now, changeFrequency: "yearly" as const, priority: 0.2 },
+          ];
+        })()
+      : [];
 
   // On a verified custom domain, this domain has exactly one public page.
   // Return a single-URL sitemap for itself only — never the full platform
   // list (that would be wrong and would leak the client roster).
-  if (bareHost && bareHost !== "book.bapita.com" && bareHost !== "bapita.com") {
+  if (bareHost && bareHost !== SITE_HOST) {
     const { data: match } = await supabase
       .from("businesses")
       .select("custom_domain")
@@ -63,12 +68,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Exclude demo/template pages: thin, near-duplicate content that would
       // dilute the sitemap and risk duplicate-content signals. Real customers only.
       .filter((b) => !/^demo(-|$)/.test(b.slug))
-      // Exclude businesses with a verified custom domain: their book.bapita URL
+      // Exclude businesses with a verified custom domain: their bapita.com URL
       // 308-redirects to the brand domain (which is self-canonical and ships its
       // own single-URL sitemap), so listing the redirecting copy here is wrong.
       .filter((b) => !(b.custom_domain && b.custom_domain_verified === true))
       .map((b) => ({
-        url: `https://book.bapita.com/${b.slug}`,
+        url: siteUrl(`/${b.slug}`),
         lastModified: b.created_at ? new Date(b.created_at) : new Date(),
         changeFrequency: "weekly" as const,
         priority: 0.8,
@@ -78,7 +83,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("sitemap: unexpected failure", err);
   }
 
-  // book.bapita.com/ now 301s to the apex, so it is no longer a URL to submit;
-  // this host's sitemap is the tenant pages it actually serves.
-  return slugRoutes;
+  return [...marketingRoutes, ...slugRoutes];
 }

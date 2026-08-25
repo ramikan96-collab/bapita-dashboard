@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { SITE_HOST } from "@/lib/site-url";
 
 // IndexNow: notify Bing/Yandex the moment a customer page goes live, so it gets
 // crawled in minutes instead of waiting for a sitemap re-read. Key is hosted at
-// https://book.bapita.com/<key>.txt (public by design).
+// https://bapita.com/<key>.txt (public by design).
 const INDEXNOW_KEY = "49c8f48f61ff43b4a2dae2a0ab416e80";
-const HOST = "book.bapita.com";
+const HOST = SITE_HOST;
 const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
 
 export async function POST(req: Request) {

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SITE_HOST, SITE_URL } from "@/lib/site-url";
 
 // Dashboard routes that require auth — everything else is a public booking page
 const DASHBOARD_ROUTES = [
@@ -39,12 +40,10 @@ function needsAuth(pathname: string): boolean {
 
 // Hosts this app owns. Anything NOT listed here is treated as a customer's
 // custom domain and looked up in `businesses` — so bapita.com MUST be here, or
-// the marketing site would fail that lookup and redirect to book.bapita.com.
+// the marketing site would fail that lookup and redirect to the apex forever.
 function isKnownHost(bareHost: string): boolean {
   return (
-    bareHost === "bapita.com" ||
-    bareHost === "book.bapita.com" ||
-    bareHost === "dashboard.bapita.com" ||
+    bareHost === SITE_HOST ||
     bareHost === "localhost" ||
     bareHost === "127.0.0.1" ||
     bareHost.endsWith(".vercel.app")
@@ -52,48 +51,32 @@ function isKnownHost(bareHost: string): boolean {
 }
 
 /**
- * Marketing paths that moved to the apex when bapita.com became this app's
- * front door. Only these redirect from book.bapita.com — `/[slug]` tenant
- * pages, `/login` and the whole dashboard stay exactly where they are, and a
- * customer domain never reaches this function at all.
+ * Subdomains that used to serve this app and no longer do.
+ *
+ * Everything — marketing, dashboard, and every `/[slug]` tenant page — now
+ * lives on the apex. These two hosts are kept alive only to forward: every
+ * path maps 1:1 to the same path on bapita.com, so old bookmarks, old QR
+ * codes and the auth links already sitting in people's inboxes still land.
+ *
+ * 308/301 (permanent) on purpose: bapita.com is confirmed serving this app,
+ * so permanent is what tells Google the move is canonical.
  */
-const APEX_ONLY_PATHS = ["/hub", "/legacy", "/privacy", "/terms"];
-
-function movedToApex(pathname: string): boolean {
-  return (
-    pathname === "/" ||
-    APEX_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))
-  );
-}
+const RETIRED_HOSTS = new Set(["book.bapita.com", "dashboard.bapita.com"]);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host")?.toLowerCase() ?? "";
   const bareHost = host.replace(/:\d+$/, "").replace(/^www\./, "");
 
-  // Retired subdomain: dashboard.bapita.com → book.bapita.com (root goes to /login).
-  if (bareHost === "dashboard.bapita.com") {
-    const dest = pathname === "/" ? "/login" : pathname;
-    // Keep the query string: auth callbacks already sent out carry `code` and
-    // `next`, and dropping them breaks password reset mid-flow.
-    const search = request.nextUrl.search;
-    return NextResponse.redirect(`https://book.bapita.com${dest}${search}`, 308);
-  }
-
-  // Marketing moved to the apex: book.bapita.com/ and the marketing-only paths
-  // send to bapita.com. Everything else on this host (tenant pages, /login, the
-  // dashboard, /api, SEO files) is untouched.
+  // Retired subdomains → the apex, path for path. Runs before anything else so
+  // a stale bookmark never reaches auth, tenant lookup or the dashboard gate.
   //
-  // 307 while the cutover is in flight, NOT 301. The apex only becomes this app
-  // when the bapita.com domain is moved onto this Vercel project, and until
-  // that lands this redirect points at the old hub site. A 301 is cached hard
-  // by browsers and by Google, so getting that window wrong once would stick.
-  // Flip this to 301 — and only then — once bapita.com is confirmed serving
-  // this app, because permanent is what tells Google the move is canonical.
-  if (bareHost === "book.bapita.com" && movedToApex(pathname)) {
+  // The query string is kept deliberately: auth callbacks already sent out
+  // carry `code` and `next`, and dropping them breaks password reset mid-flow.
+  if (RETIRED_HOSTS.has(bareHost)) {
     return NextResponse.redirect(
-      `https://bapita.com${pathname}${request.nextUrl.search}`,
-      307
+      `${SITE_URL}${pathname}${request.nextUrl.search}`,
+      308
     );
   }
 
@@ -105,8 +88,8 @@ export async function middleware(request: NextRequest) {
       /\.(svg|png|jpg|jpeg|gif|webp|ico)$/.test(pathname);
 
     // SEO files must be served ON the custom domain (host-aware handlers in
-    // robots.ts / sitemap.ts), not redirected to book.bapita — otherwise the
-    // domain advertises book.bapita's sitemap and Google can't fetch its own.
+    // robots.ts / sitemap.ts), not redirected to the apex — otherwise the
+    // domain advertises bapita.com's sitemap and Google can't fetch its own.
     const isSeoFile = pathname === "/sitemap.xml" || pathname === "/robots.txt";
 
     const anon = createServerClient(
@@ -123,7 +106,7 @@ export async function middleware(request: NextRequest) {
       .maybeSingle();
 
     if (!match) {
-      return NextResponse.redirect("https://book.bapita.com");
+      return NextResponse.redirect(SITE_URL);
     }
     if (pathname === "/") {
       // Pass the business locale to the root layout so the crawler gets a
@@ -139,7 +122,7 @@ export async function middleware(request: NextRequest) {
     if (isAsset || isSeoFile) {
       return NextResponse.next();
     }
-    return NextResponse.redirect(`https://book.bapita.com${pathname}`);
+    return NextResponse.redirect(`${SITE_URL}${pathname}`);
   }
 
   // Public surfaces never consult auth — this is the booking-page traffic, i.e.

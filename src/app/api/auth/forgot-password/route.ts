@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { siteUrl } from "@/lib/site-url";
 import nodemailer from "nodemailer";
 
 function esc(s: unknown): string {
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     type: "recovery",
     email,
     options: {
-      redirectTo: "https://book.bapita.com/auth/callback?next=/profile",
+      redirectTo: siteUrl("/auth/callback?next=/profile"),
     },
   });
 
