@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 export default async function robots(): Promise<MetadataRoute.Robots> {
   // Point the sitemap line at the requesting host, so a custom domain
   // advertises its own sitemap instead of book.bapita's.
-  const host = (await headers()).get("host")?.toLowerCase().replace(/:\d+$/, "") ?? "book.bapita.com";
+  const host = (await headers()).get("host")?.toLowerCase().replace(/:\d+$/, "") ?? "bapita.com";
 
   return {
     rules: {
@@ -25,6 +25,11 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
         "/financials",
         "/profile",
         "/addons",
+        // Marketing pages that exist but must not be indexed: the demoted v3
+        // suite page and the archived book.bapita.com homepage. Both are also
+        // noindex in their own metadata — this keeps them out of the crawl.
+        "/hub",
+        "/legacy",
       ],
     },
     sitemap: `https://${host}/sitemap.xml`,

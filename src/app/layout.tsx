@@ -5,9 +5,13 @@ import { headers } from "next/headers";
 import "./globals.css";
 import { PushInit } from "@/components/PushInit";
 
+// `variable` as well as `className`: the dashboard keeps getting the family
+// applied directly on <html> (unchanged), while the ported marketing/hub
+// components compose `--font-heebo` through `--font-sans` in globals.css.
 const heebo = Heebo({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-heebo",
   display: "swap",
 });
 
@@ -35,7 +39,7 @@ export default async function RootLayout({
   const dir = locale === "he" ? "rtl" : "ltr";
 
   return (
-    <html lang={locale} dir={dir} className={`${heebo.className} h-full`}>
+    <html lang={locale} dir={dir} className={`${heebo.className} ${heebo.variable} h-full`}>
       <body className="h-full">
         {children}
         <PushInit />

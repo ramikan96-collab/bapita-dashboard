@@ -37,13 +37,32 @@ function needsAuth(pathname: string): boolean {
   return DASHBOARD_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
 }
 
+// Hosts this app owns. Anything NOT listed here is treated as a customer's
+// custom domain and looked up in `businesses` — so bapita.com MUST be here, or
+// the marketing site would fail that lookup and redirect to book.bapita.com.
 function isKnownHost(bareHost: string): boolean {
   return (
+    bareHost === "bapita.com" ||
     bareHost === "book.bapita.com" ||
     bareHost === "dashboard.bapita.com" ||
     bareHost === "localhost" ||
     bareHost === "127.0.0.1" ||
     bareHost.endsWith(".vercel.app")
+  );
+}
+
+/**
+ * Marketing paths that moved to the apex when bapita.com became this app's
+ * front door. Only these redirect from book.bapita.com — `/[slug]` tenant
+ * pages, `/login` and the whole dashboard stay exactly where they are, and a
+ * customer domain never reaches this function at all.
+ */
+const APEX_ONLY_PATHS = ["/hub", "/legacy", "/privacy", "/terms"];
+
+function movedToApex(pathname: string): boolean {
+  return (
+    pathname === "/" ||
+    APEX_ONLY_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))
   );
 }
 
@@ -59,6 +78,23 @@ export async function middleware(request: NextRequest) {
     // `next`, and dropping them breaks password reset mid-flow.
     const search = request.nextUrl.search;
     return NextResponse.redirect(`https://book.bapita.com${dest}${search}`, 308);
+  }
+
+  // Marketing moved to the apex: book.bapita.com/ and the marketing-only paths
+  // send to bapita.com. Everything else on this host (tenant pages, /login, the
+  // dashboard, /api, SEO files) is untouched.
+  //
+  // 307 while the cutover is in flight, NOT 301. The apex only becomes this app
+  // when the bapita.com domain is moved onto this Vercel project, and until
+  // that lands this redirect points at the old hub site. A 301 is cached hard
+  // by browsers and by Google, so getting that window wrong once would stick.
+  // Flip this to 301 — and only then — once bapita.com is confirmed serving
+  // this app, because permanent is what tells Google the move is canonical.
+  if (bareHost === "book.bapita.com" && movedToApex(pathname)) {
+    return NextResponse.redirect(
+      `https://bapita.com${pathname}${request.nextUrl.search}`,
+      307
+    );
   }
 
   // Custom-domain routing — runs before auth/dashboard logic, and never touches it.
