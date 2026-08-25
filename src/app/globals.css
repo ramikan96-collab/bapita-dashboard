@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant phone-short (@media (max-height: 640px) and (max-width: 639px));
+
 @theme inline {
   /* Bapita shared identity — warm paper base, per-product accent.
      Book's accent = terracotta (v3 wheel). Old names kept as aliases. */
@@ -43,8 +45,8 @@
   --color-success:    #16A34A;
   --color-success-bg: #F0FDF4;
 
-  /* Typography */
-  --font-sans: 'Heebo', system-ui, sans-serif;
+  /* Typography — variable form so ported hub components can compose it. */
+  --font-sans: var(--font-heebo), 'Heebo', system-ui, sans-serif;
 }
 
 /* HP shell tokens — gradients/shadows used via var() in inline styles */
@@ -211,5 +213,774 @@ html[data-a11y-focus="strong"] :focus-visible {
   /* Booking chips and agenda cards render cleanly */
   * {
     box-shadow: none !important;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Bapita marketing design system — ported from the v3 Hub (Batch 3a).
+   Consumed by src/app/(marketing)/** and src/components/{hub,marketing}/**.
+
+   Tokens that collided with the dashboard's own set (ink, cream, surface,
+   success, danger) or with a Tailwind default (radius-sm/md/lg,
+   shadow-sm/md/lg) carry a `hub-` segment here and in every ported
+   component; everything else keeps its original name. --color-paper,
+   --color-background, --color-foreground and --font-sans are deliberately
+   NOT redefined — the dashboard owns those above.
+   ══════════════════════════════════════════════════════════════════════ */
+
+@theme inline {
+  /* ── Neutral system (premium dark hub) ── */
+  --color-hub-ink: #0b0b0c;        /* hub page background (darkest) */
+  --color-hub-ink-800: #141416;    /* raised dark surfaces, nav */
+  --color-hub-ink-700: #1e1e22;    /* cards on dark, border base */
+  --color-hub-ink-600: #2a2a30;    /* hairlines on dark */
+  --color-hub-surface: #16161a;    /* cards on dark */
+  --color-hub-cream: #f4f4f2;      /* primary text / marks on dark */
+  --color-hub-cream-muted: #9a9aa2;/* secondary text on dark */
+
+  /* ── Product color wheel ── */
+  --color-book: #e8920a;       /* amber */
+  --color-analytics: #16A6B3;  /* teal */
+  --color-social: #d4622a;     /* terracotta — the Social platform's primary */
+  --color-seo: #2d6cf0;        /* azure */
+  --color-outreach: #7c5cfc;   /* violet */
+  --color-bots: #1fa971;       /* emerald */
+  --color-reach: #2d6cf0;      /* azure — get found locally */
+  --color-ads: #d4881c;        /* amber */
+
+  /* glow variants — the product color tuned to read on #0b0b0c */
+  --color-book-glow: #f7ab2e;
+  --color-analytics-glow: #26c6d4;
+  --color-social-glow: #f0743a;
+  --color-seo-glow: #4e86ff;
+  --color-outreach-glow: #9277ff;
+  --color-bots-glow: #2bc487;
+  --color-reach-glow: #4e86ff;
+
+  /* ── Clay / warm light (hero, brand surfaces on light) ──
+     BRIGHT-NEUTRAL TEST: the ramp keeps its warm bias but drops most of the
+     yellow, so surfaces read as bright off-white paper with grey text rather
+     than tan. Names unchanged so no component has to move. Previous warm
+     values: clay #FBF7EF, clay-warm #F7E8D6, clay-toast #F3D8BC,
+     espresso #2A1D14, espresso-muted #3a2c20, cinnamon #9a5a3c. */
+  --color-clay: #F5F4EE;       /* card / raised surface */
+  --color-clay-warm: #F0EEE6;  /* mid band */
+  --color-clay-toast: #E9E6DC; /* deepest band */
+  --color-espresso: #141413;   /* primary text / CTA fill — neutral near-black */
+  --color-espresso-muted: #3D3D3A; /* secondary text */
+  --color-cinnamon: #C96442;   /* terracotta accent */
+  --color-bowl-tan: #c8893f;   /* toasted pita bowl */
+  --color-bowl-dark: #6e3f17;  /* bowl inner shadow */
+
+  /* ── Warm page spine (v4 homepage) ──
+     The homepage is ONE continuous warm world, top to bottom — no cream/dark
+     banding. Contrast comes from framed product cards, not from flipping the
+     page background. `espresso` appears as a full stop at the very end only. */
+  --color-paper-warm: #FAF9F5; /* page background */
+  --color-clay-deep: #EDEBE3;  /* deepest band — the "oven" chapter */
+  /* Signature: line 2 of every headline. Display type only (48px+). */
+  --color-clay-taupe: #8A8A85;
+  --color-chip: #FFFFFF;       /* floating chips/cards — pure white on paper */
+  --color-hairline: rgba(0, 0, 0, 0.08);   /* dividers */
+  --color-hairline-strong: rgba(0, 0, 0, 0.16);
+
+  /* ── Semantic ── */
+  --color-hub-success: #2bc487;
+  --color-warning: #e8920a;
+  --color-hub-danger: #d64545;
+
+
+  /* Typography */
+  /* Utility face — chapter numerals and data only. System stack on purpose:
+     the numerals are small and infrequent, not worth a font request. */
+  --font-mono: ui-monospace, "SF Mono", "Menlo", "Roboto Mono", monospace;
+
+  /* Radii */
+  --radius-hub-sm: 8px;
+  --radius-hub-md: 12px;
+  --radius-hub-lg: 16px;
+  --radius-card: 0.875rem;      /* legacy alias kept for existing call sites */
+  --radius-field: 0.625rem;
+  --radius-pill: 9999px;
+
+  /* Shadows (brand system §5, tuned for dark + light) */
+  --shadow-hub-sm: 0 1px 3px rgba(10, 10, 12, 0.18);
+  --shadow-hub-md: 0 6px 18px rgba(10, 10, 12, 0.22);
+  --shadow-hub-lg: 0 14px 40px rgba(10, 10, 12, 0.28);
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lift: 0 14px 40px rgba(0, 0, 0, 0.45);
+
+  /* Spacing */
+  --section-pad: clamp(4rem, 8vw, 8rem);
+  --card-pad: 1.5rem;
+  --grid-gap: 1.5rem;
+  --stack-gap: 1rem;
+
+  /* Display sizes (brand system §3) */
+  --text-display-xl: clamp(2.75rem, 6vw, 4.5rem);
+  --text-display-lg: clamp(1.75rem, 3.5vw, 2.5rem);
+  /* Chapter headline — the two-tone signature. Deliberately larger than
+     display-lg: chapter openers get their own scale so they read as chapter
+     breaks, not as another subhead. */
+  --text-chapter: clamp(2.25rem, 5.2vw, 4rem);
+}
+
+@layer base {
+  /* Tokens referenced only from inline styles (accentStyleLight, clay-scene).
+     Tailwind emits @theme vars only when a utility uses them, so pin these. */
+  :root {
+    --color-book: #e8920a;
+    --color-social: #d4622a;
+    --color-seo: #2d6cf0;
+    --color-outreach: #7c5cfc;
+    --color-bots: #1fa971;
+    --color-reach: #2d6cf0;
+    --color-ads: #d4881c;
+    --color-clay: #F5F4EE;
+    --color-clay-warm: #F0EEE6;
+    --color-clay-toast: #E9E6DC;
+    --color-bowl-tan: #c8893f;
+    --color-bowl-dark: #6e3f17;
+    --color-paper-warm: #FAF9F5;
+    --color-clay-deep: #EDEBE3;
+    --color-clay-taupe: #8A8A85;
+    --color-chip: #FFFFFF;
+  }
+
+  /* Lenis (marketing/hub routes only — the provider mounts nowhere else). */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer utilities {
+  /* ── Per-product accent (set --accent inline via accentStyle) ── */
+  .accent-text {
+    color: var(--accent);
+  }
+  .accent-wash {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+
+  /* ── Warm page spine ──
+     Each band picks up exactly where the previous one ended, so the whole
+     page reads as one continuous surface warming toward the pita chapter and
+     cooling back out. Order matters; keep these in sync with page.tsx. */
+  .wash-paper {
+    background: linear-gradient(to bottom, #FAF9F5, #F5F4EE);
+  }
+  .wash-clay {
+    background: linear-gradient(to bottom, #F5F4EE, #F0EEE6);
+  }
+  .wash-oven {
+    background: linear-gradient(to bottom, #F0EEE6, #EDEBE3 45%, #F0EEE6);
+  }
+  .wash-cool {
+    background: linear-gradient(to bottom, #F0EEE6, #F5F4EE);
+  }
+  .wash-flat {
+    background: #F5F4EE;
+  }
+
+  /* ── Two-tone headline signature ──
+     Line 1 espresso, line 2 clay-taupe. Repeated at every section opener; it
+     is the single device the page is meant to be remembered by. */
+  .two-tone > :last-child {
+    color: var(--color-clay-taupe);
+  }
+
+  /* ── Horizontal card rail (features carousel) ── */
+  .rail {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-snap-type: x mandatory;
+  }
+  .rail::-webkit-scrollbar {
+    display: none;
+  }
+  .rail > * {
+    scroll-snap-align: start;
+  }
+
+  /* ── Rail inset to the page container ──
+     A full-bleed rail that still LINES UP with the headline above it: it starts
+     on the max-w-6xl container's own start edge and runs off the end of the
+     screen. Padding rather than margin, so the inset is part of the scrollable
+     content and the first card can be scrolled back to flush. ── */
+  .rail-inset {
+    --rail-gutter: 1.25rem;
+    --rail-inset: max(
+      var(--rail-gutter),
+      calc((100% - 72rem) / 2 + var(--rail-gutter))
+    );
+    padding-inline-start: var(--rail-inset);
+    padding-inline-end: var(--rail-gutter);
+    scroll-padding-inline-start: var(--rail-inset);
+  }
+  @media (min-width: 640px) {
+    .rail-inset {
+      --rail-gutter: 2rem;
+    }
+  }
+
+  /* ── Panel cross-fade (scroll-driven product hand-over) ── */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* ── Self-driving demo hairline ──
+     Fills once per step under a control row that is advancing itself. Keyed by
+     step in JSX so it restarts, and removed entirely the moment the reader
+     takes the demo over. ── */
+  @keyframes cycle-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @keyframes cycle-fill-y {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  /* ── Falafel dropping into the pita ──
+     The pricing picker's add-ons used to fade up from 50% scale in place, which
+     read as an item appearing rather than an item being put in. This is the
+     hero's fall, compressed into half a second: in from above, off the vertical,
+     squashing once on landing. ── */
+  @keyframes falafel-drop {
+    0% {
+      opacity: 0;
+      transform: translateY(-170%) rotate(-24deg) scale(0.72);
+    }
+    58% {
+      opacity: 1;
+      transform: translateY(0) rotate(5deg) scale(1.05);
+    }
+    74% {
+      transform: translateY(2%) rotate(-2deg) scaleX(1.1) scaleY(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .falafel-drop {
+    animation: falafel-drop 640ms cubic-bezier(0.28, 1.1, 0.4, 1) both;
+  }
+
+  /* Taken back out again. Plays on the element that replaces the one just
+     removed, so the exit is continuous rather than a disappearance. */
+  @keyframes falafel-out {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-45%) rotate(12deg) scale(0.55);
+    }
+  }
+  .falafel-out {
+    animation: falafel-out 280ms cubic-bezier(0.4, 0, 0.9, 0.4) both;
+  }
+
+  /* ── A number that just changed ──
+     One beat of weight on the figure the reader's own tap moved. Scale only, so
+     it cannot reflow the row it sits in. ── */
+  @keyframes count-pop {
+    0% {
+      transform: scale(1);
+    }
+    32% {
+      transform: scale(1.11);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .count-pop {
+    animation: count-pop 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Calm keeps the arrival and drops the travel: a cross-fade in place, no
+     fall, no spin, no pop. */
+  :root[data-motion="calm"] .falafel-drop {
+    animation: falafel-calm-in 260ms ease-out both;
+  }
+  :root[data-motion="calm"] .falafel-out {
+    animation: falafel-calm-out 200ms ease-in both;
+  }
+  :root[data-motion="calm"] .count-pop {
+    animation: none;
+  }
+  @keyframes falafel-calm-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes falafel-calm-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* ── Warm card lift ── */
+  .lift {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 44px -16px rgba(0, 0, 0, 0.18);
+  }
+
+  /* ── Product card hover glow ── */
+  .product-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .product-card:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    box-shadow: var(--shadow-hub-lg),
+      0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
+      0 10px 40px -8px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+
+  /* ── Social-proof marquee ── */
+  .marquee-track {
+    animation: marquee 38s linear infinite;
+    width: max-content;
+  }
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .marquee-rev {
+    animation: marquee-rev 30s linear infinite;
+    width: max-content;
+  }
+  @keyframes marquee-rev {
+    from {
+      transform: translateX(-50%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* ── Card loops ("why this works")
+     Each card carries a short scene that plays on a shared 6.4s cycle, so the
+     rail reads as a set of clips rather than a set of tiles. Transform/opacity
+     only — no width or filter animation — so they stay on the compositor while
+     the rail itself is being scrolled. ── */
+  @keyframes fx-row-in {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    10%,
+    84% {
+      opacity: 1;
+      transform: none;
+    }
+    96%,
+    100% {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+  .fx-row {
+    animation: fx-row-in 6.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+
+  @keyframes fx-fill-fast {
+    0% {
+      transform: scaleX(0);
+    }
+    14%,
+    88% {
+      transform: scaleX(1);
+    }
+    100% {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes fx-fill-slow {
+    0% {
+      transform: scaleX(0);
+    }
+    70% {
+      transform: scaleX(0.4);
+    }
+    88% {
+      transform: scaleX(0.44);
+    }
+    100% {
+      transform: scaleX(0);
+    }
+  }
+  .fx-fill-fast,
+  .fx-fill-slow {
+    transform-origin: left center;
+  }
+  .fx-fill-fast {
+    animation: fx-fill-fast 6.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+  .fx-fill-slow {
+    animation: fx-fill-slow 6.4s linear infinite;
+  }
+
+  @keyframes fx-dot {
+    0%,
+    60%,
+    100% {
+      opacity: 0.25;
+      transform: translateY(0);
+    }
+    30% {
+      opacity: 1;
+      transform: translateY(-2px);
+    }
+  }
+  .fx-dot {
+    animation: fx-dot 1.2s ease-in-out infinite;
+  }
+
+  @keyframes fx-send {
+    0% {
+      opacity: 0;
+      transform: translate(-8px, 6px);
+    }
+    12%,
+    42% {
+      opacity: 1;
+      transform: none;
+    }
+    54%,
+    100% {
+      opacity: 0;
+      transform: translate(14px, -8px);
+    }
+  }
+  .fx-send {
+    animation: fx-send 6.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+
+  @keyframes fx-confirm {
+    0%,
+    50% {
+      opacity: 0;
+      transform: translateY(10px) scale(0.94);
+    }
+    62%,
+    90% {
+      opacity: 1;
+      transform: none;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+  .fx-confirm {
+    animation: fx-confirm 6.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+
+  @keyframes fx-bob {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-7px);
+    }
+  }
+  .fx-bob {
+    animation: fx-bob 3.4s ease-in-out infinite alternate;
+  }
+
+  /* ── Display-line gradient drift ──
+     The band's colour arrives with a scroll wipe and would then sit frozen.
+     Over-sizing the gradient and walking it across keeps the word alive
+     without moving a single pixel of the letterforms. ── */
+  .band-fill {
+    /* Only modestly over-sized: at 190% the visible window covered barely half
+       the ramp, so the word rendered as flat amber and the magenta never
+       appeared at all. 128% shows ~80% of the ramp at any instant and still
+       leaves somewhere for the drift to go. */
+    background-size: 128% 100%;
+    background-position: 0% 50%;
+    animation: band-drift 17s ease-in-out infinite alternate;
+  }
+  @keyframes band-drift {
+    from {
+      background-position: 0% 50%;
+    }
+    to {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* ── Off-screen loop hold ──
+     The step panels run 6.4s loops forever. Wrapping them in <PauseOffscreen>
+     adds this class whenever the group is out of view, so three simultaneous
+     scenes aren't compositing behind the rest of the page. The class is only
+     ever added by JS — with no JS the loops simply run, because fx-row starts
+     at opacity 0 and a paused-by-default rule would leave content invisible. */
+  .fx-hold .fx-row,
+  .fx-hold .fx-send,
+  .fx-hold .fx-confirm,
+  .fx-hold .fx-fill-fast,
+  .fx-hold .fx-fill-slow,
+  .fx-hold .fx-dot,
+  .fx-hold .fx-bob {
+    animation-play-state: paused;
+  }
+
+  /* Stagger utilities — must come after the animation classes above so the
+     delay isn't reset by the shorthand. */
+  .fx-d1 {
+    animation-delay: 0.45s;
+  }
+  .fx-d2 {
+    animation-delay: 0.9s;
+  }
+  .fx-d3 {
+    animation-delay: 1.35s;
+  }
+
+  /* ── Hero ambient glow drift (fallback layer behind/around the canvas) ── */
+  .hero-glow {
+    animation: glow-drift 18s ease-in-out infinite alternate;
+  }
+  @keyframes glow-drift {
+    from {
+      transform: translate3d(-2%, -1%, 0) scale(1);
+      opacity: 0.7;
+    }
+    to {
+      transform: translate3d(2%, 2%, 0) scale(1.08);
+      opacity: 1;
+    }
+  }
+
+  /* ── Static-fallback orb bob — per-orb duration + phase, slight bowl-ward drift ── */
+  .orb-float-0 { animation: orb-float-0 3.8s ease-in-out infinite alternate; }
+  .orb-float-1 { animation: orb-float-1 4.5s ease-in-out infinite alternate; }
+  .orb-float-2 { animation: orb-float-2 3.2s ease-in-out infinite alternate; }
+  .orb-float-3 { animation: orb-float-3 5.0s ease-in-out infinite alternate; }
+  .orb-float-4 { animation: orb-float-4 4.1s ease-in-out infinite alternate; }
+  /* book (left) drifts right; social (right) drifts left; seo (far left) drifts right;
+     outreach (far right) drifts left; bots (top-center) drifts down slightly */
+  @keyframes orb-float-0 { from { transform: translate(0, 0); } to { transform: translate(5px, -12px); } }
+  @keyframes orb-float-1 { from { transform: translate(0, 0); } to { transform: translate(-4px, -9px);  } }
+  @keyframes orb-float-2 { from { transform: translate(0, 0); } to { transform: translate(6px, -14px); } }
+  @keyframes orb-float-3 { from { transform: translate(0, 0); } to { transform: translate(-5px,-10px); } }
+  @keyframes orb-float-4 { from { transform: translate(0, 0); } to { transform: translate(1px, -11px); } }
+  .orb-float-5 { animation: orb-float-5 4.7s ease-in-out infinite alternate; }
+  @keyframes orb-float-5 { from { transform: translate(0, 0); } to { transform: translate(-3px, -13px); } }
+  /* legacy alias kept for hero-glow */
+  .orb-float { animation: orb-float-0 3.8s ease-in-out infinite alternate; }
+
+  /* ── Clay orb "breathing blob" — slow border-radius morph ── */
+  .orb-ball {
+    border-radius: 46% 54% 55% 45% / 48% 44% 56% 52%;
+    animation: blob-breathe 9s ease-in-out infinite alternate;
+  }
+  @keyframes blob-breathe {
+    from { border-radius: 46% 54% 55% 45% / 48% 44% 56% 52%; }
+    to   { border-radius: 56% 44% 46% 54% / 52% 57% 43% 48%; }
+  }
+
+  /* ── Calm tier ───────────────────────────────────────────────
+     NOT an off switch. Reduce Motion is a request to drop large-scale travel —
+     parallax, sweeps, spin, anything that moves across the screen — because
+     that is what causes vestibular symptoms. Opacity, colour and a couple of
+     pixels of lift are fine, and killing them left the page completely inert
+     for the ~30% of iOS users who have the setting on.
+
+     So the loops keep playing here; they just stop translating. The clips in
+     "Why this works" and "How it works" still tell their story, the display
+     word still colours in, the reveals still fade.
+
+     Two selectors, one rule set:
+       @media  — the honest signal, and the only one that works without JS.
+                 Scoped :not([data-motion="full"]) so the dev-only ?motion=full
+                 override can opt back out of it.
+       [data-motion="calm"] — set from the same hook the components read, so
+                 ?motion=calm moves the CSS loops and the JS scenes together.
+     Keep the two lists in sync; they are deliberately identical. ── */
+
+  /* Travel-based ambience has no calm equivalent — it is nothing but travel. */
+  :root[data-motion="calm"] .marquee-track,
+  :root[data-motion="calm"] .marquee-rev,
+  :root[data-motion="calm"] .hero-glow,
+  :root[data-motion="calm"] .orb-float,
+  :root[data-motion="calm"] .orb-float-0,
+  :root[data-motion="calm"] .orb-float-1,
+  :root[data-motion="calm"] .orb-float-2,
+  :root[data-motion="calm"] .orb-float-3,
+  :root[data-motion="calm"] .orb-float-4,
+  :root[data-motion="calm"] .orb-float-5,
+  :root[data-motion="calm"] .orb-ball {
+    animation: none !important;
+  }
+
+  /* The card loops keep their timing and lose their travel: same beats, same
+     6.4s cycle, fading instead of sliding. */
+  :root[data-motion="calm"] .fx-row {
+    animation-name: fx-row-in-calm;
+  }
+  :root[data-motion="calm"] .fx-send {
+    animation-name: fx-send-calm;
+  }
+  :root[data-motion="calm"] .fx-confirm {
+    animation-name: fx-confirm-calm;
+  }
+  :root[data-motion="calm"] .fx-dot {
+    animation-name: fx-dot-calm;
+  }
+  :root[data-motion="calm"] .fx-bob {
+    animation: none !important;
+  }
+  /* The two race bars grow rather than move, and growth IS the comparison the
+     card is making — a bar chart is not vestibular motion. Slowed, not cut. */
+  :root[data-motion="calm"] .fx-fill-fast,
+  :root[data-motion="calm"] .fx-fill-slow {
+    animation-timing-function: ease-in-out;
+  }
+  /* The gradient walks inside the letterforms; not one pixel of the word moves.
+     Slowed so it reads as a shift in light rather than a sweep. */
+  :root[data-motion="calm"] .band-fill {
+    animation-duration: 34s;
+  }
+  /* Anchor jumps land rather than glide. Lenis is already off on this tier;
+     this is the native equivalent. */
+  :root[data-motion="calm"] {
+    scroll-behavior: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion="full"]) .marquee-track,
+    :root:not([data-motion="full"]) .marquee-rev,
+    :root:not([data-motion="full"]) .hero-glow,
+    :root:not([data-motion="full"]) .orb-float,
+    :root:not([data-motion="full"]) .orb-float-0,
+    :root:not([data-motion="full"]) .orb-float-1,
+    :root:not([data-motion="full"]) .orb-float-2,
+    :root:not([data-motion="full"]) .orb-float-3,
+    :root:not([data-motion="full"]) .orb-float-4,
+    :root:not([data-motion="full"]) .orb-float-5,
+    :root:not([data-motion="full"]) .orb-ball {
+      animation: none !important;
+    }
+    :root:not([data-motion="full"]) .fx-row {
+      animation-name: fx-row-in-calm;
+    }
+    :root:not([data-motion="full"]) .fx-send {
+      animation-name: fx-send-calm;
+    }
+    :root:not([data-motion="full"]) .fx-confirm {
+      animation-name: fx-confirm-calm;
+    }
+    :root:not([data-motion="full"]) .fx-dot {
+      animation-name: fx-dot-calm;
+    }
+    :root:not([data-motion="full"]) .fx-bob {
+      animation: none !important;
+    }
+    :root:not([data-motion="full"]) .fx-fill-fast,
+    :root:not([data-motion="full"]) .fx-fill-slow {
+      animation-timing-function: ease-in-out;
+    }
+    :root:not([data-motion="full"]) .band-fill {
+      animation-duration: 34s;
+    }
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  /* Calm counterparts — identical timing to the originals, opacity only. */
+  @keyframes fx-row-in-calm {
+    0% {
+      opacity: 0;
+    }
+    10%,
+    84% {
+      opacity: 1;
+    }
+    96%,
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes fx-send-calm {
+    0% {
+      opacity: 0;
+    }
+    12%,
+    42% {
+      opacity: 1;
+    }
+    54%,
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes fx-confirm-calm {
+    0%,
+    50% {
+      opacity: 0;
+    }
+    62%,
+    90% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes fx-dot-calm {
+    0%,
+    60%,
+    100% {
+      opacity: 0.25;
+    }
+    30% {
+      opacity: 1;
+    }
   }
 }

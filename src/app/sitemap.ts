@@ -11,10 +11,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const host = (await headers()).get("host")?.toLowerCase().replace(/:\d+$/, "") ?? "";
   const bareHost = host.replace(/^www\./, "");
 
+  // The apex is the marketing site and has no tenant pages of its own: its
+  // sitemap is the marketing routes only. Tenant pages stay listed under
+  // book.bapita.com, which is still where they live.
+  if (bareHost === "bapita.com") {
+    const now = new Date();
+    return [
+      { url: "https://bapita.com/", lastModified: now, changeFrequency: "monthly", priority: 1 },
+      { url: "https://bapita.com/privacy", lastModified: now, changeFrequency: "yearly", priority: 0.2 },
+      { url: "https://bapita.com/terms", lastModified: now, changeFrequency: "yearly", priority: 0.2 },
+    ];
+  }
+
   // On a verified custom domain, this domain has exactly one public page.
   // Return a single-URL sitemap for itself only — never the full platform
   // list (that would be wrong and would leak the client roster).
-  if (bareHost && bareHost !== "book.bapita.com") {
+  if (bareHost && bareHost !== "book.bapita.com" && bareHost !== "bapita.com") {
     const { data: match } = await supabase
       .from("businesses")
       .select("custom_domain")
@@ -66,13 +78,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("sitemap: unexpected failure", err);
   }
 
-  return [
-    {
-      url: "https://book.bapita.com",
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 1,
-    },
-    ...slugRoutes,
-  ];
+  // book.bapita.com/ now 301s to the apex, so it is no longer a URL to submit;
+  // this host's sitemap is the tenant pages it actually serves.
+  return slugRoutes;
 }

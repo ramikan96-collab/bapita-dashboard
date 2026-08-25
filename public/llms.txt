@@ -1,8 +1,8 @@
 # Bapita
 
-> Bapita builds a booking website, owner dashboard, and automations for appointment-based businesses (barbers, hair salons, personal trainers, coaches, and similar service providers) in 48 hours, with no tech skills required from the business owner.
+> Bapita builds a booking website, owner dashboard, and automations for businesses that take bookings — hair salons and barbershops, short-term rental properties, clinics and practices, and restaurants — with no tech skills required from the business owner.
 
-Bapita is built primarily for appointment-based businesses in Israel. A business owner has one conversation with the Bapita team, and Bapita handles the setup end-to-end: a branded booking website, an owner dashboard to manage appointments and clients, and optional automations (appointment reminders, deposit collection, review requests, and similar workflows). There is no software for the owner to configure and no ongoing technical maintenance on their end.
+Bapita is built primarily for booking-based businesses in Israel, both appointment businesses (salons, clinics, studios, restaurants) and stay businesses (short-term rental properties, which book by night rather than by time slot). A business owner has one conversation with the Bapita team, and Bapita handles the setup end-to-end: a branded booking website, an owner dashboard to manage appointments and clients, and optional automations (appointment reminders, deposit collection, review requests, and similar workflows). There is no software for the owner to configure and no ongoing technical maintenance on their end.
 
 ## This site: book.bapita.com
 
@@ -14,6 +14,8 @@ Each business page is self-contained: it belongs to one business, shows that bus
 
 The company site, with product information, pricing, and how Bapita works, is at:
 https://bapita.com
+
+As of August 2026 bapita.com is the single marketing site; https://book.bapita.com/ permanently redirects to it.
 
 Booking pages for individual Bapita customers are hosted at:
 https://book.bapita.com/[business-slug]
