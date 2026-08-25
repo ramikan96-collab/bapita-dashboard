@@ -47,7 +47,11 @@ import { useMotionTier } from "@/lib/hub/motion";
  * exactly one screen in both tiers it can never overflow a phone.
  */
 
-type Base = { rx: number; ry: number; rot: number; start: number };
+/**
+ * `row` is 0 (upper) or 1 (lower), not a y fraction. See ROW GEOMETRY below.
+ * `nudge` is a few px of hand-placed drift so the grid reads as a tableau.
+ */
+type Base = { rx: number; row: 0 | 1; nudge: number; rot: number; start: number };
 type Chit = Base & { kind: "chit"; label: string; icon: LucideIcon };
 type Ball = Base & {
   kind: "ball";
@@ -83,16 +87,41 @@ const BALL_SIZE = "clamp(54px, 8vw, 80px)";
  * now has air around it.
  */
 const OBJECTS: Obj[] = [
-  { kind: "chit", label: "Booking website", icon: Globe, rx: -0.36, ry: -0.44, rot: -7, start: 0.05 },
-  { kind: "chit", label: "Owner dashboard", icon: LayoutDashboard, rx: 0.36, ry: -0.41, rot: 6, start: 0.1 },
-  { kind: "chit", label: "Auto reminders", icon: BellRing, rx: -0.36, ry: -0.13, rot: 5, start: 0.15 },
-  { kind: "chit", label: "Found on Google", icon: MapPin, rx: 0.36, ry: -0.16, rot: -5, start: 0.2 },
+  { kind: "chit", label: "Booking website", icon: Globe, rx: -0.36, row: 0, nudge: -4, rot: -7, start: 0.05 },
+  { kind: "chit", label: "Owner dashboard", icon: LayoutDashboard, rx: 0.36, row: 0, nudge: 4, rot: 6, start: 0.1 },
+  { kind: "chit", label: "Auto reminders", icon: BellRing, rx: -0.36, row: 1, nudge: 5, rot: 5, start: 0.15 },
+  { kind: "chit", label: "Found on Google", icon: MapPin, rx: 0.36, row: 1, nudge: -3, rot: -5, start: 0.2 },
 
-  { kind: "ball", id: "salon", label: "Salons", icon: Scissors, rx: -0.15, ry: -0.38, rot: 0, start: 0.3 },
-  { kind: "ball", id: "clinic", label: "Clinics", icon: Stethoscope, rx: 0.15, ry: -0.35, rot: 0, start: 0.38 },
-  { kind: "ball", id: "rental", label: "Rentals", icon: BedDouble, rx: -0.15, ry: -0.08, rot: 0, start: 0.46 },
-  { kind: "ball", id: "restaurant", label: "Restaurants", icon: UtensilsCrossed, rx: 0.15, ry: -0.05, rot: 0, start: 0.54 },
+  { kind: "ball", id: "salon", label: "Salons", icon: Scissors, rx: -0.15, row: 0, nudge: -6, rot: 0, start: 0.3 },
+  { kind: "ball", id: "clinic", label: "Clinics", icon: Stethoscope, rx: 0.15, row: 0, nudge: 6, rot: 0, start: 0.38 },
+  { kind: "ball", id: "rental", label: "Rentals", icon: BedDouble, rx: -0.15, row: 1, nudge: -5, rot: 0, start: 0.46 },
+  { kind: "ball", id: "restaurant", label: "Restaurants", icon: UtensilsCrossed, rx: 0.15, row: 1, nudge: 5, rot: 0, start: 0.54 },
 ];
+
+/* ── ROW GEOMETRY ──────────────────────────────────────────────────────────
+ *
+ * Rest positions used to be fractions of the scene box (`ry * h`), which is
+ * why the tableau came apart: the pita's height is a fraction of the VIEWPORT
+ * WIDTH, so the gap between the lower row and the pita rim was two unrelated
+ * numbers subtracted from each other. On a wide-but-short screen the rim rose
+ * through the row and cut the "Salons" and "Clinics" name pills in half.
+ *
+ * Both rows are now measured DOWN FROM THE PITA RIM instead, so the clearance
+ * is a constant no matter how the box is shaped. A falafel and its name pill
+ * are one object for spacing purposes — that pill is why the old numbers were
+ * always a little too tight.
+ */
+/** Falafel + name pill + air, half-height. The tallest object in either row.
+ *  Measured, not guessed: the stack renders 84px at the widest falafel, so 46
+ *  is the real half plus a little air. Overstating this is not free — the bowl
+ *  is sized from what the rows leave behind, so every phantom pixel here comes
+ *  straight off the pita. */
+const STACK_HALF = 46;
+/** Air between the lower row's pill and the pita rim. Absorbs the per-object
+ *  `nudge` (up to 5px downward) and still leaves daylight. */
+const RIM_CLEARANCE = 20;
+/** Air between the two rows. */
+const ROW_GAP = 26;
 
 /**
  * A phone cannot hold this composition at rest, so mobile plays the same
@@ -135,6 +164,17 @@ const MOBILE_POSITION = OBJECTS.map((_, i) => MOBILE_ORDER.indexOf(i));
 const FALL_DURATION = 0.16;
 /** Must match the PitaBowl box in the markup below. */
 const PITA_ASPECT = 560 / 760;
+/** px the bowl is pushed below the scene floor on desktop. Must match the
+ *  `sm:translate-y-*` on the bowl wrapper in the markup. */
+const PITA_DROP = 28;
+/** The bowl never shrinks past this, even on a very short scene — below it the
+ *  silhouette stops reading as a pita.
+ *
+ *  Tuned down from 190 after watching a 1280x523 viewport: every 10px the bowl
+ *  keeps is ~7px the two rows lose, and past a point the upper row's name pills
+ *  end up underneath the lower row's falafels. A smaller bowl with all eight
+ *  labels readable beats a bigger one with two of them buried. */
+const PITA_MIN_W = 150;
 /** Pocket centre, as a fraction of the pita box height from its top. */
 const POCKET_Y = 0.14;
 /** Warm light out of the pocket as the pita fills. */
@@ -149,6 +189,7 @@ export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
   const objRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const bowlRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const payoffRef = useRef<HTMLDivElement>(null);
   const calm = useMotionTier() === "calm";
@@ -168,16 +209,57 @@ export function Hero() {
 
       const w = scene!.clientWidth;
       const h = scene!.clientHeight;
+      const bowl = bowlRef.current;
       const mobile = window.innerWidth < MOBILE_BP;
       // Short phones get a smaller bowl so the falafels still have a stage.
       const short = mobile && window.innerHeight <= 700;
       // vw, matching the bowl's CSS width — the scene box is narrower than the
       // viewport, so measuring off `w` aimed the fall short of the pocket.
-      const pitaW = short
+      let pitaW = short
         ? Math.min(250, window.innerWidth * 0.42)
         : Math.min(320, window.innerWidth * (mobile ? 0.46 : 0.54));
+
+      // On desktop the bowl is sized by the scene's HEIGHT as well as its
+      // width. Two rows of objects have to fit above the rim, and a bowl
+      // measured off vw alone doesn't know that — on a wide, short laptop a
+      // 320px bowl left the rows nowhere to stand and the rim rose through
+      // the name pills. Give the rows their space first; the bowl gets what
+      // is left, down to a floor where it still reads as a bowl.
+      if (!mobile) {
+        const needed = 3 * STACK_HALF + ROW_GAP + RIM_CLEARANCE - PITA_DROP;
+        const byHeight = (h - needed) / PITA_ASPECT;
+        pitaW = Math.max(PITA_MIN_W, Math.min(pitaW, byHeight));
+      }
       const pitaH = pitaW * PITA_ASPECT;
-      const targetY = h / 2 - pitaH * (1 - POCKET_Y) - 6;
+      if (bowl) bowl.style.width = `${Math.round(pitaW)}px`;
+      // Matches the `translate-y` on the bowl in the markup. Dropping the bowl
+      // buys the lower row its clearance without shrinking anything, and the
+      // part that leaves the box is the plain underside of the dome.
+      const pitaDrop = mobile ? 0 : PITA_DROP;
+      const targetY = h / 2 + pitaDrop - pitaH * (1 - POCKET_Y) - 6;
+
+      // Desktop rows, measured down from the rim (see ROW GEOMETRY above).
+      //
+      // The bowl has already given up whatever height it could; if two rows
+      // still do not fit in what is left, the tableau scales down as a unit
+      // rather than letting the rows run into each other or off the top edge.
+      // Floored, because past that the labels stop being readable — and by
+      // then the copy has been cut back too, so it does not get reached.
+      const objectBand = h - RIM_CLEARANCE - pitaH + pitaDrop;
+      const deskFit = Math.max(
+        0.62,
+        Math.min(1, objectBand / (4 * STACK_HALF + ROW_GAP))
+      );
+      const halfF = STACK_HALF * deskFit;
+      const rowLowY = h / 2 + pitaDrop - pitaH - RIM_CLEARANCE - halfF;
+      // Last guard. The rows are placed from the rim upward, so on a scene that
+      // is short even after the bowl and the objects have both given ground,
+      // the upper row would walk out through the top of the box and land on the
+      // call-to-action. Closing the gap between the rows is the lesser evil.
+      const rowHighY = Math.max(
+        rowLowY - (2 * halfF + ROW_GAP * deskFit),
+        -h / 2 + halfF
+      );
 
       // Mobile slot geometry, in scene-centre coordinates. Two rows have to fit
       // the band above the bowl; rather than let them run into each other on a
@@ -186,7 +268,7 @@ export function Hero() {
       const rowHalf = mobile
         ? Math.max(30, Math.min(MOBILE_ROW_HALF, (band - 8) / 4))
         : MOBILE_ROW_HALF;
-      const fit = mobile ? rowHalf / MOBILE_ROW_HALF : 1;
+      const fit = mobile ? rowHalf / MOBILE_ROW_HALF : deskFit;
       const rowTop = -h / 2 + rowHalf + 4;
       const rowBottom = rowTop + 2 * rowHalf + 8;
       // A chit is the widest object; keep it inside the scene box, not just
@@ -216,7 +298,7 @@ export function Hero() {
           fromY = bottom ? rowBottom : rowTop;
         } else {
           fromX = o.rx * w;
-          fromY = o.ry * h;
+          fromY = (o.row === 0 ? rowHighY : rowLowY) + o.nudge * deskFit;
         }
 
         // Both tiers put the object INTO the pita — that trip is the whole idea
@@ -281,7 +363,7 @@ export function Hero() {
         /* svh, not vh: with dvh the pinned scene resizes every time the mobile
            URL bar collapses, and 100vh overflows behind it.
            Pinned BELOW the sticky header (h-16), not under it. */
-        className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col items-center overflow-hidden px-5 pb-4 pt-4 sm:px-8 sm:pb-8 sm:pt-14"
+        className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col items-center overflow-hidden px-5 pb-4 pt-4 sm:px-8 sm:pb-8 sm:pt-14 desk-short:pt-6 desk-short:pb-4 desk-tiny:pt-3 desk-tiny:pb-2"
       >
         <div className="text-center">
           <Eyebrow className="justify-center">For businesses people book</Eyebrow>
@@ -294,15 +376,15 @@ export function Hero() {
             size="hero"
             lead="Your business online."
             trail="Built for you."
-            className="mt-1.5 text-[2rem] leading-[1.08] phone-short:text-[1.75rem] sm:mt-3 sm:text-display-xl"
+            className="mt-1.5 text-[2rem] leading-[1.08] phone-short:text-[1.75rem] sm:mt-3 sm:text-display-xl desk-short:mt-1 desk-short:text-[2.5rem] desk-short:leading-[1.06] desk-tiny:mt-1 desk-tiny:text-[2rem]"
           />
 
-          <Lede className="mx-auto mt-2.5 max-w-xl text-[0.9375rem] leading-snug phone-short:mt-2 phone-short:text-[0.875rem] sm:mt-4 sm:text-xl sm:leading-relaxed">
+          <Lede className="mx-auto mt-2.5 max-w-xl text-[0.9375rem] leading-snug phone-short:mt-2 phone-short:text-[0.875rem] sm:mt-4 sm:text-xl sm:leading-relaxed desk-short:mt-2 desk-short:text-base desk-short:leading-snug desk-tiny:mt-1.5 desk-tiny:text-[0.875rem]">
             A booking website for your clients. A dashboard for you.{" "}
             <Key>We build both and keep them running.</Key> You just show up.
           </Lede>
 
-          <div className="mt-6 flex flex-col items-center gap-2 phone-short:mt-4 sm:mt-6 sm:gap-3">
+          <div className="mt-6 flex flex-col items-center gap-2 phone-short:mt-4 sm:mt-6 sm:gap-3 desk-short:mt-2.5 desk-short:gap-1 desk-tiny:mt-2 desk-tiny:gap-1">
             <Button href="#connect" size="lg" data-cta="hero_primary">
               Build My Website
             </Button>
@@ -311,7 +393,7 @@ export function Hero() {
                 the fold and the falafels landing on the bowl. */}
             <a
               href="#product"
-              className="-my-2 px-3 py-3 text-sm font-semibold text-espresso/45 underline decoration-espresso/20 underline-offset-4 transition-colors phone-short:hidden hover:text-espresso hover:decoration-espresso/50"
+              className="-my-2 px-3 py-3 text-sm font-semibold text-espresso/45 underline decoration-espresso/20 underline-offset-4 transition-colors phone-short:hidden desk-tiny:hidden hover:text-espresso hover:decoration-espresso/50"
             >
               No tech skills, no commitment
             </a>
@@ -319,7 +401,15 @@ export function Hero() {
         </div>
 
         {/* Scene */}
-        <div ref={sceneRef} className="relative -mt-1 w-full max-w-3xl flex-1 sm:mt-4">
+        {/* min-h is load-bearing, not padding: the desktop rest positions are
+              fractions of this box, so when it collapsed every object converged
+              on the centre and the four business names landed on top of each
+              other and on the pita. The floor is the pita (236px at its widest)
+              plus the two label rows above it. */}
+          <div
+            ref={sceneRef}
+            className="relative -mt-1 w-full max-w-3xl flex-1 sm:mt-4 sm:min-h-[360px] desk-short:mt-2 desk-short:min-h-[300px] desk-tiny:mt-1 desk-tiny:min-h-[240px]"
+          >
           {/* Objects sit above the pita so nothing is hidden behind the bowl
               while it floats; the squash-and-fade at the pocket is what sells
               the drop, not z-order. */}
@@ -340,7 +430,10 @@ export function Hero() {
 
           {/* The pita, bottom-centred. Objects fall into its pocket. */}
           <div
-            className="absolute bottom-0 start-1/2 z-0 w-[min(320px,46vw)] -translate-x-1/2 phone-short:w-[min(250px,42vw)] sm:w-[min(320px,54vw)]"
+            ref={bowlRef}
+            /* Width here is the SSR/first-paint value only — on desktop the
+               effect overwrites it with a height-aware one on the first tick. */
+            className="absolute bottom-0 start-1/2 z-0 w-[min(320px,46vw)] -translate-x-1/2 phone-short:w-[min(250px,42vw)] sm:w-[min(320px,54vw)] sm:translate-y-7"
             style={{ aspectRatio: "760 / 560" }}
           >
             <PitaBowl className="size-full" />

@@ -1,6 +1,17 @@
 @import "tailwindcss";
 
 @custom-variant phone-short (@media (max-height: 640px) and (max-width: 639px));
+/* A laptop is wide enough for the desktop type scale and rarely tall enough for
+   it. On a 13" screen with a dock and a bookmarks bar the hero copy alone ate
+   the entire pinned box, leaving the falafel scene ~120px to hold a 236px pita
+   plus two rows of labelled objects — so they piled onto each other and onto
+   the copy. This trims the copy on short-but-wide viewports so the scene keeps
+   its band. Pairs with the `min-h` floor on the scene box in Hero. */
+@custom-variant desk-short (@media (max-height: 860px) and (min-width: 640px));
+/* Second, harder step. Under ~700px of viewport the hero copy at ANY desktop
+   size leaves the scene too little to hold two rows of objects above the bowl,
+   so the copy gets cut back to the claim and the button. */
+@custom-variant desk-tiny (@media (max-height: 700px) and (min-width: 640px));
 
 @theme inline {
   /* Bapita shared identity — warm paper base, per-product accent.
