@@ -81,14 +81,19 @@ export async function middleware(request: NextRequest) {
   }
 
   // Marketing moved to the apex: book.bapita.com/ and the marketing-only paths
-  // 301 to bapita.com. Permanent on purpose — this is the canonical move, and
-  // book.bapita.com/ has been the marketing home long enough to have links
-  // pointing at it. Everything else on this host (tenant pages, /login, the
+  // send to bapita.com. Everything else on this host (tenant pages, /login, the
   // dashboard, /api, SEO files) is untouched.
+  //
+  // 307 while the cutover is in flight, NOT 301. The apex only becomes this app
+  // when the bapita.com domain is moved onto this Vercel project, and until
+  // that lands this redirect points at the old hub site. A 301 is cached hard
+  // by browsers and by Google, so getting that window wrong once would stick.
+  // Flip this to 301 — and only then — once bapita.com is confirmed serving
+  // this app, because permanent is what tells Google the move is canonical.
   if (bareHost === "book.bapita.com" && movedToApex(pathname)) {
     return NextResponse.redirect(
       `https://bapita.com${pathname}${request.nextUrl.search}`,
-      301
+      307
     );
   }
 
