@@ -157,6 +157,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(`${BOOKING_URL}${pathname}`);
   }
 
+  // The Hebrew marketing page. Same mechanism the custom booking domains use:
+  // the root layout reads `x-booking-locale` to put lang/dir on <html>, and a
+  // child route cannot reach <html> to set them itself. Without this the
+  // Hebrew page would render inside dir="ltr" and every logical property on it
+  // would point the wrong way.
+  if (pathname === "/he" || pathname.startsWith("/he/")) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-booking-locale", "he");
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   // Public surfaces never consult auth — this is the booking-page traffic, i.e.
   // the overwhelming majority of requests.
   if (!needsAuth(pathname)) {

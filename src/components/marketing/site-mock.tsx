@@ -1,5 +1,6 @@
 import { BrowserFrame } from "@/components/hub/ui/frame";
 import type { Audience } from "@/lib/marketing/audiences";
+import type { Dict } from "@/lib/marketing/i18n";
 
 /**
  * One booking page, four businesses.
@@ -14,6 +15,9 @@ import type { Audience } from "@/lib/marketing/audiences";
  * Real DOM, not screenshots: it stays crisp at any width and picks up the
  * audience accent without a second asset.
  *
+ * The words come in as `copy`, keyed by the same audience id, so the same mock
+ * renders a Hebrew booking page without a second component.
+ *
  * `dense` tightens every vertical rhythm by roughly a fifth. It exists because
  * the mock now lives inside a fixed-height card stage alongside two other
  * surfaces, and a mock that overflows its stage by 60px is what would break the
@@ -21,18 +25,26 @@ import type { Audience } from "@/lib/marketing/audiences";
  */
 export function SiteMock({
   audience,
+  copy,
   dense = false,
+  max,
 }: {
   audience: Audience;
+  copy: Dict["audiences"][keyof Dict["audiences"]];
   dense?: boolean;
+  /** Show only the first N services. The three-up stage has room for two. */
+  max?: number;
 }) {
-  const { accent, items, slots, mock, mode } = audience;
+  const { accent, slots, mode, initial, url } = audience;
+  const { mock } = copy;
+  const items = [copy.items.a, copy.items.b, copy.items.c].slice(0, max ?? 3);
+  const perNight = copy.perNight;
   const isStay = mode === "stay";
   // Appointment: one slot is the chosen one. Stay: a check in → check out range.
   const chosen = isStay ? [2, 3] : [3];
 
   return (
-    <BrowserFrame url={mock.url} accent={accent} dense={dense}>
+    <BrowserFrame url={url} accent={accent} dense={dense}>
       <div className="bg-white">
         <div
           className={`flex items-center gap-3 px-5 ${dense ? "py-3" : "py-4"}`}
@@ -44,7 +56,7 @@ export function SiteMock({
             }`}
             style={{ background: accent }}
           >
-            {mock.initial}
+            {initial}
           </span>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-espresso">{mock.name}</p>
@@ -77,7 +89,7 @@ export function SiteMock({
               <span className="shrink-0 text-[0.8125rem] font-bold tabular-nums text-espresso">
                 {item.price}
                 {isStay && (
-                  <span className="font-medium text-espresso/40"> / night</span>
+                  <span className="font-medium text-espresso/40"> {perNight}</span>
                 )}
               </span>
             </div>

@@ -29,6 +29,7 @@ import {
   useSectionProgress,
 } from "@/lib/marketing/motion-hooks";
 import { useCalmMotion } from "@/lib/hub/motion";
+import { getDict, dirFor, fill, type Dict, type Locale } from "@/lib/marketing/i18n";
 import { cn } from "@/lib/hub/cn";
 
 /**
@@ -161,9 +162,15 @@ const SITE_MS = 5200;
 function SiteCard({
   sectionRef,
   pinned,
+  t,
+  audiences,
+  rtl,
 }: {
   sectionRef: RefObject<HTMLElement | null>;
   pinned: boolean;
+  t: Dict["build"]["site"];
+  audiences: Dict["audiences"];
+  rtl: boolean;
 }) {
   const stage = useRef<HTMLDivElement>(null);
   const calm = useCalmMotion();
@@ -201,21 +208,22 @@ function SiteCard({
   };
 
   const audience = AUDIENCES[index];
+  const copy = audiences[audience.id];
   const running = !pinned && ticking && !calm && visible;
 
   return (
     <BuildCard
-      tag="The product"
+      tag={t.tag}
       accent="#e8920a"
-      title="Booking Website"
-      body="Clients see your services, your real openings, and book instantly, any hour of the day. Salon, rental, clinic or restaurant, it takes your shape."
+      title={t.title}
+      body={t.body}
       stageRef={stage}
       pinned={pinned}
     >
       <div className="flex shrink-0 items-center justify-between gap-3">
         <div
           role="tablist"
-          aria-label="Kind of business"
+          aria-label={t.tablist}
           className="flex gap-1 rounded-pill bg-espresso/[0.05] p-1"
         >
           {AUDIENCES.map((a, i) => {
@@ -227,10 +235,13 @@ function SiteCard({
                 type="button"
                 role="tab"
                 aria-selected={on}
-                aria-label={a.label}
+                aria-label={audiences[a.id].label}
                 onClick={() => select(i)}
                 className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-pill transition-colors duration-200",
+                  /* 36px on a phone, back to 28 once there is a pointer: these
+                     were the smallest targets on the page, and they sit in a
+                     card a thumb is already scrolling past. */
+                  "flex h-9 w-9 items-center justify-center rounded-pill transition-colors duration-200 sm:h-7 sm:w-7",
                   on ? "text-white" : "text-espresso/40 hover:text-espresso/70",
                 )}
                 style={on ? { background: a.accent } : undefined}
@@ -244,7 +255,7 @@ function SiteCard({
           className="min-w-0 truncate text-end text-[0.6875rem] font-bold uppercase tracking-[0.12em]"
           style={{ color: audience.accent }}
         >
-          {audience.label}
+          {copy.label}
         </p>
       </div>
 
@@ -254,6 +265,7 @@ function SiteCard({
         accent={audience.accent}
         timed={running}
         ms={SITE_MS}
+        rtl={rtl}
       />
 
       {/* key remounts on switch so the fade plays, and so the mock never shows
@@ -266,10 +278,7 @@ function SiteCard({
           className="w-full"
           style={{ animation: "fadeIn 420ms cubic-bezier(0.16, 1, 0.3, 1) both" }}
         >
-          <SiteMock
-            audience={{ ...audience, items: audience.items.slice(0, 2) }}
-            dense
-          />
+          <SiteMock audience={audience} copy={copy} dense max={2} />
         </div>
       </div>
     </BuildCard>
@@ -289,12 +298,14 @@ function StepRail({
   accent,
   timed,
   ms,
+  rtl,
 }: {
   count: number;
   index: number;
   accent: string;
   timed: boolean;
   ms: number;
+  rtl: boolean;
 }) {
   if (timed) {
     return (
@@ -304,7 +315,10 @@ function StepRail({
       >
         <span
           key={index}
-          className="block h-full origin-left"
+          // `scaleX(0→1)` always grows toward +x on screen. Anchor the
+          // origin at the trailing edge for the reading direction so the
+          // fill advances start-to-end instead of always left-to-right.
+          className={rtl ? "block h-full origin-right" : "block h-full origin-left"}
           style={{ background: accent, animation: `cycle-fill ${ms}ms linear both` }}
         />
       </span>
@@ -330,17 +344,19 @@ const WHOLE = (n: number) => String(Math.round(n));
 
 const REVENUE = 2400;
 const FUNNEL = [
-  { label: "visitors", value: 214, pct: 100 },
-  { label: "started", value: 68, pct: 32 },
-  { label: "booked", value: 41, pct: 19 },
-];
+  { id: "visitors", value: 214, pct: 100 },
+  { id: "started", value: 68, pct: 32 },
+  { id: "booked", value: 41, pct: 19 },
+] as const;
 
 function DashboardCard({
   sectionRef,
   pinned,
+  t,
 }: {
   sectionRef: RefObject<HTMLElement | null>;
   pinned: boolean;
+  t: Dict["build"]["dashboard"];
 }) {
   const stage = useRef<HTMLDivElement>(null);
   const calm = useCalmMotion();
@@ -394,16 +410,16 @@ function DashboardCard({
 
   return (
     <BuildCard
-      tag="Included free"
+      tag={t.tag}
       accent="#d4622a"
-      title="Owner Dashboard"
-      body="Your whole week in one place: who visited, where they came from, and how many turned into bookings. Prefer pen and paper? Every booking still reaches your phone."
+      title={t.title}
+      body={t.body}
       stageRef={stage}
       pinned={pinned}
     >
       <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-espresso/[0.07] bg-white p-4 shadow-[0_18px_44px_-28px_rgba(60,34,12,0.35)]">
         <p className="text-[0.625rem] font-bold uppercase tracking-[0.14em] text-espresso/35">
-          This week
+          {t.thisWeek}
         </p>
 
         <div className="mt-2 flex items-baseline gap-4">
@@ -414,7 +430,9 @@ function DashboardCard({
             >
               ₪2,400
             </span>
-            <span className="ms-1.5 text-[0.6875rem] text-espresso/40">revenue</span>
+            <span className="ms-1.5 text-[0.6875rem] text-espresso/40">
+              {t.revenue}
+            </span>
           </span>
           <span>
             <span
@@ -423,20 +441,23 @@ function DashboardCard({
             >
               41
             </span>
-            <span className="ms-1.5 text-[0.6875rem] text-espresso/40">booked</span>
+            <span className="ms-1.5 text-[0.6875rem] text-espresso/40">
+              {t.booked}
+            </span>
           </span>
         </div>
 
         <span className="mt-2.5 inline-flex w-fit items-center gap-1.5 rounded-pill bg-hub-success/12 px-2 py-1 text-[0.625rem] font-bold text-hub-success">
-          <TrendingUp className="h-3 w-3" strokeWidth={2.6} />0 no shows this week
+          <TrendingUp className="h-3 w-3" strokeWidth={2.6} />
+          {t.noShows}
         </span>
 
         <p className="mt-4 text-[0.625rem] font-bold uppercase tracking-[0.14em] text-espresso/35">
-          Who visited
+          {t.whoVisited}
         </p>
         <div className="mt-2.5 flex flex-col gap-2.5">
           {FUNNEL.map((row, i) => (
-            <div key={row.label} className="flex items-center gap-3">
+            <div key={row.id} className="flex items-center gap-3">
               <span
                 ref={(el) => {
                   counts.current[i] = el;
@@ -455,14 +476,14 @@ function DashboardCard({
                 />
               </span>
               <span className="w-12 shrink-0 text-end text-[0.625rem] text-espresso/40">
-                {row.label}
+                {t.funnel[row.id]}
               </span>
             </div>
           ))}
         </div>
 
         <div className="mt-auto flex flex-wrap gap-1.5 pt-4">
-          {["Instagram 46%", "Google 31%", "Direct 23%"].map((s) => (
+          {[t.sources.a, t.sources.b, t.sources.c].map((s) => (
             <span
               key={s}
               className="rounded-pill bg-espresso/[0.05] px-2.5 py-1 text-[0.625rem] font-semibold text-espresso/50"
@@ -479,38 +500,19 @@ function DashboardCard({
 /* ── 3 · Add ons ──────────────────────────────────────────────── */
 
 const SWITCHES = [
-  {
-    id: "whatsapp",
-    name: "WhatsApp reminders",
-    icon: MessageCircle,
-    accent: "#1fa971",
-    on: "Sending before every booking",
-    off: "Clients remember on their own",
-  },
-  {
-    id: "payments",
-    name: "Online payments",
-    icon: CreditCard,
-    accent: "#e8920a",
-    on: "Deposit taken at booking",
-    off: "You collect on the day",
-  },
-  {
-    id: "seo",
-    name: "SEO",
-    icon: Search,
-    accent: "#2d6cf0",
-    on: "Tuned every month to rank near you",
-    off: "Found only by people who know you",
-  },
+  { id: "whatsapp", icon: MessageCircle, accent: "#1fa971" },
+  { id: "payments", icon: CreditCard, accent: "#e8920a" },
+  { id: "seo", icon: Search, accent: "#2d6cf0" },
 ] as const;
 
 function AddonsCard({
   sectionRef,
   pinned,
+  t,
 }: {
   sectionRef: RefObject<HTMLElement | null>;
   pinned: boolean;
+  t: Dict["build"]["addons"];
 }) {
   const stage = useRef<HTMLDivElement>(null);
   /**
@@ -539,15 +541,15 @@ function AddonsCard({
 
   return (
     <BuildCard
-      tag="Grow when ready"
+      tag={t.tag}
       accent="#7c5cfc"
-      title="Add ons"
-      body="Reminders, payments, reviews, SEO. Layer in what you need, when you need it. Everything runs itself, ₪200 a month each."
+      title={t.title}
+      body={t.body}
       stageRef={stage}
       pinned={pinned}
     >
       <p className="shrink-0 text-[0.625rem] font-bold uppercase tracking-[0.14em] text-espresso/35">
-        Switch on when you are ready
+        {t.switchLabel}
       </p>
 
       <div className="mt-2.5 flex flex-col gap-2.5">
@@ -581,7 +583,7 @@ function AddonsCard({
 
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[0.8125rem] font-bold text-espresso">
-                  {s.name}
+                  {t.switches[s.id].name}
                 </span>
                 <span
                   className={cn(
@@ -589,7 +591,7 @@ function AddonsCard({
                     active ? "text-espresso/50" : "text-espresso/30",
                   )}
                 >
-                  {active ? s.on : s.off}
+                  {active ? t.switches[s.id].on : t.switches[s.id].off}
                 </span>
               </span>
 
@@ -611,21 +613,19 @@ function AddonsCard({
       <div className="mt-auto rounded-2xl border border-espresso/[0.07] bg-white/70 px-4 py-3">
         <p className="text-[0.75rem] font-bold text-espresso">
           {count === 0 ? (
-            "Just the booking website"
+            t.none
           ) : (
             <>
-              {count} add on{count > 1 ? "s" : ""} running ·{" "}
+              {count === 1 ? t.runningOne : fill(t.runningMany, { count })} ·{" "}
               <span key={count} className="count-pop inline-block">
                 ₪{count * 200}
               </span>{" "}
-              a month
+              {t.aMonth}
             </>
           )}
         </p>
         <p className="mt-1 text-[0.6875rem] leading-snug text-espresso/45">
-          {count === 0
-            ? "Which is a complete business on its own. Add the rest when it pays for itself."
-            : "Switched on by us. Nothing to install, nothing to learn."}
+          {count === 0 ? t.noneBody : t.someBody}
         </p>
       </div>
     </BuildCard>
@@ -634,7 +634,9 @@ function AddonsCard({
 
 /* ── Section ──────────────────────────────────────────────────── */
 
-export function WhatWeBuild() {
+export function WhatWeBuild({ locale = "en" }: { locale?: Locale }) {
+  const dict = getDict(locale);
+  const t = dict.build;
   const section = useRef<HTMLElement>(null);
   const pinned = usePinned();
 
@@ -642,12 +644,11 @@ export function WhatWeBuild() {
     <Reveal>
       <div className="mx-auto max-w-2xl text-center">
         <Eyebrow className="justify-center" dot="#e8920a">
-          What we build for you
+          {t.eyebrow}
         </Eyebrow>
-        <TwoTone size="sm" lead="Three layers." trail="One system." className="mt-2" />
+        <TwoTone size="sm" lead={t.lead} trail={t.trail} className="mt-2" />
         <Lede className="mx-auto mt-2 text-[0.9375rem] leading-snug sm:text-base">
-          We build and maintain your entire online presence. You just show up and
-          do your job.
+          {t.lede}
         </Lede>
       </div>
     </Reveal>
@@ -660,9 +661,15 @@ export function WhatWeBuild() {
         pinned && "h-full min-h-0",
       )}
     >
-      <SiteCard sectionRef={section} pinned={pinned} />
-      <DashboardCard sectionRef={section} pinned={pinned} />
-      <AddonsCard sectionRef={section} pinned={pinned} />
+      <SiteCard
+        sectionRef={section}
+        pinned={pinned}
+        t={t.site}
+        audiences={dict.audiences}
+        rtl={dirFor(locale) === "rtl"}
+      />
+      <DashboardCard sectionRef={section} pinned={pinned} t={t.dashboard} />
+      <AddonsCard sectionRef={section} pinned={pinned} t={t.addons} />
     </div>
   );
 

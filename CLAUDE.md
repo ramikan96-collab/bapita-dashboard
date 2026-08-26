@@ -34,6 +34,26 @@ Run `npm run verify:stay` after touching that file.
 
 6. **`anon` reads `businesses` through a COLUMN-LEVEL grant allowlist, not a table grant.** Adding a column to the `src/app/[slug]/page.tsx` select is therefore a TWO-part change: the column must also be `grant select (col) on public.businesses to anon`, or the anon query errors and that page turns every error into `notFound()` — a 404 on **every** public tenant page at once. This shipped as a live outage on 2026-08-22 (see `docs/migrations/2026-08-22-stay-anon-column-grants.sql`). Local `npm run build` will NOT catch it: builds use the service-role key, which bypasses column grants. Verify with an anon request or by checking `information_schema.column_privileges`.
 
+## Marketing i18n (bapita.com)
+
+The homepage ships in two languages from one component. `/` renders English,
+`/he` renders Hebrew; both mount `src/components/marketing/home.tsx`.
+
+- **All marketing copy lives in `src/lib/marketing/i18n/{en,he}.ts`.** Section
+  components hold structure only (ids, icons, accents, scroll choreography) and
+  read their words from the dictionary by id. `he.ts` is typed as `Dict`, so a
+  missing key fails the build.
+- Adding a string: add the key to `en.ts`, then `node scripts/seed-he.mjs` —
+  it copies new keys into `he.ts` as English placeholders and keeps everything
+  already translated.
+- `lang`/`dir` on `<html>` come from the `x-booking-locale` header, which
+  `src/middleware.ts` sets for `/he` — a route segment cannot reach `<html>`.
+- **RTL gotcha:** an element centred with a logical anchor (`start-1/2`) plus a
+  physical `translate(-50%)` lands a full width off centre under `dir=rtl`. Use
+  `left-1/2` for centring. Anything driven by a JS transform across the
+  horizontal axis (the proof rail, the band's clip-path wipe) needs its sign or
+  its edge flipped for RTL; both already do.
+
 ## Past Security Audits
 - Rate limiting on `/api/public/book` (prevent abuse)
 - Unique DB index against double-booking

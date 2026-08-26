@@ -389,7 +389,7 @@ export function Hero() {
               ref={(el) => {
                 objRefs.current[i] = el;
               }}
-              className="absolute start-1/2 top-1/2 z-10 will-change-transform"
+              className="absolute left-1/2 top-1/2 z-10 will-change-transform"
               /* Starts hidden; the first rAF tick places and reveals it. Both
                  tiers are driven by the same loop, so neither ships a frame of
                  ten objects piled at the centre. */
@@ -401,7 +401,7 @@ export function Hero() {
 
           {/* The pita, bottom-centred. Objects fall into its pocket. */}
           <div
-            className="absolute bottom-0 start-1/2 z-0 w-[min(320px,46vw)] -translate-x-1/2 phone-short:w-[min(250px,42vw)] sm:w-[min(320px,54vw)]"
+            className="absolute bottom-0 left-1/2 z-0 w-[min(320px,46vw)] -translate-x-1/2 phone-short:w-[min(250px,42vw)] sm:w-[min(320px,54vw)]"
             style={{ aspectRatio: "760 / 560" }}
           >
             <PitaBowl className="size-full" />
@@ -418,7 +418,7 @@ export function Hero() {
             ref={payoffRef}
             /* Sits above the rim, not across the bowl — it's the outcome of
                the pita being full, not a label stuck on it. */
-            className="absolute bottom-[52%] start-1/2 z-20 w-max max-w-[calc(100vw-2.5rem)] text-center sm:bottom-[54%]"
+            className="absolute bottom-[52%] left-1/2 z-20 w-max max-w-[calc(100vw-2.5rem)] text-center sm:bottom-[54%]"
             style={{ opacity: 0, transform: "translate(-50%, 16px)" }}
           >
             <PayoffChip />

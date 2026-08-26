@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   BellRing,
   CreditCard,
@@ -12,7 +12,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Reveal, RevealStagger, RevealItem } from "@/components/hub/reveal";
+import { Band } from "@/components/hub/band";
 import { TwoTone, Lede, Eyebrow } from "@/components/hub/ui/type";
+import { useInView } from "@/lib/marketing/motion-hooks";
+import { getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
+import { useCalmMotion } from "@/lib/hub/motion";
 import { cn } from "@/lib/hub/cn";
 
 /**
@@ -33,100 +37,88 @@ import { cn } from "@/lib/hub/cn";
  *
  * Same grid-rows collapse the Hub's FAQ uses, so a panel animates to whatever
  * height its content needs and never clips.
+ *
+ * The accent on each card is scroll-driven rather than hover-only, and the
+ * section ends on a display band. Both are explained where they happen.
  */
 
 type Addon = {
-  name: string;
-  cadence: string;
-  summary: string;
-  body: string;
+  /** Key into `addons.items`. Name, summary and detail live in the locale. */
+  id: keyof Dict["addons"]["items"];
   accent: string;
   icon: LucideIcon;
 };
 
 const MONTHLY: Addon[] = [
-  {
-    name: "Appointment Reminders",
-    cadence: "Monthly",
-    summary:
-      "Automated reminders via WhatsApp, SMS, or Email to reduce no shows",
-    body: "Clients get a confirmation the moment they book, and a reminder before they show up. No shows drop. You do nothing. Works around the clock, including at 11PM when you are asleep. On WhatsApp, by SMS for clients who don't use it, or by email. Booking confirmation emails are already included free in your plan; this add on sends reminders on top.",
-    accent: "#1fa971",
-    icon: BellRing,
-  },
-  {
-    name: "Online Payments",
-    cadence: "Monthly",
-    summary: "Collect deposits or full payment at the time of booking",
-    body: "Clients pay when they book, deposit or full amount, your choice. No shows drop overnight because money on the table means people show up. Payment lands in your account before they walk through the door.",
-    accent: "#e8920a",
-    icon: CreditCard,
-  },
-  {
-    name: "Google Reviews",
-    cadence: "Monthly",
-    summary:
-      "Automatic review requests sent to happy clients at the right moment",
-    body: "After every visit, we ask happy clients for a Google review at exactly the right moment. Your rating climbs, you do nothing. More reviews means more people finding you when they search.",
-    accent: "#d4881c",
-    icon: Star,
-  },
-  {
-    name: "SEO Optimization",
-    cadence: "Monthly",
-    summary:
-      "We tune your page every month so people nearby find you before they find anyone else",
-    body: "Every month we work on your page so search engines put you in front of the people already looking for what you do. You climb, they find you, they book. Keywords, page speed, local signals, and fresh content, all handled for you.",
-    accent: "#2d6cf0",
-    icon: Search,
-  },
+  { id: "reminders", accent: "#1fa971", icon: BellRing },
+  { id: "payments", accent: "#e8920a", icon: CreditCard },
+  { id: "reviews", accent: "#d4a017", icon: Star },
+  { id: "seo", accent: "#2d6cf0", icon: Search },
 ];
 
 const ONE_TIME: Addon[] = [
-  {
-    name: "Google Business Setup",
-    cadence: "One time",
-    summary:
-      "Full profile setup so you appear when someone nearby searches for what you do",
-    body: "We claim and fully set up your Google Business Profile so you appear in Google Maps and local search when someone nearby searches for what you do. Done once, works forever. Verified profile, photos, hours, and description.",
-    accent: "#7c5cfc",
-    icon: MapPinned,
-  },
-  {
-    name: "Google Calendar Sync",
-    cadence: "One time",
-    summary:
-      "Busy times block automatically, new bookings show up on your Google Calendar",
-    body: "We connect your Google Calendar for you, a one time concierge setup, not another monthly bill. No more double bookings. Block time on Google and it blocks on Bapita, and vice versa.",
-    accent: "#16A6B3",
-    icon: CalendarSync,
-  },
+  { id: "gbp", accent: "#7c5cfc", icon: MapPinned },
+  { id: "calsync", accent: "#16A6B3", icon: CalendarSync },
 ];
 
-function AddonCard({ addon, id }: { addon: Addon; id: string }) {
+function AddonCard({
+  addon,
+  id,
+  t,
+  cadence,
+}: {
+  addon: Addon;
+  id: string;
+  t: Dict["addons"];
+  cadence: string;
+}) {
+  const copy = t.items[addon.id];
   const [open, setOpen] = useState(false);
+
+  /**
+   * Each card lights itself as it arrives, and stays lit.
+   *
+   * The accent used to be a hover state, which means it never existed on a
+   * phone and on a laptop only ever showed one card at a time. Scrolling the
+   * section now walks the colour down it and leaves it there, so the section
+   * ends with all six lit — which is what the band underneath is a payoff for.
+   * Lit is a resting style, not an animation, so the calm tier gets it
+   * immediately rather than not at all, and a reader with no JS gets the plain
+   * card the server rendered.
+   */
+  const card = useRef<HTMLDivElement>(null);
+  const calm = useCalmMotion();
+  const seen = useInView(card, { rootMargin: "0px 0px -32% 0px" });
+  const lit = calm || seen;
 
   return (
     <div
+      ref={card}
+      data-lit={lit || undefined}
       className={cn(
-        "group relative h-full overflow-hidden rounded-3xl border bg-chip transition-[border-color,box-shadow,transform] duration-300",
+        "group relative h-full overflow-hidden rounded-3xl border bg-chip transition-[border-color,box-shadow,transform] duration-500",
         open ? "-translate-y-0.5" : "hover:-translate-y-0.5",
       )}
       style={{
-        borderColor: open ? `${addon.accent}4d` : "rgba(42,29,20,0.09)",
+        borderColor: open
+          ? `${addon.accent}4d`
+          : lit
+            ? `${addon.accent}33`
+            : "rgba(42,29,20,0.09)",
         boxShadow: open
           ? `0 1px 0 ${addon.accent}1f inset, 0 22px 50px -30px ${addon.accent}b3`
-          : "0 1px 2px rgba(60,34,12,0.04)",
+          : lit
+            ? `0 1px 0 ${addon.accent}14 inset, 0 18px 42px -32px ${addon.accent}99`
+            : "0 1px 2px rgba(60,34,12,0.04)",
       }}
     >
-      {/* The accent draws itself across the top on hover and stays drawn while
-          the card is open. One line doing two jobs: which add-on you're on, and
-          which one you've opened. */}
+      {/* One line doing three jobs now: which add-on the scroll has reached,
+          which one you are pointing at, and which one you have opened. */}
       <span
         aria-hidden="true"
         className={cn(
-          "absolute inset-x-0 top-0 h-[2px] origin-left transition-transform duration-500 ease-out",
-          open ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100",
+          "absolute inset-x-0 top-0 h-[2px] origin-left transition-transform duration-700 ease-out",
+          open || lit ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100",
         )}
         style={{ background: addon.accent }}
       />
@@ -141,7 +133,7 @@ function AddonCard({ addon, id }: { addon: Addon; id: string }) {
           aria-hidden="true"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-hub-lg transition-colors duration-300"
           style={{
-            background: `${addon.accent}${open ? "24" : "14"}`,
+            background: `${addon.accent}${open ? "24" : lit ? "1c" : "14"}`,
             color: addon.accent,
           }}
         >
@@ -151,14 +143,14 @@ function AddonCard({ addon, id }: { addon: Addon; id: string }) {
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <span className="text-[0.9375rem] font-bold tracking-[-0.02em] text-espresso sm:text-base">
-              {addon.name}
+              {copy.name}
             </span>
             <span className="rounded-pill bg-espresso/[0.06] px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-[0.12em] text-espresso/40">
-              {addon.cadence}
+              {cadence}
             </span>
           </span>
           <span className="mt-1.5 block text-[0.8125rem] leading-snug text-espresso/50">
-            {addon.summary}
+            {copy.summary}
           </span>
         </span>
 
@@ -185,7 +177,7 @@ function AddonCard({ addon, id }: { addon: Addon; id: string }) {
       >
         <div className="overflow-hidden">
           <p className="px-5 pb-5 ps-[4.25rem] text-[0.875rem] leading-relaxed text-espresso/60">
-            {addon.body}
+            {copy.body}
           </p>
         </div>
       </div>
@@ -205,65 +197,79 @@ function GroupRule({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Addons() {
+export function Addons({ locale = "en" }: { locale?: Locale }) {
+  const t = getDict(locale).addons;
   return (
     <section id="automations" className="wash-oven py-16 sm:py-24">
       <div className="mx-auto max-w-5xl px-5 sm:px-8">
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">
             <Eyebrow className="justify-center" dot="#7c5cfc">
-              Add ons
+              {t.eyebrow}
             </Eyebrow>
-            <TwoTone
-              lead="Layer in"
-              trail="what you need."
-              className="mt-2 sm:mt-3"
-            />
-            <Lede className="mx-auto mt-4">
-              Everything below clicks straight into your Bapita. Pick what fits,
-              we switch it on and run it for you.
-            </Lede>
+            <TwoTone lead={t.lead} trail={t.trail} className="mt-2 sm:mt-3" />
+            <Lede className="mx-auto mt-4">{t.lede}</Lede>
           </div>
         </Reveal>
 
         <Reveal delay={80}>
           <div className="mt-10 sm:mt-14">
-            <GroupRule>Runs every month</GroupRule>
+            <GroupRule>{t.groupMonthly}</GroupRule>
           </div>
         </Reveal>
         <RevealStagger className="mt-4 grid items-start gap-4 sm:grid-cols-2">
           {MONTHLY.map((addon, i) => (
-            <RevealItem key={addon.name} className="h-full">
-              <AddonCard addon={addon} id={`addon-m-${i}`} />
+            <RevealItem key={addon.id} className="h-full">
+              <AddonCard
+                addon={addon}
+                id={`addon-m-${i}`}
+                t={t}
+                cadence={t.cadenceMonthly}
+              />
             </RevealItem>
           ))}
         </RevealStagger>
 
         <Reveal>
           <div className="mt-10 sm:mt-12">
-            <GroupRule>Done once, works forever</GroupRule>
+            <GroupRule>{t.groupOnce}</GroupRule>
           </div>
         </Reveal>
         <RevealStagger className="mt-4 grid items-start gap-4 sm:grid-cols-2">
           {ONE_TIME.map((addon, i) => (
-            <RevealItem key={addon.name} className="h-full">
-              <AddonCard addon={addon} id={`addon-o-${i}`} />
+            <RevealItem key={addon.id} className="h-full">
+              <AddonCard
+                addon={addon}
+                id={`addon-o-${i}`}
+                t={t}
+                cadence={t.cadenceOnce}
+              />
             </RevealItem>
           ))}
         </RevealStagger>
 
         <Reveal>
           <p className="mt-10 text-center text-[0.875rem] text-espresso/45 sm:mt-12">
-            Add on pricing depends on how much you send and how often.{" "}
+            {t.note}{" "}
             <a
               href="#connect"
               className="font-semibold text-espresso underline decoration-espresso/25 underline-offset-4 transition-colors hover:decoration-espresso/70"
             >
-              You get real numbers on the call
+              {t.noteLink}
             </a>
             .
           </p>
         </Reveal>
+      </div>
+
+      {/* The second display band on the page, and deliberately the twin of the
+          first: "Work smarter" opens the process, "Go further." closes the
+          add-ons. It lands after all six cards have lit, so the phrase is a
+          payoff for something the reader just watched happen rather than a
+          slogan dropped between two sections. Outside the container — the band
+          brings its own full-bleed strip. */}
+      <div className="mt-14 sm:mt-20">
+        <Band lead={t.band.lead} trail={t.band.trail} />
       </div>
     </section>
   );

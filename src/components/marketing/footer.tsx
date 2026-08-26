@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/hub/ui/brand-mark";
+import { getDict, type Locale } from "@/lib/marketing/i18n";
 
 /**
  * Footer for the marketing home — the shipped book.bapita.com footer, in the v3
@@ -22,26 +23,21 @@ import { BrandMark } from "@/components/hub/ui/brand-mark";
  */
 
 const SITE_LINKS = [
-  { label: "Problem", href: "#problem" },
-  { label: "How it works", href: "#how-it-works" },
-  { label: "What we build", href: "#product" },
-  { label: "Add ons", href: "#automations" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "FAQ", href: "#faq" },
-];
+  { id: "problem", href: "#problem" },
+  { id: "how", href: "#how-it-works" },
+  { id: "product", href: "#product" },
+  { id: "addons", href: "#automations" },
+  { id: "pricing", href: "#pricing" },
+  { id: "faq", href: "#faq" },
+] as const;
 
-const BUILT_FOR = [
-  "Barbers",
-  "Hair & nail salons",
-  "Lash & brow studios",
-  "Spa & massage",
-  "Short term rentals",
-  "Guest suites & cabins",
-  "Physio & dental",
-  "Aesthetics & therapy",
-  "Pilates, yoga & trainers",
-  "Restaurants & bars",
-];
+const BUILT_FOR = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"] as const;
+
+const LEGAL = [
+  { href: "/accessibility", id: "accessibility" },
+  { href: "/privacy", id: "privacy" },
+  { href: "/terms", id: "terms" },
+] as const;
 
 function Social({
   href,
@@ -65,8 +61,9 @@ function Social({
   );
 }
 
-export function MarketingFooter() {
+export function MarketingFooter({ locale = "en" }: { locale?: Locale }) {
   const year = new Date().getFullYear();
+  const t = getDict(locale);
 
   return (
     <footer id="about" style={{ background: "#16120d" }}>
@@ -76,8 +73,7 @@ export function MarketingFooter() {
           <div className="col-span-2 lg:col-span-1">
             <BrandMark className="text-clay opacity-90" />
             <p className="mt-3.5 max-w-[300px] text-[0.875rem] leading-relaxed text-clay/45">
-              Done for you booking websites for appointment and stay businesses
-              in Israel. Built, launched and kept running under your brand.
+              {t.footer.blurb}
             </p>
             <div className="mt-4 flex gap-2">
               <Social href="https://instagram.com/bapita" label="Instagram">
@@ -108,16 +104,16 @@ export function MarketingFooter() {
           {/* Links */}
           <div>
             <p className="mb-3 text-[0.7rem] font-bold uppercase tracking-[0.16em] text-clay/40">
-              Links
+              {t.footer.linksTitle}
             </p>
             <ul className="flex flex-col">
               {SITE_LINKS.map((link) => (
-                <li key={link.label}>
+                <li key={link.id}>
                   <a
                     href={link.href}
                     className="-mx-2 flex min-h-10 items-center rounded-hub-md px-2 text-[0.875rem] font-medium text-clay/50 transition-colors hover:text-clay"
                   >
-                    {link.label}
+                    {link.id === "faq" ? t.footer.faq : t.nav.links[link.id]}
                   </a>
                 </li>
               ))}
@@ -126,7 +122,7 @@ export function MarketingFooter() {
                   href="/login"
                   className="-mx-2 flex min-h-10 items-center rounded-hub-md px-2 text-[0.875rem] font-medium text-clay/50 transition-colors hover:text-clay"
                 >
-                  Log in
+                  {t.nav.login}
                 </Link>
               </li>
             </ul>
@@ -135,12 +131,12 @@ export function MarketingFooter() {
           {/* Built for — words, not links: these are audiences, not pages. */}
           <div>
             <p className="mb-3 text-[0.7rem] font-bold uppercase tracking-[0.16em] text-clay/40">
-              Built for
+              {t.footer.builtForTitle}
             </p>
             <ul className="flex flex-col gap-2">
-              {BUILT_FOR.map((item) => (
-                <li key={item} className="text-[0.875rem] text-clay/50">
-                  {item}
+              {BUILT_FOR.map((id) => (
+                <li key={id} className="text-[0.875rem] text-clay/50">
+                  {t.footer.builtFor[id]}
                 </li>
               ))}
             </ul>
@@ -149,14 +145,14 @@ export function MarketingFooter() {
           {/* Get started */}
           <div>
             <p className="mb-3 text-[0.7rem] font-bold uppercase tracking-[0.16em] text-clay/40">
-              Get started
+              {t.footer.getStartedTitle}
             </p>
             <a
               href="#connect"
               data-cta="footer"
               className="-mx-2 inline-flex min-h-10 items-center gap-1.5 rounded-hub-md px-2 text-[0.875rem] font-bold text-cinnamon transition-colors hover:text-[#f0a838]"
             >
-              Book a free call
+              {t.nav.cta}
               <span aria-hidden="true">→</span>
             </a>
             <a
@@ -169,19 +165,17 @@ export function MarketingFooter() {
         </div>
 
         <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-clay/[0.08] pt-8">
-          <p className="text-xs text-clay/40">© {year} Bapita. All rights reserved.</p>
+          <p className="text-xs text-clay/40">
+            © {year} Bapita. {t.footer.rights}
+          </p>
           <div className="-mx-2 flex flex-wrap gap-3">
-            {[
-              { href: "/accessibility", label: "Accessibility" },
-              { href: "/privacy", label: "Privacy Policy" },
-              { href: "/terms", label: "Terms of Service" },
-            ].map((link) => (
+            {LEGAL.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className="flex min-h-11 items-center px-2 text-xs text-clay/40 transition-colors hover:text-clay/70"
               >
-                {link.label}
+                {t.footer.legal[link.id]}
               </Link>
             ))}
           </div>

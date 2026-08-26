@@ -114,7 +114,7 @@ export function PitaBowl({ className, style }: { className?: string; style?: Rea
       <div className="relative size-full">
         {/* ambient contact shadow — grounds the object */}
         <div
-          className="absolute start-1/2 rounded-full blur-2xl"
+          className="absolute left-1/2 rounded-full blur-2xl"
           style={{
             top: "4%",
             width: "86%",

@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import {
+  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
   Check,
@@ -15,6 +16,7 @@ import { Reveal } from "@/components/hub/reveal";
 import { PauseOffscreen } from "@/components/hub/pause-offscreen";
 import { TwoTone, Lede, Key, Eyebrow } from "@/components/hub/ui/type";
 import { usePinned, useSectionProgress } from "@/lib/marketing/motion-hooks";
+import { dirFor, getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
 
 /**
  * "Sound familiar?" and "Why this works", merged.
@@ -27,6 +29,9 @@ import { usePinned, useSectionProgress } from "@/lib/marketing/motion-hooks";
  * Now every card is one problem WITH the number under it. Six cards, six
  * numbers, six sources printed on the card — an unattributed percentage reads
  * as marketing, so the source is part of the design rather than a footnote.
+ * Five of the six link to the study; the header says outright that none of the
+ * figures are ours, because a reader who assumes they are reads the rail as a
+ * boast instead of as the case for booking online at all.
  *
  * ── The scroll ──
  *
@@ -47,14 +52,18 @@ import { usePinned, useSectionProgress } from "@/lib/marketing/motion-hooks";
  * their own before the argument lands.
  */
 
+/** The words a scene draws with. Structure is here; copy is in the locale. */
+type Scenes = Dict["proof"]["scenes"];
+
 type Card = {
-  /** The thing that is going wrong. */
-  problem: string;
+  /** Key into `proof.cards` — the problem line, the label and the source. */
+  id: keyof Dict["proof"]["cards"];
+  /** The figure itself. A number, so it reads the same in both languages. */
   value: string;
-  label: string;
-  source: string;
+  /** The study itself. Omitted where the figure has no traceable page. */
+  href?: string;
   glow: string;
-  Scene: () => React.ReactElement;
+  Scene: (props: { t: Scenes }) => React.ReactElement;
 };
 
 /* ── Scenes ───────────────────────────────────────────────────── */
@@ -63,16 +72,16 @@ type Card = {
 const DELAY = ["", "fx-d1", "fx-d2", "fx-d3"] as const;
 
 /** 1 — the search that ends somewhere else. */
-function SearchScene() {
+function SearchScene({ t }: { t: Scenes }) {
   const results = [
-    { name: "The place two streets over", meta: "★★★★★ 4.9 · Open now" },
-    { name: "The one with 200 reviews", meta: "★★★★☆ 4.7 · 0.4 km" },
+    { ...t.resultA, stars: "★★★★★" },
+    { ...t.resultB, stars: "★★★★☆" },
   ];
   return (
     <Scene className="justify-center gap-2">
       <p className="mb-1 flex items-center gap-1.5 rounded-hub-lg border border-espresso/[0.07] bg-paper-warm px-2.5 py-2 font-mono text-[0.6875rem] text-espresso/50">
         <Search className="h-3 w-3 shrink-0" strokeWidth={2.4} />
-        book near me
+        {t.searchQuery}
       </p>
       {results.map((r, i) => (
         <div
@@ -80,35 +89,37 @@ function SearchScene() {
           className={`fx-row ${DELAY[i]} rounded-hub-lg border border-espresso/[0.07] bg-paper-warm px-2.5 py-2`}
         >
           <p className="truncate text-[0.75rem] font-semibold text-espresso">{r.name}</p>
-          <p className="mt-0.5 text-[0.6875rem] text-espresso/40">{r.meta}</p>
+          <p className="mt-0.5 text-[0.6875rem] text-espresso/40">
+            {r.stars} {r.meta}
+          </p>
         </div>
       ))}
       <div className="fx-row fx-d2 rounded-hub-lg border border-dashed border-hub-danger/40 bg-hub-danger/[0.05] px-2.5 py-2.5 text-center">
-        <p className="text-[0.75rem] font-bold text-hub-danger">You are not here</p>
+        <p className="text-[0.75rem] font-bold text-hub-danger">{t.notHere}</p>
       </div>
     </Scene>
   );
 }
 
 /** 2 — same street, two businesses, one of them bookable. */
-function PickScene() {
+function PickScene({ t }: { t: Scenes }) {
   return (
     <Scene className="justify-center gap-2.5">
       <p className="mb-1 font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-espresso/40">
-        Same street, two businesses
+        {t.sameStreet}
       </p>
       <div className="fx-row flex items-center gap-2.5 rounded-hub-lg border border-cinnamon/30 bg-paper-warm px-2.5 py-2.5">
         <span className="min-w-0 flex-1 truncate text-[0.75rem] font-bold text-espresso">
-          Books online
+          {t.booksOnline}
         </span>
         <span className="fx-bob rounded-pill bg-hub-success/12 px-2 py-0.5 text-[0.6875rem] font-bold text-hub-success">
-          Booked
+          {t.booked}
         </span>
       </div>
       <div className="fx-row fx-d2 flex items-center gap-2.5 rounded-hub-lg border border-espresso/[0.07] px-2.5 py-2.5 opacity-60">
         <PhoneOff className="h-3.5 w-3.5 shrink-0 text-espresso/35" strokeWidth={2.4} />
         <span className="min-w-0 flex-1 truncate text-[0.75rem] text-espresso/55">
-          Call during opening hours
+          {t.callDuringHours}
         </span>
       </div>
     </Scene>
@@ -118,27 +129,29 @@ function PickScene() {
 /** 3 — the bookings that land while the lights are off. One of each kind of
  *  business, because all four of them close and all four of them keep taking
  *  bookings after they do. */
-function AfterHoursScene() {
+function AfterHoursScene({ t }: { t: Scenes }) {
   const rows = [
-    { t: "21:40", s: "Appointment · ₪180" },
-    { t: "23:15", s: "Two nights · ₪1,300" },
-    { t: "02:07", s: "Table for four" },
+    { at: "21:40", what: `${t.lateAppointment} · ₪180` },
+    { at: "23:15", what: `${t.lateStay} · ₪1,300` },
+    { at: "02:07", what: t.lateTable },
   ];
   return (
     <Scene className="justify-center gap-2">
       <p className="mb-1 flex items-center gap-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-espresso/40">
         <Clock className="h-3 w-3" strokeWidth={2.4} />
-        Closed at 19:00
+        {t.closedAt}
       </p>
       {rows.map((row, i) => (
         <div
-          key={row.t}
+          key={row.at}
           className={`fx-row ${DELAY[i]} flex items-center gap-2.5 rounded-hub-lg border border-espresso/[0.07] bg-paper-warm px-2.5 py-2`}
         >
           <span className="font-mono text-[0.75rem] font-bold tabular-nums text-espresso">
-            {row.t}
+            {row.at}
           </span>
-          <span className="min-w-0 truncate text-[0.75rem] text-espresso/55">{row.s}</span>
+          <span className="min-w-0 truncate text-[0.75rem] text-espresso/55">
+            {row.what}
+          </span>
           <Check className="ms-auto h-3.5 w-3.5 shrink-0 text-hub-success" strokeWidth={3} />
         </div>
       ))}
@@ -147,18 +160,18 @@ function AfterHoursScene() {
 }
 
 /** 4 — who answered first. */
-function RaceScene() {
+function RaceScene({ t }: { t: Scenes }) {
   return (
     <Scene className="justify-center gap-5">
       <Race
-        who="Your booking page"
-        detail="took it at 23:14"
+        who={t.raceWinner}
+        detail={t.raceWinnerDetail}
         fill="fx-fill-fast"
         color="#1fa971"
       />
       <Race
-        who="A missed message"
-        detail={<TypingDots />}
+        who={t.raceLoser}
+        detail={<TypingDots t={t} />}
         fill="fx-fill-slow"
         color="rgba(42,29,20,0.22)"
       />
@@ -167,7 +180,7 @@ function RaceScene() {
 }
 
 /** 5 — the reminder going out, the seat being held. */
-function ReminderScene() {
+function ReminderScene({ t }: { t: Scenes }) {
   return (
     <Scene className="justify-center">
       {/* Both beats share one grid cell so the card never reflows mid-loop. */}
@@ -179,15 +192,16 @@ function ReminderScene() {
               strokeWidth={2.4}
             />
             <p className="text-[0.75rem] leading-snug text-espresso/70">
-              Hi Dana, you are booked for tomorrow at 16:00. Reply{" "}
-              <span className="font-bold text-espresso">1</span> to confirm.
+              {t.reminderBefore}{" "}
+              <span className="font-bold text-espresso">{t.reminderKey}</span>{" "}
+              {t.reminderAfter}
             </p>
           </div>
         </div>
         <div className="fx-confirm col-start-1 row-start-1 flex items-center justify-center self-center">
           <span className="inline-flex items-center gap-2 rounded-pill bg-hub-success/12 px-3.5 py-2 text-[0.8125rem] font-bold text-hub-success">
             <Check className="h-4 w-4" strokeWidth={3} />
-            Confirmed. Slot held
+            {t.confirmed}
           </span>
         </div>
       </div>
@@ -196,14 +210,14 @@ function ReminderScene() {
 }
 
 /** 6 — reviews arriving without being chased. */
-function ReviewScene() {
+function ReviewScene({ t }: { t: Scenes }) {
   return (
     <Scene className="justify-center">
       <p className="mb-3 font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-espresso/40">
-        Asked after every visit
+        {t.askedAfter}
       </p>
       <div className="space-y-2">
-        {["Dana M.", "Yossi K.", "Noa L."].map((name, i) => (
+        {[t.reviewers.a, t.reviewers.b, t.reviewers.c].map((name, i) => (
           <div
             key={name}
             className={`fx-row ${DELAY[i]} flex items-center gap-2.5 rounded-hub-lg border border-espresso/[0.07] bg-paper-warm px-2.5 py-2`}
@@ -227,50 +241,43 @@ function ReviewScene() {
 
 const CARDS: Card[] = [
   {
-    problem: "Someone nearby just looked for what you do.",
+    id: "search",
     value: "76%",
-    label: "who search near me visit a business within 24 hours",
-    source: "Think with Google",
+    href: "https://www.thinkwithgoogle.com/consumer-insights/consumer-trends/mobile-search-trends-consumers-to-stores/",
     glow: "#2d6cf0",
     Scene: SearchScene,
   },
   {
-    problem: "They pick whoever they can book right now.",
+    id: "pick",
     value: "94%",
-    label: "more likely to pick a business that books online",
-    source: "GetApp",
+    href: "https://www.getapp.com/resources/research-online-booking-importance-of-appointment-scheduling/",
     glow: "#e8920a",
     Scene: PickScene,
   },
   {
-    problem: "Half the bookings happen after you have closed.",
+    id: "afterHours",
     value: "50%",
-    label: "of bookings are made while the business is shut",
-    source: "Boulevard",
     glow: "#d4622a",
     Scene: AfterHoursScene,
   },
   {
-    problem: "A message at 23:14 is a client gone by morning.",
+    id: "race",
     value: "85%",
-    label: "of people who reach voicemail never call back",
-    source: "OnCallClerk",
+    href: "https://oncallclerk.com/blog/why-callers-dont-leave-voicemail",
     glow: "#1fa971",
     Scene: RaceScene,
   },
   {
-    problem: "No shows quietly take a day out of every week.",
+    id: "reminder",
     value: "25%",
-    label: "fewer no shows once reminders go out on their own",
-    source: "Am. J. of Medicine",
+    href: "https://pubmed.ncbi.nlm.nih.gov/20569761/",
     glow: "#7c5cfc",
     Scene: ReminderScene,
   },
   {
-    problem: "They read your reviews before they read your prices.",
+    id: "review",
     value: "9 in 10",
-    label: "read reviews before choosing a local business",
-    source: "BrightLocal",
+    href: "https://www.brightlocal.com/research/local-consumer-review-survey/",
     glow: "#d4a017",
     Scene: ReviewScene,
   },
@@ -281,7 +288,16 @@ const CARDS: Card[] = [
 /** How much vertical scroll one card's worth of sideways travel costs. */
 const SCROLL_PER_CARD = 62; // vh
 
-export function Proof() {
+export function Proof({ locale = "en" }: { locale?: Locale }) {
+  const t = getDict(locale).proof;
+  /**
+   * Which way the rail travels. In a right-to-left document the flex row lays
+   * out from the container's right edge and the overflow hangs off the LEFT,
+   * so translating negatively — correct in English — pushed the unseen cards
+   * further out of view and the Hebrew page had four cards that could never be
+   * reached. The distance is the same; only the sign moves.
+   */
+  const railSign = dirFor(locale) === "rtl" ? 1 : -1;
   const section = useRef<HTMLElement>(null);
   const rail = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
@@ -298,36 +314,50 @@ export function Proof() {
     // The track has to end with its last card flush against the end gutter,
     // not scrolled a card too far: measure rather than assume a card width.
     const travel = Math.max(0, tr.scrollWidth - tr.clientWidth);
-    tr.style.transform = `translate3d(${-p * travel}px, 0, 0)`;
+    tr.style.transform = `translate3d(${railSign * p * travel}px, 0, 0)`;
   });
 
+  /**
+   * The unpinned rail is a real scroll container, and a right-to-left one
+   * scrolls into NEGATIVE scrollLeft — so "next" is the same button but the
+   * opposite delta. Without the sign, the arrows on the Hebrew page moved the
+   * rail in the direction the reader had just come from.
+   */
   function nudge(dir: 1 | -1) {
     const el = rail.current;
     if (!el) return;
-    el.scrollBy({ left: dir * (el.clientWidth * 0.8), behavior: "smooth" });
+    el.scrollBy({ left: -railSign * dir * (el.clientWidth * 0.8), behavior: "smooth" });
   }
 
   const header = (
-    <div className="mx-auto max-w-6xl px-5 sm:px-8">
+    /* `w-full` is load-bearing in the pinned branch. The sticky box is a flex
+       column, and an item with `mx-auto` opts out of stretch: without a width
+       the header shrank to its own longest line and centred on THAT, landing
+       217px right of the closing line under it and off the page grid entirely.
+       In the unpinned branch it is a plain block and never had the problem,
+       which is why it survived this long. */
+    <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
       <Reveal>
         <div className="max-w-2xl">
-          <Eyebrow dot="#d64545">Sound familiar?</Eyebrow>
-          <TwoTone
-            lead="The real cost of"
-            trail="running things manually"
-            className="mt-2 sm:mt-3"
-          />
+          <Eyebrow dot="#d64545">{t.eyebrow}</Eyebrow>
+          <TwoTone lead={t.lead} trail={t.trail} className="mt-2 sm:mt-3" />
           <Lede className="mt-2.5 text-[0.9375rem] leading-snug sm:mt-4 sm:text-lg sm:leading-relaxed">
-            These aren&apos;t one off annoyances. They repeat every week, and{" "}
-            <Key>every one of them has a number on it</Key>.
+            {t.ledeBefore} <Key>{t.ledeKey}</Key>.
           </Lede>
+          {/* Said once, in the section header, rather than hedged on six cards.
+              A visitor who thinks these percentages are OUR results reads the
+              whole rail as a boast; they are other people's research and the
+              argument is stronger when that is stated outright. */}
+          <p className="mt-2 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-espresso/40 sm:mt-3 sm:text-[0.6875rem] sm:tracking-[0.14em]">
+            {t.attribution}
+          </p>
         </div>
       </Reveal>
     </div>
   );
 
   const cards = CARDS.map((card) => (
-    <ProofCard key={card.value + card.source} card={card} />
+    <ProofCard key={card.id} card={card} t={t} />
   ));
 
   /**
@@ -343,13 +373,12 @@ export function Proof() {
    */
   const closer = (
     <p className="text-[0.9375rem] leading-relaxed text-espresso/50">
-      <span className="font-bold text-espresso">Built by us. Run by you.</span>{" "}
-      You know your trade, we know the software.{" "}
+      <span className="font-bold text-espresso">{t.closerBold}</span>{" "}
       <a
         href="#connect"
         className="font-semibold text-espresso underline decoration-espresso/25 underline-offset-4 transition-colors hover:decoration-espresso/70"
       >
-        Let&apos;s fix your problems
+        {t.closerLink}
       </a>
       .
     </p>
@@ -367,13 +396,22 @@ export function Proof() {
       }
     >
       {pinned ? (
-        <div className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden py-8">
+        /* `overflow-x-hidden` only, not `-hidden`: a card taller than this
+           box's `h-full` share (a real laptop window, not just a phone —
+           26rem of card plus the header text is taller than a lot of actual
+           browser chrome-minus-nav budgets) used to have its top and bottom
+           sliced off by `justify-center` inside a vertically clipped box. The
+           rail still needs its sideways bleed hidden; the card no longer needs
+           to fit inside a box shorter than its own minimum height. `start`,
+           not `center`, so any remaining overflow runs off the bottom, not up
+           under the fixed nav. */
+        <div className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col justify-start overflow-x-hidden py-8">
           {header}
           <PauseOffscreen className="mt-7 min-h-0 flex-1">
             {/* No overflow scrolling here: the transform IS the scroll. The end
                 padding matches the start gutter so the last card lands where
                 the headline starts rather than jammed against the edge. */}
-            <div className="h-full overflow-hidden">
+            <div className="h-full overflow-x-hidden">
               <div
                 ref={track}
                 className="rail-inset flex h-full gap-5 will-change-transform"
@@ -397,7 +435,7 @@ export function Proof() {
                   key={dir}
                   type="button"
                   onClick={() => nudge(dir)}
-                  aria-label={dir === -1 ? "Previous cards" : "Next cards"}
+                  aria-label={dir === -1 ? t.prev : t.next}
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-espresso/15 text-espresso/60 transition-colors hover:bg-espresso/[0.05] hover:text-espresso focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cinnamon/50"
                 >
                   {dir === -1 ? (
@@ -429,37 +467,87 @@ export function Proof() {
 
 /* ── Card ─────────────────────────────────────────────────────── */
 
-function ProofCard({ card }: { card: Card }) {
+function ProofCard({ card, t }: { card: Card; t: Dict["proof"] }) {
   const { Scene: CardScene } = card;
+  const copy = t.cards[card.id];
   return (
     <article
-      className="lift flex h-full min-h-[26rem] w-[min(84vw,20rem)] shrink-0 flex-col rounded-3xl border p-5 sm:w-[22rem] sm:p-7 lg:min-h-0"
+      className="lift flex h-full min-h-[26rem] w-[min(84vw,20rem)] shrink-0 flex-col rounded-3xl border p-5 sm:w-[22rem] sm:p-7"
       style={{
         borderColor: `${card.glow}33`,
         background: `linear-gradient(165deg, ${card.glow}12, #FDFBF7 42%)`,
         boxShadow: `0 1px 0 ${card.glow}22 inset, 0 14px 40px -22px rgba(60,34,12,0.28)`,
       }}
     >
-      <h3 className="text-[1.0625rem] font-bold leading-snug tracking-[-0.02em] text-balance text-espresso sm:text-[1.1875rem]">
-        {card.problem}
+      {/* `shrink-0`: at the pinned box's `h-full` (viewport-height-derived), a
+          short window can hand this card less room than the heading's own two
+          lines need. Flex items shrink below content size by default, and text
+          isn't clipped when that happens — it just overflows downward into the
+          Scene below. Pin the heading to its content height and let the card
+          grow past `h-full` instead of the two silently overlapping. */}
+      <h3 className="shrink-0 text-[1.0625rem] font-bold leading-snug tracking-[-0.02em] text-balance text-espresso sm:text-[1.1875rem]">
+        {copy.problem}
       </h3>
 
-      <CardScene />
+      <CardScene t={t.scenes} />
 
       <div className="mt-4 border-t border-espresso/[0.08] pt-3.5">
-        <p className="flex items-baseline gap-2.5">
-          <span className="text-[2rem] font-extrabold leading-none tracking-[-0.04em] tabular-nums text-espresso sm:text-[2.5rem]">
-            {card.value}
-          </span>
-          <span className="font-mono text-[0.625rem] uppercase tracking-[0.12em] text-espresso/35">
-            {card.source}
-          </span>
+        <p className="text-[2rem] font-extrabold leading-none tracking-[-0.04em] tabular-nums text-espresso sm:text-[2.5rem]">
+          {card.value}
         </p>
         <p className="mt-1.5 text-[0.8125rem] leading-snug text-espresso/55">
-          {card.label}
+          {copy.label}
         </p>
+        <Citation
+          prefix={t.sourcePrefix}
+          source={copy.source}
+          href={card.href}
+        />
       </div>
     </article>
+  );
+}
+
+/**
+ * The attribution, on its own line under the figure.
+ *
+ * A link where the study has a page anyone can open, plain text where it does
+ * not — the Boulevard figure is quoted everywhere and traceable nowhere, and
+ * pointing at a homepage that does not carry it would be worse than printing
+ * the name alone.
+ */
+function Citation({
+  prefix,
+  source,
+  href,
+}: {
+  prefix: string;
+  source: string;
+  href?: string;
+}) {
+  /* `after` extends the tappable box to 39px without moving the type: a
+     15px-tall link is a real target on a rail you swipe through with a thumb,
+     and padding the link instead would push the card past its min height. */
+  const base =
+    "mt-2.5 inline-flex items-center gap-1 font-mono text-[0.625rem] uppercase tracking-[0.12em] text-espresso/35";
+  const hit =
+    "relative after:absolute after:inset-x-0 after:-inset-y-3 after:content-['']";
+  if (!href)
+    return (
+      <p className={base}>
+        {prefix} · {source}
+      </p>
+    );
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener nofollow"
+      className={`${base} ${hit} underline decoration-espresso/20 underline-offset-4 transition-colors hover:text-espresso/70 hover:decoration-espresso/50`}
+    >
+      {prefix} · {source}
+      <ArrowUpRight className="h-3 w-3 shrink-0" strokeWidth={2.4} />
+    </a>
   );
 }
 
@@ -508,10 +596,10 @@ function Race({
   );
 }
 
-function TypingDots() {
+function TypingDots({ t }: { t: Scenes }) {
   return (
-    <span className="inline-flex items-center gap-1" aria-label="still waiting">
-      unanswered
+    <span className="inline-flex items-center gap-1" aria-label={t.raceWaiting}>
+      {t.raceLoserDetail}
       {[0, 1, 2].map((i) => (
         <span
           key={i}

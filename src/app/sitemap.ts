@@ -18,8 +18,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // declares as their canonical URL.
   if (bareHost === SITE_HOST) {
     const now = new Date();
+    // Both languages, each pointing at the other. `alternates.languages` is
+    // what tells Google these are one page in two languages rather than two
+    // competing pages, and it has to be in the sitemap as well as the head.
+    const languages = { en: siteUrl("/"), he: siteUrl("/he") };
     return [
-      { url: siteUrl("/"), lastModified: now, changeFrequency: "monthly", priority: 1 },
+      {
+        url: siteUrl("/"),
+        lastModified: now,
+        changeFrequency: "monthly",
+        priority: 1,
+        alternates: { languages },
+      },
+      {
+        url: siteUrl("/he"),
+        lastModified: now,
+        changeFrequency: "monthly",
+        priority: 1,
+        alternates: { languages },
+      },
       { url: siteUrl("/privacy"), lastModified: now, changeFrequency: "yearly", priority: 0.2 },
       { url: siteUrl("/terms"), lastModified: now, changeFrequency: "yearly", priority: 0.2 },
     ];

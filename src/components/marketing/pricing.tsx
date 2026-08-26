@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Globe,
   BellRing,
@@ -15,6 +15,8 @@ import { Reveal } from "@/components/hub/reveal";
 import { Button } from "@/components/hub/ui/button";
 import { TwoTone, Lede, Key, Eyebrow } from "@/components/hub/ui/type";
 import { Falafel, PitaBowl } from "@/components/hub/ui/pita";
+import { usePinned, useSectionProgress } from "@/lib/marketing/motion-hooks";
+import { getDict, fill, type Dict, type Locale } from "@/lib/marketing/i18n";
 import { cn } from "@/lib/hub/cn";
 
 /**
@@ -41,11 +43,30 @@ import { cn } from "@/lib/hub/cn";
  * to a screen and a half before a visitor saw a total. Everything that answers
  * "can I afford this" is now in one view, and the line items are there so
  * neither figure is a number the reader has to take on trust.
+ *
+ * On a phone the section is held to one screen the hard way: the lede and the
+ * itemised list are dropped below `sm`. Both are redundant there — the two
+ * totals already carry their own detail line, and the chips show what is in.
+ * The alternative was a pricing section a phone reader had to scroll through
+ * to see the second figure, which is the one thing this layout exists to stop.
+ *
+ * ── The scroll fills it ──
+ *
+ * The section pins and vertical scroll drops the add-ons in one at a time, both
+ * totals climbing behind them. Scroll back and it empties. It is the same
+ * mechanic the sections above use, and the same handoff: a tap sets the pita
+ * however you like and holds until scroll crosses the next threshold, so taking
+ * over never fights the page.
+ *
+ * Pinned on a phone as well as a laptop — `usePinned(0)` — which is deliberate
+ * and is the one place on the page where that is a real risk. The escape is the
+ * calm motion tier: Reduce Motion gets the plain unpinned calculator, which is
+ * also what the server renders and what a reader with no JS keeps.
  */
 
 type Addon = {
-  id: string;
-  label: string;
+  /** Key into `pricing.labels`. */
+  id: keyof Dict["pricing"]["labels"];
   icon: LucideIcon;
   cadence: "monthly" | "once";
   /** Resting position inside the pita, as % of the bowl box. */
@@ -54,16 +75,24 @@ type Addon = {
 };
 
 /** The base. Always in the pita — there is no version of this without it. */
-const BASE = { id: "site", label: "Booking website", icon: Globe, x: 50, y: 3 };
+const BASE = { id: "site", icon: Globe, x: 50, y: 3 };
 
 const ADDONS: Addon[] = [
-  { id: "reminders", label: "Reminders", icon: BellRing, cadence: "monthly", x: 26, y: 11 },
-  { id: "payments", label: "Payments", icon: CreditCard, cadence: "monthly", x: 74, y: 11 },
-  { id: "reviews", label: "Reviews", icon: Star, cadence: "monthly", x: 36, y: 20 },
-  { id: "seo", label: "SEO", icon: Search, cadence: "monthly", x: 64, y: 20 },
-  { id: "gbp", label: "Google profile", icon: MapPinned, cadence: "once", x: 44, y: 29 },
-  { id: "calsync", label: "Calendar sync", icon: CalendarSync, cadence: "once", x: 58, y: 29 },
+  { id: "reminders", icon: BellRing, cadence: "monthly", x: 26, y: 11 },
+  { id: "payments", icon: CreditCard, cadence: "monthly", x: 74, y: 11 },
+  { id: "reviews", icon: Star, cadence: "monthly", x: 36, y: 20 },
+  { id: "seo", icon: Search, cadence: "monthly", x: 64, y: 20 },
+  { id: "gbp", icon: MapPinned, cadence: "once", x: 44, y: 29 },
+  { id: "calsync", icon: CalendarSync, cadence: "once", x: 58, y: 29 },
 ];
+
+/**
+ * How much vertical scroll each add-on costs, and where in the scrub it lands.
+ * Six thresholds inside the first 72%, so the pita is full with a quarter of
+ * the pin left to read the total before the section lets go.
+ */
+const SCROLL_PER_ADDON = 26; // vh
+const FILL_AT = [0.12, 0.24, 0.36, 0.48, 0.6, 0.72];
 
 const SETUP = 1500;
 const MONTHLY = 200;
@@ -72,7 +101,15 @@ const ADDON_PRICE = 200;
 
 const shekel = (n: number) => `₪${n.toLocaleString("en-US")}`;
 
-export function Pricing() {
+export function Pricing({ locale = "en" }: { locale?: Locale }) {
+  const t = getDict(locale).pricing;
+  const section = useRef<HTMLElement>(null);
+  /**
+   * Zero, not the 1024 the other sections use: the phone gets the fill too.
+   * Reduce Motion still opts out, which is the escape hatch that makes pinning
+   * a phone acceptable at all.
+   */
+  const pinned = usePinned(0);
   const [picked, setPicked] = useState<string[]>([]);
   /**
    * Which add-ons have ever been in the pita. One that is off because it was
@@ -81,6 +118,24 @@ export function Pricing() {
    * evaporating.
    */
   const [touched, setTouched] = useState<string[]>([]);
+
+  /**
+   * The last count the scroll asked for. Guarded, because this callback runs
+   * every frame and setting state sixty times a second to re-render the same
+   * pita is how a scroll sequence starts dropping them.
+   */
+  const scrollCount = useRef(-1);
+
+  useSectionProgress(section, pinned, (p) => {
+    const n = FILL_AT.filter((at) => p >= at).length;
+    if (n === scrollCount.current) return;
+    scrollCount.current = n;
+    const ids = ADDONS.slice(0, n).map((a) => a.id);
+    setPicked(ids);
+    // Anything the scroll has ever dropped in is now allowed to animate back
+    // out, which is what makes scrolling upwards empty the pita properly.
+    setTouched((cur) => [...new Set([...cur, ...ids])]);
+  });
 
   const toggle = (id: string) => {
     setTouched((cur) => (cur.includes(id) ? cur : [...cur, id]));
@@ -96,177 +151,213 @@ export function Pricing() {
   const buildTotal = SETUP + onceAddons.length * ADDON_PRICE;
   const monthlyTotal = MONTHLY + monthlyAddons.length * ADDON_PRICE;
 
-  return (
-    <section id="pricing" className="wash-cool py-12 sm:py-16">
-      <div className="mx-auto max-w-5xl px-5 sm:px-8">
-        <Reveal>
-          <div className="mx-auto max-w-xl text-center">
-            <Eyebrow className="justify-center" dot="#e8920a">
-              Pricing
-            </Eyebrow>
-            <TwoTone
-              size="sm"
-              lead="Fill your pita."
-              trail="Never pay a percentage."
-              className="mt-2"
-            />
-            <Lede className="mx-auto mt-2.5 text-[0.9375rem] leading-snug sm:text-base">
-              The booking website is the pita. <Key>Every add on is ₪200</Key>, and
-              no one takes a cut of a booking, ever.
-            </Lede>
-          </div>
-        </Reveal>
-
-        <Reveal delay={80}>
-          <div className="mt-7 rounded-3xl border border-espresso/[0.09] bg-paper-warm p-4 sm:mt-9 sm:p-7">
-            <p className="text-center text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-espresso/35">
-              Add ons · tap to drop one in
-            </p>
-            <div className="mt-3 flex flex-wrap justify-center gap-1.5 sm:gap-2">
-              {ADDONS.map((a) => {
-                const on = picked.includes(a.id);
-                return (
-                  <button
-                    key={a.id}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => toggle(a.id)}
-                    className={cn(
-                      "inline-flex min-h-11 items-center gap-1.5 rounded-pill border px-3 py-2 text-[0.8125rem] font-semibold transition-colors duration-150 sm:px-4",
-                      on
-                        ? "border-cinnamon/40 bg-cinnamon/10 text-cinnamon"
-                        : "border-espresso/15 text-espresso/55 hover:border-espresso/30 hover:text-espresso",
-                    )}
-                  >
-                    <a.icon className="h-4 w-4 shrink-0" strokeWidth={2.2} />
-                    {a.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-5 grid items-center gap-6 lg:grid-cols-[0.85fr_1fr] lg:gap-10">
-              {/* ── The pita ── */}
-              <div
-                /* The falafel rides the bowl: one token, so shrinking the bowl
-                   on a phone can't leave seven oversized balls sitting in it. */
-                className="relative mx-auto w-[min(220px,56vw)] [--falafel:min(42px,10.5vw)] phone-short:w-[min(160px,42vw)] phone-short:[--falafel:min(32px,8vw)] sm:w-[min(250px,52vw)] sm:[--falafel:min(46px,10.5vw)]"
-                style={{ aspectRatio: "760 / 560" }}
-              >
-                <PitaBowl className="size-full" />
-
-                {[{ ...BASE, on: true }, ...ADDONS.map((a) => ({ ...a, on: picked.includes(a.id) }))].map(
-                  (item) => (
-                    <div
-                      key={item.id}
-                      aria-hidden="true"
-                      className="absolute z-10"
-                      style={{
-                        left: `${item.x}%`,
-                        top: `${item.y}%`,
-                        transform: "translate(-50%, -50%)",
-                      }}
-                    >
-                      {/* The inner key flips with the switch, so React swaps the
-                          node and the animation on it plays from the top every
-                          time: an item you drop in falls, an item you take out
-                          lifts away. Two states of one position, which is why
-                          they share a slot rather than cross-fading. */}
-                      <div
-                        key={item.on ? "in" : "out"}
-                        className={
-                          item.on
-                            ? "falafel-drop"
-                            : touched.includes(item.id)
-                              ? "falafel-out"
-                              : undefined
-                        }
-                        style={
-                          !item.on && !touched.includes(item.id)
-                            ? { opacity: 0 }
-                            : undefined
-                        }
-                      >
-                        <Falafel id={item.id} size="var(--falafel)" icon={item.icon} />
-                      </div>
-                    </div>
-                  ),
-                )}
-              </div>
-
-              {/* ── The bill ── */}
-              <div className="min-w-0">
-                <div className="grid grid-cols-2 gap-4">
-                  <Total
-                    value={buildTotal}
-                    label="To build, once"
-                    detail={
-                      onceAddons.length > 0
-                        ? `${shekel(SETUP)} + ${onceAddons.length} setup${onceAddons.length > 1 ? "s" : ""}`
-                        : "Built, launched, in your name"
-                    }
-                  />
-                  <Total
-                    value={monthlyTotal}
-                    label="Every month"
-                    detail={
-                      monthlyAddons.length > 0
-                        ? `${shekel(MONTHLY)} + ${monthlyAddons.length} add on${monthlyAddons.length > 1 ? "s" : ""}`
-                        : "Hosting, updates, 3 edits"
-                    }
-                  />
-                </div>
-
-                <ul className="mt-4 flex flex-col gap-1.5 border-t border-espresso/[0.09] pt-4">
-                  <LineItem
-                    label="Booking website + dashboard"
-                    price={`${shekel(SETUP)} · ${shekel(MONTHLY)}/mo`}
-                    base
-                  />
-                  {chosen.map((a) => (
-                    <LineItem
-                      key={a.id}
-                      label={a.label}
-                      price={
-                        a.cadence === "monthly"
-                          ? `${shekel(ADDON_PRICE)}/mo`
-                          : `${shekel(ADDON_PRICE)} once`
-                      }
-                    />
-                  ))}
-                  {chosen.length === 0 && (
-                    <li className="text-[0.8125rem] text-espresso/40">
-                      Tap an add on above to drop one in.
-                    </li>
-                  )}
-                </ul>
-
-                <div className="mt-5">
-                  <Button
-                    href="#connect"
-                    size="lg"
-                    className="w-full"
-                    data-cta="pricing_primary"
-                  >
-                    Build My Website
-                  </Button>
-                  <p className="mt-2.5 text-center text-[0.8125rem] text-espresso/40">
-                    Free call, no commitment. Bigger build?{" "}
-                    <a
-                      href="#connect"
-                      data-cta="pricing_custom_cta"
-                      className="font-semibold text-espresso/70 underline decoration-espresso/20 underline-offset-4 transition-colors hover:text-espresso"
-                    >
-                      We quote it
-                    </a>
-                    .
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Reveal>
+  const header = (
+    <Reveal>
+      <div className="mx-auto max-w-xl text-center">
+        <Eyebrow className="justify-center" dot="#e8920a">
+          {t.eyebrow}
+        </Eyebrow>
+        <TwoTone size="sm" lead={t.lead} trail={t.trail} className="mt-2" />
+        {/* Dropped on a phone. Three lines of restatement is the
+            difference between this section fitting a phone screen and not,
+            and the headline above already says both halves of it. */}
+        <Lede className="mx-auto mt-2.5 hidden text-[0.9375rem] leading-snug sm:block sm:text-base">
+          {t.ledeBefore} <Key>{t.ledeKey}</Key>, {t.ledeAfter}
+        </Lede>
       </div>
+    </Reveal>
+  );
+
+  const panel = (
+    <Reveal delay={80}>
+      <div className="mt-5 rounded-3xl border border-espresso/[0.09] bg-paper-warm p-4 phone-short:mt-4 phone-short:p-3 sm:mt-9 sm:p-7">
+        <p className="text-center text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-espresso/35">
+          {t.chipsLabel}
+        </p>
+        <div className="mt-3 flex flex-wrap justify-center gap-1.5 sm:gap-2">
+          {ADDONS.map((a) => {
+            const on = picked.includes(a.id);
+            return (
+              <button
+                key={a.id}
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggle(a.id)}
+                className={cn(
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-pill border px-3 py-2 text-[0.8125rem] font-semibold transition-colors duration-150 sm:px-4",
+                  on
+                    ? "border-cinnamon/40 bg-cinnamon/10 text-cinnamon"
+                    : "border-espresso/15 text-espresso/55 hover:border-espresso/30 hover:text-espresso",
+                )}
+              >
+                <a.icon className="h-4 w-4 shrink-0" strokeWidth={2.2} />
+                {t.labels[a.id]}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-5 grid items-center gap-6 lg:grid-cols-[0.85fr_1fr] lg:gap-10">
+          {/* ── The pita ── */}
+          <div
+            /* The falafel rides the bowl: one token, so shrinking the bowl
+               on a phone can't leave seven oversized balls sitting in it. */
+            className="relative mx-auto w-[min(196px,50vw)] [--falafel:min(38px,9.5vw)] phone-short:w-[min(160px,42vw)] phone-short:[--falafel:min(32px,8vw)] sm:w-[min(250px,52vw)] sm:[--falafel:min(46px,10.5vw)]"
+            style={{ aspectRatio: "760 / 560" }}
+          >
+            <PitaBowl className="size-full" />
+
+            {[{ ...BASE, on: true }, ...ADDONS.map((a) => ({ ...a, on: picked.includes(a.id) }))].map(
+              (item) => (
+                <div
+                  key={item.id}
+                  aria-hidden="true"
+                  className="absolute z-10"
+                  style={{
+                    left: `${item.x}%`,
+                    top: `${item.y}%`,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                >
+                  {/* The inner key flips with the switch, so React swaps the
+                      node and the animation on it plays from the top every
+                      time: an item you drop in falls, an item you take out
+                      lifts away. Two states of one position, which is why
+                      they share a slot rather than cross-fading. */}
+                  <div
+                    key={item.on ? "in" : "out"}
+                    className={
+                      item.on
+                        ? "falafel-drop"
+                        : touched.includes(item.id)
+                          ? "falafel-out"
+                          : undefined
+                    }
+                    style={
+                      !item.on && !touched.includes(item.id)
+                        ? { opacity: 0 }
+                        : undefined
+                    }
+                  >
+                    <Falafel id={item.id} size="var(--falafel)" icon={item.icon} />
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+
+          {/* ── The bill ── */}
+          <div className="min-w-0">
+            <div className="grid grid-cols-2 gap-4">
+              <Total
+                value={buildTotal}
+                label={t.buildTotal}
+                detail={
+                  onceAddons.length > 0
+                    ? fill(
+                        onceAddons.length > 1
+                          ? t.buildDetailWithAddonsPlural
+                          : t.buildDetailWithAddons,
+                        { base: shekel(SETUP), count: onceAddons.length },
+                      )
+                    : t.buildDetail
+                }
+              />
+              <Total
+                value={monthlyTotal}
+                label={t.monthlyTotal}
+                detail={
+                  monthlyAddons.length > 0
+                    ? fill(
+                        monthlyAddons.length > 1
+                          ? t.monthlyDetailWithAddonsPlural
+                          : t.monthlyDetailWithAddons,
+                        { base: shekel(MONTHLY), count: monthlyAddons.length },
+                      )
+                    : t.monthlyDetail
+                }
+              />
+            </div>
+
+            <ul className="mt-4 hidden flex-col gap-1.5 border-t border-espresso/[0.09] pt-4 sm:flex">
+              <LineItem
+                label={t.lineBase}
+                price={`${shekel(SETUP)} · ${shekel(MONTHLY)}${t.perMonth}`}
+                base
+              />
+              {chosen.map((a) => (
+                <LineItem
+                  key={a.id}
+                  label={t.labels[a.id]}
+                  price={
+                    a.cadence === "monthly"
+                      ? `${shekel(ADDON_PRICE)}${t.perMonth}`
+                      : `${shekel(ADDON_PRICE)} ${t.once}`
+                  }
+                />
+              ))}
+              {chosen.length === 0 && (
+                <li className="text-[0.8125rem] text-espresso/40">{t.empty}</li>
+              )}
+            </ul>
+
+            <div className="mt-5">
+              <Button
+                href="#connect"
+                size="lg"
+                className="w-full"
+                data-cta="pricing_primary"
+              >
+                {t.cta}
+              </Button>
+              <p className="mt-2.5 text-center text-[0.8125rem] text-espresso/40">
+                {t.noteBefore}{" "}
+                <a
+                  href="#connect"
+                  data-cta="pricing_custom_cta"
+                  className="font-semibold text-espresso/70 underline decoration-espresso/20 underline-offset-4 transition-colors hover:text-espresso"
+                >
+                  {t.noteLink}
+                </a>
+                .
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Reveal>
+  );
+
+  return (
+    <section
+      id="pricing"
+      ref={section}
+      className="wash-cool relative"
+      style={
+        pinned
+          ? { height: `${100 + SCROLL_PER_ADDON * ADDONS.length}vh` }
+          : undefined
+      }
+    >
+      {pinned ? (
+        /* justify-center, and the box is exactly one screen minus the nav: the
+           whole point is that a visitor never scrolls to find the second
+           figure. Nothing here may overflow it, which is why the lede and the
+           itemised list are gone below `sm`. */
+        <div className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden px-5 py-6 sm:px-8">
+          <div className="mx-auto w-full max-w-5xl">
+            {header}
+            {panel}
+          </div>
+        </div>
+      ) : (
+        <div className="py-12 sm:py-16">
+          <div className="mx-auto max-w-5xl px-5 sm:px-8">
+            {header}
+            {panel}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

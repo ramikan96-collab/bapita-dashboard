@@ -6,6 +6,7 @@ import { Button } from "@/components/hub/ui/button";
 import { Reveal } from "@/components/hub/reveal";
 import { TwoTone } from "@/components/hub/ui/type";
 import { BowlIcon } from "@/components/hub/ui/brand-mark";
+import { getDict, fill, type Dict, type Locale } from "@/lib/marketing/i18n";
 
 const CALENDLY_URL = "https://calendly.com/info-bapita/30min";
 const EMAIL = "info.bapita@gmail.com";
@@ -21,7 +22,7 @@ const EMAIL = "info.bapita@gmail.com";
 const fieldClass =
   "w-full rounded-field border border-clay/20 bg-clay/[0.06] px-3.5 py-2.5 text-sm text-clay placeholder:text-clay/35 focus:border-clay/45 focus:outline-none";
 
-function LeadForm() {
+function LeadForm({ t, lang }: { t: Dict["connect"]["form"]; lang: Locale }) {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -44,13 +45,13 @@ function LeadForm() {
           business_name: data.get("business"),
           phone: data.get("phone"),
           email: data.get("email"),
-          lang: "en",
+          lang,
         }),
       });
       if (!res.ok) throw new Error();
       setSubmitted(true);
     } catch {
-      setError(`Something went wrong. Try again, or email ${EMAIL}.`);
+      setError(fill(t.error, { email: EMAIL }));
     } finally {
       setPending(false);
     }
@@ -63,7 +64,7 @@ function LeadForm() {
         className="flex items-center gap-2.5 rounded-field bg-hub-success/15 px-4 py-3 text-sm font-semibold text-hub-success"
       >
         <Check className="h-4 w-4 shrink-0" />
-        Got it. I&apos;ll reach out within one business day.
+        {t.sent}
       </div>
     );
   }
@@ -74,13 +75,13 @@ function LeadForm() {
           gaps — 110px that pushed the send button and the email fallback off
           the bottom of a phone screen. */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-        <input name="name" type="text" placeholder="Your name" required aria-label="Your name" autoComplete="name" className={fieldClass} />
-        <input name="business" type="text" placeholder="Business (optional)" aria-label="Business name (optional)" autoComplete="organization" className={fieldClass} />
-        <input name="phone" type="tel" placeholder="Phone" aria-label="Phone number" autoComplete="tel" className={fieldClass} />
-        <input name="email" type="email" placeholder="Email" required aria-label="Email address" autoComplete="email" className={fieldClass} />
+        <input name="name" type="text" placeholder={t.name} required aria-label={t.nameLabel} autoComplete="name" className={fieldClass} />
+        <input name="business" type="text" placeholder={t.business} aria-label={t.businessLabel} autoComplete="organization" className={fieldClass} />
+        <input name="phone" type="tel" placeholder={t.phone} aria-label={t.phoneLabel} autoComplete="tel" className={fieldClass} />
+        <input name="email" type="email" placeholder={t.email} required aria-label={t.emailLabel} autoComplete="email" className={fieldClass} />
       </div>
       <Button type="submit" variant="onDark" disabled={pending} className="w-full">
-        {pending ? "Sending…" : "Send my details"}
+        {pending ? t.sending : t.submit}
         <Send className="h-4 w-4" />
       </Button>
       {error && <p className="text-xs text-hub-danger">{error}</p>}
@@ -94,18 +95,21 @@ function LeadForm() {
  * are the suite page's original copy.
  */
 export function Connect({
+  locale = "en",
   lead = "Your shop, sorted.",
   trail = "Starting with one call.",
   blurb = "Twenty minutes. I'll ask what's eating your time, show you what it looks like fixed, and give you a straight number. No slides.",
 }: {
+  locale?: Locale;
   lead?: string;
   trail?: string;
   blurb?: string;
 } = {}) {
+  const t = getDict(locale).connect;
   return (
     <section id="connect" className="relative overflow-hidden bg-espresso py-5 phone-short:py-4 sm:py-32">
       <div
-        className="pointer-events-none absolute start-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-clay opacity-[0.04]"
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-clay opacity-[0.04]"
         aria-hidden="true"
       >
         <BowlIcon size={460} />
@@ -115,7 +119,7 @@ export function Connect({
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">
             <p className="flex items-center justify-center gap-2.5 text-[0.6875rem] font-bold uppercase tracking-[0.18em] text-clay-toast">
-              Let&apos;s talk
+              {t.eyebrow}
             </p>
             <TwoTone
               tone="dark"
@@ -148,12 +152,14 @@ export function Connect({
                   breakpoint, so the desktop layout is byte-for-byte what it
                   was — including `mt-auto` pinning the link to the bottom. */}
               <span className="flex min-w-0 flex-col sm:contents">
-                <h3 className="text-lg font-bold text-clay sm:text-xl">Book a time</h3>
+                <h3 className="text-lg font-bold text-clay sm:text-xl">
+                  {t.calendly.title}
+                </h3>
                 <p className="mt-1 text-[0.8125rem] leading-snug text-clay/50 sm:mt-2 sm:text-sm sm:leading-relaxed">
-                  Pick a slot that works. 30 minutes, no prep needed.
+                  {t.calendly.body}
                 </p>
                 <span className="mt-1.5 flex items-center gap-1.5 text-sm font-bold text-clay group-hover:underline group-hover:underline-offset-4 sm:mt-auto sm:pt-6">
-                  Open my calendar
+                  {t.calendly.cta}
                   <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                 </span>
               </span>
@@ -170,15 +176,15 @@ export function Connect({
                 </span>
                 <div className="min-w-0">
                   <h3 className="text-lg font-bold text-clay sm:text-xl">
-                    Leave your details
+                    {t.form.title}
                   </h3>
                   <p className="mt-1 text-[0.8125rem] leading-snug text-clay/50 sm:mt-2 sm:text-sm sm:leading-relaxed">
-                    I&apos;ll reach out to you instead.
+                    {t.form.body}
                   </p>
                 </div>
               </div>
               <div className="pt-3 sm:pt-6">
-                <LeadForm />
+                <LeadForm t={t.form} lang={locale} />
               </div>
             </div>
           </Reveal>
@@ -186,7 +192,7 @@ export function Connect({
 
         <Reveal>
           <p className="mt-2 text-center text-sm text-clay/40 sm:mt-10">
-            Prefer email?{" "}
+            {t.emailPrefix}{" "}
             {/* min-h-11: was a 21px target. */}
             <a
               href={`mailto:${EMAIL}`}

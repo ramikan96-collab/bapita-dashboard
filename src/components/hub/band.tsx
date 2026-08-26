@@ -61,8 +61,19 @@ export function Band({
   const lineRef = useRef<HTMLParagraphElement>(null);
   const maskRef = useRef<HTMLSpanElement>(null);
   const moverRef = useRef<HTMLSpanElement>(null);
+  /**
+   * Which edge the grey copy retreats towards.
+   *
+   * `clip-path: inset()` takes physical edges, so the wipe that reads as
+   * "left to right, with the words" in English reads as backwards in Hebrew —
+   * the colour would arrive at the end of the phrase first. Read off the
+   * document rather than passed in: the band is shared with /hub, which has no
+   * locale prop, and the document already knows.
+   */
+  const rtlRef = useRef(false);
 
   useEffect(() => {
+    rtlRef.current = document.documentElement.dir === "rtl";
     let frame = 0;
     let sizeFrame = 0;
     /**
@@ -180,9 +191,13 @@ export function Band({
       }
       if (Math.abs(p - lastWipe) > 0.001) {
         lastWipe = p;
-        // top right bottom left — the left edge marches right, uncovering the
-        // colored copy underneath.
-        target.style.clipPath = `inset(-20% 0 -20% ${p * 100}%)`;
+        // top right bottom left — one edge marches across, uncovering the
+        // coloured copy underneath. Which edge depends on which way the words
+        // are read.
+        const cut = `${p * 100}%`;
+        target.style.clipPath = rtlRef.current
+          ? `inset(-20% ${cut} -20% 0)`
+          : `inset(-20% 0 -20% ${cut})`;
       }
 
       // Drift: one continuous move, downward throughout. The word settles into

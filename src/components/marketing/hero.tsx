@@ -16,6 +16,7 @@ import { Falafel, PitaBowl } from "@/components/hub/ui/pita";
 import { Button } from "@/components/hub/ui/button";
 import { TwoTone, Lede, Key, Eyebrow } from "@/components/hub/ui/type";
 import { useMotionTier } from "@/lib/hub/motion";
+import { getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
 
 /**
  * The hero IS the metaphor — retargeted.
@@ -52,11 +53,16 @@ import { useMotionTier } from "@/lib/hub/motion";
  * `nudge` is a few px of hand-placed drift so the grid reads as a tableau.
  */
 type Base = { rx: number; row: 0 | 1; nudge: number; rot: number; start: number };
-type Chit = Base & { kind: "chit"; label: string; icon: LucideIcon };
+type Chit = Base & {
+  kind: "chit";
+  /** Key into `hero.chits`. The words themselves live in the locale files. */
+  id: keyof Dict["hero"]["chits"];
+  icon: LucideIcon;
+};
 type Ball = Base & {
   kind: "ball";
-  id: string;
-  label: string;
+  /** Doubles as the falafel palette id and the key into `hero.balls`. */
+  id: keyof Dict["hero"]["balls"];
   icon: LucideIcon;
 };
 type Obj = Chit | Ball;
@@ -87,15 +93,15 @@ const BALL_SIZE = "clamp(54px, 8vw, 80px)";
  * now has air around it.
  */
 const OBJECTS: Obj[] = [
-  { kind: "chit", label: "Booking website", icon: Globe, rx: -0.36, row: 0, nudge: -4, rot: -7, start: 0.05 },
-  { kind: "chit", label: "Owner dashboard", icon: LayoutDashboard, rx: 0.36, row: 0, nudge: 4, rot: 6, start: 0.1 },
-  { kind: "chit", label: "Auto reminders", icon: BellRing, rx: -0.36, row: 1, nudge: 5, rot: 5, start: 0.15 },
-  { kind: "chit", label: "Found on Google", icon: MapPin, rx: 0.36, row: 1, nudge: -3, rot: -5, start: 0.2 },
+  { kind: "chit", id: "site", icon: Globe, rx: -0.36, row: 0, nudge: -4, rot: -7, start: 0.05 },
+  { kind: "chit", id: "dashboard", icon: LayoutDashboard, rx: 0.36, row: 0, nudge: 4, rot: 6, start: 0.1 },
+  { kind: "chit", id: "reminders", icon: BellRing, rx: -0.36, row: 1, nudge: 5, rot: 5, start: 0.15 },
+  { kind: "chit", id: "google", icon: MapPin, rx: 0.36, row: 1, nudge: -3, rot: -5, start: 0.2 },
 
-  { kind: "ball", id: "salon", label: "Salons", icon: Scissors, rx: -0.15, row: 0, nudge: -6, rot: 0, start: 0.3 },
-  { kind: "ball", id: "clinic", label: "Clinics", icon: Stethoscope, rx: 0.15, row: 0, nudge: 6, rot: 0, start: 0.38 },
-  { kind: "ball", id: "rental", label: "Rentals", icon: BedDouble, rx: -0.15, row: 1, nudge: -5, rot: 0, start: 0.46 },
-  { kind: "ball", id: "restaurant", label: "Restaurants", icon: UtensilsCrossed, rx: 0.15, row: 1, nudge: 5, rot: 0, start: 0.54 },
+  { kind: "ball", id: "salon", icon: Scissors, rx: -0.15, row: 0, nudge: -6, rot: 0, start: 0.3 },
+  { kind: "ball", id: "clinic", icon: Stethoscope, rx: 0.15, row: 0, nudge: 6, rot: 0, start: 0.38 },
+  { kind: "ball", id: "rental", icon: BedDouble, rx: -0.15, row: 1, nudge: -5, rot: 0, start: 0.46 },
+  { kind: "ball", id: "restaurant", icon: UtensilsCrossed, rx: 0.15, row: 1, nudge: 5, rot: 0, start: 0.54 },
 ];
 
 /* ── ROW GEOMETRY ──────────────────────────────────────────────────────────
@@ -185,7 +191,9 @@ function clamp01(n: number) {
   return n < 0 ? 0 : n > 1 ? 1 : n;
 }
 
-export function Hero() {
+export function Hero({ locale = "en" }: { locale?: Locale }) {
+  const t = getDict(locale).hero;
+
   const sectionRef = useRef<HTMLElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
   const objRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -366,7 +374,7 @@ export function Hero() {
         className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col items-center overflow-hidden px-5 pb-4 pt-4 sm:px-8 sm:pb-8 sm:pt-14 desk-short:pt-6 desk-short:pb-4 desk-tiny:pt-3 desk-tiny:pb-2"
       >
         <div className="text-center">
-          <Eyebrow className="justify-center">For businesses people book</Eyebrow>
+          <Eyebrow className="justify-center">{t.eyebrow}</Eyebrow>
 
           {/* Phone sizes are held down deliberately: the header block ran to
               ~240px before the scene even started, which on a 745px Safari
@@ -374,19 +382,18 @@ export function Hero() {
           <TwoTone
             as="h1"
             size="hero"
-            lead="Your business online."
-            trail="Built for you."
+            lead={t.lead}
+            trail={t.trail}
             className="mt-1.5 text-[2rem] leading-[1.08] phone-short:text-[1.75rem] sm:mt-3 sm:text-display-xl desk-short:mt-1 desk-short:text-[2.5rem] desk-short:leading-[1.06] desk-tiny:mt-1 desk-tiny:text-[2rem]"
           />
 
           <Lede className="mx-auto mt-2.5 max-w-xl text-[0.9375rem] leading-snug phone-short:mt-2 phone-short:text-[0.875rem] sm:mt-4 sm:text-xl sm:leading-relaxed desk-short:mt-2 desk-short:text-base desk-short:leading-snug desk-tiny:mt-1.5 desk-tiny:text-[0.875rem]">
-            A booking website for your clients. A dashboard for you.{" "}
-            <Key>We build both and keep them running.</Key> You just show up.
+            {t.ledeBefore} <Key>{t.ledeKey}</Key> {t.ledeAfter}
           </Lede>
 
           <div className="mt-6 flex flex-col items-center gap-2 phone-short:mt-4 sm:mt-6 sm:gap-3 desk-short:mt-2.5 desk-short:gap-1 desk-tiny:mt-2 desk-tiny:gap-1">
             <Button href="#connect" size="lg" data-cta="hero_primary">
-              Build My Website
+              {t.cta}
             </Button>
             {/* Dropped on short phones: it duplicates the header's link, and
                 those 44px are the difference between the scene fitting under
@@ -395,7 +402,7 @@ export function Hero() {
               href="#product"
               className="-my-2 px-3 py-3 text-sm font-semibold text-espresso/45 underline decoration-espresso/20 underline-offset-4 transition-colors phone-short:hidden desk-tiny:hidden hover:text-espresso hover:decoration-espresso/50"
             >
-              No tech skills, no commitment
+              {t.secondary}
             </a>
           </div>
         </div>
@@ -412,19 +419,32 @@ export function Hero() {
           >
           {/* Objects sit above the pita so nothing is hidden behind the bowl
               while it floats; the squash-and-fade at the pocket is what sells
-              the drop, not z-order. */}
+              the drop, not z-order.
+
+              `left-1/2`, not `start-1/2`, and the same for the bowl and the
+              payoff chip below. The centring here is an anchor plus a physical
+              `translate(-50%)`; under `dir=rtl` the logical anchor flips to the
+              right edge while the transform does not, and the whole tableau
+              landed one element-width to the left of centre on /he. A centred
+              object is centred in both directions, so the physical property is
+              the correct one — the tableau is symmetrical and has nothing to
+              mirror. */}
           {OBJECTS.map((o, i) => (
             <div
               key={i}
               ref={(el) => {
                 objRefs.current[i] = el;
               }}
-              className="absolute start-1/2 top-1/2 z-10 will-change-transform"
+              className="absolute left-1/2 top-1/2 z-10 will-change-transform"
               /* Starts hidden; the first rAF tick places and reveals it, so
                  neither tier ships a frame of ten objects piled at the centre. */
               style={{ opacity: 0 }}
             >
-              {o.kind === "ball" ? <BallStack o={o} /> : <ChitChip o={o} />}
+              {o.kind === "ball" ? (
+                <BallStack o={o} t={t} />
+              ) : (
+                <ChitChip o={o} t={t} />
+              )}
             </div>
           ))}
 
@@ -433,7 +453,7 @@ export function Hero() {
             ref={bowlRef}
             /* Width here is the SSR/first-paint value only — on desktop the
                effect overwrites it with a height-aware one on the first tick. */
-            className="absolute bottom-0 start-1/2 z-0 w-[min(320px,46vw)] -translate-x-1/2 phone-short:w-[min(250px,42vw)] sm:w-[min(320px,54vw)] sm:translate-y-7"
+            className="absolute bottom-0 left-1/2 z-0 w-[min(320px,46vw)] -translate-x-1/2 phone-short:w-[min(250px,42vw)] sm:w-[min(320px,54vw)] sm:translate-y-7"
             style={{ aspectRatio: "760 / 560" }}
           >
             <PitaBowl className="size-full" />
@@ -448,10 +468,10 @@ export function Hero() {
           {/* Payoff, once the pita is full */}
           <div
             ref={payoffRef}
-            className="absolute bottom-[52%] start-1/2 z-20 w-max max-w-[calc(100vw-2.5rem)] text-center sm:bottom-[54%]"
+            className="absolute bottom-[52%] left-1/2 z-20 w-max max-w-[calc(100vw-2.5rem)] text-center sm:bottom-[54%]"
             style={{ opacity: 0, transform: "translate(-50%, 16px)" }}
           >
-            <PayoffChip />
+            <PayoffChip text={t.payoff} />
           </div>
         </div>
       </div>
@@ -462,32 +482,32 @@ export function Hero() {
 /** One capability. Opaque fill on purpose: these nodes have their transform
  *  rewritten every frame, and a backdrop-filter under a moving element
  *  re-rasterizes per frame and locks the main thread. */
-function ChitChip({ o }: { o: Chit }) {
+function ChitChip({ o, t }: { o: Chit; t: Dict["hero"] }) {
   return (
     <span className="flex items-center gap-1.5 whitespace-nowrap rounded-hub-lg border border-espresso/[0.08] bg-[var(--color-chip)] px-2.5 py-1.5 text-[10px] font-semibold text-espresso/55 shadow-hub-sm sm:text-[11px]">
       <o.icon className="h-3 w-3 shrink-0 text-cinnamon/70" strokeWidth={2.4} />
-      {o.label}
+      {t.chits[o.id]}
     </span>
   );
 }
 
 /** One kind of business: the falafel and its name. */
-function BallStack({ o }: { o: Ball }) {
+function BallStack({ o, t }: { o: Ball; t: Dict["hero"] }) {
   return (
     <div className="flex flex-col items-center gap-1.5">
       <Falafel id={o.id} size={BALL_SIZE} icon={o.icon} />
       <span className="flex items-center gap-1 rounded-pill border border-espresso/[0.06] bg-[var(--color-chip)] px-2 py-0.5 text-[11px] font-bold text-espresso/75 shadow-hub-sm">
-        {o.label}
+        {t.balls[o.id]}
       </span>
     </div>
   );
 }
 
-function PayoffChip() {
+function PayoffChip({ text }: { text: string }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-pill border border-espresso/10 bg-[var(--color-chip)] px-3.5 py-2 text-[0.75rem] font-bold text-espresso shadow-[0_10px_30px_-12px_rgba(60,34,12,0.4)] sm:px-4 sm:text-[0.8125rem]">
       <span className="h-1.5 w-1.5 rounded-full bg-hub-success" />
-      One system. One bill. One person to call.
+      {text}
     </span>
   );
 }
@@ -497,23 +517,20 @@ function PayoffChip() {
  * directly under the hero for the same reason: it answers "what does this
  * actually change for me" before the pain section starts listing what's wrong.
  */
-const PROOF = [
-  { stat: "24/7", label: "Clients book while you sleep" },
-  { stat: "1 call", label: "All we need from you" },
-  { stat: "0 tech", label: "No knowledge required" },
-];
+const PROOF_IDS = ["a", "b", "c"] as const;
 
-export function ProofBar() {
+export function ProofBar({ locale = "en" }: { locale?: Locale }) {
+  const t = getDict(locale).proofBar;
   return (
     <section className="wash-flat border-y border-hairline py-8 sm:py-10">
       <div className="mx-auto grid max-w-4xl grid-cols-3 gap-4 px-5 sm:px-8">
-        {PROOF.map((item) => (
-          <div key={item.stat} className="text-center">
+        {PROOF_IDS.map((id) => (
+          <div key={id} className="text-center">
             <p className="text-2xl font-extrabold tracking-[-0.03em] text-espresso sm:text-3xl">
-              {item.stat}
+              {t[id].stat}
             </p>
             <p className="mx-auto mt-1.5 max-w-[16ch] text-[0.75rem] leading-snug text-espresso/50 sm:text-[0.8125rem]">
-              {item.label}
+              {t[id].label}
             </p>
           </div>
         ))}
