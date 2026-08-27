@@ -94,6 +94,60 @@ function belongsOnApex(pathname: string): boolean {
   );
 }
 
+/**
+ * A booking page's language, by slug, for the `x-booking-locale` header.
+ *
+ * The custom-domain branch below already hands the root layout this header so
+ * <html lang>/<html dir> are server-rendered. The very same page reached at
+ * book.bapita.com/<slug> never set it, so every Hebrew booking page shipped
+ * lang="en" dir="ltr": Google read Hebrew pages as English, and every logical
+ * CSS property (padding-inline-start, the sticky header, the card layout)
+ * resolved against the wrong writing direction.
+ *
+ * Memoised per slug because middleware runs on every request and a business's
+ * default_lang changes approximately never — one cold miss per warm instance
+ * is the whole cost. A short TTL rather than forever so a language switched in
+ * the dashboard takes effect without a redeploy.
+ *
+ * Misses are cached too, and for longer: without that, every hit on a dead
+ * single-segment URL — a stale link, a scanner walking /wp-admin, /.env and
+ * friends — would be one Supabase round trip, and those arrive in bursts.
+ */
+const LOCALE_TTL_MS = 5 * 60 * 1000;
+const MISS_TTL_MS = 30 * 60 * 1000;
+const localeCache = new Map<string, { locale: string | null; at: number }>();
+
+async function bookingLocale(slug: string): Promise<string | null> {
+  const hit = localeCache.get(slug);
+  if (hit) {
+    const ttl = hit.locale === null ? MISS_TTL_MS : LOCALE_TTL_MS;
+    if (Date.now() - hit.at < ttl) return hit.locale;
+  }
+
+  const anon = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => [], setAll: () => {} } }
+  );
+  const { data, error } = await anon
+    .from("businesses")
+    .select("default_lang")
+    .eq("slug", slug)
+    .eq("status", "live")
+    .maybeSingle();
+
+  // A failed query is not a miss — caching it would pin every booking page to
+  // the wrong language for half an hour over one blip. Skip the header this
+  // once and let the next request retry.
+  if (error) return null;
+
+  // No row: not a booking slug (a 404, a typo, an unpublished business). Fall
+  // through untouched rather than guessing a language for a page that has none.
+  const locale = data ? (data.default_lang === "en" ? "en" : "he") : null;
+  localeCache.set(slug, { locale, at: Date.now() });
+  return locale;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host")?.toLowerCase() ?? "";
@@ -166,6 +220,29 @@ export async function middleware(request: NextRequest) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-booking-locale", "he");
     return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
+  // book.bapita.com/<slug> — the booking page on our own hosts, which needs the
+  // same server-rendered lang/dir a custom domain already gets.
+  //
+  // Single path segment, no dot (so /sitemap.xml and /robots.txt fall through to
+  // their own handlers) and not an owner-facing path. That last guard is what
+  // makes this safe on localhost and *.vercel.app: on book.bapita.com the
+  // dashboard was already forwarded to the apex above, but on those hosts
+  // /calendar and /settings are still served here and must never be handed a
+  // Hebrew RTL document — nor should a business that happens to be slugged
+  // "settings" be able to take one over.
+  //
+  // Deliberately NOT restricted to BOOKING_HOST: a preview deployment has to
+  // reproduce this, or the fix cannot be verified before it reaches production.
+  const localeSlug = /^\/([^/.]+)$/.exec(pathname)?.[1];
+  if (localeSlug && !belongsOnApex(pathname) && !needsAuth(pathname)) {
+    const locale = await bookingLocale(localeSlug);
+    if (locale) {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-booking-locale", locale);
+      return NextResponse.next({ request: { headers: requestHeaders } });
+    }
   }
 
   // Public surfaces never consult auth — this is the booking-page traffic, i.e.
