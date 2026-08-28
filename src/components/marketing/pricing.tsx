@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import {
   Globe,
   BellRing,
@@ -109,6 +109,73 @@ const ADDON_PRICE = 200;
 
 const shekel = (n: number) => `₪${n.toLocaleString("en-US")}`;
 
+/**
+ * Fit the pinned panel to the screen it is actually on.
+ *
+ * The pinned box is `100svh - 4rem` and clips what does not fit. That box is a
+ * promise the content could not keep on a real phone: Safari's URL bar and tab
+ * strip take ~120px off a 932px device, so the panel was being cut through the
+ * headline at the top and through the founding-customer note at the bottom.
+ * `phone-short:` did not save it — that variant only fires under 640px of
+ * height, and these phones report ~730.
+ *
+ * Hand-tuning sizes per device is how that bug comes back on the next handset,
+ * so the panel measures itself instead: the content is laid out at its natural
+ * size and then scaled down by exactly the ratio that makes it fit. Every
+ * proportion in the design survives; only the whole gets smaller, and only on
+ * the screens that need it. Above `sm` — and on any phone tall enough — the
+ * ratio is 1 and no transform is written at all.
+ *
+ * `offsetHeight` is a layout measurement and ignores the transform, so the
+ * ResizeObserver cannot feed itself.
+ */
+const MIN_FIT = 0.62;
+
+function useFitToBox(
+  box: RefObject<HTMLDivElement | null>,
+  content: RefObject<HTMLDivElement | null>,
+  enabled: boolean,
+) {
+  const [fit, setFit] = useState(1);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const boxEl = box.current;
+    const contentEl = content.current;
+    if (!boxEl || !contentEl) return;
+
+    let frame = 0;
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const style = getComputedStyle(boxEl);
+        const avail =
+          boxEl.clientHeight -
+          parseFloat(style.paddingTop) -
+          parseFloat(style.paddingBottom);
+        const needed = contentEl.offsetHeight;
+        if (avail <= 0 || needed <= 0) return;
+        setFit(Math.min(1, Math.max(MIN_FIT, avail / needed)));
+      });
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(boxEl);
+    observer.observe(contentEl);
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [box, content, enabled]);
+
+  // Derived rather than reset in the effect: the unpinned layout is in normal
+  // flow and can never be clipped, so it always renders at full size.
+  return enabled ? fit : 1;
+}
+
 export function Pricing({ locale = "en" }: { locale?: Locale }) {
   const t = getDict(locale).pricing;
   const section = useRef<HTMLElement>(null);
@@ -116,6 +183,9 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
    * Zero, not the 1024 the other sections use: the phone gets the fill too.
    */
   const pinned = usePinned(0);
+  const fitBox = useRef<HTMLDivElement>(null);
+  const fitContent = useRef<HTMLDivElement>(null);
+  const fit = useFitToBox(fitBox, fitContent, pinned);
   const [picked, setPicked] = useState<string[]>([]);
   /**
    * Which add-ons have ever been in the pita. One that is off because it was
@@ -176,7 +246,7 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
 
   const panel = (
     <Reveal delay={80}>
-      <div className="mt-5 rounded-3xl border border-espresso/[0.09] bg-paper-warm p-4 phone-short:mt-4 phone-short:p-3 sm:mt-9 sm:p-7">
+      <div className="mt-4 rounded-3xl border border-espresso/[0.09] bg-paper-warm p-3.5 phone-short:mt-4 phone-short:p-3 sm:mt-9 sm:p-7">
         <p className="text-center text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-espresso/35">
           {t.chipsLabel}
         </p>
@@ -203,12 +273,12 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
           })}
         </div>
 
-        <div className="mt-5 grid items-center gap-6 lg:grid-cols-[0.85fr_1fr] lg:gap-10">
+        <div className="mt-4 grid items-center gap-4 sm:mt-5 sm:gap-6 lg:grid-cols-[0.85fr_1fr] lg:gap-10">
           {/* ── The pita ── */}
           <div
             /* The falafel rides the bowl: one token, so shrinking the bowl
                on a phone can't leave seven oversized balls sitting in it. */
-            className="relative mx-auto w-[min(196px,50vw)] [--falafel:min(38px,9.5vw)] phone-short:w-[min(160px,42vw)] phone-short:[--falafel:min(32px,8vw)] sm:w-[min(250px,52vw)] sm:[--falafel:min(46px,10.5vw)]"
+            className="relative mx-auto w-[min(172px,46vw)] [--falafel:min(34px,8.8vw)] phone-short:w-[min(160px,42vw)] phone-short:[--falafel:min(32px,8vw)] sm:w-[min(250px,52vw)] sm:[--falafel:min(46px,10.5vw)]"
             style={{ aspectRatio: "760 / 560" }}
           >
             <PitaBowl className="size-full" />
@@ -357,9 +427,17 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
         /* justify-center, and the box is exactly one screen minus the nav: the
            whole point is that a visitor never scrolls to find the second
            figure. Nothing here may overflow it, which is why the lede and the
-           itemised list are gone below `sm`. */
-        <div className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden px-5 py-6 sm:px-8">
-          <div className="mx-auto w-full max-w-5xl">
+           itemised list are gone below `sm` and why `useFitToBox` scales the
+           rest down on a screen that is still too short for it. */
+        <div
+          ref={fitBox}
+          className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden px-5 py-4 sm:px-8 sm:py-6"
+        >
+          <div
+            ref={fitContent}
+            className="mx-auto w-full max-w-5xl origin-center"
+            style={fit < 1 ? { transform: `scale(${fit})` } : undefined}
+          >
             {header}
             {panel}
           </div>

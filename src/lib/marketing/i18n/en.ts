@@ -75,7 +75,7 @@ export const en = {
       salon: "Hair salons",
       clinic: "Clinics",
       rental: "Rentals",
-      studio: "Nail & lash",
+      studio: "Nail studios",
     },
   },
 
