@@ -381,7 +381,7 @@ export function Proof({ locale = "en" }: { locale?: Locale }) {
   );
 
   const cards = CARDS.map((card) => (
-    <ProofCard key={card.id} card={card} t={t} />
+    <ProofCard key={card.id} card={card} t={t} dir={isRtl ? "rtl" : undefined} />
   ));
 
   /**
@@ -444,13 +444,18 @@ export function Proof({ locale = "en" }: { locale?: Locale }) {
             <div className="h-full overflow-x-hidden">
               <div
                 ref={track}
-                /* `flex-row-reverse` under RTL, not a plain `flex`: it keeps
-                   `dir="rtl"` (so the gutter above and every card's logical
-                   classes still resolve correctly) while moving the overflow
-                   from the left edge to the right — the same side English
-                   overflows to. That's what lets the transform above use one
-                   sign for both locales and scroll toward the same edge. */
-                className={`rail-inset flex h-full gap-5 will-change-transform ${isRtl ? "flex-row-reverse" : ""}`}
+                /* `dir="ltr"` under RTL, not `flex-row-reverse`: a RTL flex
+                   container's `scrollWidth` doesn't count overflow that
+                   `row-reverse` pushed onto its right edge — Chrome measured
+                   it equal to `clientWidth`, so `travel` below was 0 and the
+                   whole rail stopped moving. A homogeneous LTR box has no
+                   such ambiguity. Each card gets its own `dir="rtl"` back so
+                   its text and logical classes (`ms-auto`, `rounded-ss-md`)
+                   still resolve correctly; the gutter above needs no fix
+                   since `padding-inline-start` now naturally lands on the
+                   left, same as English. */
+                dir={isRtl ? "ltr" : undefined}
+                className="rail-inset flex h-full gap-5 will-change-transform"
               >
                 {cards}
                 <div className="w-px shrink-0" aria-hidden="true" />
@@ -503,11 +508,20 @@ export function Proof({ locale = "en" }: { locale?: Locale }) {
 
 /* ── Card ─────────────────────────────────────────────────────── */
 
-function ProofCard({ card, t }: { card: Card; t: Dict["proof"] }) {
+function ProofCard({
+  card,
+  t,
+  dir,
+}: {
+  card: Card;
+  t: Dict["proof"];
+  dir?: "rtl";
+}) {
   const { Scene: CardScene } = card;
   const copy = t.cards[card.id];
   return (
     <article
+      dir={dir}
       /* The floor, not the height: the card is `h-full` inside the pinned
          box and only falls back on this where that box is shorter than the
          card's own content. 19rem is what fits under the header, the closer
