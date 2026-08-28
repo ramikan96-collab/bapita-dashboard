@@ -16,7 +16,7 @@ import { Reveal } from "@/components/hub/reveal";
 import { PauseOffscreen } from "@/components/hub/pause-offscreen";
 import { TwoTone, Lede, Key, Eyebrow } from "@/components/hub/ui/type";
 import { usePinned, useSectionProgress } from "@/lib/marketing/motion-hooks";
-import { dirFor, getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
+import { dirFor, fullStop, getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
 
 /**
  * "Sound familiar?" and "Why this works", merged.
@@ -361,7 +361,8 @@ export function Proof({ locale = "en" }: { locale?: Locale }) {
           <Eyebrow dot="#d64545">{t.eyebrow}</Eyebrow>
           <TwoTone lead={t.lead} trail={t.trail} className="mt-2 sm:mt-3" />
           <Lede className="mt-2.5 text-[0.9375rem] leading-snug sm:mt-4 sm:text-lg sm:leading-relaxed">
-            {t.ledeBefore} <Key>{t.ledeKey}</Key>.
+            {t.ledeBefore} <Key>{t.ledeKey}</Key>
+            {fullStop(locale)}
           </Lede>
           {/* Said once, in the section header, rather than hedged on six cards.
               A visitor who thinks these percentages are OUR results reads the
@@ -399,7 +400,7 @@ export function Proof({ locale = "en" }: { locale?: Locale }) {
       >
         {t.closerLink}
       </a>
-      .
+      {fullStop(locale)}
     </p>
   );
 

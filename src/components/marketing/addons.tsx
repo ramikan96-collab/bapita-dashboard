@@ -15,7 +15,7 @@ import {
 import { Reveal, RevealStagger, RevealItem } from "@/components/hub/reveal";
 import { Band } from "@/components/hub/band";
 import { TwoTone, Lede, Eyebrow } from "@/components/hub/ui/type";
-import { getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
+import { fullStop, getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
 import { cn } from "@/lib/hub/cn";
 
 /**
@@ -261,7 +261,7 @@ export function Addons({ locale = "en" }: { locale?: Locale }) {
             >
               {t.noteLink}
             </a>
-            .
+            {fullStop(locale)}
           </p>
         </Reveal>
       </div>

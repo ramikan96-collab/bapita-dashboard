@@ -17,7 +17,7 @@ import { Button } from "@/components/hub/ui/button";
 import { TwoTone, Lede, Key, Eyebrow } from "@/components/hub/ui/type";
 import { Falafel, PitaBowl } from "@/components/hub/ui/pita";
 import { usePinned, useSectionProgress } from "@/lib/marketing/motion-hooks";
-import { getDict, fill, type Dict, type Locale } from "@/lib/marketing/i18n";
+import { fill, fullStop, getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
 import { cn } from "@/lib/hub/cn";
 
 /**
@@ -403,7 +403,7 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
                 >
                   {t.noteLink}
                 </a>
-                .
+                {fullStop(locale)}
               </p>
             </div>
           </div>

@@ -51,3 +51,18 @@ export function fill(
     key in values ? String(values[key]) : whole,
   );
 }
+
+/**
+ * The full stop a component adds around a locale string — after a link, or
+ * after a <Key> that closes the sentence.
+ *
+ * Empty in Hebrew. The English page ends a display sentence with a period on
+ * purpose; Hebrew headline and lede copy does not carry one, and in RTL that
+ * period lands hard against the left edge of the line, where it reads as a
+ * stray mark rather than as punctuation. Every Hebrew string in `he.ts` is
+ * written without its closing stop for the same reason, so this is the one
+ * place a component could still put one back.
+ */
+export function fullStop(locale: Locale): string {
+  return locale === "he" ? "" : ".";
+}
