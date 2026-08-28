@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { resolvePayment, formatIls } from "@/lib/payments";
 import { createClient } from "@/lib/supabase/client";
+import { normalizeCtaUrl } from "@/lib/cta";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
 import { findPlaceId } from "@/app/actions/find-place-id";
 import { syncStaffTable, loadStaff } from "@/lib/staff";
@@ -73,6 +74,9 @@ interface FormData {
   facebook_url:       string;
   tiktok_url:         string;
   whatsapp_number:    string;
+  external_booking_url: string;
+  cta_label:          string;
+  cta_label_he:       string;
   google_review_link: string;
   google_maps_url:    string;
   waze_url:           string;
@@ -129,6 +133,7 @@ const EMPTY_FORM: FormData = {
   name: "", name_he: "", slug: "", template_style: "classic", business_type: "appointment", default_lang: "he",
   tagline: "", tagline_he: "", phone: "", address: "", email: "", owner_email: "",
   instagram_url: "", facebook_url: "", tiktok_url: "", whatsapp_number: "",
+  external_booking_url: "", cta_label: "", cta_label_he: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
   about_text: "", about_text_he: "", accent_color: "#B8862A", image_focal: {}, gallery_groups: {}, gallery_grouped: true,
   show_gallery: true, show_about: true, show_hours: true, show_location: true,
@@ -202,6 +207,9 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           facebook_url:       b.facebook_url        || "",
           tiktok_url:         (b as unknown as { tiktok_url?: string | null }).tiktok_url || "",
           whatsapp_number:    b.whatsapp_number     || "",
+          external_booking_url: b.external_booking_url || "",
+          cta_label:          b.cta_label           || "",
+          cta_label_he:       b.cta_label_he        || "",
           google_review_link: b.google_review_link  || "",
           google_maps_url:    b.google_maps_url     || "",
           waze_url:           b.waze_url            || "",
@@ -389,6 +397,15 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     const urls = gallery.filter(g => !g.uploading && g.url).map(g => g.url);
     const hiddenUrls = gallery.filter(g => !g.uploading && g.url && g.hidden).map(g => g.url);
 
+    // Only real links reach the database. resolveCta re-checks on render, so a bad
+    // value can never execute — but it would silently fall back to native booking.
+    const safeCtaUrl = normalizeCtaUrl(form.external_booking_url);
+    if (form.external_booking_url.trim() && !safeCtaUrl) {
+      setError("External booking URL isn't a valid link (use http://, https://, mailto: or tel:)");
+      setSaving(false);
+      return;
+    }
+
     const basePayload = {
       name:               form.name.trim(),
       name_he:            form.name_he            || null,
@@ -404,6 +421,11 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       facebook_url:       form.facebook_url       || null,
       tiktok_url:         form.tiktok_url         || null,
       whatsapp_number:    form.whatsapp_number    || null,
+      // Set = the public page's CTAs open this instead of Bapita's booking
+      // overlay. Empty = native booking. See src/lib/cta.ts.
+      external_booking_url: safeCtaUrl,
+      cta_label:          form.cta_label.trim()    || null,
+      cta_label_he:       form.cta_label_he.trim() || null,
       google_review_link: form.google_review_link || null,
       google_maps_url:    form.google_maps_url    || null,
       waze_url:           form.waze_url           || null,
@@ -531,6 +553,15 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
     if (!user) { setError("Not logged in"); setSaving(false); return; }
     const urls = gallery.filter(g => !g.uploading && g.url).map(g => g.url);
     const hiddenUrls = gallery.filter(g => !g.uploading && g.url && g.hidden).map(g => g.url);
+    // Only real links reach the database. resolveCta re-checks on render, so a bad
+    // value can never execute — but it would silently fall back to native booking.
+    const safeCtaUrl = normalizeCtaUrl(form.external_booking_url);
+    if (form.external_booking_url.trim() && !safeCtaUrl) {
+      setError("External booking URL isn't a valid link (use http://, https://, mailto: or tel:)");
+      setSaving(false);
+      return;
+    }
+
     const basePayload = {
       name:               form.name.trim(),
       name_he:            form.name_he            || null,
@@ -546,6 +577,11 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       facebook_url:       form.facebook_url       || null,
       tiktok_url:         form.tiktok_url         || null,
       whatsapp_number:    form.whatsapp_number    || null,
+      // Set = the public page's CTAs open this instead of Bapita's booking
+      // overlay. Empty = native booking. See src/lib/cta.ts.
+      external_booking_url: safeCtaUrl,
+      cta_label:          form.cta_label.trim()    || null,
+      cta_label_he:       form.cta_label_he.trim() || null,
       google_review_link: form.google_review_link || null,
       google_maps_url:    form.google_maps_url    || null,
       waze_url:           form.waze_url           || null,
@@ -1046,6 +1082,27 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                     <input value={form.stat_rating} onChange={e => set("stat_rating", e.target.value)} placeholder="4.9" style={inputStyle} />
                   </Field>
                 </Row>
+              </SectionCard>
+
+              <SectionCard title="Booking Button">
+                <Row>
+                  <Field label="External Booking URL">
+                    <input value={form.external_booking_url} onChange={e => set("external_booking_url", e.target.value)} placeholder="https://wa.me/972501234567" style={inputStyle} />
+                  </Field>
+                </Row>
+                <Row>
+                  <Field label="Button Text (EN)">
+                    <input value={form.cta_label} onChange={e => set("cta_label", e.target.value)} placeholder="Book now" style={inputStyle} />
+                  </Field>
+                  <Field label="Button Text (HE)">
+                    <input value={form.cta_label_he} onChange={e => set("cta_label_he", e.target.value)} placeholder="\u05e7\u05d1\u05e2 \u05ea\u05d5\u05e8" style={inputStyle} />
+                  </Field>
+                </Row>
+                <p style={{ fontSize: 12, color: "var(--color-muted)", margin: 0, lineHeight: 1.6 }}>
+                  URL set = every CTA on the public page opens it in a new tab and the
+                  Bapita booking overlay is suppressed entirely. Empty = native booking.
+                  Labels fall back to the theme default when blank.
+                </p>
               </SectionCard>
 
               <SectionCard title="Links & Social">

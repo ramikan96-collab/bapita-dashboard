@@ -12,6 +12,7 @@ import { prepareImageUpload } from "@/lib/image-upload";
 import { SmartImg } from "@/components/SmartImg";
 import { SettingsSkeleton } from "@/components/LoadingSkeleton";
 import { PaymentsSection } from "./_components/PaymentsSection";
+import { normalizeCtaUrl } from "@/lib/cta";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1642,6 +1643,9 @@ function WebsiteSection({
   const [instagramUrl, setInstagramUrl]       = useState(business.instagram_url || "");
   const [facebookUrl, setFacebookUrl]         = useState(business.facebook_url || "");
   const [whatsappNumber, setWhatsappNumber]   = useState(business.whatsapp_number || "");
+  const [externalBookingUrl, setExternalBookingUrl] = useState(business.external_booking_url || "");
+  const [ctaLabel, setCtaLabel]               = useState(business.cta_label || "");
+  const [ctaLabelHe, setCtaLabelHe]           = useState(business.cta_label_he || "");
   const [googleReviewLink, setGoogleReviewLink] = useState(business.google_review_link || "");
   const [googleMapsUrl, setGoogleMapsUrl]     = useState(business.google_maps_url || "");
   const [wazeUrl, setWazeUrl]                 = useState(business.waze_url || "");
@@ -1670,6 +1674,9 @@ function WebsiteSection({
   const origInstagramUrl     = business.instagram_url || "";
   const origFacebookUrl      = business.facebook_url || "";
   const origWhatsappNumber   = business.whatsapp_number || "";
+  const origExternalBookingUrl = business.external_booking_url || "";
+  const origCtaLabel         = business.cta_label || "";
+  const origCtaLabelHe       = business.cta_label_he || "";
   const origGoogleReviewLink = business.google_review_link || "";
   const origGoogleMapsUrl    = business.google_maps_url || "";
   const origWazeUrl          = business.waze_url || "";
@@ -1688,7 +1695,9 @@ function WebsiteSection({
                 wazeUrl !== origWazeUrl || profileImageUrl !== origProfileImageUrl ||
                 showStaff !== origShowStaff || JSON.stringify(staffMembers) !== origStaffMembers ||
                 headingFont !== origHeadingFont || bodyFont !== origBodyFont ||
-                gallerySource !== origGallerySource || instagramEmbed !== origInstagramEmbed;
+                gallerySource !== origGallerySource || instagramEmbed !== origInstagramEmbed ||
+                externalBookingUrl !== origExternalBookingUrl ||
+                ctaLabel !== origCtaLabel || ctaLabelHe !== origCtaLabelHe;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty]);
@@ -1787,6 +1796,16 @@ function WebsiteSection({
 
   async function save() {
     setSaving(true);
+    // Reject anything that is not a real link before it reaches the database.
+    // resolveCta re-checks on render, so a bad value could never execute — but it
+    // would silently fall back to native booking, and the owner would have no idea why.
+    const safeCtaUrl = normalizeCtaUrl(externalBookingUrl);
+    if (externalBookingUrl.trim() && !safeCtaUrl) {
+      setSaving(false);
+      showToast("That booking link isn't valid. Use a full web address, e.g. https://wa.me/972501234567", "error");
+      return;
+    }
+
     let finalSlug = slug;
     if (!finalSlug.trim()) {
       const base = business.name.trim().toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
@@ -1819,6 +1838,11 @@ function WebsiteSection({
       body_font:          bodyFont || null,
       gallery_source:     gallerySource || null,
       instagram_embed:    instagramEmbed.trim() || null,
+      // Empty means "use Bapita's own booking". The public page derives its whole
+      // CTA behaviour from whether this is set — see src/lib/cta.ts.
+      external_booking_url: safeCtaUrl,
+      cta_label:            ctaLabel.trim() || null,
+      cta_label_he:         ctaLabelHe.trim() || null,
     }).eq("id", business.id);
     setSaving(false);
     if (error) { showToast(getErrorMessage(error), "error"); return; }
@@ -1924,6 +1948,35 @@ function WebsiteSection({
           <label className="text-[13px] font-medium text-dark">Body font</label>
           <FontPicker value={bodyFont} onChange={setBodyFont} />
         </div>
+      </SectionCard>
+
+      {/* Booking button */}
+      <SectionCard title="Booking button">
+        <p style={{ fontSize: 12, color: "var(--color-muted)", margin: "0 0 4px" }}>
+          Leave the link empty to use Bapita&apos;s own booking. Add a link and every
+          booking button on your page opens it in a new tab instead.
+        </p>
+        <InputField
+          label="External booking link"
+          value={externalBookingUrl}
+          onChange={setExternalBookingUrl}
+          placeholder="https://wa.me/972501234567"
+          hint="A WhatsApp chat, an existing booking system, any page you want customers sent to"
+        />
+        <InputField
+          label="Button text"
+          value={ctaLabel}
+          onChange={setCtaLabel}
+          placeholder="Book now"
+          hint="Leave empty to use the default"
+        />
+        <InputField
+          label="Button text (Hebrew)"
+          value={ctaLabelHe}
+          onChange={setCtaLabelHe}
+          placeholder="\u05e7\u05d1\u05e2 \u05ea\u05d5\u05e8"
+          hint="Shown when the page is viewed in Hebrew"
+        />
       </SectionCard>
 
       {/* Social links */}

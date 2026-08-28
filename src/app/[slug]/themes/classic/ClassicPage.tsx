@@ -23,6 +23,7 @@ import { ThemeFooter } from "../../_shared/ThemeFooter";
 import { resolveFont } from "../../_shared/fonts";
 import { FontLoader } from "../../_shared/FontLoader";
 import { SmartImg } from "@/components/SmartImg";
+import { useExternalCta } from "../../_shared/useExternalCta";
 import { InstagramFeed } from "../../_shared/InstagramFeed";
 
 const C = { bg: "#F8F2E8", dark: "#221510", gold: "#B8862A", cream2: "#F0E8D8" };
@@ -83,15 +84,18 @@ export function ClassicPage({ business, services }: Props) {
   const photoGroups = stayMode ? groupedGallery(business, services) : [];
   const groupedView = business.gallery_grouped !== false && photoGroups.length > 1;
   const showFlatGallery = showImageGallery && (galleryPhotos.length > 0 || groupedView);
-  // A stay is not an appointment — every CTA on the page has to say so.
-  const ctaLabel = stayMode ? t.stay.heroCta : t.hero.cta;
+  // A stay is not an appointment — every CTA on the page has to say so, and a
+  // business that books elsewhere sends the click there instead of opening our
+  // overlay. Both rules live in useExternalCta.
+  const { cta, handledExternally } = useExternalCta(business, t, lang, { stayMode });
+  const ctaLabel = cta.label;
 
   const socialProofText = getSocialProof(business, isRtl, (business.business_type === "stay" ? t.social.happyGuests : t.social.happyClients));
   const displayTag  = (isRtl && business.tagline_he) ? business.tagline_he : business.tagline;
   const displayAbout= (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
 
-  function openFromService(s: Service) { setSelectedService(s); setOverlayOpen(true); }
-  function openFromCTA()               { setSelectedService(null); setOverlayOpen(true); }
+  function openFromService(s: Service) { if (handledExternally(s.id)) return; setSelectedService(s); setOverlayOpen(true); }
+  function openFromCTA()               { if (handledExternally())     return; setSelectedService(null); setOverlayOpen(true); }
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
   return (
@@ -348,7 +352,7 @@ export function ClassicPage({ business, services }: Props) {
         </a>
       )}
 
-      {overlayOpen && (
+      {cta.mode === "native" && overlayOpen && (
         (stayMode
           // A page CTA carries no unit, so the overlay opens on its own picker
           // step. A unit card passes its unit and the picker is skipped.

@@ -23,6 +23,13 @@ interface Props {
   businessId: string;
   start: Date;
   end: Date;
+  /**
+   * The business sends bookings somewhere else (external_booking_url is set), so
+   * the CTA click is the last thing we can see. booking_started / step_reached /
+   * booking_completed can never fire for it — showing a funnel of permanent zeros
+   * would read as "nobody books here" rather than "we hand off at this point".
+   */
+  externalCta?: boolean;
 }
 
 const STAGES: { key: string; label: string; match: (r: EventRow) => boolean }[] = [
@@ -50,7 +57,7 @@ function distinct(rows: EventRow[], match: (r: EventRow) => boolean): number {
   return set.size;
 }
 
-export default function VisitorsTab({ businessId, start, end }: Props) {
+export default function VisitorsTab({ businessId, start, end, externalCta = false }: Props) {
   const supabase = createClient();
   const [rows, setRows] = useState<EventRow[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,7 +84,10 @@ export default function VisitorsTab({ businessId, start, end }: Props) {
   const visited = distinct(rows, (r) => r.event === "page_view");
   const booked  = distinct(rows, (r) => r.event === "booking_completed");
   const noSlots = distinct(rows, (r) => r.event === "no_slots");
-  const conversion = visited > 0 ? Math.round((booked / visited) * 1000) / 10 : 0;
+  const ctaClicks = distinct(rows, (r) => r.event === "cta_click");
+  // In external mode the CTA click is the conversion; there is nothing after it.
+  const converted = externalCta ? ctaClicks : booked;
+  const conversion = visited > 0 ? Math.round((converted / visited) * 1000) / 10 : 0;
 
   if (visited === 0) return <VisitorsEmpty />;
 
@@ -105,12 +115,19 @@ export default function VisitorsTab({ businessId, start, end }: Props) {
       {/* KPI row */}
       <div className="ins-grid-2" style={{ gap: 16 }}>
         <Kpi label="Unique visitors" value={visited.toLocaleString()} hint="People who opened your page" />
-        <Kpi label="Bookings" value={booked.toLocaleString()} hint="Completed on your page" accent />
-        <Kpi label="Conversion rate" value={`${conversion}%`} hint="Visitors who booked" />
-        <Kpi label="No free times" value={noSlots.toLocaleString()} hint="Visitors who picked a date with no open times" info={NO_TIMES_HINT} />
+        {externalCta ? (
+          <Kpi label="Button clicks" value={ctaClicks.toLocaleString()} hint="Visitors who tapped through to your booking link" accent />
+        ) : (
+          <Kpi label="Bookings" value={booked.toLocaleString()} hint="Completed on your page" accent />
+        )}
+        <Kpi label="Conversion rate" value={`${conversion}%`} hint={externalCta ? "Visitors who tapped the button" : "Visitors who booked"} />
+        {!externalCta && (
+          <Kpi label="No free times" value={noSlots.toLocaleString()} hint="Visitors who picked a date with no open times" info={NO_TIMES_HINT} />
+        )}
       </div>
 
-      {/* Funnel */}
+      {/* Funnel — meaningless in external mode, where no funnel event can fire. */}
+      {!externalCta && (
       <Card title="Booking funnel" subtitle="Where visitors drop off on the way to booking">
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {funnel.map((f, i) => {
@@ -138,6 +155,7 @@ export default function VisitorsTab({ businessId, start, end }: Props) {
           })}
         </div>
       </Card>
+      )}
 
       {/* Traffic sources */}
       <Card title="Where visitors come from" subtitle="First place each visitor arrived from">

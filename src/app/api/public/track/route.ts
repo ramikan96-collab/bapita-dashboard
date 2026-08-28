@@ -11,6 +11,8 @@ const EVENTS = new Set([
   "step_reached",
   "no_slots",
   "booking_completed",
+  // External-CTA businesses have no funnel to complete: the click IS the conversion.
+  "cta_click",
 ]);
 
 const STEPS = new Set(["service", "staff", "date", "time", "contact"]);

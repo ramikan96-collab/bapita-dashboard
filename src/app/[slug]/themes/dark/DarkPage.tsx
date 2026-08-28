@@ -23,6 +23,7 @@ import { ThemeFooter } from "../../_shared/ThemeFooter";
 import { resolveFont } from "../../_shared/fonts";
 import { FontLoader } from "../../_shared/FontLoader";
 import { SmartImg } from "@/components/SmartImg";
+import { useExternalCta } from "../../_shared/useExternalCta";
 import { InstagramFeed } from "../../_shared/InstagramFeed";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=1200&q=80";
@@ -138,8 +139,18 @@ export function DarkPage({ business, services }: Props) {
   const groupedView = business.gallery_grouped !== false && photoGroups.length > 1;
   const showFlatGallery = showImageGallery && (galleryPhotos.length > 0 || groupedView);
 
-  function openFromService(s: Service) { setSelectedService(s); setOverlayOpen(true); }
-  function openFromCTA()               { setSelectedService(null); setOverlayOpen(true); }
+  // A business that books elsewhere sends the click there instead of opening our
+  // overlay. Dark's appointment fallback is t.hero.bookNow where Classic and Clean
+  // use t.hero.cta — a copy inconsistency that is live today, kept deliberately so
+  // this change cannot alter a single existing page's wording.
+  const { cta, handledExternally } = useExternalCta(business, t, lang, {
+    stayMode,
+    fallback: stayMode ? t.stay.heroCta : t.hero.bookNow,
+  });
+  const ctaLabel = cta.label;
+
+  function openFromService(s: Service) { if (handledExternally(s.id)) return; setSelectedService(s); setOverlayOpen(true); }
+  function openFromCTA()               { if (handledExternally())     return; setSelectedService(null); setOverlayOpen(true); }
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
   return (
@@ -183,7 +194,7 @@ export function DarkPage({ business, services }: Props) {
           style={{ fontFamily: headingFont, flexShrink: 0, height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
           onMouseEnter={e => { e.currentTarget.style.background = "#fff"; }}
           onMouseLeave={e => { e.currentTarget.style.background = accent; }}
-        >{stayMode ? t.stay.heroCta : t.hero.bookNow}</button>
+        >{ctaLabel}</button>
       </div>
 
       {/* Hero */}
@@ -241,7 +252,7 @@ export function DarkPage({ business, services }: Props) {
             onMouseEnter={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = accent; e.currentTarget.style.transform = "translateY(-2px)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = D.bg; e.currentTarget.style.transform = "translateY(0)"; }}
           >
-            {stayMode ? t.stay.heroCta : t.hero.bookNow}
+            {ctaLabel}
           </button>
         </div>
       </section>
@@ -429,7 +440,7 @@ export function DarkPage({ business, services }: Props) {
         />
       </div>
 
-      <FloatingCTA shopName={displayName} bookLabel={stayMode ? t.stay.heroCta : t.hero.bookNow} onBook={openFromCTA} bgColor={accent} textColor={D.bg} />
+      <FloatingCTA shopName={displayName} bookLabel={ctaLabel} onBook={openFromCTA} bgColor={accent} textColor={D.bg} />
 
       {waNumber && (
         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
@@ -438,7 +449,7 @@ export function DarkPage({ business, services }: Props) {
         </a>
       )}
 
-      {overlayOpen && (stayMode
+      {cta.mode === "native" && overlayOpen && (stayMode
         ? (
           // A page CTA carries no unit, so the overlay opens on its own picker
           // step. A unit card passes its unit and the picker is skipped.

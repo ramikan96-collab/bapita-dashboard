@@ -137,6 +137,9 @@ export interface Business {
   about_text_he?: string | null;
   accent_color?: string | null;
   external_booking_url?: string | null;
+  /** Label of the primary CTA button. Falls back to the theme's translation string. */
+  cta_label?: string | null;
+  cta_label_he?: string | null;
   show_gallery?: boolean | null;
   show_about?: boolean | null;
   show_hours?: boolean | null;

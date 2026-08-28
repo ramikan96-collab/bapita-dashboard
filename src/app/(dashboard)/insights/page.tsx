@@ -396,7 +396,7 @@ export default function InsightsPage() {
               <RevenueTab bookings={allBookings} />
             )}
             {tab === "visitors" && business && (
-              <VisitorsTab businessId={business.id} start={start} end={end} />
+              <VisitorsTab businessId={business.id} start={start} end={end} externalCta={!!business.external_booking_url?.trim()} />
             )}
 
           </div>

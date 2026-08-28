@@ -10,7 +10,9 @@ export type TrackEvent =
   | "booking_started"
   | "step_reached"
   | "no_slots"
-  | "booking_completed";
+  | "booking_completed"
+  // External-CTA businesses have no funnel to complete: the click IS the conversion.
+  | "cta_click";
 
 interface FirstTouch {
   source: string;
