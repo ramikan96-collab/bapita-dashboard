@@ -188,6 +188,64 @@ export interface Business {
   deposit_default_value?: number | null;
 }
 
+/** A label/value row on a detail page ("Sleeps", "4 guests"). */
+export interface PageSpec {
+  label: string;
+  value: string;
+}
+
+/**
+ * The editable body of an extra page. Everything the router, the sitemap or the
+ * metadata needs is a real column on `pages`; this is what is left.
+ *
+ * `body` is markdown-lite / plain text, NEVER raw HTML — it is the one place in
+ * the product where free text reaches a public page, and it is sanitised on
+ * render.
+ */
+export interface PageContent {
+  body?: string | null;
+  body_he?: string | null;
+  /** Detail pages: gallery images for this unit/service specifically. */
+  images?: string[] | null;
+  /** Detail pages: hero override. Falls back to the service cover, then the business hero. */
+  hero_image_url?: string | null;
+  specs?: PageSpec[] | null;
+  specs_he?: PageSpec[] | null;
+  /** Per-page CTA label override. Falls back to the business's cta_label, then the theme string. */
+  cta_label?: string | null;
+  cta_label_he?: string | null;
+}
+
+export type PageKind = "detail" | "custom";
+
+/** Sections a detail page can order. Mirrors businesses.section_order. */
+export const PAGE_SECTIONS = ["hero", "body", "gallery", "specs", "related", "cta"] as const;
+export type PageSection = (typeof PAGE_SECTIONS)[number];
+
+/**
+ * An extra public page under a business's slug — the multi-page add-on.
+ * Admin-writable only in v1; owners see a read-only list.
+ */
+export interface Page {
+  id: string;
+  business_id: string;
+  slug: string;
+  kind: PageKind;
+  /** Detail pages: the service/unit this page describes. Null once that service is deleted. */
+  service_id: string | null;
+  title: string;
+  title_he?: string | null;
+  section_order?: string[] | null;
+  content: PageContent;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  og_image_url?: string | null;
+  published: boolean;
+  display_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface StaffMember {
   id:        string;
   name:      string;

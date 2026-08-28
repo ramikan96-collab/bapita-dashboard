@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import BookingShell from "./BookingShell";
 import type { Business, Service } from "@/types";
 import { fetchPlaceData } from "@/lib/google-places";
+import { resolveCanonical } from "@/lib/canonical";
 
 export const dynamic = "force-dynamic";
 
@@ -29,30 +30,6 @@ const BRAND_SEO: Record<string, { title: string; description: string }> = {
       "A luxury hair studio where artistry, expertise and exceptional hospitality come together to create a truly personalized experience. 25+ years of craft in Herzliya. Book online.",
   },
 };
-
-/**
- * Resolve the canonical/OG URL for a business.
- *
- * Whenever a business has a verified custom domain, every SEO signal points
- * at that domain (self-canonical at "/") — even the book.bapita/<slug> copy,
- * so Google consolidates all authority onto the brand domain instead of the
- * two hosts competing. Businesses without a verified custom domain keep their
- * book.bapita slug URL. Keyed purely off verified DB fields, so slug-only
- * clients are never affected. Metadata + JSON-LD both call this so they can
- * never disagree.
- */
-function resolveCanonical(
-  slug: string,
-  business: { custom_domain?: string | null; custom_domain_verified?: boolean | null }
-) {
-  const domain = business.custom_domain?.replace(/^www\./, "") ?? "";
-  const hasCustomDomain = !!domain && business.custom_domain_verified === true;
-  const canonicalBase = hasCustomDomain
-    ? `https://www.${domain}`
-    : "https://book.bapita.com";
-  const pageUrl = hasCustomDomain ? `${canonicalBase}/` : `${canonicalBase}/${slug}`;
-  return { canonicalBase, pageUrl };
-}
 
 /**
  * Known cities for DB-driven SEO copy + structured address. Parsed from the

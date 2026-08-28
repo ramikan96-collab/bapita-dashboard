@@ -13,6 +13,7 @@ import { SmartImg } from "@/components/SmartImg";
 import { SettingsSkeleton } from "@/components/LoadingSkeleton";
 import { PaymentsSection } from "./_components/PaymentsSection";
 import { normalizeCtaUrl } from "@/lib/cta";
+import { OwnerPagesCard } from "./_components/OwnerPagesCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1990,6 +1991,9 @@ function WebsiteSection({
         <InputField label="Google Maps" value={googleMapsUrl} onChange={setGoogleMapsUrl} placeholder="https://maps.google.com/?q=..." />
         <InputField label="Waze" value={wazeUrl} onChange={setWazeUrl} placeholder="https://waze.com/ul?ll=..." />
       </SectionCard>
+
+      {/* Extra pages — read-only; hidden entirely when the business has none. */}
+      <OwnerPagesCard business={business} />
 
       <SaveButton onClick={save} saving={saving} dirty={dirty} />
     </div>

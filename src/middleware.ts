@@ -179,6 +179,47 @@ async function bookingLocale(slug: string): Promise<string | null> {
   return locale;
 }
 
+/**
+ * Whether <pageSlug> is a published extra page of this business.
+ *
+ * Only consulted on a verified custom domain, and only for a single-segment
+ * path, so it costs one round trip on a URL shape that used to be an
+ * unconditional redirect. Cached on the same terms as bookingLocale: misses
+ * live longer than hits, because dead single-segment URLs arrive in scanner
+ * bursts and a page that has just been published should appear within minutes.
+ */
+const pageCache = new Map<string, { found: boolean; at: number }>();
+
+async function hasPublishedPage(businessId: string, pageSlug: string): Promise<boolean> {
+  const key = `${businessId}:${pageSlug}`;
+  const hit = pageCache.get(key);
+  if (hit) {
+    const ttl = hit.found ? LOCALE_TTL_MS : MISS_TTL_MS;
+    if (Date.now() - hit.at < ttl) return hit.found;
+  }
+
+  const anon = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => [], setAll: () => {} } }
+  );
+  const { data, error } = await anon
+    .from("pages")
+    .select("id")
+    .eq("business_id", businessId)
+    .eq("slug", pageSlug)
+    .eq("published", true)
+    .maybeSingle();
+
+  // A failed query falls back to the old behaviour (redirect to the booking
+  // host) rather than caching a wrong answer.
+  if (error) return false;
+
+  const found = !!data;
+  pageCache.set(key, { found, at: Date.now() });
+  return found;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host")?.toLowerCase() ?? "";
@@ -228,7 +269,7 @@ export async function middleware(request: NextRequest) {
     );
     const { data: match } = await anon
       .from("businesses")
-      .select("slug, default_lang")
+      .select("id, slug, default_lang")
       .eq("custom_domain", bareHost)
       .eq("custom_domain_verified", true)
       .eq("status", "live")
@@ -251,6 +292,21 @@ export async function middleware(request: NextRequest) {
     if (isAsset || isSeoFile) {
       return NextResponse.next();
     }
+
+    // The business's extra pages belong on its own domain too:
+    // brand.com/deluxe-suite serves /<slug>/deluxe-suite. Only a path that IS a
+    // published page of this business is rewritten — anything else keeps the
+    // redirect below, so an unknown path behaves exactly as it did before this
+    // branch existed.
+    const pageSlug = /^\/([a-z0-9-]+)$/.exec(pathname)?.[1];
+    if (pageSlug && (await hasPublishedPage(match.id, pageSlug))) {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-booking-locale", match.default_lang || "he");
+      return NextResponse.rewrite(new URL(`/${match.slug}/${pageSlug}`, request.url), {
+        request: { headers: requestHeaders },
+      });
+    }
+
     return NextResponse.redirect(`${BOOKING_URL}${pathname}`);
   }
 
@@ -268,8 +324,9 @@ export async function middleware(request: NextRequest) {
   // book.bapita.com/<slug> — the booking page on our own hosts, which needs the
   // same server-rendered lang/dir a custom domain already gets.
   //
-  // Single path segment, no dot (so /sitemap.xml and /robots.txt fall through to
-  // their own handlers) and not an owner-facing path. That last guard is what
+  // One path segment (the booking page) or two (an extra page under it), no dot
+  // in either (so /sitemap.xml and /robots.txt fall through to their own
+  // handlers) and not an owner-facing path. That last guard is what
   // makes this safe on localhost and *.vercel.app: on book.bapita.com the
   // dashboard was already forwarded to the apex above, but on those hosts
   // /calendar and /settings are still served here and must never be handed a
@@ -278,7 +335,7 @@ export async function middleware(request: NextRequest) {
   //
   // Deliberately NOT restricted to BOOKING_HOST: a preview deployment has to
   // reproduce this, or the fix cannot be verified before it reaches production.
-  const localeSlug = /^\/([^/.]+)$/.exec(pathname)?.[1];
+  const localeSlug = /^\/([^/.]+)(?:\/[^/.]+)?$/.exec(pathname)?.[1];
   if (localeSlug && !belongsOnApex(pathname) && !needsAuth(pathname)) {
     const locale = await bookingLocale(localeSlug);
     if (locale) {

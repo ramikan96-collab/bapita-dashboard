@@ -117,6 +117,11 @@ export const HE: Record<string, string> = {
   "Default language": "שפת ברירת מחדל",
   "Design": "עיצוב",
   "Social links": "קישורים חברתיים",
+  // Extra pages (multi-page add-on) — read-only list for the owner.
+  "Extra pages": "עמודים נוספים",
+  "Pages built for you by Bapita. Tap one to see it live.": "עמודים שבנינו עבורך. לחצו על עמוד כדי לראות אותו",
+  "Live": "פעיל",
+  "Draft": "טיוטה",
   "Profile photo": "תמונת פרופיל",
   "Gallery": "גלריה",
   "Staff": "צוות",

@@ -94,4 +94,11 @@ export const en = {
     months: ["January","February","March","April","May","June","July","August","September","October","November","December"],
     weekDays: ["Su","Mo","Tu","We","Th","Fr","Sa"],
   },
+  // Extra pages (multi-page add-on).
+  page: {
+    back: (name: string) => `← Back to ${name}`,
+    details: "Details",
+    more: "More",
+    gallery: "Photos",
+  },
 };
