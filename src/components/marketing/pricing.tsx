@@ -9,6 +9,7 @@ import {
   Search,
   MapPinned,
   CalendarSync,
+  Files,
   type LucideIcon,
 } from "lucide-react";
 import { Reveal } from "@/components/hub/reveal";
@@ -58,10 +59,12 @@ import { cn } from "@/lib/hub/cn";
  * however you like and holds until scroll crosses the next threshold, so taking
  * over never fights the page.
  *
- * Pinned on a phone as well as a laptop — `usePinned(0)` — which is deliberate
- * and is the one place on the page where that is a real risk. The escape is the
- * calm motion tier: Reduce Motion gets the plain unpinned calculator, which is
- * also what the server renders and what a reader with no JS keeps.
+ * Pinned on a phone as well as a laptop — `usePinned(0)`. The unpinned
+ * calculator is still what the server renders and what a reader with no JS
+ * keeps; it is a fallback, not an opt-out. Reduce Motion changes the falling
+ * itself rather than the layout: `falafel-drop` and `falafel-out` both have
+ * calm variants in globals.css, so on that tier an add-on is set into the pita
+ * rather than dropped into it.
  */
 
 type Addon = {
@@ -84,15 +87,20 @@ const ADDONS: Addon[] = [
   { id: "seo", icon: Search, cadence: "monthly", x: 64, y: 20 },
   { id: "gbp", icon: MapPinned, cadence: "once", x: 44, y: 29 },
   { id: "calsync", icon: CalendarSync, cadence: "once", x: 58, y: 29 },
+  { id: "pages", icon: Files, cadence: "once", x: 50, y: 37 },
 ];
 
 /**
  * How much vertical scroll each add-on costs, and where in the scrub it lands.
- * Six thresholds inside the first 72%, so the pita is full with a quarter of
+ * Seven thresholds inside the first 72%, so the pita is full with a quarter of
  * the pin left to read the total before the section lets go.
+ *
+ * The per-add-on cost came down from 26vh when the seventh arrived: the pin is
+ * as long as the whole page can afford, and 7 x 26 would have made this one
+ * section three screens of scroll on a phone.
  */
-const SCROLL_PER_ADDON = 26; // vh
-const FILL_AT = [0.12, 0.24, 0.36, 0.48, 0.6, 0.72];
+const SCROLL_PER_ADDON = 22; // vh
+const FILL_AT = [0.1, 0.2, 0.3, 0.4, 0.5, 0.61, 0.72];
 
 const SETUP = 1500;
 const MONTHLY = 200;
@@ -106,8 +114,6 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
   const section = useRef<HTMLElement>(null);
   /**
    * Zero, not the 1024 the other sections use: the phone gets the fill too.
-   * Reduce Motion still opts out, which is the escape hatch that makes pinning
-   * a phone acceptable at all.
    */
   const pinned = usePinned(0);
   const [picked, setPicked] = useState<string[]>([]);
@@ -310,6 +316,14 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
               >
                 {t.cta}
               </Button>
+              {/* The founding-customer lock, directly under the CTA — it is
+                  the answer to "why now", and it is the one line on this page
+                  that is a commitment rather than a claim. Kept to two lines
+                  so it does not cost the pinned phone layout a screen. */}
+              <p className="mt-3 rounded-hub-lg border border-cinnamon/20 bg-cinnamon/[0.06] px-3 py-2 text-center text-[0.75rem] leading-snug text-espresso/60 sm:text-[0.8125rem]">
+                <span className="font-bold text-espresso">{t.foundingLead}</span>{" "}
+                {t.foundingBody}
+              </p>
               <p className="mt-2.5 text-center text-[0.8125rem] text-espresso/40">
                 {t.noteBefore}{" "}
                 <a

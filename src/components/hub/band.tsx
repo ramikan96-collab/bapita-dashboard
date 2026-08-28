@@ -1,8 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/hub/cn";
 import { motionTier } from "@/lib/hub/motion";
+
+/**
+ * The first `fit()` has to happen BEFORE the browser paints, or the line is
+ * painted at its server-rendered size and then jumps to its solved one — a
+ * layout shift on every load, on a full-bleed element the width of the page.
+ * `useLayoutEffect` warns during SSR, and this component only ever measures on
+ * the client, so it falls back to `useEffect` where there is no window.
+ */
+const useIsoLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
  * The display line that opens How it works.
@@ -72,7 +82,7 @@ export function Band({
    */
   const rtlRef = useRef(false);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     rtlRef.current = document.documentElement.dir === "rtl";
     let frame = 0;
     let sizeFrame = 0;
@@ -129,16 +139,18 @@ export function Band({
     let lastShift = Number.NaN;
 
     /**
-     * Driven by its own rAF loop, not a scroll listener.
+     * Driven from an rAF loop AND a scroll listener.
      *
      * Lenis owns the scroll on this page and drives it by writing scroll
      * positions itself; a plain `window.addEventListener("scroll")` does not
-     * reliably fire under it, so the wipe would sit at whatever value it had
-     * on mount. One getBoundingClientRect per frame is cheaper than the bug,
-     * and the writes are skipped unless the values actually moved.
+     * reliably fire under it, so on its own the wipe would sit at whatever
+     * value it had on mount. That is why the loop exists. But rAF is suspended
+     * in a backgrounded or occluded tab and throttled under low power, so on
+     * its own the loop has the mirror-image failure. Both drive the same
+     * function, whose writes are already skipped unless the values moved, so
+     * the pair costs a rect measurement and closes both holes.
      */
     function apply() {
-      frame = requestAnimationFrame(apply);
       // Read the refs live rather than closing over the nodes: under a
       // StrictMode double-mount the captured element can be the discarded one,
       // and the loop then spends its life styling a node nobody can see.
@@ -240,16 +252,18 @@ export function Band({
       // but the travel is ~7px, well inside what Reduce Motion permits, rather
       // than the full line-height exit the other tier makes.
       //
-      // While pinned the strip is a screen tall, so the desktop maths — which
-      // exits through an edge measured off the strip — would send the word on a
-      // journey of half a viewport. The phone gets a fixed, readable travel
-      // instead: in from a little above its twin, out a little below.
+      // Both widths now share the full-tier maths. The phone used to get a
+      // fixed 0.42-of-a-line-height travel of its own, which at a 52px fitted
+      // size is about 18px in each direction — technically a move, and one
+      // nobody could see happening. The distance here is measured off the
+      // strip the word is actually inside, so on a phone it is the ~200px the
+      // 42svh strip affords: in cropped by the top edge, down through its
+      // twin, and out through the bottom. `narrow` still decides where
+      // progress comes FROM — that part was never the problem.
       const CALM_TRAVEL = 7;
-      const shift = narrow
-        ? (leave - (1 - p)) * (calm ? CALM_TRAVEL : h * 0.42)
-        : calm
-          ? (leave - (1 - p)) * CALM_TRAVEL
-          : leave * (half + h) - (1 - p) * (half + PEEK * h);
+      const shift = calm
+        ? (leave - (1 - p)) * CALM_TRAVEL
+        : leave * (half + h) - (1 - p) * (half + PEEK * h);
       if (!(Math.abs(shift - lastShift) < 0.25)) {
         lastShift = shift;
         mover.style.transform = `translateY(${shift.toFixed(2)}px)`;
@@ -260,10 +274,17 @@ export function Band({
       if (!sizeFrame) sizeFrame = requestAnimationFrame(fit);
     }
 
+    function tick() {
+      frame = requestAnimationFrame(tick);
+      apply();
+    }
+
     fit();
     // Runs on both tiers now. `apply` itself decides how much of the gesture
     // to play; it is the wipe that has to keep working.
-    frame = requestAnimationFrame(apply);
+    apply();
+    frame = requestAnimationFrame(tick);
+    window.addEventListener("scroll", apply, { passive: true });
     // Webfont swap changes the natural width under us; re-fit once Heebo has
     // actually landed rather than sizing off the fallback metrics.
     document.fonts?.ready.then(fit).catch(() => {});
@@ -271,6 +292,7 @@ export function Band({
     return () => {
       if (frame) cancelAnimationFrame(frame);
       if (sizeFrame) cancelAnimationFrame(sizeFrame);
+      window.removeEventListener("scroll", apply);
       window.removeEventListener("resize", onResize);
     };
   }, []);

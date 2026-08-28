@@ -8,9 +8,17 @@ import { PushInit } from "@/components/PushInit";
 // `variable` as well as `className`: the dashboard keeps getting the family
 // applied directly on <html> (unchanged), while the ported marketing/hub
 // components compose `--font-heebo` through `--font-sans` in globals.css.
+// `hebrew` as well as `latin`, since 2026-08-28: the /he route and every
+// Hebrew booking page were rendering their type in the fallback stack, because
+// Heebo's latin subset does not carry Hebrew glyphs. A Hebrew-language product
+// whose Hebrew is set in a system font is not a small thing.
+//
+// 300 dropped in the same change to pay for part of it — nothing in `src/`
+// used `font-light`. The remaining six are all in use: 400 and 900 by the
+// dashboard, 500/600/700/800 across the marketing page.
 const heebo = Heebo({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  subsets: ["latin", "hebrew"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-heebo",
   display: "swap",
 });

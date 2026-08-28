@@ -35,21 +35,24 @@ import { dirFor, getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
  *
  * ── The scroll ──
  *
- * On a laptop the section pins for its own height and vertical scroll drives
- * the rail sideways, so the next card arrives as you scroll rather than as you
- * hunt for a scrollbar. Below that width, and on the calm motion tier, it is a
- * plain swipeable rail with scroll snapping — the same cards, no pinning, no
- * hijacked scroll. That is the fallback in the markup too: the server renders
- * the unpinned version, and pinning is switched on afterwards only if it
- * applies. A reader whose JS never runs gets a rail that works.
+ * The section pins for its own height and vertical scroll drives the rail
+ * sideways, so the next card arrives as you scroll rather than as you hunt for
+ * a scrollbar. On a phone too, since 2026-08-28: unpinned this was the tallest
+ * thing on the page, and a sideways rail you have to notice before you swipe it
+ * is one most readers never reach the end of.
+ *
+ * The unpinned version — a plain swipeable rail with scroll snapping and a
+ * pair of arrows — is what the server renders and what a reader whose JS never
+ * runs keeps. Pinning is switched on afterwards, on top of a thing that already
+ * worked.
  *
  * ── No business names ──
  *
  * Every scene used to be a barbershop: named competitors, a "barber near me"
- * search, haircut prices. Bapita sells to salons, short term rentals, clinics
- * and restaurants now, so the scenes carry one of each and name none of them.
- * A visitor running a clinic should not have to translate a barber's week into
- * their own before the argument lands.
+ * search, haircut prices. Bapita sells to hair salons, short term rentals,
+ * clinics and nail & lash studios now, so the scenes carry one of each and name
+ * none of them. A visitor running a clinic should not have to translate a
+ * barber's week into their own before the argument lands.
  */
 
 /** The words a scene draws with. Structure is here; copy is in the locale. */
@@ -285,8 +288,16 @@ const CARDS: Card[] = [
 
 /* ── Section ──────────────────────────────────────────────────── */
 
-/** How much vertical scroll one card's worth of sideways travel costs. */
+/**
+ * How much vertical scroll one card's worth of sideways travel costs.
+ *
+ * Cheaper on a phone. The pin is the same six cards either way, but 62vh a card
+ * is six flicks of a thumb per card on a 390px screen, and a section that costs
+ * four hundred vh to get past is the failure mode pinning on a phone was
+ * avoided for in the first place.
+ */
 const SCROLL_PER_CARD = 62; // vh
+const SCROLL_PER_CARD_NARROW = 44; // vh
 
 export function Proof({ locale = "en" }: { locale?: Locale }) {
   const t = getDict(locale).proof;
@@ -302,11 +313,19 @@ export function Proof({ locale = "en" }: { locale?: Locale }) {
   const rail = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   /**
-   * Server renders the plain rail. Pinning is switched on afterwards, and only
-   * where it belongs: a hijacked scroll on a phone is how a section becomes
-   * impossible to get past.
+   * Server renders the plain rail. Pinning is switched on afterwards.
+   *
+   * `0`, not the 1024 this used to pass: as of 2026-08-28 the phone pins too.
+   * The rail was a plain swipe rail below `sm` on the grounds that a hijacked
+   * scroll on a phone is how a section becomes impossible to get past — but
+   * unpinned it was also the tallest section on the page, and a sideways rail
+   * that a reader has to notice and then swipe is a rail most readers never
+   * reach the end of. Pinned, the six cards arrive on the scroll they are
+   * already doing and the section costs exactly one screen of height.
    */
-  const pinned = usePinned();
+  const pinned = usePinned(0);
+  /** Only to choose the scroll budget — the layout itself is Tailwind's job. */
+  const wide = usePinned(1024);
 
   useSectionProgress(section, pinned, (p) => {
     const tr = track.current;
@@ -391,7 +410,13 @@ export function Proof({ locale = "en" }: { locale?: Locale }) {
       className="wash-clay relative"
       style={
         pinned
-          ? { height: `${100 + SCROLL_PER_CARD * (CARDS.length - 1)}vh` }
+          ? {
+              height: `${
+                100 +
+                (wide ? SCROLL_PER_CARD : SCROLL_PER_CARD_NARROW) *
+                  (CARDS.length - 1)
+              }vh`,
+            }
           : undefined
       }
     >
@@ -405,9 +430,9 @@ export function Proof({ locale = "en" }: { locale?: Locale }) {
            to fit inside a box shorter than its own minimum height. `start`,
            not `center`, so any remaining overflow runs off the bottom, not up
            under the fixed nav. */
-        <div className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col justify-start overflow-x-hidden py-8">
+        <div className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col justify-start overflow-x-hidden py-5 sm:py-8">
           {header}
-          <PauseOffscreen className="mt-7 min-h-0 flex-1">
+          <PauseOffscreen className="mt-4 min-h-0 flex-1 sm:mt-7">
             {/* No overflow scrolling here: the transform IS the scroll. The end
                 padding matches the start gutter so the last card lands where
                 the headline starts rather than jammed against the edge. */}
@@ -421,7 +446,7 @@ export function Proof({ locale = "en" }: { locale?: Locale }) {
               </div>
             </div>
           </PauseOffscreen>
-          <div className="mx-auto mt-5 w-full max-w-6xl shrink-0 px-5 sm:px-8">
+          <div className="mx-auto mt-3 w-full max-w-6xl shrink-0 px-5 sm:mt-5 sm:px-8">
             {closer}
           </div>
         </div>
@@ -472,7 +497,11 @@ function ProofCard({ card, t }: { card: Card; t: Dict["proof"] }) {
   const copy = t.cards[card.id];
   return (
     <article
-      className="lift flex h-full min-h-[26rem] w-[min(84vw,20rem)] shrink-0 flex-col rounded-3xl border p-5 sm:w-[22rem] sm:p-7"
+      /* The floor, not the height: the card is `h-full` inside the pinned
+         box and only falls back on this where that box is shorter than the
+         card's own content. 19rem is what fits under the header, the closer
+         and the section's padding on a 667px phone. */
+      className="lift flex h-full min-h-[19rem] w-[min(84vw,20rem)] shrink-0 flex-col rounded-3xl border p-4 sm:min-h-[26rem] sm:w-[22rem] sm:p-7"
       style={{
         borderColor: `${card.glow}33`,
         background: `linear-gradient(165deg, ${card.glow}12, #FDFBF7 42%)`,

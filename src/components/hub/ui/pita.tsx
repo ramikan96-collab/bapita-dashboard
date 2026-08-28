@@ -36,7 +36,7 @@ export const FALAFEL_COLORS: Record<string, FalafelPalette> = {
   salon: { highlight: "#ffd28a", base: "#e8a01a", deep: "#a06405" },
   rental: { highlight: "#ffb082", base: "#e2703a", deep: "#a8460f" },
   clinic: { highlight: "#b8d9b0", base: "#679e5a", deep: "#3d6b30" },
-  restaurant: { highlight: "#a8c8e8", base: "#4a7fb5", deep: "#2a4f7a" },
+  studio: { highlight: "#f2b6cd", base: "#cf4f7e", deep: "#8c2b4d" },
 
   // Add-ons (marketing pricing) — what fills the pita once the site is built.
   site: { highlight: "#ffd28a", base: "#e8a01a", deep: "#a06405" },
@@ -46,6 +46,7 @@ export const FALAFEL_COLORS: Record<string, FalafelPalette> = {
   seo: { highlight: "#a8c8e8", base: "#4a7fb5", deep: "#2a4f7a" },
   gbp: { highlight: "#cfc0f0", base: "#8b6fd4", deep: "#4f3a8c" },
   calsync: { highlight: "#a8dfe4", base: "#3f9aa6", deep: "#1f5f68" },
+  pages: { highlight: "#a8c8e8", base: "#4a7fb5", deep: "#2a4f7a" },
 };
 
 const DEFAULT_PALETTE = FALAFEL_COLORS.book;

@@ -12,7 +12,7 @@ import {
   Scissors,
   BedDouble,
   Stethoscope,
-  UtensilsCrossed,
+  Sparkles,
   MessageCircle,
   CreditCard,
   Search,
@@ -53,18 +53,32 @@ import { cn } from "@/lib/hub/cn";
  * — and a tap holds until scroll crosses the next threshold, so taking one over
  * never fights the page.
  *
- * Below 1024px, and on the calm motion tier, none of that happens: the section
- * is a normal stack of three cards, the site cycles on a timer, the figures
- * count up once when the card comes into view, and the switches stand where
- * they are. That is also what the server renders, so the fallback is what
- * arrives before hydration rather than a special case bolted on after.
+ * ── The phone gets a deck ──
+ *
+ * Below 1024px the three-up has nowhere to go, and stacked as three 34rem cards
+ * this was three screens of section for an argument that is one sentence long.
+ * So the phone gets the shape the process section uses: each card is a screen
+ * tall and sticks while the next one slides up over it. One card is ever being
+ * read, and the section costs the reader three screens of scroll instead of
+ * three screens of page.
+ *
+ * The demos there run in their unpinned mode — the site cycles on a timer, the
+ * figures count up once when the card comes into view, the switches demonstrate
+ * themselves — because three cards sitting at three different scroll positions
+ * have no single progress value between them.
+ *
+ * Neither layout is gated on the motion tier — see `usePinned`. What Reduce
+ * Motion changes here is the motion itself: the card loops fade rather than
+ * slide, the figures settle rather than climb. The plain stack is still what
+ * the server renders, so it is what arrives before hydration rather than a
+ * special case bolted on after.
  *
  * ── Why the first card is wider ──
  *
  * It carries the argument the retired "Who it's for" section used to make on
  * its own: same product, four kinds of business. A visitor watching the mock
- * become a salon, a rental, a clinic and a restaurant needs to be able to read
- * it, so it gets 1.28 of the three columns and the other two split the rest.
+ * become a hair salon, a rental, a clinic and a nail studio needs to be able to
+ * read it, so it gets 1.28 of the three columns and the other two split the rest.
  */
 
 /** How tall the pinned section is, in vh. The excess over 100 is the scrub. */
@@ -93,7 +107,7 @@ function BuildCard({
   title,
   body,
   stageRef,
-  pinned,
+  fillHeight,
   children,
 }: {
   tag: string;
@@ -101,14 +115,17 @@ function BuildCard({
   title: string;
   body: string;
   stageRef: RefObject<HTMLDivElement | null>;
-  pinned: boolean;
+  /** Take the height the parent offers, rather than the standalone CARD_H.
+   *  True in both layouts that give the card a box of its own: the desktop
+   *  three-up and the phone deck. */
+  fillHeight: boolean;
   children: ReactNode;
 }) {
   return (
     <article
       className={cn(
         "lift mx-auto flex w-full max-w-[440px] flex-col overflow-hidden rounded-3xl border bg-chip lg:max-w-none",
-        pinned ? "h-full" : CARD_H,
+        fillHeight ? "h-full" : CARD_H,
       )}
       style={{
         borderColor: `${accent}2e`,
@@ -154,7 +171,7 @@ const AUDIENCE_ICON: Record<AudienceId, LucideIcon> = {
   salons: Scissors,
   properties: BedDouble,
   clinics: Stethoscope,
-  restaurants: UtensilsCrossed,
+  studios: Sparkles,
 };
 
 const SITE_MS = 5200;
@@ -162,18 +179,19 @@ const SITE_MS = 5200;
 function SiteCard({
   sectionRef,
   pinned,
+  fillHeight,
   t,
   audiences,
   rtl,
 }: {
   sectionRef: RefObject<HTMLElement | null>;
   pinned: boolean;
+  fillHeight: boolean;
   t: Dict["build"]["site"];
   audiences: Dict["audiences"];
   rtl: boolean;
 }) {
   const stage = useRef<HTMLDivElement>(null);
-  const calm = useCalmMotion();
   const visible = useInView(stage, { once: false, rootMargin: "0px" });
 
   const [index, setIndex] = useState(0);
@@ -183,13 +201,20 @@ function SiteCard({
   const scrollStep = useRef(-1);
 
   useEffect(() => {
-    if (pinned || !ticking || calm || !visible) return;
+    /* `calm` is deliberately NOT a condition here any more.
+       The cycle is a cross-fade between four mocks — opacity only, not one
+       pixel of travel — and it is the card's entire argument: same product,
+       four kinds of business. Holding it on the calm tier left a Reduce Motion
+       reader looking at a hair salon and nothing else, on the one card that
+       exists to say the product is not just for hair salons. The tabs are
+       still tabs, and touching one stops the cycle for good. */
+    if (pinned || !ticking || !visible) return;
     const id = window.setInterval(
       () => setIndex((i) => (i + 1) % AUDIENCES.length),
       SITE_MS,
     );
     return () => window.clearInterval(id);
-  }, [pinned, ticking, calm, visible]);
+  }, [pinned, ticking, visible]);
 
   useSectionProgress(sectionRef, pinned, (p) => {
     const step = Math.min(
@@ -209,7 +234,10 @@ function SiteCard({
 
   const audience = AUDIENCES[index];
   const copy = audiences[audience.id];
-  const running = !pinned && ticking && !calm && visible;
+  /* Tracks the cycle above, so the progress hairline and the thing it is
+     measuring can never disagree. The hairline is a bar filling, which is the
+     same gesture the proof rail's race bars keep on the calm tier. */
+  const running = !pinned && ticking && visible;
 
   return (
     <BuildCard
@@ -218,7 +246,7 @@ function SiteCard({
       title={t.title}
       body={t.body}
       stageRef={stage}
-      pinned={pinned}
+      fillHeight={fillHeight}
     >
       <div className="flex shrink-0 items-center justify-between gap-3">
         <div
@@ -352,10 +380,12 @@ const FUNNEL = [
 function DashboardCard({
   sectionRef,
   pinned,
+  fillHeight,
   t,
 }: {
   sectionRef: RefObject<HTMLElement | null>;
   pinned: boolean;
+  fillHeight: boolean;
   t: Dict["build"]["dashboard"];
 }) {
   const stage = useRef<HTMLDivElement>(null);
@@ -415,7 +445,7 @@ function DashboardCard({
       title={t.title}
       body={t.body}
       stageRef={stage}
-      pinned={pinned}
+      fillHeight={fillHeight}
     >
       <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-espresso/[0.07] bg-white p-4 shadow-[0_18px_44px_-28px_rgba(60,34,12,0.35)]">
         <p className="text-[0.625rem] font-bold uppercase tracking-[0.14em] text-espresso/35">
@@ -508,10 +538,12 @@ const SWITCHES = [
 function AddonsCard({
   sectionRef,
   pinned,
+  fillHeight,
   t,
 }: {
   sectionRef: RefObject<HTMLElement | null>;
   pinned: boolean;
+  fillHeight: boolean;
   t: Dict["build"]["addons"];
 }) {
   const stage = useRef<HTMLDivElement>(null);
@@ -546,7 +578,7 @@ function AddonsCard({
       title={t.title}
       body={t.body}
       stageRef={stage}
-      pinned={pinned}
+      fillHeight={fillHeight}
     >
       <p className="shrink-0 text-[0.625rem] font-bold uppercase tracking-[0.14em] text-espresso/35">
         {t.switchLabel}
@@ -638,7 +670,21 @@ export function WhatWeBuild({ locale = "en" }: { locale?: Locale }) {
   const dict = getDict(locale);
   const t = dict.build;
   const section = useRef<HTMLElement>(null);
+  /** The desktop three-up, whose demos the scroll scrubs. */
   const pinned = usePinned();
+  /**
+   * The phone deck: same three cards, one screen each, each sliding over the
+   * one before it — the shape the process section already uses, which is what
+   * Rami asked for on 2026-08-28. It is not the same thing as `pinned`: the
+   * deck gives each card a screen-tall box but does NOT scrub its demo off the
+   * section's progress, because there is no longer one shared progress that
+   * means anything — three cards at three different scroll positions each need
+   * their own timer. So the demos run in exactly their unpinned mode.
+   *
+   * Not gated on the motion tier — see `usePinned`. Reduce Motion reduces the
+   * motion inside the cards, not the layout around them.
+   */
+  const deck = usePinned(0) && !pinned;
 
   const header = (
     <Reveal>
@@ -654,6 +700,34 @@ export function WhatWeBuild({ locale = "en" }: { locale?: Locale }) {
     </Reveal>
   );
 
+  /* Not `fill` — that name is the i18n template filler, imported above. */
+  const fillHeight = pinned || deck;
+  const cardList = [
+    <SiteCard
+      key="site"
+      sectionRef={section}
+      pinned={pinned}
+      fillHeight={fillHeight}
+      t={t.site}
+      audiences={dict.audiences}
+      rtl={dirFor(locale) === "rtl"}
+    />,
+    <DashboardCard
+      key="dashboard"
+      sectionRef={section}
+      pinned={pinned}
+      fillHeight={fillHeight}
+      t={t.dashboard}
+    />,
+    <AddonsCard
+      key="addons"
+      sectionRef={section}
+      pinned={pinned}
+      fillHeight={fillHeight}
+      t={t.addons}
+    />,
+  ];
+
   const cards = (
     <div
       className={cn(
@@ -661,17 +735,45 @@ export function WhatWeBuild({ locale = "en" }: { locale?: Locale }) {
         pinned && "h-full min-h-0",
       )}
     >
-      <SiteCard
-        sectionRef={section}
-        pinned={pinned}
-        t={t.site}
-        audiences={dict.audiences}
-        rtl={dirFor(locale) === "rtl"}
-      />
-      <DashboardCard sectionRef={section} pinned={pinned} t={t.dashboard} />
-      <AddonsCard sectionRef={section} pinned={pinned} t={t.addons} />
+      {cardList}
     </div>
   );
+
+  if (deck) {
+    return (
+      /* overflow-x-clip, never overflow-hidden: `hidden` would make this
+         section a scroll container, and a sticky element pins against its
+         nearest scrolling ancestor — so every card below would be pinning
+         against a box that never scrolls, i.e. not pinning at all. The same
+         note is on how-it-works, for the same reason. */
+      <section id="product" ref={section} className="wash-clay overflow-x-clip">
+        <div className="mx-auto max-w-7xl px-5 pb-10 pt-12">{header}</div>
+
+        {/* No <Reveal> around the deck: it holds a translateY while hidden,
+            and a transformed ancestor becomes the containing block for
+            position sticky, which silently kills the pinning. */}
+        <ol className="mx-auto max-w-7xl px-5 pb-12">
+          {cardList.map((card, i) => (
+            /* Direct child of the <ol>, and the <li> — not the card — is what
+               sticks: a sticky element pins inside its own parent's box, so a
+               wrapper of exactly its own height has nothing to stick within.
+               The list is the shared box. Each card sits `--deck-step` lower
+               than the one under it, so the stack stays legible as an edge. */
+            <li
+              key={i}
+              className="sticky flex min-h-[calc(100svh-6.5rem)] [--deck-step:8px] [--deck-top:5rem]"
+              style={{
+                top: `calc(var(--deck-top) + var(--deck-step) * ${i})`,
+                zIndex: i + 1,
+              }}
+            >
+              {card}
+            </li>
+          ))}
+        </ol>
+      </section>
+    );
+  }
 
   return (
     <section

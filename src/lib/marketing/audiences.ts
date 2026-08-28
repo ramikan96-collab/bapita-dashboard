@@ -6,7 +6,7 @@
  * you", and answers with the same product every time. That is the whole point
  * of the relaunch: one product, a wider room.
  *
- * `mode` maps 1:1 onto `businesses.business_type` — the salon/clinic/restaurant
+ * `mode` maps 1:1 onto `businesses.business_type` — the salon/clinic/studio
  * rows are `appointment`, the property row is `stay`. The mock renders from it,
  * so what a visitor sees on the marketing page is the shape of the page they
  * would actually be given.
@@ -17,7 +17,14 @@
  * .co.il domains would read as a client list we don't have.
  */
 
-export type AudienceId = "salons" | "properties" | "clinics" | "restaurants";
+/**
+ * `studios` replaced `restaurants` on 2026-08-28. Restaurants were cut as a
+ * product, so the homepage stopped selling them — but four rooms stay four, and
+ * nail & lash is the room the existing product already fits best. The two
+ * beauty rooms are named specifically for that reason: "Salons" and "Nail &
+ * lash studios" side by side would blur, so the first one is "Hair salons".
+ */
+export type AudienceId = "salons" | "properties" | "clinics" | "studios";
 
 /**
  * Structure only. Every word — the tab label, the promise, the service names,
@@ -64,11 +71,14 @@ export const AUDIENCES: Audience[] = [
     url: "book.bapita.com/clinic",
   },
   {
-    id: "restaurants",
-    accent: "#2d6cf0",
+    /* Daytime hours, deliberately. The row this replaced ran 18:00–21:15
+       because it was a dinner service; leaving those times on a nail studio
+       would read as a copy-paste rather than as a room we actually sell to. */
+    id: "studios",
+    accent: "#cf4f7e",
     mode: "appointment",
-    slots: ["18:00", "18:30", "19:45", "20:30", "21:15"],
-    initial: "R",
-    url: "book.bapita.com/restaurant",
+    slots: ["10:00", "11:30", "13:00", "15:30", "17:00"],
+    initial: "N",
+    url: "book.bapita.com/nailstudio",
   },
 ];

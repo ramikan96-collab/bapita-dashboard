@@ -14,8 +14,8 @@ import { getDict, type Locale } from "@/lib/marketing/i18n";
  * The "Built for" column is the one thing that changed on purpose. It listed
  * ten appointment trades, all of them variations on a salon, because that was
  * the whole audience when it shipped. The relaunch sells to stays, clinics and
- * restaurants as well, so the list carries all four rooms — and it stays a list
- * of plain words, not links, because these are not pages we have.
+ * nail & lash studios as well, so the list carries all four rooms — and it stays
+ * a list of plain words, not links, because these are not pages we have.
  *
  * "Log in" lives here as well as in the nav: bapita.com and the app are one
  * origin now, and an existing client landing on the marketing page should not

@@ -94,8 +94,32 @@ export function useInView<T extends HTMLElement>(
  * sequence starts dropping frames. The steps that DO need state — which tab,
  * which switches — guard on the value changing first.
  *
- * `enabled` false unsubscribes entirely, which is what the phone and the calm
- * tier get: no pinning, no scroll handler, no listener left running.
+ * `enabled` false unsubscribes entirely — no loop, nothing left running — which
+ * is what a section gets whenever its layout is not the pinned one.
+ *
+ * ── Driven from BOTH a scroll listener and an rAF loop, on purpose ──
+ *
+ * Each one alone has a failure mode that makes the section look broken, and
+ * they are not the same failure mode:
+ *
+ *   A scroll listener misses Lenis. Lenis owns the scroll on this page and
+ *   drives it by writing scroll positions itself, so the listener can sit at
+ *   whatever value it had on mount — `band.tsx` hit this first and grew its own
+ *   loop because of it.
+ *
+ *   An rAF loop misses whenever rAF is not running. The browser suspends it in
+ *   a backgrounded or occluded tab and throttles it under low-power conditions.
+ *   A section whose only clock is rAF is inert exactly then, and the page it is
+ *   on has no other way to find out that the reader moved.
+ *
+ * So: the rAF loop is the steady clock, and scroll/resize additionally poke
+ * `read()` directly, which is what makes the first frame after any of those
+ * events correct rather than up-to-one-frame stale. Both funnel through the
+ * same guarded read, so double-driving costs one extra rect measurement and
+ * never a duplicate callback — `last` throws away anything that has not moved.
+ *
+ * The read is skipped entirely while the section is nowhere near the viewport,
+ * so the cost is paid only by the section you are actually looking at.
  */
 export function useSectionProgress(
   ref: RefObject<HTMLElement | null>,
@@ -113,50 +137,86 @@ export function useSectionProgress(
     if (!enabled || !el) return;
 
     let frame = 0;
-    const apply = () => {
-      frame = 0;
+    let last = Number.NaN;
+
+    const read = () => {
       const rect = el.getBoundingClientRect();
-      const scrollable = rect.height - window.innerHeight;
+      const vh = window.innerHeight;
+      // Off screen in either direction: nothing to report, and the endpoint
+      // value has already been delivered by the read that left the range.
+      if (rect.bottom < -vh || rect.top > vh) return;
+      const scrollable = rect.height - vh;
       const p =
         scrollable > 0 ? Math.min(1, Math.max(0, -rect.top / scrollable)) : 0;
+      // Sub-pixel churn is not information. The guard is what keeps a section
+      // that is merely visible from re-running its callback sixty times a
+      // second while the page is still, and it is also what makes it safe for
+      // the scroll listener and the loop to both call this.
+      if (Math.abs(p - last) < 0.0005) return;
+      last = p;
       cb.current(p);
     };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(apply);
+
+    const tick = () => {
+      frame = requestAnimationFrame(tick);
+      read();
     };
 
-    apply();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    read();
+    frame = requestAnimationFrame(tick);
+    window.addEventListener("scroll", read, { passive: true });
+    window.addEventListener("resize", read);
     return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", read);
+      window.removeEventListener("resize", read);
     };
   }, [ref, enabled]);
 }
 
 /**
- * True once the viewport is wide enough and the reader has not asked for calm
- * motion — the two conditions every pinned scroll sequence on this page shares.
+ * True once the viewport is wide enough for a pinned scroll sequence.
  *
  * Starts false so the server renders the unpinned layout: a hijacked scroll
- * that arrives before hydration, or on a phone, is how a section becomes
- * impossible to get past.
+ * arriving before hydration is how a section becomes impossible to get past.
+ *
+ * `minWidth` is per-caller and, since 2026-08-28, most callers pass 0 — the
+ * phone pins too.
+ *
+ * ── Why the calm tier no longer switches this off ──
+ *
+ * It used to return false whenever Reduce Motion was on, which made an OS
+ * accessibility setting the difference between a page that works and a page
+ * where four of its sections silently do nothing. That is not a graceful
+ * degradation, it is a second product — and it is the one a third of iOS users
+ * would have been getting.
+ *
+ * It was also inconsistent with the two pinned things on this page that never
+ * consulted the tier at all: the hero scene pins on both tiers, and the
+ * how-it-works deck is CSS `position: sticky` with no JS gate anywhere near it.
+ * Those two are the precedent, not the exception.
+ *
+ * The reduction still happens — it just happens to the MOTION rather than to
+ * the layout, which is what WCAG 2.3.3 is actually asking for. On the calm tier
+ * the falafels are set down instead of falling on an arc, the card loops fade
+ * instead of sliding, the marquees and float loops stop entirely, the display
+ * word travels ~7px instead of a strip height, and Lenis hands the scroll back
+ * to the browser. All of that lives in `globals.css` under `[data-motion=calm]`
+ * and in the components' own `calm` branches. A pinned section is the page
+ * scrolling past a fixed thing; it is not motion played at the reader.
  */
 export function usePinned(minWidth = 1024): boolean {
-  const calm = useCalmMotion();
   const [pinned, setPinned] = useState(false);
 
   useEffect(() => {
-    const check = () => setPinned(!calm && window.innerWidth >= minWidth);
+    const check = () => setPinned(window.innerWidth >= minWidth);
     const id = window.setTimeout(check, 0);
     window.addEventListener("resize", check);
     return () => {
       window.clearTimeout(id);
       window.removeEventListener("resize", check);
     };
-  }, [calm, minWidth]);
+  }, [minWidth]);
 
   return pinned;
 }

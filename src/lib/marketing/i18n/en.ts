@@ -25,7 +25,7 @@ export const en = {
     name: "EN",
     title: "Bapita | Your business online. Built for you.",
     description:
-      "Bapita builds your booking website, owner dashboard and automations, then keeps them running. For salons, short term rentals, clinics and restaurants in Israel. No tech needed.",
+      "Bapita builds your booking website, owner dashboard and automations, then keeps them running. For hair salons, short term rentals, clinics and nail & lash studios in Israel. No tech needed.",
     ogDescription:
       "A booking website, owner dashboard, and automations, built for your business and kept running. No tech needed.",
     /** Screen-reader label on the language toggle. */
@@ -36,6 +36,11 @@ export const en = {
   nav: {
     home: "Bapita home",
     menu: "Toggle menu",
+    /* "Early access", never "Beta". Same honest information — we are
+       pre-first-customer and the page should say so — and the opposite sales
+       effect: to an owner being asked for ₪1,500 up front, "Beta" reads as
+       come back later and "early access" reads as move now. */
+    earlyAccess: "Early access",
     login: "Log in",
     cta: "Book a free call",
     ctaShort: "Book a call",
@@ -56,7 +61,9 @@ export const en = {
     ledeKey: "We build both and keep them running.",
     ledeAfter: "You just show up.",
     cta: "Build My Website",
-    secondary: "No tech skills, no commitment",
+    /* Names the conversion event. The button says what you get; this says
+       what actually happens when you press it. */
+    secondary: "Free 30 minute call. No tech skills, no commitment.",
     payoff: "One system. One bill. One person to call.",
     chits: {
       site: "Booking website",
@@ -65,10 +72,10 @@ export const en = {
       google: "Found on Google",
     },
     balls: {
-      salon: "Salons",
+      salon: "Hair salons",
       clinic: "Clinics",
       rental: "Rentals",
-      restaurant: "Restaurants",
+      studio: "Nail & lash",
     },
   },
 
@@ -235,7 +242,7 @@ export const en = {
     site: {
       tag: "The product",
       title: "Booking Website",
-      body: "Clients see your services, your real openings, and book instantly, any hour of the day. Salon, rental, clinic or restaurant, it takes your shape.",
+      body: "Clients see your services, your real openings, and book instantly, any hour of the day. Salon, rental, clinic or studio, it takes your shape.",
       tablist: "Kind of business",
     },
     dashboard: {
@@ -286,8 +293,8 @@ export const en = {
   audiences: {
     salons: {
       perNight: "/ night",
-      label: "Salons & barbers",
-      covers: "Barbershops, hair, nails, lashes, beauty",
+      label: "Hair salons",
+      covers: "Barbershops, hair, colour, blowouts, styling",
       headline: "A chair that fills itself.",
       blurb:
         "Clients pick a service, see your real openings and book. No DM thread, no double booking, no calling anyone back at 22:00.",
@@ -356,28 +363,28 @@ export const en = {
         c: "Client history in one place",
       },
     },
-    restaurants: {
+    studios: {
       perNight: "/ night",
-      label: "Restaurants",
-      covers: "Dining rooms, bars, chef's tables, private events",
-      headline: "Tables booked before you open.",
+      label: "Nail & lash studios",
+      covers: "Nails, lashes, brows, tattoo, permanent makeup",
+      headline: "Your fills book themselves.",
       blurb:
-        "Sittings, party sizes and your real capacity, on your own page, with the guest's details in your hands rather than a reservations platform's.",
+        "Every treatment has its own length and its own price, so a full set and a two week fill never land in the same slot. Clients book the right one and get the reminder that brings them back.",
       items: {
-        a: { name: "Dinner · 2 guests", meta: "90 min", price: "Free" },
-        b: { name: "Dinner · 4 guests", meta: "2 hrs", price: "Free" },
-        c: { name: "Chef's table", meta: "2.5 hrs", price: "₪280 pp" },
+        a: { name: "Gel manicure", meta: "60 min", price: "₪180" },
+        b: { name: "Fill", meta: "45 min", price: "₪130" },
+        c: { name: "Lash extensions", meta: "2 hrs", price: "₪350" },
       },
       mock: {
-        name: "Your Restaurant",
-        status: "Two sittings · books 24/7",
-        slotLabel: "Friday",
-        cta: "Reserve 19:45 · 4 guests",
+        name: "Your Nail Studio",
+        status: "Open · books 24/7",
+        slotLabel: "Wednesday",
+        cta: "Book 15:30 · ₪180",
       },
       wins: {
-        a: "Capacity you set, per sitting",
-        b: "Guest details you keep",
-        c: "Confirmation the moment they book",
+        a: "A length and a price per treatment",
+        b: "Reminders that bring fills back on time",
+        c: "Deposits on the long appointments",
       },
     },
   },
@@ -431,6 +438,12 @@ export const en = {
           "Busy times block automatically, new bookings show up on your Google Calendar",
         body: "We connect your Google Calendar for you, a one time concierge setup, not another monthly bill. No more double bookings. Block time on Google and it blocks on Bapita, and vice versa.",
       },
+      pages: {
+        name: "Extra Pages",
+        summary:
+          "An about page, a gallery, a price list, a team page. Written and built by us",
+        body: "Your booking site ships as one page because that is what converts. When you want more — the story behind the business, a proper gallery, a full price list, a page per practitioner — we write it, build it and hook it into the same site. One time per page, and it is yours from then on.",
+      },
     },
   },
 
@@ -459,6 +472,12 @@ export const en = {
     cta: "Build My Website",
     noteBefore: "Free call, no commitment. Bigger build?",
     noteLink: "We quote it",
+    /* The founding-customer lock. This is a commercial commitment, not a
+       marketing line: whoever signs under it keeps ₪200/mo when the price
+       rises, and Phase 4.5's onboarding checklist is where that is recorded. */
+    foundingLead: "Founding customer pricing.",
+    foundingBody:
+      "Sign up while we are in early access and your ₪200 a month is locked for as long as you stay — including after the price goes up.",
     labels: {
       reminders: "Reminders",
       payments: "Payments",
@@ -466,6 +485,7 @@ export const en = {
       seo: "SEO",
       gbp: "Google profile",
       calsync: "Calendar sync",
+      pages: "Extra pages",
     },
   },
 
@@ -517,6 +537,10 @@ export const en = {
         q: "Do I need to know anything about tech?",
         a: "Zero. That is the whole point. We build it, we maintain it. New service, new price, something to change? You message us and it is done.",
       },
+      founding: {
+        q: "What does \u201cearly access\u201d mean, and what happens to my price?",
+        a: "It means the product is built and running for real businesses, and we are still taking on our first customers by hand rather than at scale. You get us on the phone, and changes you ask for get made. In exchange your price is locked: ₪200 a month for as long as you stay with us, including after we raise it for new customers. That is a commitment, not an introductory offer with an end date.",
+      },
     },
   },
 
@@ -559,17 +583,22 @@ export const en = {
     getStartedTitle: "Get started",
     faq: "FAQ",
     rights: "All rights reserved.",
+    /* Ten entries, and it stays ten. "Restaurants & bars" left on 2026-08-28
+       with the product; the nail, lash and tattoo trades that took its place
+       are the room that replaced it, spelled out rather than bundled into one
+       line — two of the four audiences are beauty now, and a list that says
+       "hair & nail salons" once makes them read as the same room. */
     builtFor: {
       a: "Barbers",
-      b: "Hair & nail salons",
-      c: "Lash & brow studios",
-      d: "Spa & massage",
-      e: "Short term rentals",
-      f: "Guest suites & cabins",
-      g: "Physio & dental",
-      h: "Aesthetics & therapy",
-      i: "Pilates, yoga & trainers",
-      j: "Restaurants & bars",
+      b: "Hair salons & colourists",
+      c: "Nail studios",
+      d: "Lash & brow studios",
+      e: "Spa & massage",
+      f: "Short term rentals",
+      g: "Guest suites & cabins",
+      h: "Physio & dental",
+      i: "Aesthetics, tattoo & PMU",
+      j: "Pilates, yoga & trainers",
     },
     legal: {
       accessibility: "Accessibility",

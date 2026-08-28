@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   BellRing,
   CreditCard,
@@ -8,21 +8,20 @@ import {
   Search,
   MapPinned,
   CalendarSync,
+  Files,
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import { Reveal, RevealStagger, RevealItem } from "@/components/hub/reveal";
 import { Band } from "@/components/hub/band";
 import { TwoTone, Lede, Eyebrow } from "@/components/hub/ui/type";
-import { useInView } from "@/lib/marketing/motion-hooks";
 import { getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
-import { useCalmMotion } from "@/lib/hub/motion";
 import { cn } from "@/lib/hub/cn";
 
 /**
  * The add-ons section, carried over from the shipped page and rebuilt.
  *
- * Six add-ons — four recurring, two once — with the same copy. The shipped page
+ * Seven add-ons — four recurring, three once — with the same copy. The shipped page
  * rendered each as an always-open card with a bespoke illustration, ~420 lines
  * that pushed pricing two screens further down. The first v3 port went the
  * other way: a single stack of hairline accordion rows, which fixed the length
@@ -31,15 +30,15 @@ import { cn } from "@/lib/hub/cn";
  * This is the middle. Each add-on is a card with its own accent and icon,
  * matching the switches in the "What we build" add-ons card directly above, so
  * a reader who just flipped WhatsApp on recognises it here. Two columns instead
- * of six stacked rows halves the section's height. The summary is always
+ * of seven stacked rows halves the section's height. The summary is always
  * visible because that's what a skimmer needs; the detail stays one tap away
  * for the one add-on somebody actually came for.
  *
  * Same grid-rows collapse the Hub's FAQ uses, so a panel animates to whatever
  * height its content needs and never clips.
  *
- * The accent on each card is scroll-driven rather than hover-only, and the
- * section ends on a display band. Both are explained where they happen.
+ * A card's accent belongs to the card you opened, and the section ends on a
+ * display band. Both are explained where they happen.
  */
 
 type Addon = {
@@ -59,6 +58,10 @@ const MONTHLY: Addon[] = [
 const ONE_TIME: Addon[] = [
   { id: "gbp", accent: "#7c5cfc", icon: MapPinned },
   { id: "calsync", accent: "#16A6B3", icon: CalendarSync },
+  /* The azure freed up when the restaurants audience left. Three one-time
+     cards no longer fill the two columns evenly; the odd one out spans the
+     row — see the grid below. */
+  { id: "pages", accent: "#4a7fb5", icon: Files },
 ];
 
 function AddonCard({
@@ -76,49 +79,39 @@ function AddonCard({
   const [open, setOpen] = useState(false);
 
   /**
-   * Each card lights itself as it arrives, and stays lit.
+   * A card is lit when it is OPEN. Nothing else lights it.
    *
-   * The accent used to be a hover state, which means it never existed on a
-   * phone and on a laptop only ever showed one card at a time. Scrolling the
-   * section now walks the colour down it and leaves it there, so the section
-   * ends with all six lit — which is what the band underneath is a payoff for.
-   * Lit is a resting style, not an animation, so the calm tier gets it
-   * immediately rather than not at all, and a reader with no JS gets the plain
-   * card the server rendered.
+   * This was scroll-driven until 2026-08-28: the colour walked down the section
+   * as you passed it and stayed, so the section came to rest with every card
+   * lit. Read back on a phone that is not a reveal, it is a grid of seven
+   * identically loud cards with no focus in it — the accent was spent telling
+   * you where the scroll had got to, which is the one thing the reader can
+   * already see. Now it does the job an accent is for: this is the one you
+   * opened.
+   *
+   * Desktop keeps its hover preview (the top rule and the lift), which is a
+   * pointer affordance and costs a phone nothing.
    */
-  const card = useRef<HTMLDivElement>(null);
-  const calm = useCalmMotion();
-  const seen = useInView(card, { rootMargin: "0px 0px -32% 0px" });
-  const lit = calm || seen;
 
   return (
     <div
-      ref={card}
-      data-lit={lit || undefined}
       className={cn(
         "group relative h-full overflow-hidden rounded-3xl border bg-chip transition-[border-color,box-shadow,transform] duration-500",
         open ? "-translate-y-0.5" : "hover:-translate-y-0.5",
       )}
       style={{
-        borderColor: open
-          ? `${addon.accent}4d`
-          : lit
-            ? `${addon.accent}33`
-            : "rgba(42,29,20,0.09)",
+        borderColor: open ? `${addon.accent}4d` : "rgba(42,29,20,0.09)",
         boxShadow: open
           ? `0 1px 0 ${addon.accent}1f inset, 0 22px 50px -30px ${addon.accent}b3`
-          : lit
-            ? `0 1px 0 ${addon.accent}14 inset, 0 18px 42px -32px ${addon.accent}99`
-            : "0 1px 2px rgba(60,34,12,0.04)",
+          : "0 1px 2px rgba(60,34,12,0.04)",
       }}
     >
-      {/* One line doing three jobs now: which add-on the scroll has reached,
-          which one you are pointing at, and which one you have opened. */}
+      {/* Two jobs: which one you are pointing at, and which one you opened. */}
       <span
         aria-hidden="true"
         className={cn(
           "absolute inset-x-0 top-0 h-[2px] origin-left transition-transform duration-700 ease-out",
-          open || lit ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100",
+          open ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100",
         )}
         style={{ background: addon.accent }}
       />
@@ -133,7 +126,7 @@ function AddonCard({
           aria-hidden="true"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-hub-lg transition-colors duration-300"
           style={{
-            background: `${addon.accent}${open ? "24" : lit ? "1c" : "14"}`,
+            background: `${addon.accent}${open ? "24" : "14"}`,
             color: addon.accent,
           }}
         >
@@ -237,7 +230,18 @@ export function Addons({ locale = "en" }: { locale?: Locale }) {
         </Reveal>
         <RevealStagger className="mt-4 grid items-start gap-4 sm:grid-cols-2">
           {ONE_TIME.map((addon, i) => (
-            <RevealItem key={addon.id} className="h-full">
+            /* Three cards in a two-column grid leaves a hole. The last one
+               spans both columns instead, so the group ends on a full-width
+               row rather than on a card sitting beside a gap. */
+            <RevealItem
+              key={addon.id}
+              className={cn(
+                "h-full",
+                i === ONE_TIME.length - 1 &&
+                  ONE_TIME.length % 2 === 1 &&
+                  "sm:col-span-2",
+              )}
+            >
               <AddonCard
                 addon={addon}
                 id={`addon-o-${i}`}
@@ -264,10 +268,10 @@ export function Addons({ locale = "en" }: { locale?: Locale }) {
 
       {/* The second display band on the page, and deliberately the twin of the
           first: "Work smarter" opens the process, "Go further." closes the
-          add-ons. It lands after all six cards have lit, so the phrase is a
-          payoff for something the reader just watched happen rather than a
-          slogan dropped between two sections. Outside the container — the band
-          brings its own full-bleed strip. */}
+          add-ons. It lands under the last thing you can add, so the phrase
+          reads as the sum of the list above it rather than as a slogan dropped
+          between two sections. Outside the container — the band brings its own
+          full-bleed strip. */}
       <div className="mt-14 sm:mt-20">
         <Band lead={t.band.lead} trail={t.band.trail} />
       </div>

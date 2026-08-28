@@ -5,7 +5,8 @@ import { getDict, type Locale } from "@/lib/marketing/i18n";
  * The homepage FAQ — the six questions from the shipped book.bapita.com page,
  * copy unchanged, plus one added for the audience the relaunch brings in:
  * hosts renting out a property, for whom "appointment" is the wrong word and
- * who otherwise have no way to tell from this page that stays are supported.
+ * who otherwise have no way to tell from this page that stays are supported,
+ * and one more for the "Early access" chip the nav now carries.
  *
  * Mirrored into the FAQPage JSON-LD on the homepage; keep the two in step, and
  * keep every answer self-contained so an AI answer engine can quote one alone.
@@ -19,6 +20,11 @@ const ORDER = [
   "stays",
   "effort",
   "tech",
+  /* Last, deliberately. It answers a question the "Early access" chip in the
+     nav raises, and it carries the founding-customer price lock — which is a
+     commitment, so it belongs somewhere permanent and quotable rather than in
+     a banner. */
+  "founding",
 ] as const;
 
 /**

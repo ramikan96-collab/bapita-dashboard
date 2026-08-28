@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { BrandMark } from "@/components/hub/ui/brand-mark";
 import { Button } from "@/components/hub/ui/button";
+import { EarlyAccessChip } from "@/components/marketing/early-access-chip";
 import {
   getDict,
   otherLocale,
@@ -38,13 +39,19 @@ export function MarketingNav({ locale = "en" }: { locale?: Locale }) {
   return (
     <header className="sticky top-0 z-50 border-b border-espresso/[0.08] bg-paper-warm/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-        <Link
-          href={pathFor(locale)}
-          aria-label={t.nav.home}
-          className="-ms-1 flex min-h-11 items-center px-1 text-espresso"
-        >
-          <BrandMark />
-        </Link>
+        <div className="flex min-w-0 items-center gap-2">
+          <Link
+            href={pathFor(locale)}
+            aria-label={t.nav.home}
+            className="-ms-1 flex min-h-11 items-center px-1 text-espresso"
+          >
+            <BrandMark />
+          </Link>
+          {/* `sm` and up only. On a phone this row does not have 102px to give
+              it, and what it took them from was the language toggle. The hero
+              carries it below `sm` — see `early-access-chip.tsx`. */}
+          <EarlyAccessChip locale={locale} className="hidden sm:inline-block" />
+        </div>
 
         <nav className="hidden items-center gap-7 md:flex">
           {NAV_LINKS.map((link) => (

@@ -9,14 +9,15 @@ import {
   Scissors,
   BedDouble,
   Stethoscope,
-  UtensilsCrossed,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { Falafel, PitaBowl } from "@/components/hub/ui/pita";
 import { Button } from "@/components/hub/ui/button";
 import { TwoTone, Lede, Key, Eyebrow } from "@/components/hub/ui/type";
+import { EarlyAccessChip } from "@/components/marketing/early-access-chip";
 import { useMotionTier } from "@/lib/hub/motion";
-import { getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
+import { dirFor, getDict, type Dict, type Locale } from "@/lib/marketing/i18n";
 
 /**
  * The hero IS the metaphor — retargeted.
@@ -101,7 +102,7 @@ const OBJECTS: Obj[] = [
   { kind: "ball", id: "salon", icon: Scissors, rx: -0.15, row: 0, nudge: -6, rot: 0, start: 0.3 },
   { kind: "ball", id: "clinic", icon: Stethoscope, rx: 0.15, row: 0, nudge: 6, rot: 0, start: 0.38 },
   { kind: "ball", id: "rental", icon: BedDouble, rx: -0.15, row: 1, nudge: -5, rot: 0, start: 0.46 },
-  { kind: "ball", id: "restaurant", icon: UtensilsCrossed, rx: 0.15, row: 1, nudge: 5, rot: 0, start: 0.54 },
+  { kind: "ball", id: "studio", icon: Sparkles, rx: 0.15, row: 1, nudge: 5, rot: 0, start: 0.54 },
 ];
 
 /* ── ROW GEOMETRY ──────────────────────────────────────────────────────────
@@ -130,36 +131,77 @@ const RIM_CLEARANCE = 20;
 const ROW_GAP = 26;
 
 /**
- * A phone cannot hold this composition at rest, so mobile plays the same
- * choreography as a queue instead of a tableau: an object fades in just before
- * its own fall and is gone before the next pair arrives, so only two or three
- * are ever on screen.
+ * The phone gets a tableau too, not a queue.
+ *
+ * It used to be four slots, cycled: an object faded in just before its own fall
+ * and was gone before the next pair arrived, so only two or three were ever on
+ * screen and only four — the businesses — were there at scroll zero. Which
+ * means the opening frame, the one frame everybody sees, was missing half the
+ * argument: the four capability chits (booking website, owner dashboard,
+ * reminders, found on Google) did not exist until you scrolled, and a visitor
+ * who never scrolled never learned what we build.
+ *
+ * All eight are now placed and visible before any scroll. What makes eight fit
+ * where four did is that the rows are not the same height: a chit is a single
+ * line of 10px type, a falafel is an 80px ball with a name pill under it, so
+ * the two chit rows cost about half what the two falafel rows do. Everything
+ * scales as one unit if the band is still too short after that.
+ *
+ * Order is top to bottom: capabilities first, then the businesses they serve,
+ * sitting directly above the pita they are about to fall into.
  */
 const MOBILE_BP = 640; // Tailwind `sm` — the markup switches at the same width.
-/** Half-height reserved per slot row: a falafel + its label, plus air. */
-const MOBILE_ROW_HALF = 52;
+/** Half-height of a chit row: one line of type, plus air. */
+const MOBILE_CHIT_HALF = 20;
+/** Half-height of a falafel row: the ball, its name pill, and air. */
+const MOBILE_BALL_HALF = 39;
+/** Air between adjacent rows. Three gaps for four rows. */
+const MOBILE_ROW_GAP = 8;
+/**
+ * The floor the tableau shrinks to before the pita starts giving up height
+ * instead.
+ *
+ * 0.52, not the 0.66 this started at. 0.66 is the point where the name pills
+ * stop being comfortable to read, and on every phone anyone actually holds —
+ * 390x844 down to 375x553 and 360x640 — the tableau never gets near it. But a
+ * phone turned sideways, or a browser with a lot of chrome open, can hand the
+ * scene ~134px of band against the 260 the four rows want at full size, and at
+ * a 0.66 floor two objects were clipped straight out of the box. Small type is
+ * a worse frame; a missing object is a missing argument.
+ */
+const MOBILE_MIN_FIT = 0.52;
+/** Height the four rows want at full size, in px. */
+const MOBILE_NEED =
+  4 * MOBILE_CHIT_HALF + 4 * MOBILE_BALL_HALF + 3 * MOBILE_ROW_GAP;
+/** The phone's bowl never shrinks past this, even on a very short screen. */
+const MOBILE_PITA_MIN_W = 104;
 /** Mobile retiming. Tighter falls, evenly spaced, all landed before the payoff. */
 const MOBILE_FIRST_START = 0.05;
 const MOBILE_STAGGER = 0.05;
 const MOBILE_FALL = 0.11;
-/** Scroll spent fading an object in ahead of its own fall. */
-const MOBILE_LEAD = 0.045;
-/** How many objects are already sitting in their slots at scroll zero, so the
- *  opening frame — the one frame everybody sees — is a full tableau. */
-const MOBILE_PRESET = 4;
 
-/** Four slots, cycled: start-top, end-top, start-bottom, end-bottom. */
+/**
+ * Where object `i` rests on a phone: which column, and which of the four rows.
+ *
+ * Rows 0–1 are the chits (OBJECTS 0–3), rows 2–3 the falafels (OBJECTS 4–7),
+ * two to a row. Reading the kind off the index rather than off `o.kind` keeps
+ * this a pure function of position, which is what the row-height maths below
+ * needs.
+ */
 function slotFor(i: number) {
-  const slot = i % 4;
-  return { col: slot % 2 === 0 ? -1 : 1, bottom: slot >= 2 };
+  const withinKind = i % 4;
+  return {
+    col: withinKind % 2 === 0 ? -1 : 1,
+    row: (i < 4 ? 0 : 2) + (withinKind < 2 ? 0 : 1),
+  };
 }
 
 /**
- * The order the phone plays them in, as indices into OBJECTS.
+ * The order the phone drops them in, as indices into OBJECTS.
  *
- * The phone opens on all four businesses and nothing else. They ARE the claim
- * this page is making — four rooms, one product — and they cannot be the thing
- * you have to scroll to reach. The capabilities follow once they have dropped.
+ * The businesses go first. They ARE the claim this page is making — four rooms,
+ * one product — so the pita should be filling with them while the reader is
+ * still near the top of the scene. The capabilities follow.
  */
 const MOBILE_ORDER = [4, 5, 6, 7, 0, 1, 2, 3];
 
@@ -193,6 +235,16 @@ function clamp01(n: number) {
 
 export function Hero({ locale = "en" }: { locale?: Locale }) {
   const t = getDict(locale).hero;
+  /**
+   * Which physical column the phone's first slot takes.
+   *
+   * The tableau itself is symmetrical and has nothing to mirror — that is why
+   * the centring below uses physical `left-1/2` rather than a logical anchor.
+   * The ORDER inside it is not symmetrical though: the four chits are read as a
+   * list, and on a Hebrew page a list starts on the right. One sign, applied to
+   * the column, is the whole of the fix.
+   */
+  const colSign = dirFor(locale) === "rtl" ? -1 : 1;
 
   const sectionRef = useRef<HTMLElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -210,7 +262,6 @@ export function Hero({ locale = "en" }: { locale?: Locale }) {
     let frame = 0;
 
     function apply() {
-      frame = 0;
       const rect = section!.getBoundingClientRect();
       const scrollable = rect.height - window.innerHeight;
       const p = scrollable > 0 ? clamp01(-rect.top / scrollable) : 0;
@@ -237,6 +288,15 @@ export function Hero({ locale = "en" }: { locale?: Locale }) {
         const needed = 3 * STACK_HALF + ROW_GAP + RIM_CLEARANCE - PITA_DROP;
         const byHeight = (h - needed) / PITA_ASPECT;
         pitaW = Math.max(PITA_MIN_W, Math.min(pitaW, byHeight));
+      } else {
+        // Same bargain on a phone, in the other order. The tableau shrinks
+        // first (see `fit` below) and only once it has hit its readable floor
+        // does the bowl start giving ground — eight objects legible above a
+        // slightly small pita beats a full-size pita with four of the labels
+        // sitting on top of each other.
+        const floorNeed = MOBILE_NEED * MOBILE_MIN_FIT;
+        const byHeight = (h - 12 - floorNeed) / PITA_ASPECT;
+        pitaW = Math.max(MOBILE_PITA_MIN_W, Math.min(pitaW, byHeight));
       }
       const pitaH = pitaW * PITA_ASPECT;
       if (bowl) bowl.style.width = `${Math.round(pitaW)}px`;
@@ -269,19 +329,32 @@ export function Hero({ locale = "en" }: { locale?: Locale }) {
         -h / 2 + halfF
       );
 
-      // Mobile slot geometry, in scene-centre coordinates. Two rows have to fit
-      // the band above the bowl; rather than let them run into each other on a
-      // short phone, the row height — and with it every object — shrinks.
+      // Mobile slot geometry, in scene-centre coordinates.
+      //
+      // Four rows of unequal height — two cheap ones for the chits, two tall
+      // ones for the falafels — all of which have to fit the band above the
+      // bowl. If they do not, the whole tableau scales down as one unit rather
+      // than letting rows run into each other; below MOBILE_MIN_FIT it stops,
+      // because past that the name pills stop being readable.
       const band = h - pitaH - 12;
-      const rowHalf = mobile
-        ? Math.max(30, Math.min(MOBILE_ROW_HALF, (band - 8) / 4))
-        : MOBILE_ROW_HALF;
-      const fit = mobile ? rowHalf / MOBILE_ROW_HALF : deskFit;
-      const rowTop = -h / 2 + rowHalf + 4;
-      const rowBottom = rowTop + 2 * rowHalf + 8;
+      const fit = mobile
+        ? Math.max(MOBILE_MIN_FIT, Math.min(1, band / MOBILE_NEED))
+        : deskFit;
+      const chitHalf = MOBILE_CHIT_HALF * fit;
+      const ballHalf = MOBILE_BALL_HALF * fit;
+      const gap = MOBILE_ROW_GAP * fit;
+      // Row centres, measured down from the top of the scene box. Each row's
+      // centre is the previous row's bottom edge plus its own half-height.
+      const rowY = [
+        -h / 2 + chitHalf,
+        -h / 2 + 3 * chitHalf + gap,
+        -h / 2 + 4 * chitHalf + ballHalf + 2 * gap,
+        -h / 2 + 4 * chitHalf + 3 * ballHalf + 3 * gap,
+      ];
       // A chit is the widest object; keep it inside the scene box, not just
-      // near the edge, so nothing is ever clipped on a narrow phone.
-      const colX = Math.max(56, Math.min(w * 0.24, w / 2 - 80 * fit));
+      // near the edge, so nothing is ever clipped on a narrow phone — and keep
+      // the two columns far enough apart that the pair never touches.
+      const colX = Math.max(52, Math.min(w * 0.26, w / 2 - 68 * fit));
 
       OBJECTS.forEach((o, i) => {
         const el = objRefs.current[i];
@@ -293,17 +366,14 @@ export function Hero({ locale = "en" }: { locale?: Locale }) {
         // Ease into the fall so it reads as tipped, not yanked.
         const e = t * t;
 
-        const intro =
-          !mobile || q < MOBILE_PRESET
-            ? 1
-            : clamp01((p - (start - MOBILE_LEAD)) / MOBILE_LEAD);
-
+        // Every object is placed and opaque before the first pixel of scroll:
+        // there is no fade-in stage on either tier any more.
         let fromX: number;
         let fromY: number;
         if (mobile) {
-          const { col, bottom } = slotFor(q);
-          fromX = col * colX;
-          fromY = bottom ? rowBottom : rowTop;
+          const { col, row } = slotFor(i);
+          fromX = col * colSign * colX;
+          fromY = rowY[row];
         } else {
           fromX = o.rx * w;
           fromY = (o.row === 0 ? rowHighY : rowLowY) + o.nudge * deskFit;
@@ -319,16 +389,14 @@ export function Hero({ locale = "en" }: { locale?: Locale }) {
         const y =
           fromY +
           (targetY - fromY) * e2 -
-          Math.sin(t * Math.PI) * h * 0.05 * flourish +
-          (1 - intro) * 14 * flourish;
+          Math.sin(t * Math.PI) * h * 0.05 * flourish;
 
         // Squash into the pocket over the last fifth of the arc, then vanish.
         const land = clamp01((t - 0.8) / 0.2);
-        const scale =
-          fit * (0.9 + intro * 0.1) * (1 - land * (calm ? 0.3 : 0.55));
+        const scale = fit * (1 - land * (calm ? 0.3 : 0.55));
 
         el.style.transform = `translate(-50%, -50%) translate3d(${x}px, ${y}px, 0) rotate(${o.rot * (1 - e) * flourish}deg) scale(${scale})`;
-        el.style.opacity = String(intro * (1 - land));
+        el.style.opacity = String(1 - land);
       });
 
       // The pita warms as it fills. A single opacity write on a plain overlay —
@@ -345,19 +413,39 @@ export function Hero({ locale = "en" }: { locale?: Locale }) {
       }
     }
 
-    function onScroll() {
-      if (!frame) frame = requestAnimationFrame(apply);
+    /**
+     * Driven from a scroll listener AND an rAF loop — see `useSectionProgress`,
+     * which does the same thing for the same reason. Neither clock is reliable
+     * on its own here: a scroll listener misses Lenis, which writes scroll
+     * positions itself, and rAF is suspended outright in a backgrounded or
+     * occluded tab and throttled under low power. The scene is the first thing
+     * on the page, so it is the one that must never be caught inert.
+     *
+     * Both funnel into `apply`, which is idempotent for a given scroll offset,
+     * so driving it twice costs a rect measurement and never a wrong frame.
+     * The read is skipped while the section is off screen.
+     */
+    function onFrame() {
+      const r = section!.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) return;
+      apply();
+    }
+
+    function tick() {
+      frame = requestAnimationFrame(tick);
+      onFrame();
     }
 
     apply();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    frame = requestAnimationFrame(tick);
+    window.addEventListener("scroll", onFrame, { passive: true });
+    window.addEventListener("resize", onFrame);
     return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onFrame);
+      window.removeEventListener("resize", onFrame);
     };
-  }, [calm]);
+  }, [calm, colSign]);
 
   return (
     <section
@@ -374,7 +462,13 @@ export function Hero({ locale = "en" }: { locale?: Locale }) {
         className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col items-center overflow-hidden px-5 pb-4 pt-4 sm:px-8 sm:pb-8 sm:pt-14 desk-short:pt-6 desk-short:pb-4 desk-tiny:pt-3 desk-tiny:pb-2"
       >
         <div className="text-center">
-          <Eyebrow className="justify-center">{t.eyebrow}</Eyebrow>
+          {/* The chip rides the eyebrow's own row below `sm`, so it costs no
+              vertical space on the screen this section is fighting for. From
+              `sm` up the nav carries it and this one is hidden. */}
+          <div className="flex items-center justify-center gap-2">
+            <Eyebrow>{t.eyebrow}</Eyebrow>
+            <EarlyAccessChip locale={locale} className="sm:hidden" />
+          </div>
 
           {/* Phone sizes are held down deliberately: the header block ran to
               ~240px before the scene even started, which on a 745px Safari
@@ -391,19 +485,21 @@ export function Hero({ locale = "en" }: { locale?: Locale }) {
             {t.ledeBefore} <Key>{t.ledeKey}</Key> {t.ledeAfter}
           </Lede>
 
-          <div className="mt-6 flex flex-col items-center gap-2 phone-short:mt-4 sm:mt-6 sm:gap-3 desk-short:mt-2.5 desk-short:gap-1 desk-tiny:mt-2 desk-tiny:gap-1">
+          <div className="mt-5 flex flex-col items-center gap-1.5 phone-short:mt-3.5 sm:mt-6 sm:gap-2.5 desk-short:mt-2.5 desk-short:gap-1 desk-tiny:mt-2 desk-tiny:gap-1">
             <Button href="#connect" size="lg" data-cta="hero_primary">
               {t.cta}
             </Button>
-            {/* Dropped on short phones: it duplicates the header's link, and
-                those 44px are the difference between the scene fitting under
-                the fold and the falafels landing on the bowl. */}
-            <a
-              href="#product"
-              className="-my-2 px-3 py-3 text-sm font-semibold text-espresso/45 underline decoration-espresso/20 underline-offset-4 transition-colors phone-short:hidden desk-tiny:hidden hover:text-espresso hover:decoration-espresso/50"
-            >
+            {/* Reassurance, not a second action.
+                This used to be a link to #product, which put two competing
+                things to tap inside the one screen the whole page is trying to
+                convert on — and the second one led AWAY from the only thing
+                that converts, which is the call. Same words, no destination:
+                the sentence was always doing the work of microcopy, and as
+                microcopy it costs 18px instead of a 44px tap target, so it
+                survives on a short phone where the link had to be dropped. */}
+            <p className="max-w-[26ch] text-center text-[0.75rem] font-medium leading-snug text-espresso/45 sm:text-sm desk-tiny:hidden">
               {t.secondary}
-            </a>
+            </p>
           </div>
         </div>
 

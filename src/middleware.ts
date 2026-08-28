@@ -38,6 +38,24 @@ function needsAuth(pathname: string): boolean {
   return DASHBOARD_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
 }
 
+/**
+ * In development only: the machine's own LAN address counts as one of our
+ * hosts.
+ *
+ * Testing a phone layout means opening the dev server from the phone, which
+ * means a Host header like `172.20.10.2` — and every host that is not on the
+ * list below is treated as a customer's custom domain and looked up in
+ * `businesses`. So `npm run dev` served the marketing site correctly on
+ * localhost and something else entirely to the phone it was being built for.
+ *
+ * Matched by shape rather than by reading the machine's interfaces: the three
+ * RFC 1918 private ranges, loopback, and mDNS `.local` names. Compiled behind
+ * NODE_ENV so production's host handling is byte-for-byte what it was — a
+ * customer's custom domain can never be a private address.
+ */
+const PRIVATE_HOST =
+  /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?$)|\.local$/;
+
 // Hosts this app owns. Anything NOT listed here is treated as a customer's
 // custom domain and looked up in `businesses` — so both of our own hosts MUST
 // be here, or the marketing site would fail that lookup and bounce forever.
@@ -47,7 +65,8 @@ function isKnownHost(bareHost: string): boolean {
     bareHost === BOOKING_HOST ||
     bareHost === "localhost" ||
     bareHost === "127.0.0.1" ||
-    bareHost.endsWith(".vercel.app")
+    bareHost.endsWith(".vercel.app") ||
+    (process.env.NODE_ENV !== "production" && PRIVATE_HOST.test(bareHost))
   );
 }
 

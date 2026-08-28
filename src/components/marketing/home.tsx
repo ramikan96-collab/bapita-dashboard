@@ -43,11 +43,14 @@ export function MarketingHome({ locale }: { locale: Locale }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd(locale)) }}
       />
+      {/* lazyOnload, not afterInteractive: nothing on this page waits on the
+          analytics beacon, and hydration is what the hero's scroll scene is
+          waiting for. */}
       <Script
         defer
         data-domain="bapita.com"
         src="https://plausible.io/js/script.js"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
 
       <MarketingNav locale={locale} />
