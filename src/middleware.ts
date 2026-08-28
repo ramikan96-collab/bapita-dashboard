@@ -59,6 +59,18 @@ function isKnownHost(bareHost: string): boolean {
 const RETIRED_HOST = "dashboard.bapita.com";
 
 /**
+ * Booking-page slugs a business has since renamed, old → new.
+ *
+ * Renaming `businesses.slug` orphans every inbound link and every indexed
+ * search result pointing at the old path — without an entry here it just
+ * 404s. 308 (not the page's own logic) so Google recrawls the old URL as a
+ * permanent move and carries its indexing over instead of dropping it.
+ */
+const SLUG_REDIRECTS: Record<string, string> = {
+  "kasa-herzeliya": "good-living-herzeliya",
+};
+
+/**
  * The split between our two hosts.
  *
  * book.bapita.com keeps the job it was named for: `/[slug]` booking pages —
@@ -164,6 +176,18 @@ export async function middleware(request: NextRequest) {
       `${SITE_URL}${pathname}${request.nextUrl.search}`,
       308
     );
+  }
+
+  // Renamed booking slugs — must run before the locale lookup below, which
+  // would otherwise just miss the old slug in `businesses` and 404 it.
+  if (bareHost === BOOKING_HOST) {
+    const renamed = SLUG_REDIRECTS[pathname.slice(1)];
+    if (renamed) {
+      return NextResponse.redirect(
+        `${BOOKING_URL}/${renamed}${request.nextUrl.search}`,
+        308
+      );
+    }
   }
 
   // Custom-domain routing — runs before auth/dashboard logic, and never touches it.
