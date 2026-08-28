@@ -70,6 +70,13 @@ create policy "pages: owner reads own"
     )
   );
 
+-- Supabase's default privileges hand every new table in `public` full DML to
+-- anon and authenticated. RLS is what actually blocks those writes here (there
+-- is no write policy), but that leaves the table one accidental
+-- `disable row level security` away from being world-writable. Take the grants
+-- away too, so both layers have to fail before a tenant can write a page.
+revoke all on public.pages from anon, authenticated;
+
 -- Table-level select is correct here. The column-level allowlist on
 -- public.businesses exists because that table holds billing columns; pages
 -- holds none, and the policies above already filter the rows.
