@@ -301,14 +301,15 @@ const SCROLL_PER_CARD_NARROW = 44; // vh
 
 export function Proof({ locale = "en" }: { locale?: Locale }) {
   const t = getDict(locale).proof;
+  const isRtl = dirFor(locale) === "rtl";
   /**
-   * Which way the rail travels. In a right-to-left document the flex row lays
-   * out from the container's right edge and the overflow hangs off the LEFT,
-   * so translating negatively — correct in English — pushed the unseen cards
-   * further out of view and the Hebrew page had four cards that could never be
-   * reached. The distance is the same; only the sign moves.
+   * Which way the UNPINNED rail scrolls. In a right-to-left document the flex
+   * row lays out from the container's right edge and the overflow hangs off
+   * the LEFT, so translating negatively — correct in English — pushed the
+   * unseen cards further out of view and the Hebrew page had four cards that
+   * could never be reached. The distance is the same; only the sign moves.
    */
-  const railSign = dirFor(locale) === "rtl" ? 1 : -1;
+  const railSign = isRtl ? 1 : -1;
   const section = useRef<HTMLElement>(null);
   const rail = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
@@ -333,7 +334,10 @@ export function Proof({ locale = "en" }: { locale?: Locale }) {
     // The track has to end with its last card flush against the end gutter,
     // not scrolled a card too far: measure rather than assume a card width.
     const travel = Math.max(0, tr.scrollWidth - tr.clientWidth);
-    tr.style.transform = `translate3d(${railSign * p * travel}px, 0, 0)`;
+    // Pinned track is `flex-row-reverse` under RTL (below), which puts the
+    // overflow on the same physical side as English — the right — so this
+    // sign stays the same for both locales, unlike the unpinned rail's.
+    tr.style.transform = `translate3d(${-p * travel}px, 0, 0)`;
   });
 
   /**
@@ -440,7 +444,13 @@ export function Proof({ locale = "en" }: { locale?: Locale }) {
             <div className="h-full overflow-x-hidden">
               <div
                 ref={track}
-                className="rail-inset flex h-full gap-5 will-change-transform"
+                /* `flex-row-reverse` under RTL, not a plain `flex`: it keeps
+                   `dir="rtl"` (so the gutter above and every card's logical
+                   classes still resolve correctly) while moving the overflow
+                   from the left edge to the right — the same side English
+                   overflows to. That's what lets the transform above use one
+                   sign for both locales and scroll toward the same edge. */
+                className={`rail-inset flex h-full gap-5 will-change-transform ${isRtl ? "flex-row-reverse" : ""}`}
               >
                 {cards}
                 <div className="w-px shrink-0" aria-hidden="true" />
