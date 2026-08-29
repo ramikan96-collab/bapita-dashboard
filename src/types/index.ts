@@ -218,6 +218,10 @@ export interface PageContent {
 
 export type PageKind = "detail" | "custom";
 
+/** Homepage sections a custom page can be linked from. Mirrors businesses.section_order. */
+export const PAGE_SECTION_KEYS = ["services", "about", "staff", "gallery", "reviews", "hours", "location"] as const;
+export type PageSectionKey = (typeof PAGE_SECTION_KEYS)[number];
+
 /** Sections a detail page can order. Mirrors businesses.section_order. */
 export const PAGE_SECTIONS = ["hero", "body", "gallery", "specs", "related", "cta"] as const;
 export type PageSection = (typeof PAGE_SECTIONS)[number];
@@ -233,6 +237,12 @@ export interface Page {
   kind: PageKind;
   /** Detail pages: the service/unit this page describes. Null once that service is deleted. */
   service_id: string | null;
+  /**
+   * Which homepage section links to this page ("about" makes the About heading a
+   * link). Null = not linked from any section. Detail pages are linked from their
+   * own service card instead, via service_id.
+   */
+  section_key?: PageSectionKey | null;
   title: string;
   title_he?: string | null;
   section_order?: string[] | null;

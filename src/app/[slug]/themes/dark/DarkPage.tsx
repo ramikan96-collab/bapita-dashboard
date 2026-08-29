@@ -24,6 +24,8 @@ import { resolveFont } from "../../_shared/fonts";
 import { FontLoader } from "../../_shared/FontLoader";
 import { SmartImg } from "@/components/SmartImg";
 import { useExternalCta } from "../../_shared/useExternalCta";
+import { PageLink } from "../../_shared/PageLink";
+import { buildPageLinks, type LinkablePage } from "../../_shared/pageLinks";
 import { InstagramFeed } from "../../_shared/InstagramFeed";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=1200&q=80";
@@ -83,9 +85,9 @@ function DarkSectionTitle({ title, accent, isRtl, headingFont }: { title: string
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-interface Props { business: Business; services: Service[]; }
+interface Props { business: Business; services: Service[]; pages?: LinkablePage[]; }
 
-export function DarkPage({ business, services }: Props) {
+export function DarkPage({ business, services, pages }: Props) {
   const [overlayOpen,     setOverlayOpen]     = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [hoveredCard,     setHoveredCard]     = useState<string | null>(null);
@@ -93,6 +95,10 @@ export function DarkPage({ business, services }: Props) {
   const [lang,            setLang]            = useState<Lang>((business.default_lang as Lang) || "en");
 
   const t     = translations[lang];
+  // Extra pages that belong to a service or a section, so the card title and
+  // the section heading can link to them. Empty for every business without the
+  // multi-page add-on, and PageLink then renders its children unchanged.
+  const pageLinks = buildPageLinks(business, pages);
   const isRtl = lang === "he";
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
@@ -272,7 +278,7 @@ export function DarkPage({ business, services }: Props) {
                 <div key={key}>
                   <GoldDivider accent={accent} />
                   <section ref={servicesRef} style={{ paddingTop: 0 }}>
-                    <DarkSectionTitle title={stayMode ? t.stay.sectionTitle : t.services.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
+                    <PageLink href={pageLinks.section("services")}><DarkSectionTitle title={stayMode ? t.stay.sectionTitle : t.services.title} accent={accent} isRtl={isRtl} headingFont={headingFont} /></PageLink>
                     {stayMode ? (
                       <SectionUnits
                         business={business}
@@ -285,6 +291,7 @@ export function DarkPage({ business, services }: Props) {
                           radius: 2, displayFont: headingFont, ctaUppercase: true,
                         }}
                         onSelect={openFromService}
+                        hrefForUnit={pageLinks.service}
                       />
                     ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -308,7 +315,7 @@ export function DarkPage({ business, services }: Props) {
                             }}
                           >
                             <div style={{ minWidth: 0 }}>
-                              <div style={{ fontSize: 15, fontWeight: 600, color: D.text, marginBottom: 3 }}>{sName}</div>
+                              <div style={{ fontSize: 15, fontWeight: 600, color: D.text, marginBottom: 3 }}><PageLink href={pageLinks.service(s.id)} inline>{sName}</PageLink></div>
                               {sDesc && <div style={{ fontSize: 13, color: D.muted, marginBottom: 5, lineHeight: 1.4 }}>{sDesc}</div>}
                               <div style={{ fontSize: 12, color: D.muted }}>{s.duration} {t.min}</div>
                             </div>
@@ -334,7 +341,7 @@ export function DarkPage({ business, services }: Props) {
               return business.show_staff !== false && business.staff_members && business.staff_members.length > 0 ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.staff.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("staff")}><DarkSectionTitle title={t.staff.title} accent={accent} isRtl={isRtl} headingFont={headingFont} /></PageLink>
                   <div className="dk-staff-grid">
                     {business.staff_members.map(member => (
                       <div key={member.id} style={{ background: D.surface, border: `1px solid ${D.border}`, borderInlineStart: `3px solid ${accent}60`, borderRadius: 2, padding: "16px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
@@ -357,7 +364,7 @@ export function DarkPage({ business, services }: Props) {
               return business.show_about !== false && displayAbout ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.about.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("about")}><DarkSectionTitle title={t.about.title} accent={accent} isRtl={isRtl} headingFont={headingFont} /></PageLink>
                   <div style={{ background: D.surface, borderRadius: 2, padding: "24px 22px", border: `1px solid ${D.border}`, borderInlineStart: `3px solid ${accent}60` }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 16 }}>
                       {(business.profile_image_url || business.hero_image_url) && (
@@ -375,7 +382,7 @@ export function DarkPage({ business, services }: Props) {
               return (showInstaGallery || showFlatGallery) ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("gallery")}><DarkSectionTitle title={t.gallery.title} accent={accent} isRtl={isRtl} headingFont={headingFont} /></PageLink>
                   {showInstaGallery
                     ? <InstagramFeed embed={business.instagram_embed!} radius={2} />
                     : (groupedView
@@ -387,7 +394,7 @@ export function DarkPage({ business, services }: Props) {
               return business.show_reviews !== false && ((business.google_reviews && business.google_reviews.length > 0) || !!business.google_review_link) ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.reviews.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("reviews")}><DarkSectionTitle title={t.reviews.title} accent={accent} isRtl={isRtl} headingFont={headingFont} /></PageLink>
                   <SectionReviews
                     reviews={business.google_reviews ?? []}
                     accentColor={accent}
@@ -405,7 +412,7 @@ export function DarkPage({ business, services }: Props) {
               return business.show_hours !== false && business.business_hours ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.hours.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("hours")}><DarkSectionTitle title={t.hours.title} accent={accent} isRtl={isRtl} headingFont={headingFont} /></PageLink>
                   <div style={{ background: D.surface, borderRadius: 2, padding: "8px 4px", border: `1px solid ${D.border}` }}>
                     <SectionHours hours={business.business_hours} darkColor={D.text} accentColor={accent} mutedColor={D.muted} dayLabels={t.days} closedLabel={t.hours.closed} />
                   </div>
@@ -415,7 +422,7 @@ export function DarkPage({ business, services }: Props) {
               return business.show_location !== false && business.address ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <DarkSectionTitle title={t.location.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("location")}><DarkSectionTitle title={t.location.title} accent={accent} isRtl={isRtl} headingFont={headingFont} /></PageLink>
                   <div style={{ background: D.surface, borderRadius: 2, padding: "20px", border: `1px solid ${D.border}` }}>
                     <SectionLocation address={business.address} darkColor={D.text} accentColor={accent} directionsLabel={t.location.directions} googleMapsUrl={business.google_maps_url} wazeUrl={business.waze_url} />
                   </div>

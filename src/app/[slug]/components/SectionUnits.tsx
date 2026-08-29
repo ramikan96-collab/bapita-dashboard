@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import type { Business, Service } from "@/types";
+import { PageLink } from "../_shared/PageLink";
 import { unitPhotos } from "@/lib/stay";
 import type { Translations } from "../translations";
 
@@ -30,6 +31,8 @@ interface Props {
   isRtl: boolean;
   tokens: UnitCardTokens;
   onSelect: (unit: Service) => void;
+  /** Href of this unit's own page, when the business has one. */
+  hrefForUnit?: (unitId: string) => string | null;
 }
 
 /**
@@ -40,7 +43,7 @@ interface Props {
  * over a barber booking page, so it gets a photo even when the theme's service
  * list does not.
  */
-export function SectionUnits({ business, units, t, isRtl, tokens, onSelect }: Props) {
+export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, hrefForUnit }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const { surface, raised, border, text, muted, accent, radius } = tokens;
   const displayFont = tokens.displayFont ?? "inherit";
@@ -105,7 +108,9 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect }: Pr
             )}
 
             <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: text }}>{name}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: text }}>
+                <PageLink href={hrefForUnit?.(unit.id) ?? null} inline>{name}</PageLink>
+              </div>
 
               {desc && (
                 <div style={{ fontSize: 13, color: muted, lineHeight: 1.5 }}>{desc}</div>

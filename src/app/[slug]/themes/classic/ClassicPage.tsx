@@ -24,6 +24,8 @@ import { resolveFont } from "../../_shared/fonts";
 import { FontLoader } from "../../_shared/FontLoader";
 import { SmartImg } from "@/components/SmartImg";
 import { useExternalCta } from "../../_shared/useExternalCta";
+import { PageLink } from "../../_shared/PageLink";
+import { buildPageLinks, type LinkablePage } from "../../_shared/pageLinks";
 import { InstagramFeed } from "../../_shared/InstagramFeed";
 
 const C = { bg: "#F8F2E8", dark: "#221510", gold: "#B8862A", cream2: "#F0E8D8" };
@@ -42,9 +44,9 @@ function SectionTitle({ title, accentColor, darkColor }: { title: string; accent
   );
 }
 
-interface Props { business: Business; services: Service[]; }
+interface Props { business: Business; services: Service[]; pages?: LinkablePage[]; }
 
-export function ClassicPage({ business, services }: Props) {
+export function ClassicPage({ business, services, pages }: Props) {
   const [overlayOpen,     setOverlayOpen]     = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [hoveredCard,     setHoveredCard]     = useState<string | null>(null);
@@ -53,6 +55,10 @@ export function ClassicPage({ business, services }: Props) {
 
   const t      = translations[lang];
   const isRtl  = lang === "he";
+  // Extra pages that belong to a service or a section, so the card title and
+  // the section heading can link to them. Empty for every business without the
+  // multi-page add-on, and PageLink then renders its children unchanged.
+  const pageLinks = buildPageLinks(business, pages);
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
 
@@ -193,13 +199,14 @@ export function ClassicPage({ business, services }: Props) {
             case "services":
               return business.show_services !== false ? (
                 <section key={key} ref={servicesRef} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={stayMode ? t.stay.sectionTitle : t.services.title} accentColor={accent} darkColor={C.dark} />
+                  <PageLink href={pageLinks.section("services")}><SectionTitle title={stayMode ? t.stay.sectionTitle : t.services.title} accentColor={accent} darkColor={C.dark} /></PageLink>
                   {stayMode ? (
                     <div style={{ marginTop: 28 }}>
                       <SectionUnits
                         business={business} units={services} t={t} isRtl={isRtl}
                         tokens={{ surface: "#fff", raised: C.cream2, border: "rgba(34,21,16,0.10)", text: C.dark, muted: "rgba(34,21,16,0.62)", accent, radius: 10, displayFont: headingFont }}
                         onSelect={openFromService}
+                        hrefForUnit={pageLinks.service}
                       />
                     </div>
                   ) : (
@@ -214,7 +221,7 @@ export function ClassicPage({ business, services }: Props) {
                           style={{ background: "#fff", borderRadius: 10, boxShadow: hovered ? "0 4px 16px rgba(34,21,16,0.10)" : "0 1px 4px rgba(34,21,16,0.06)", padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", borderInlineStart: `3px solid ${hovered ? accent : "transparent"}`, opacity: servicesVisible ? 1 : 0, transform: servicesVisible ? (hovered ? "translateY(-2px)" : "translateY(0)") : "translateY(20px)", transition: [`opacity 0.5s ease ${i*80}ms`, `transform 0.5s ease ${i*80}ms`, "box-shadow 0.2s", "border-color 0.2s"].join(", ") }}
                         >
                           <div>
-                            <div style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginBottom: 2 }}>{sName}</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: C.dark, marginBottom: 2 }}><PageLink href={pageLinks.service(s.id)} inline>{sName}</PageLink></div>
                             {sDesc && <div style={{ fontSize: 13, color: C.dark, opacity: 0.55, marginBottom: 2, lineHeight: 1.4 }}>{sDesc}</div>}
                             <div style={{ fontSize: 13, color: C.dark, opacity: 0.55 }}>{s.duration} {t.min}</div>
                           </div>
@@ -238,7 +245,7 @@ export function ClassicPage({ business, services }: Props) {
             case "about":
               return business.show_about !== false && displayAbout ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.about.title} accentColor={accent} darkColor={C.dark} />
+                  <PageLink href={pageLinks.section("about")}><SectionTitle title={t.about.title} accentColor={accent} darkColor={C.dark} /></PageLink>
                   <div className="about-row" style={{ marginTop: 20 }}>
                     {(business.profile_image_url || business.hero_image_url) && (
                       <div style={{ textAlign: "center", flexShrink: 0 }}>
@@ -253,7 +260,7 @@ export function ClassicPage({ business, services }: Props) {
             case "staff":
               return business.show_staff !== false && business.staff_members && business.staff_members.length > 0 ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.staff.title} accentColor={accent} darkColor={C.dark} />
+                  <PageLink href={pageLinks.section("staff")}><SectionTitle title={t.staff.title} accentColor={accent} darkColor={C.dark} /></PageLink>
                   <div className="c-staff-grid" style={{ marginTop: 24 }}>
                     {business.staff_members.map(member => (
                       <div key={member.id} style={{ background: "#fff", borderRadius: 10, padding: "18px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center", boxShadow: "0 1px 4px rgba(34,21,16,0.06)", borderInlineStart: `3px solid ${accent}` }}>
@@ -275,7 +282,7 @@ export function ClassicPage({ business, services }: Props) {
             case "gallery":
               return (showInstaGallery || showFlatGallery) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} />
+                  <PageLink href={pageLinks.section("gallery")}><SectionTitle title={t.gallery.title} accentColor={accent} darkColor={C.dark} /></PageLink>
                   <div style={{ marginTop: 28 }}>
                     {showInstaGallery
                       ? <InstagramFeed embed={business.instagram_embed!} radius={10} />
@@ -288,7 +295,7 @@ export function ClassicPage({ business, services }: Props) {
             case "reviews":
               return business.show_reviews !== false && ((business.google_reviews && business.google_reviews.length > 0) || !!business.google_review_link) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.reviews.title} accentColor={accent} darkColor={C.dark} />
+                  <PageLink href={pageLinks.section("reviews")}><SectionTitle title={t.reviews.title} accentColor={accent} darkColor={C.dark} /></PageLink>
                   <div style={{ marginTop: 20 }}>
                     <SectionReviews
                       reviews={business.google_reviews ?? []}
@@ -307,7 +314,7 @@ export function ClassicPage({ business, services }: Props) {
             case "hours":
               return business.show_hours !== false && business.business_hours ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.hours.title} accentColor={accent} darkColor={C.dark} />
+                  <PageLink href={pageLinks.section("hours")}><SectionTitle title={t.hours.title} accentColor={accent} darkColor={C.dark} /></PageLink>
                   <div style={{ marginTop: 20 }}>
                     <SectionHours hours={business.business_hours} darkColor={C.dark} accentColor={accent} mutedColor="rgba(34,21,16,0.45)" dayLabels={t.days} closedLabel={t.hours.closed} />
                   </div>
@@ -316,7 +323,7 @@ export function ClassicPage({ business, services }: Props) {
             case "location":
               return business.show_location !== false && business.address ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.location.title} accentColor={accent} darkColor={C.dark} />
+                  <PageLink href={pageLinks.section("location")}><SectionTitle title={t.location.title} accentColor={accent} darkColor={C.dark} /></PageLink>
                   <div style={{ marginTop: 20 }}>
                     <SectionLocation address={business.address} darkColor={C.dark} accentColor={accent} directionsLabel={t.location.directions} googleMapsUrl={business.google_maps_url} wazeUrl={business.waze_url} />
                   </div>

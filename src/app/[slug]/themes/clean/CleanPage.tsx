@@ -24,6 +24,8 @@ import { resolveFont } from "../../_shared/fonts";
 import { FontLoader } from "../../_shared/FontLoader";
 import { SmartImg } from "@/components/SmartImg";
 import { useExternalCta } from "../../_shared/useExternalCta";
+import { PageLink } from "../../_shared/PageLink";
+import { buildPageLinks, type LinkablePage } from "../../_shared/pageLinks";
 import { InstagramFeed } from "../../_shared/InstagramFeed";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&q=80";
@@ -43,9 +45,9 @@ function SectionTitle({ title, accent, headingFont }: { title: string; accent: s
   );
 }
 
-interface Props { business: Business; services: Service[]; }
+interface Props { business: Business; services: Service[]; pages?: LinkablePage[]; }
 
-export function CleanPage({ business, services }: Props) {
+export function CleanPage({ business, services, pages }: Props) {
   const [overlayOpen,     setOverlayOpen]     = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [hoveredCard,     setHoveredCard]     = useState<string | null>(null);
@@ -53,6 +55,10 @@ export function CleanPage({ business, services }: Props) {
   const [lang,            setLang]            = useState<Lang>((business.default_lang as Lang) || "en");
 
   const t     = translations[lang];
+  // Extra pages that belong to a service or a section, so the card title and
+  // the section heading can link to them. Empty for every business without the
+  // multi-page add-on, and PageLink then renders its children unchanged.
+  const pageLinks = buildPageLinks(business, pages);
   const isRtl = lang === "he";
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
@@ -234,12 +240,13 @@ export function CleanPage({ business, services }: Props) {
             case "services":
               return business.show_services !== false ? (
                 <section key={key} ref={servicesRef} style={{ paddingTop: 52 }}>
-                  <SectionTitle title={stayMode ? t.stay.sectionTitle : t.services.title} accent={accent} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("services")}><SectionTitle title={stayMode ? t.stay.sectionTitle : t.services.title} accent={accent} headingFont={headingFont} /></PageLink>
                   {stayMode ? (
                     <SectionUnits
                       business={business} units={services} t={t} isRtl={isRtl}
                       tokens={{ surface: P.bg, raised: P.surface, border: P.border, text: P.text, muted: P.muted, accent, radius: 10, displayFont: headingFont }}
                       onSelect={openFromService}
+                        hrefForUnit={pageLinks.service}
                     />
                   ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -252,7 +259,7 @@ export function CleanPage({ business, services }: Props) {
                           style={{ background: hovered ? P.surface : P.bg, border: `1px solid ${hovered ? accent : P.border}`, borderRadius: 10, padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: servicesVisible ? 1 : 0, transform: servicesVisible ? "translateY(0)" : "translateY(16px)", transition: [`opacity 0.45s ease ${i * 60}ms`, `transform 0.45s ease ${i * 60}ms`, "background 0.2s", "border-color 0.2s", "box-shadow 0.2s"].join(", "), boxShadow: hovered ? "0 4px 16px rgba(0,0,0,0.06)" : "none" }}
                         >
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: P.text, marginBottom: 3 }}>{sName}</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: P.text, marginBottom: 3 }}><PageLink href={pageLinks.service(s.id)} inline>{sName}</PageLink></div>
                             {sDesc && <div style={{ fontSize: 13, color: P.muted, marginBottom: 5, lineHeight: 1.4 }}>{sDesc}</div>}
                             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: P.muted }}>
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -279,7 +286,7 @@ export function CleanPage({ business, services }: Props) {
             case "about":
               return business.show_about !== false && displayAbout ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.about.title} accent={accent} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("about")}><SectionTitle title={t.about.title} accent={accent} headingFont={headingFont} /></PageLink>
                   {(business.profile_image_url || business.hero_image_url) && (
                     <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 14 }}>
                       <SmartImg src={business.profile_image_url || business.hero_image_url || ""} maxWidth={56} alt={displayName} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: `2px solid ${P.border}`, flexShrink: 0 }} />
@@ -292,7 +299,7 @@ export function CleanPage({ business, services }: Props) {
             case "staff":
               return business.show_staff !== false && business.staff_members && business.staff_members.length > 0 ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.staff.title} accent={accent} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("staff")}><SectionTitle title={t.staff.title} accent={accent} headingFont={headingFont} /></PageLink>
                   <div className="cl-staff-grid" style={{ marginTop: 20 }}>
                     {business.staff_members.map(member => (
                       <div key={member.id} style={{ background: P.bg, border: `1px solid ${P.border}`, borderRadius: 10, padding: "16px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
@@ -314,7 +321,7 @@ export function CleanPage({ business, services }: Props) {
             case "gallery":
               return (showInstaGallery || showFlatGallery) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.gallery.title} accent={accent} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("gallery")}><SectionTitle title={t.gallery.title} accent={accent} headingFont={headingFont} /></PageLink>
                   {showInstaGallery
                     ? <InstagramFeed embed={business.instagram_embed!} radius={10} />
                     : (groupedView
@@ -325,7 +332,7 @@ export function CleanPage({ business, services }: Props) {
             case "reviews":
               return business.show_reviews !== false && ((business.google_reviews && business.google_reviews.length > 0) || !!business.google_review_link) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.reviews.title} accent={accent} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("reviews")}><SectionTitle title={t.reviews.title} accent={accent} headingFont={headingFont} /></PageLink>
                   <div style={{ marginTop: 20 }}>
                     <SectionReviews
                       reviews={business.google_reviews ?? []}
@@ -344,14 +351,14 @@ export function CleanPage({ business, services }: Props) {
             case "hours":
               return business.show_hours !== false && business.business_hours ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.hours.title} accent={accent} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("hours")}><SectionTitle title={t.hours.title} accent={accent} headingFont={headingFont} /></PageLink>
                   <SectionHours hours={business.business_hours} darkColor={P.text} accentColor={accent} mutedColor={P.muted} dayLabels={t.days} closedLabel={t.hours.closed} />
                 </section>
               ) : null;
             case "location":
               return business.show_location !== false && business.address ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <SectionTitle title={t.location.title} accent={accent} headingFont={headingFont} />
+                  <PageLink href={pageLinks.section("location")}><SectionTitle title={t.location.title} accent={accent} headingFont={headingFont} /></PageLink>
                   <SectionLocation address={business.address} darkColor={P.text} accentColor={accent} directionsLabel={t.location.directions} googleMapsUrl={business.google_maps_url} wazeUrl={business.waze_url} />
                 </section>
               ) : null;

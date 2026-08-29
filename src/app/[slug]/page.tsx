@@ -3,7 +3,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import BookingShell from "./BookingShell";
-import type { Business, Service } from "@/types";
+import type { Business, Page, Service } from "@/types";
 import { fetchPlaceData } from "@/lib/google-places";
 import { resolveCanonical } from "@/lib/canonical";
 
@@ -118,6 +118,14 @@ export default async function BookPage({ params }: Props) {
   // addons table (by design), so this comes from the service client and is
   // merged onto the business object the themes already receive. Only booleans
   // and amounts cross to the browser — never credentials.
+  // Published extra pages, so a service card and a section heading can link to
+  // the page that belongs to it. RLS already hides unpublished rows from anon.
+  const { data: pages } = await supabase
+    .from("pages")
+    .select("slug, service_id, section_key")
+    .eq("business_id", (business as unknown as Business).id)
+    .order("display_order");
+
   const paymentsCfg = await loadBusinessPaymentsConfig((business as unknown as Business).id);
 
   const b = {
@@ -258,6 +266,7 @@ export default async function BookPage({ params }: Props) {
       <BookingShell
         business={b}
         services={(services || []) as Service[]}
+        pages={(pages || []) as Pick<Page, "slug" | "service_id" | "section_key">[]}
       />
     </>
   );

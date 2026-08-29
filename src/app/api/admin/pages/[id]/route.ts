@@ -4,13 +4,18 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { pageSlugErrorMessage, validatePageSlug } from "@/lib/reserved-page-slugs";
 import { sanitizePageContent } from "@/lib/pages";
 import { notifyPagePublished } from "@/lib/pages-server";
-import { PAGE_SECTIONS } from "@/types";
+import { PAGE_SECTION_KEYS, PAGE_SECTIONS } from "@/types";
 
 function sectionOrder(raw: unknown): string[] | null {
   if (!Array.isArray(raw)) return null;
   const allowed = new Set<string>(PAGE_SECTIONS);
   const out = raw.filter((s): s is string => typeof s === "string" && allowed.has(s));
   return out.length ? out : null;
+}
+
+function sectionKey(raw: unknown): string | null {
+  const allowed = new Set<string>(PAGE_SECTION_KEYS);
+  return typeof raw === "string" && allowed.has(raw) ? raw : null;
 }
 
 function text(raw: unknown, max: number): string | null {
@@ -48,6 +53,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if ("title_he" in body)        patch.title_he        = text(body.title_he, 200);
   if ("service_id" in body)      patch.service_id      = text(body.service_id, 64);
   if ("section_order" in body)   patch.section_order   = sectionOrder(body.section_order);
+  if ("section_key" in body)     patch.section_key     = sectionKey(body.section_key);
   if ("content" in body)         patch.content         = sanitizePageContent(body.content);
   if ("seo_title" in body)       patch.seo_title       = text(body.seo_title, 200);
   if ("seo_description" in body) patch.seo_description = text(body.seo_description, 400);

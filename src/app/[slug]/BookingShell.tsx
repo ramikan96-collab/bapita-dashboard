@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { ComponentType } from "react";
 import type { Business, Service } from "@/types";
+import type { LinkablePage } from "./_shared/pageLinks";
 import { track } from "@/lib/analytics/track";
 import { ClassicPage } from "./themes/classic/ClassicPage";
 import { CleanPage }   from "./themes/clean/CleanPage";
@@ -10,7 +11,7 @@ import { DarkPage }    from "./themes/dark/DarkPage";
 import { DemoThemeSwitcher } from "./_shared/DemoThemeSwitcher";
 import { ShimiAzutHairstudioPage } from "./customs/shimi-azut-hairstudio";
 
-type PageComponent = ComponentType<{ business: Business; services: Service[] }>;
+type PageComponent = ComponentType<{ business: Business; services: Service[]; pages?: LinkablePage[] }>;
 type ThemeKey = "classic" | "clean" | "dark";
 
 // ─── Add new barbers here ─────────────────────────────────────────────────
@@ -24,9 +25,11 @@ const CUSTOM_PAGES: Record<string, PageComponent> = {
 interface Props {
   business: Business;
   services: Service[];
+  /** Published extra pages, for the service-card and section-heading links. */
+  pages?: LinkablePage[];
 }
 
-export default function BookingShell({ business, services }: Props) {
+export default function BookingShell({ business, services, pages }: Props) {
   const initialTheme = (business.template_style as ThemeKey) ?? "classic";
   const [previewTheme, setPreviewTheme] = useState<ThemeKey>(initialTheme);
 
@@ -39,7 +42,7 @@ export default function BookingShell({ business, services }: Props) {
 
   // 1. Dedicated custom page for this barber?
   const CustomPage = CUSTOM_PAGES[business.slug ?? ""];
-  if (CustomPage) return <CustomPage business={business} services={services} />;
+  if (CustomPage) return <CustomPage business={business} services={services} pages={pages} />;
 
   // 2. Show theme switcher for draft businesses (no custom page active)
   const showSwitcher = business.status === "draft";
@@ -52,10 +55,10 @@ export default function BookingShell({ business, services }: Props) {
       {showSwitcher && (
         <DemoThemeSwitcher active={previewTheme} onSwitch={setPreviewTheme} />
       )}
-      {theme === "clean" && <CleanPage business={business} services={services} />}
-      {theme === "dark"  && <DarkPage  business={business} services={services} />}
+      {theme === "clean" && <CleanPage business={business} services={services} pages={pages} />}
+      {theme === "dark"  && <DarkPage  business={business} services={services} pages={pages} />}
       {(theme === "classic" || !["clean","dark"].includes(theme)) && (
-        <ClassicPage business={business} services={services} />
+        <ClassicPage business={business} services={services} pages={pages} />
       )}
     </>
   );

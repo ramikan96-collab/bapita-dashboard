@@ -407,6 +407,16 @@ html[data-a11y-focus="strong"] :focus-visible {
   }
 
   /* ── Horizontal card rail (features carousel) ── */
+  /* Horizontal tab bars that must stay swipeable on a phone without showing a
+     scrollbar on desktop. */
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   .rail {
     scrollbar-width: none;
     -ms-overflow-style: none;

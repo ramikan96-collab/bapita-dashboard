@@ -9,13 +9,15 @@ import { cardStyle, ghostBtn, primaryBtn } from "./pageUi";
 
 interface Props {
   businessId: string;
+  /** Rendered inside the admin board's Pages tab, which supplies its own header. */
+  embedded?: boolean;
 }
 
 /**
  * Admin list of a business's extra pages. Deliberately its own screen rather
  * than another tab inside BusinessForm — that file is already 2,600 lines.
  */
-export function PagesList({ businessId }: Props) {
+export function PagesList({ businessId, embedded }: Props) {
   const router = useRouter();
   const { showToast } = useToast();
   const [pages, setPages] = useState<Page[]>([]);
@@ -89,12 +91,14 @@ export function PagesList({ businessId }: Props) {
   if (loading) return <div style={{ padding: 24, color: "var(--color-muted)" }}>Loading…</div>;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 820, margin: "0 auto", padding: "24px 16px 60px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 820, margin: "0 auto", padding: embedded ? "16px 0 20px" : "24px 16px 60px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <button onClick={() => router.push(`/admin/businesses/${businessId}`)} style={ghostBtn}>← Business</button>
-          <h1 style={{ fontSize: 22, fontWeight: 800, margin: "12px 0 0", color: "var(--color-dark)" }}>
-            Pages{business ? ` · ${business.name}` : ""}
+          {!embedded && (
+            <button onClick={() => router.push(`/admin/businesses/${businessId}`)} style={ghostBtn}>← Business</button>
+          )}
+          <h1 style={{ fontSize: embedded ? 17 : 22, fontWeight: 800, margin: embedded ? 0 : "12px 0 0", color: "var(--color-dark)" }}>
+            Pages{business && !embedded ? ` · ${business.name}` : ""}
           </h1>
         </div>
         <Link href={`/admin/businesses/${businessId}/pages/new`} style={{ ...primaryBtn, display: "inline-flex", alignItems: "center", textDecoration: "none" }}>

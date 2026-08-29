@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
-import type { Page, PageKind, PageSpec, Service } from "@/types";
-import { PAGE_SECTIONS } from "@/types";
+import type { Page, PageKind, PageSectionKey, PageSpec, Service } from "@/types";
+import { PAGE_SECTION_KEYS, PAGE_SECTIONS } from "@/types";
 import { pageSlugErrorMessage, validatePageSlug } from "@/lib/reserved-page-slugs";
 import { cardStyle, ghostBtn, inputStyle, labelStyle, primaryBtn, slugify, textareaStyle } from "./pageUi";
 
@@ -55,6 +55,7 @@ export function PageEditor({ businessId, pageId }: Props) {
   const [serviceId, setServiceId] = useState("");
   const [published, setPublished] = useState(false);
   const [order, setOrder]         = useState<string[]>(DEFAULT_ORDER);
+  const [sectionKey, setSectionKey] = useState<PageSectionKey | "">("");
 
   const [body, setBody]           = useState("");
   const [bodyHe, setBodyHe]       = useState("");
@@ -90,6 +91,7 @@ export function PageEditor({ businessId, pageId }: Props) {
         setServiceId(p.service_id ?? "");
         setPublished(p.published);
         setOrder(p.section_order?.length ? p.section_order : DEFAULT_ORDER);
+        setSectionKey(p.section_key ?? "");
         const c = p.content || {};
         setBody(c.body ?? "");
         setBodyHe(c.body_he ?? "");
@@ -142,6 +144,7 @@ export function PageEditor({ businessId, pageId }: Props) {
       title_he: titleHe.trim() || null,
       service_id: kind === "detail" ? (serviceId || null) : null,
       section_order: order,
+      section_key: sectionKey || null,
       published,
       seo_title: seoTitle.trim() || null,
       seo_description: seoDesc.trim() || null,
@@ -192,6 +195,17 @@ export function PageEditor({ businessId, pageId }: Props) {
             <select value={kind} onChange={(e) => setKind(e.target.value as PageKind)} style={inputStyle}>
               <option value="detail">Detail — one service / unit</option>
               <option value="custom">Custom — free page</option>
+            </select>
+          </Field>
+        )}
+
+        {kind === "custom" && (
+          <Field label="Linked from section" hint="That section's heading on the homepage becomes a link to this page. Leave empty for a page reachable only by its URL.">
+            <select value={sectionKey} onChange={(e) => setSectionKey(e.target.value as PageSectionKey | "")} style={inputStyle}>
+              <option value="">— none —</option>
+              {PAGE_SECTION_KEYS.map((k) => (
+                <option key={k} value={k}>{k[0].toUpperCase() + k.slice(1)}</option>
+              ))}
             </select>
           </Field>
         )}

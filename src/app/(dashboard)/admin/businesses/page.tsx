@@ -8,12 +8,13 @@ import type { Business } from "@/types";
 import { AdminAnalytics } from "../_components/AdminAnalytics";
 import { AdminCalendar } from "../_components/AdminCalendar";
 import { AdminPayments } from "../_components/AdminPayments";
+import { AdminPages } from "../_components/AdminPages";
 
 const TEMPLATE_LABELS: Record<string, string> = { classic: "Classic", clean: "Clean", dark: "Dark" };
 const TEMPLATE_COLORS: Record<string, string> = { classic: "#B8862A", clean: "#0A0A0A", dark: "#C9A84C" };
 
 
-type Tab = "businesses" | "analytics" | "calendar" | "payments" | "leads";
+type Tab = "businesses" | "pages" | "analytics" | "calendar" | "payments" | "leads";
 
 type Lead = {
   id: string;
@@ -219,6 +220,7 @@ function AdminPageInner() {
   // ── Tab bar ────────────────────────────────────────────────────────────────
   const TABS: { key: Tab; label: string; badge?: number }[] = [
     { key: "businesses", label: "Businesses" },
+    { key: "pages",      label: "Pages" },
     { key: "analytics",  label: "Analytics" },
     { key: "calendar",   label: "Calendar" },
     { key: "payments",   label: "Payments" },
@@ -310,13 +312,22 @@ function AdminPageInner() {
         )}
 
         {/* Tab bar */}
-        <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 24px", display: "flex", gap: 0, marginTop: 16 }}>
+        <div
+          className="hide-scrollbar"
+          style={{
+            maxWidth: 760, margin: "0 auto", padding: "0 24px", display: "flex", gap: 0, marginTop: 16,
+            // Six tabs do not fit on a phone. Without this the bar clipped and the
+            // last tabs could not be reached at all.
+            overflowX: "auto", overflowY: "hidden", flexWrap: "nowrap",
+            WebkitOverflowScrolling: "touch", scrollbarWidth: "none",
+          }}
+        >
           {TABS.map(t => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
               style={{
-                height: 40, padding: "0 16px", background: "none", border: "none",
+                height: 40, padding: "0 16px", background: "none", border: "none", flexShrink: 0, whiteSpace: "nowrap",
                 borderBottom: `2px solid ${tab === t.key ? "var(--color-amber)" : "transparent"}`,
                 color: tab === t.key ? "var(--color-amber)" : "var(--color-muted)",
                 fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
@@ -337,7 +348,9 @@ function AdminPageInner() {
 
       {/* Body */}
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {tab === "analytics" ? (
+        {tab === "pages" ? (
+          <AdminPages />
+        ) : tab === "analytics" ? (
           <AdminAnalytics />
         ) : tab === "calendar" ? (
           <AdminCalendar />

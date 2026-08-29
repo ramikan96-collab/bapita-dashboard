@@ -4,7 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { pageSlugErrorMessage, validatePageSlug } from "@/lib/reserved-page-slugs";
 import { PAGE_KINDS, sanitizePageContent } from "@/lib/pages";
 import { notifyPagePublished } from "@/lib/pages-server";
-import { PAGE_SECTIONS } from "@/types";
+import { PAGE_SECTION_KEYS, PAGE_SECTIONS } from "@/types";
 
 // Admin-only writer for the multi-page add-on. The service client bypasses RLS,
 // and `pages` has no write policy for anyone, so this route IS the only way a
@@ -16,6 +16,11 @@ function sectionOrder(raw: unknown): string[] | null {
   const allowed = new Set<string>(PAGE_SECTIONS);
   const out = raw.filter((s): s is string => typeof s === "string" && allowed.has(s));
   return out.length ? out : null;
+}
+
+function sectionKey(raw: unknown): string | null {
+  const allowed = new Set<string>(PAGE_SECTION_KEYS);
+  return typeof raw === "string" && allowed.has(raw) ? raw : null;
 }
 
 function text(raw: unknown, max: number): string | null {
@@ -85,6 +90,7 @@ export async function POST(req: Request) {
       title,
       title_he:        text(body.title_he, 200),
       section_order:   sectionOrder(body.section_order),
+      section_key:     sectionKey(body.section_key),
       content:         sanitizePageContent(body.content),
       seo_title:       text(body.seo_title, 200),
       seo_description: text(body.seo_description, 400),
