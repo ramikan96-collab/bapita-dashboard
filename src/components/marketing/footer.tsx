@@ -76,7 +76,9 @@ export function MarketingFooter({ locale = "en" }: { locale?: Locale }) {
               {t.footer.blurb}
             </p>
             <div className="mt-4 flex gap-2">
-              <Social href="https://instagram.com/bapita" label="Instagram">
+              {/* Facebook stays out until it's a real Business Page — the current
+                  facebook.com/bapita link was Rami's personal profile. */}
+              <Social href="https://instagram.com/bapita.real" label="Instagram">
                 <svg
                   width="15"
                   height="15"
@@ -93,9 +95,9 @@ export function MarketingFooter({ locale = "en" }: { locale?: Locale }) {
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
                 </svg>
               </Social>
-              <Social href="https://www.facebook.com/bapita" label="Facebook">
+              <Social href="https://share.google/48ibWfuNRfxhsZOk8" label="Find Bapita on Google">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                  <path d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.35 0 9.25-3.67 9.25-9.09 0-1.15-.15-1.81-.15-1.81z" />
                 </svg>
               </Social>
             </div>
