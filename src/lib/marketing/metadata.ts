@@ -93,6 +93,7 @@ export function homeJsonLd(locale: Locale) {
         knowsLanguage: ["en", "he"],
         sameAs: [
           "https://instagram.com/bapita.real",
+          "https://www.facebook.com/bapita.real",
           "https://share.google/48ibWfuNRfxhsZOk8",
         ],
       },
