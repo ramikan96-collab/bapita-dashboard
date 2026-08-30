@@ -6,7 +6,11 @@ import OpenAI from "openai";
 
 const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
 
-const GROQ_MODEL  = "llama-3.3-70b-versatile";
+// Groq retires model IDs without notice; a decommissioned ID returns 404
+// model_not_found and used to surface as a generic "LLM error" in the admin UI.
+// Keep this list ordered by preference and verify against
+// GET https://api.groq.com/openai/v1/models before editing.
+const GROQ_MODELS = ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"];
 const OLLAMA_MODEL = "llama3.2:3b";
 
 // Fixed brand accent applied to every auto-generated business (RGB 184,134,42).
@@ -53,24 +57,34 @@ async function callLLM(userMessage: string): Promise<string> {
   const ollamaUrl = process.env.OLLAMA_BASE_URL;
 
   if (groqKey) {
-    try {
-      const client = new OpenAI({ apiKey: groqKey, baseURL: "https://api.groq.com/openai/v1" });
-      const res = await client.chat.completions.create({
-        model: GROQ_MODEL,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: SYSTEM_INSTRUCTION },
-          { role: "user",   content: userMessage },
-        ],
-        temperature: 0.3,
-      });
-      const text = res.choices[0]?.message?.content ?? "";
-      if (text) return text;
-    } catch (err) {
-      const is429 = String(err).includes("429") || String(err).includes("quota") || String(err).includes("rate");
-      if (!is429 || !ollamaUrl) throw err;
-      console.warn("[intake] Groq quota hit — falling back to Ollama");
+    const client = new OpenAI({ apiKey: groqKey, baseURL: "https://api.groq.com/openai/v1" });
+    let lastErr: unknown = null;
+
+    for (const model of GROQ_MODELS) {
+      try {
+        const res = await client.chat.completions.create({
+          model,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: SYSTEM_INSTRUCTION },
+            { role: "user",   content: userMessage },
+          ],
+          temperature: 0.3,
+        });
+        const text = res.choices[0]?.message?.content ?? "";
+        if (text) return text;
+        lastErr = new Error(`Groq model ${model} returned an empty completion`);
+      } catch (err) {
+        lastErr = err;
+        const status = (err as { status?: number })?.status;
+        const retryable = status === 404 || status === 400 || status === 429 || status === 503;
+        if (!retryable) break;
+        console.warn(`[intake] Groq model ${model} unusable (status ${status}) — trying next`);
+      }
     }
+
+    if (!ollamaUrl) throw lastErr ?? new Error("Groq call failed");
+    console.warn("[intake] All Groq models failed — falling back to Ollama", String(lastErr));
   }
 
   if (ollamaUrl) {
