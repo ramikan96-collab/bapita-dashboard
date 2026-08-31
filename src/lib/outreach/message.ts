@@ -102,7 +102,8 @@ export function buildOpenerPrompt(input: OpenerInput): { system: string; user: s
 
 Hard rules:
 - Write in ${input.lang === "he" ? "Hebrew" : "English"}. No other language.
-- Reference EXACTLY ONE real fact from the data you are given.
+- Reference EXACTLY ONE real fact from the data you are given, and state it plainly. Do NOT judge it, praise it or comment on it. "Your Google rating is 4.9" is right; "your rating is 4.9, that is impressive" is not. No compliments, no "wow", no "impressive", no "well done".
+- Write what they HAVE, never what they lack. Never say they have no website, no site, nothing online, or that something is missing. The message that follows you makes the offer; your job is only to show you actually looked at them.
 - You may use ONLY the fields given below. Never invent services, prices, an owner's name, staff, years in business, or any claim about the business.
 - NEVER use a dash or a hyphen of any kind. Not "-", not "–", not "—". Use a comma or a full stop.
 - Maximum ${OPENER_MAX} characters. Shorter is better.
@@ -114,7 +115,7 @@ Hard rules:
     `name: ${input.name}`,
     input.rating       !== null ? `google rating: ${input.rating}` : "",
     input.reviewsCount !== null ? `google reviews: ${input.reviewsCount}` : "",
-    `segment: ${input.segment}${input.segment === "no_web" ? " (no website at all)" : input.segment === "ig_only" ? " (instagram is their only web presence, never imply they have nothing)" : " (they already have a website, do not say they lack one)"}`,
+    `segment: ${input.segment}${input.segment === "no_web" ? " (they have no website, but NEVER say so, that is the offer's job not yours)" : input.segment === "ig_only" ? " (instagram is their only web presence, never imply they have nothing)" : " (they already have a website, do not say they lack one)"}`,
     input.notes ? `note: ${input.notes}` : "",
   ].filter(Boolean).join("\n");
 
