@@ -1,113 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/service";
 import { isReservedSlug } from "@/lib/reserved-slugs";
-import OpenAI from "openai";
+import {
+  buildBusinessPayload,
+  buildIntakeUserMessage,
+  generateBusinessDraft,
+  hasLlmProvider,
+  insertBusinessWithServices,
+  LlmJsonError,
+} from "@/lib/intake";
 
 const ADMIN_EMAILS = ["ramikan96@gmail.com", "info.bapita@gmail.com"];
 
-// Groq retires model IDs without notice; a decommissioned ID returns 404
-// model_not_found and used to surface as a generic "LLM error" in the admin UI.
-// Keep this list ordered by preference and verify against
-// GET https://api.groq.com/openai/v1/models before editing.
-const GROQ_MODELS = ["openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"];
-const OLLAMA_MODEL = "llama3.2:3b";
-
-// Fixed brand accent applied to every auto-generated business (RGB 184,134,42).
-// The LLM's per-vibe accent_color suggestion is intentionally ignored.
-const BRAND_ACCENT = "#B8862A";
-
-const SYSTEM_INSTRUCTION = `You are a senior brand copywriter and data extractor for Bapita, which builds booking websites for Israeli appointment businesses (barbershops, salons, nail/beauty studios). You receive messy, partial notes about ONE business and return a single strict JSON object. Rules:
-- Extract every fact present (name, services, prices, hours, phone, address, socials, reviews, rating).
-- When copy is missing (tagline, about), WRITE it — specific, warm, on-brand, never generic. Never output filler like "Welcome to our shop" or "Quality service you can trust". Reference the vibe note and any real detail (location, specialty, gender focus, fancy vs neighborhood).
-- Provide Hebrew AND English for name, tagline, about. If only one language is given, translate naturally (not literally).
-- For services with no stated price/duration, estimate realistic Israeli-market values; never invent services that were not implied.
-- Parse pasted reviews into the reviews array with author, 1–5 rating, text, and a display date string.
-- If a Google review count is mentioned (e.g. "125 reviews", "200 ביקורות", "(125)"), put that number in stat_clients when no explicit client count is given. If both are present, prefer the explicit client count.
-- Business hours parsing — Hebrew day abbreviations: א=Sunday, ב=Monday, ג=Tuesday, ד=Wednesday, ה=Thursday, ו=Friday, ש=Saturday. Common ranges: "א-ה"=Sunday–Thursday, "ב-ו"=Monday–Friday, "א-ש"=full week, "ו׳" or "ו"=Friday, "שבת" or "ש"=Saturday. Map all 7 days in the business_hours object; mark closed days as open:false.
-- Pick template_style: "clean" (modern/minimal/women's salons), "classic" (warm/traditional barbers), "dark" (bold/masculine/edgy). Suggest accent_color as a hex that suits the vibe.
-- Output ONLY a valid JSON object with these exact keys (omit optional keys if no data):
-{
-  "name": string,
-  "name_he": string,
-  "tagline": string,
-  "tagline_he": string,
-  "about_text": string,
-  "about_text_he": string,
-  "phone": string (optional),
-  "address": string (optional),
-  "instagram_url": string (optional),
-  "facebook_url": string (optional),
-  "tiktok_url": string (optional),
-  "whatsapp_number": string (optional),
-  "google_maps_url": string (optional),
-  "google_review_link": string (optional),
-  "accent_color": string (hex),
-  "template_style": "clean" | "classic" | "dark",
-  "stat_years": number (optional),
-  "stat_clients": number (optional),
-  "stat_rating": string (optional, e.g. "4.9"),
-  "services": [{ "name": string, "name_he": string, "duration": number (minutes), "price": number (ILS), "description": string (optional) }],
-  "business_hours": { "sunday": { "open": bool, "start": "HH:MM", "end": "HH:MM" }, "monday": ..., "tuesday": ..., "wednesday": ..., "thursday": ..., "friday": ..., "saturday": ... },
-  "google_reviews": [{ "author": string, "rating": number, "text": string, "date": string }] (optional)
-}`;
-
-async function callLLM(userMessage: string): Promise<string> {
-  const groqKey  = process.env.GROQ_API_KEY;
-  const ollamaUrl = process.env.OLLAMA_BASE_URL;
-
-  if (groqKey) {
-    const client = new OpenAI({ apiKey: groqKey, baseURL: "https://api.groq.com/openai/v1" });
-    let lastErr: unknown = null;
-
-    for (const model of GROQ_MODELS) {
-      try {
-        const res = await client.chat.completions.create({
-          model,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: SYSTEM_INSTRUCTION },
-            { role: "user",   content: userMessage },
-          ],
-          temperature: 0.3,
-        });
-        const text = res.choices[0]?.message?.content ?? "";
-        if (text) return text;
-        lastErr = new Error(`Groq model ${model} returned an empty completion`);
-      } catch (err) {
-        lastErr = err;
-        const status = (err as { status?: number })?.status;
-        const retryable = status === 404 || status === 400 || status === 429 || status === 503;
-        if (!retryable) break;
-        console.warn(`[intake] Groq model ${model} unusable (status ${status}) — trying next`);
-      }
-    }
-
-    if (!ollamaUrl) throw lastErr ?? new Error("Groq call failed");
-    console.warn("[intake] All Groq models failed — falling back to Ollama", String(lastErr));
-  }
-
-  if (ollamaUrl) {
-    const client = new OpenAI({ apiKey: "ollama", baseURL: `${ollamaUrl}/v1` });
-    const res = await client.chat.completions.create({
-      model: OLLAMA_MODEL,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_INSTRUCTION },
-        { role: "user",   content: userMessage },
-      ],
-      temperature: 0.3,
-    });
-    return res.choices[0]?.message?.content ?? "";
-  }
-
-  throw new Error("No LLM provider configured (GROQ_API_KEY or OLLAMA_BASE_URL required)");
-}
-
 export async function POST(req: Request) {
-  const groqKey  = process.env.GROQ_API_KEY;
-  const ollamaUrl = process.env.OLLAMA_BASE_URL;
-  if (!groqKey && !ollamaUrl) {
+  if (!hasLlmProvider()) {
     return NextResponse.json({ error: "No LLM provider configured." }, { status: 500 });
   }
 
@@ -124,106 +30,20 @@ export async function POST(req: Request) {
   if (isReservedSlug(slug)) return NextResponse.json({ error: "slug is reserved" }, { status: 400 });
   if (!raw.trim()) return NextResponse.json({ error: "raw paste is required" }, { status: 400 });
 
-  const userMessage = `Language preference: ${lang === "he" ? "Hebrew primary" : "English primary"}
-Vibe / notes: ${vibe || "(none)"}
-Raw business info:
-${raw}`;
-
   let parsed: Record<string, unknown>;
   try {
-    const text = await callLLM(userMessage);
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      console.error("[intake] JSON parse failed, raw:", text);
-      return NextResponse.json({ error: "LLM returned invalid JSON", detail: text.slice(0, 500) }, { status: 422 });
-    }
+    parsed = await generateBusinessDraft(buildIntakeUserMessage({ lang, vibe, raw }));
   } catch (err) {
+    if (err instanceof LlmJsonError) {
+      return NextResponse.json({ error: err.message, detail: err.detail }, { status: 422 });
+    }
     console.error("[intake] LLM error:", err);
     return NextResponse.json({ error: "LLM error", detail: String(err) }, { status: 422 });
   }
 
-  const service = createServiceClient();
+  const payload = buildBusinessPayload({ slug, ownerId: user.id, lang, parsed });
+  const { id, error } = await insertBusinessWithServices(payload, parsed.services);
+  if (error) return NextResponse.json({ error }, { status: 500 });
 
-  const DEFAULT_HOURS = {
-    sunday:    { open: true,  start: "09:00", end: "19:00" },
-    monday:    { open: true,  start: "09:00", end: "19:00" },
-    tuesday:   { open: true,  start: "09:00", end: "19:00" },
-    wednesday: { open: true,  start: "09:00", end: "19:00" },
-    thursday:  { open: true,  start: "09:00", end: "19:00" },
-    friday:    { open: true,  start: "09:00", end: "16:00" },
-    saturday:  { open: false, start: "10:00", end: "14:00" },
-  };
-
-  // Merge per-day so a day the LLM omitted falls back to a default instead of
-  // leaving a hole that breaks the public page.
-  const parsedHours = (parsed.business_hours ?? {}) as Record<string, unknown>;
-  const mergedHours = Object.fromEntries(
-    Object.entries(DEFAULT_HOURS).map(([day, def]) => [day, parsedHours[day] ?? def])
-  );
-
-  const { data: biz, error: bizErr } = await service.from("businesses").insert({
-    slug,
-    owner_id:           user.id,
-    status:             "draft",
-    show_about:         true,
-    show_gallery:       true,
-    show_hours:         true,
-    show_location:      true,
-    show_stats:         true,
-    show_open_status:   true,
-    show_services:      true,
-    show_reviews:       true,
-    profile_image_url:  null,
-    name:               parsed.name        || slug,
-    name_he:            parsed.name_he     || "",
-    tagline:            parsed.tagline     || "",
-    tagline_he:         parsed.tagline_he  || "",
-    about_text:         parsed.about_text  || "",
-    about_text_he:      parsed.about_text_he || "",
-    phone:              parsed.phone       || "",
-    address:            parsed.address     || "",
-    instagram_url:      parsed.instagram_url      || null,
-    facebook_url:       parsed.facebook_url       || null,
-    tiktok_url:         parsed.tiktok_url         || null,
-    whatsapp_number:    parsed.whatsapp_number    || null,
-    google_maps_url:    parsed.google_maps_url    || null,
-    google_review_link: parsed.google_review_link || null,
-    accent_color:       BRAND_ACCENT,
-    template_style:     (parsed.template_style as string) || "classic",
-    default_lang:       lang,
-    dashboard_lang:     lang,
-    google_reviews:     Array.isArray(parsed.google_reviews) ? parsed.google_reviews.map((r: Record<string,unknown>) => ({
-      id:     crypto.randomUUID(),
-      author: r.author,
-      rating: r.rating,
-      text:   r.text,
-      date:   r.date,
-    })) : null,
-    business_hours: mergedHours,
-    stat_years:   parsed.stat_years   || null,
-    stat_clients: parsed.stat_clients || null,
-    stat_rating:  parsed.stat_rating  || null,
-  }).select("id").single();
-
-  if (bizErr) {
-    return NextResponse.json({ error: bizErr.message }, { status: 500 });
-  }
-
-  const services = Array.isArray(parsed.services) ? parsed.services : [];
-  if (services.length > 0) {
-    const rows = (services as Record<string,unknown>[]).map((s, i) => ({
-      business_id:   biz.id,
-      name:          s.name        || "",
-      name_he:       s.name_he     || "",
-      duration:      Number(s.duration) || 30,
-      price:         Number(s.price)    || 0,
-      description:   (s.description as string) || null,
-      display_order: i,
-      active:        true,
-    }));
-    await service.from("services").insert(rows);
-  }
-
-  return NextResponse.json({ id: biz.id });
+  return NextResponse.json({ id });
 }
