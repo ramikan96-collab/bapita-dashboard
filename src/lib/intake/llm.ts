@@ -15,7 +15,10 @@ export function hasLlmProvider(): boolean {
   return Boolean(process.env.GROQ_API_KEY || process.env.OLLAMA_BASE_URL);
 }
 
-export async function callLLM(userMessage: string): Promise<string> {
+export async function callLLM(
+  userMessage: string,
+  systemPrompt: string = SYSTEM_INSTRUCTION,
+): Promise<string> {
   const groqKey = process.env.GROQ_API_KEY;
   const ollamaUrl = process.env.OLLAMA_BASE_URL;
 
@@ -29,7 +32,7 @@ export async function callLLM(userMessage: string): Promise<string> {
           model,
           response_format: { type: "json_object" },
           messages: [
-            { role: "system", content: SYSTEM_INSTRUCTION },
+            { role: "system", content: systemPrompt },
             { role: "user",   content: userMessage },
           ],
           temperature: 0.3,
@@ -56,7 +59,7 @@ export async function callLLM(userMessage: string): Promise<string> {
       model: OLLAMA_MODEL,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: SYSTEM_INSTRUCTION },
+        { role: "system", content: systemPrompt },
         { role: "user",   content: userMessage },
       ],
       temperature: 0.3,
