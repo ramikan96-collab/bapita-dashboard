@@ -12,6 +12,7 @@
 import { shouldNoindex } from "../src/lib/noindex";
 import { extractPlaceIdFromUrl } from "../src/lib/google-places";
 import { segmentFor } from "../src/lib/outreach/segment";
+import { deriveSlug } from "../src/lib/outreach/slug";
 
 let failures = 0;
 
@@ -58,6 +59,16 @@ check("instagram without www", segmentFor("https://instagram.com/studio.avi"), "
 check("linktree", segmentFor("https://linktr.ee/studioavi"), "ig_only");
 check("a real site", segmentFor("https://studio-avi.co.il"), "has_site");
 check("a facebook page counts as a real site", segmentFor("https://facebook.com/studioavi"), "has_site");
+
+console.log("\nderiveSlug");
+check("plain english", deriveSlug("Studio Avi"), "studio-avi");
+check("punctuation dropped", deriveSlug("Avi's Barber Shop!"), "avis-barber-shop");
+check("collapses runs of separators", deriveSlug("Studio   Avi -- Tel  Aviv"), "studio-avi-tel-aviv");
+check("trims leading and trailing separators", deriveSlug("  -Studio Avi-  "), "studio-avi");
+check("hebrew only falls back", deriveSlug("מספרת אבי"), "business");
+check("mixed keeps the latin part", deriveSlug("מספרת Avi"), "avi");
+check("empty falls back", deriveSlug(""), "business");
+check("caps a very long name", deriveSlug("a".repeat(80)).length <= 40, true);
 
 console.log(failures === 0 ? "\nAll outreach checks passed.\n" : `\n${failures} check(s) FAILED.\n`);
 process.exit(failures === 0 ? 0 : 1);
