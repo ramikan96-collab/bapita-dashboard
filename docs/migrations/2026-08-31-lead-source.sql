@@ -1,0 +1,45 @@
+-- Outreach engine: mark businesses that exist only as an outbound pitch.
+-- Plan: docs/superpowers/plans/2026-08-31-outreach-sheet-engine.md (Task 2)
+-- Spec: docs/superpowers/specs/2026-08-31-outreach-sheet-engine-design.md
+-- Project: ixihybsstplqavbpbrlo (prod)
+--
+-- WHAT: one nullable text column. 'outreach' means this business was created by
+-- POST /api/outreach/site as a pitch site for a prospect who has not signed up.
+-- NULL means everything else, which is every row that exists today.
+--
+-- WHY: the admin intake stamps every business it creates with the admin's own
+-- owner_id, so a pitch draft and a real client look identical in the admin
+-- board. Once a batch of 40 prospects runs, that board is unusable without a
+-- marker. Filtering on status='draft' is not enough: real clients sit in draft
+-- while their site is being built.
+--
+-- NO ANON GRANT, deliberately. `anon` reads public.businesses through a
+-- COLUMN-LEVEL allowlist (see 2026-07-08-custom-domain-grants.sql), and a
+-- column added without a grant breaks any public select that names it. This
+-- column is never named by src/app/[slug]/page.tsx, src/app/[slug]/[page]/page.tsx
+-- or any other anon-key query — it is admin-only and read through the
+-- service-role client. Adding a grant here would leak sales pipeline state to
+-- the public. Stated explicitly because of the 2026-08-22 incident
+-- (2026-08-22-stay-anon-column-grants.sql), whose lesson is "grant when the
+-- public select names it", not "grant every column".
+--
+-- No index. Cardinality is two values and the admin board reads the whole
+-- table anyway; an index here would cost writes and buy nothing.
+
+alter table public.businesses add column if not exists lead_source text;
+
+comment on column public.businesses.lead_source is
+  'Provenance marker. ''outreach'' = created by /api/outreach/site as an outbound pitch site, not a signed-up client. NULL = everything else. Never granted to anon.';
+
+-- Verify (must return one row, is_nullable = YES):
+--   select column_name, data_type, is_nullable
+--     from information_schema.columns
+--    where table_schema='public' and table_name='businesses' and column_name='lead_source';
+--
+-- Verify anon CANNOT read it (must return zero rows):
+--   select column_name from information_schema.column_privileges
+--    where table_schema='public' and table_name='businesses'
+--      and grantee='anon' and column_name='lead_source';
+--
+-- Rollback (safe at any time — nothing reads it until Task 7 ships):
+--   alter table public.businesses drop column lead_source;

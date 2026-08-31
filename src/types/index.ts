@@ -101,6 +101,12 @@ export interface Business {
   google_maps_url: string | null;
   waze_url: string | null;
   status: "draft" | "live";
+  /**
+   * Provenance. "outreach" = created by /api/outreach/site as an outbound pitch
+   * site for a prospect who never signed up. Null for every real client.
+   * Admin-only: never granted to anon, never selected by a public page.
+   */
+  lead_source?: string | null;
   business_type?: BusinessType | null;
   /**
    * Stay businesses: per-unit photo grouping for the public gallery,
