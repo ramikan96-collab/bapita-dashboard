@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Business, Page, Service } from "@/types";
 import { resolveCanonical } from "@/lib/canonical";
 import { isStay } from "@/lib/stay";
+import { shouldNoindex, NOINDEX_ROBOTS } from "@/lib/noindex";
 import { PageShell } from "./PageShell";
 
 export const dynamic = "force-dynamic";
@@ -188,8 +189,10 @@ export async function generateMetadata({ params }: Props) {
   return {
     title,
     ...(description && { description }),
-    // Demo/template pages are near-duplicate showcases — keep them out of the index.
-    ...(/^demo(-|$)/.test(slug) && { robots: { index: false, follow: true } }),
+    // Demo/template pages are near-duplicate showcases — keep them out of the
+    // index. So is any business that is not live: draft pitch sites must not be
+    // crawlable under a real business's name.
+    ...(shouldNoindex(slug, b.status) && { robots: NOINDEX_ROBOTS }),
     alternates: { canonical: pageUrl, languages },
     openGraph: {
       title,

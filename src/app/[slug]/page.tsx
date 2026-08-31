@@ -6,6 +6,7 @@ import BookingShell from "./BookingShell";
 import type { Business, Page, Service } from "@/types";
 import { fetchPlaceData } from "@/lib/google-places";
 import { resolveCanonical } from "@/lib/canonical";
+import { shouldNoindex, NOINDEX_ROBOTS } from "@/lib/noindex";
 
 export const dynamic = "force-dynamic";
 
@@ -277,7 +278,7 @@ export async function generateMetadata({ params }: Props) {
   const supabase = getPublicClient();
   const { data } = await supabase
     .from("businesses")
-    .select("name, name_he, tagline, hero_image_url, address, default_lang, business_type, custom_domain, custom_domain_verified")
+    .select("name, name_he, tagline, hero_image_url, address, default_lang, business_type, status, custom_domain, custom_domain_verified")
     .eq("slug", slug)
     .single();
 
@@ -307,8 +308,10 @@ export async function generateMetadata({ params }: Props) {
   return {
     title,
     description,
-    // Demo/template pages are near-duplicate showcases — keep them out of the index.
-    ...(/^demo(-|$)/.test(slug) && { robots: { index: false, follow: true } }),
+    // Demo/template pages are near-duplicate showcases — keep them out of the
+    // index. So is any business that is not live: draft pitch sites must not be
+    // crawlable under a real business's name.
+    ...(shouldNoindex(slug, data.status) && { robots: NOINDEX_ROBOTS }),
     alternates: { canonical: pageUrl },
     ...(brand && {
       icons: {
