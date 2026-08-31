@@ -36,10 +36,29 @@ comment on column public.businesses.lead_source is
 --     from information_schema.columns
 --    where table_schema='public' and table_name='businesses' and column_name='lead_source';
 --
--- Verify anon CANNOT read it (must return zero rows):
+-- Verify anon CANNOT READ it (must return zero rows). Note privilege_type='SELECT':
+-- an earlier draft of this query omitted it and returned three rows, which reads
+-- like a failure but is not. Supabase grants anon table-level INSERT/UPDATE/
+-- REFERENCES on every table in `public` by default, and a newly added column
+-- inherits those, so they show up here for lead_source exactly as they do for the
+-- other 84 columns. SELECT is the one that matters, because SELECT is what the
+-- column-level allowlist controls: anon has SELECT on 74 of 85 columns and
+-- lead_source is deliberately not among them.
 --   select column_name from information_schema.column_privileges
 --    where table_schema='public' and table_name='businesses'
---      and grantee='anon' and column_name='lead_source';
+--      and grantee='anon' and column_name='lead_source'
+--      and privilege_type='SELECT';
+--
+-- Applied to production 2026-08-31. Verified: the column exists and is nullable,
+-- anon selecting it fails with 42501, the anon public select still works, and
+-- a live tenant page still returns 200.
+--
+-- SEPARATE, PRE-EXISTING, NOT THIS MIGRATION'S DOING: anon holds default
+-- INSERT/UPDATE on public.businesses table-wide. RLS blocks those writes today,
+-- so the table is not world-writable, but it is one `disable row level security`
+-- away from being so. public.pages was hardened against exactly this in
+-- 46edf88 (revoke the default DML grants, then grant only SELECT). businesses
+-- has not had that treatment. Worth its own migration; out of scope here.
 --
 -- Rollback (safe at any time — nothing reads it until Task 7 ships):
 --   alter table public.businesses drop column lead_source;
