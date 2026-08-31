@@ -11,6 +11,7 @@
 
 import { shouldNoindex } from "../src/lib/noindex";
 import { extractPlaceIdFromUrl } from "../src/lib/google-places";
+import { segmentFor } from "../src/lib/outreach/segment";
 
 let failures = 0;
 
@@ -47,6 +48,16 @@ check(
 );
 check("a plain business name is not a url", extractPlaceIdFromUrl("Studio Avi Tel Aviv"), null);
 check("a maps url without a place_id", extractPlaceIdFromUrl("https://maps.app.goo.gl/abc123"), null);
+
+console.log("\nsegmentFor");
+check("no website at all", segmentFor(""), "no_web");
+check("null website", segmentFor(null), "no_web");
+check("undefined website", segmentFor(undefined), "no_web");
+check("instagram profile", segmentFor("https://www.instagram.com/studio.avi/"), "ig_only");
+check("instagram without www", segmentFor("https://instagram.com/studio.avi"), "ig_only");
+check("linktree", segmentFor("https://linktr.ee/studioavi"), "ig_only");
+check("a real site", segmentFor("https://studio-avi.co.il"), "has_site");
+check("a facebook page counts as a real site", segmentFor("https://facebook.com/studioavi"), "has_site");
 
 console.log(failures === 0 ? "\nAll outreach checks passed.\n" : `\n${failures} check(s) FAILED.\n`);
 process.exit(failures === 0 ? 0 : 1);

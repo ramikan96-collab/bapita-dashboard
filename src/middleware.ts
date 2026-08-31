@@ -26,15 +26,22 @@ const DASHBOARD_ROUTES = [
  * cancel/pay confirmation pages and SEO files skip auth entirely.
  *
  * Deliberately fail-closed: an `/api` route is only treated as public when it
- * is explicitly under `/api/public`, so a new authenticated route added later
- * is covered by default rather than silently exposed.
+ * is explicitly under `/api/public` or `/api/outreach` (the latter carries its
+ * own bearer guard), so a new authenticated route added later is covered by
+ * default rather than silently exposed.
  */
 function needsAuth(pathname: string): boolean {
   // "/" branches: logged-in users are sent to the calendar instead of marketing.
   if (pathname === "/") return true;
   if (pathname.startsWith("/login") || pathname.startsWith("/auth")) return true;
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return true;
-  if (pathname.startsWith("/api/")) return !pathname.startsWith("/api/public");
+  // /api/outreach/* authenticates with its own bearer secret (see
+  // src/lib/outreach/auth.ts), not a session cookie — Apps Script cannot carry
+  // one. Resolving auth for it is pure waste. It is NOT under /api/admin, so
+  // the admin email gate below never applied to it either.
+  if (pathname.startsWith("/api/")) {
+    return !pathname.startsWith("/api/public") && !pathname.startsWith("/api/outreach");
+  }
   return DASHBOARD_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
 }
 
