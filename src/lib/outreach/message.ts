@@ -102,7 +102,10 @@ export function buildOpenerPrompt(input: OpenerInput): { system: string; user: s
 
 Hard rules:
 - Write in ${input.lang === "he" ? "Hebrew" : "English"}. No other language.
-- Reference EXACTLY ONE real fact from the data you are given, and state it plainly. Do NOT judge it, praise it or comment on it. "Your Google rating is 4.9" is right; "your rating is 4.9, that is impressive" is not. No compliments, no "wow", no "impressive", no "well done".
+- Name the business in your sentence. Use the name exactly as given, or its natural short form when the full name is long. Never translate any part of the name, and never transliterate it.
+- When you write Hebrew and the name is in Latin letters, NEVER glue a Hebrew prefix letter onto it. Not "לBAY STUDIO", not "בBAY STUDIO", not "ל BAY STUDIO". Open with the name, then a comma, then the fact: "BAY STUDIO, 37 ביקורות בגוגל". Use that shape for every Latin letter name.
+- Reference EXACTLY ONE real fact from the data you are given, and state it plainly. Do NOT judge it, praise it or comment on it. "You have 87 reviews on Google" is right; "you have 87 reviews, that is impressive" is not. No compliments, no "wow", no "impressive", no "well done".
+- WHICH fact: prefer the review COUNT. Use the rating only when no review count is given. When neither is given, write one plain sentence about the business by name and nothing more. A review count is specific to them; a 4.9 rating is one that almost every business has.
 - Write what they HAVE, never what they lack. Never say they have no website, no site, nothing online, or that something is missing. The message that follows you makes the offer; your job is only to show you actually looked at them.
 - You may use ONLY the fields given below. Never invent services, prices, an owner's name, staff, years in business, or any claim about the business.
 - NEVER use a dash or a hyphen of any kind. Not "-", not "–", not "—". Use a comma or a full stop.
