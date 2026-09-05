@@ -9,12 +9,13 @@ import { AdminAnalytics } from "../_components/AdminAnalytics";
 import { AdminCalendar } from "../_components/AdminCalendar";
 import { AdminPayments } from "../_components/AdminPayments";
 import { AdminPages } from "../_components/AdminPages";
+import { AdminDemos } from "../_components/AdminDemos";
 
 const TEMPLATE_LABELS: Record<string, string> = { classic: "Classic", clean: "Clean", dark: "Dark" };
 const TEMPLATE_COLORS: Record<string, string> = { classic: "#B8862A", clean: "#0A0A0A", dark: "#C9A84C" };
 
 
-type Tab = "businesses" | "pages" | "analytics" | "calendar" | "payments" | "leads";
+type Tab = "businesses" | "pages" | "analytics" | "calendar" | "payments" | "demos" | "leads";
 
 type Lead = {
   id: string;
@@ -224,6 +225,7 @@ function AdminPageInner() {
     { key: "analytics",  label: "Analytics" },
     { key: "calendar",   label: "Calendar" },
     { key: "payments",   label: "Payments" },
+    { key: "demos",      label: "Demos" },
     { key: "leads",      label: "Leads", badge: pendingCount > 0 ? pendingCount : undefined },
   ];
 
@@ -238,7 +240,7 @@ function AdminPageInner() {
               Admin
             </h1>
             <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 4, marginBottom: 0 }}>
-              {tab === "businesses" ? "Each barber you manage." : tab === "analytics" ? "Traffic and booking funnel across all businesses." : tab === "calendar" ? "Google Calendar connections per business/staff." : tab === "payments" ? "Open Green Invoice deposits per business." : "Requests from bapita.com"}
+              {tab === "businesses" ? "Each barber you manage." : tab === "analytics" ? "Traffic and booking funnel across all businesses." : tab === "calendar" ? "Google Calendar connections per business/staff." : tab === "payments" ? "Open Green Invoice deposits per business." : tab === "demos" ? "Sales demo sites. Excluded from analytics and counts, cannot send email, deleted 30 days after they are built unless converted." : "Requests from bapita.com"}
             </p>
           </div>
           {tab === "businesses" && (
@@ -356,6 +358,8 @@ function AdminPageInner() {
           <AdminCalendar />
         ) : tab === "payments" ? (
           <AdminPayments />
+        ) : tab === "demos" ? (
+          <AdminDemos />
         ) : (
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "20px 24px 64px", display: "flex", flexDirection: "column", gap: 10 }}>
 

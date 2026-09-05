@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "eject": "npx tsx scripts/eject-page.ts",
-    "verify:stay": "npx tsx scripts/verify-stay-logic.ts"
+    "verify:stay": "npx tsx scripts/verify-stay-logic.ts",
+    "verify:demos": "npx tsx scripts/verify-demo-lifecycle.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

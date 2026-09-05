@@ -11,6 +11,7 @@ import {
   LlmJsonError,
 } from "@/lib/intake";
 import { fetchPlaceProfile } from "@/lib/google-places";
+import { demoExpiryFrom } from "@/lib/outreach/demo";
 
 const BOOKING_ORIGIN = "https://book.bapita.com";
 
@@ -119,6 +120,10 @@ export async function POST(req: Request) {
   // `parsed` can reach `status`, but this endpoint must never publish.
   payload.status = "draft";
   payload.google_place_id = placeId;
+  // Start the clock. A pitch site is temporary by default — the nightly sweep deletes it after
+  // DEMO_TTL_DAYS, and converting the prospect into a customer means clearing this one field.
+  // Stamping it here rather than at the caller means no batch script can forget to.
+  payload.demo_expires_at = demoExpiryFrom();
 
   const { id, error } = await insertBusinessWithServices(payload, parsed.services);
   if (error) return NextResponse.json({ error }, { status: 500 });
@@ -127,5 +132,6 @@ export async function POST(req: Request) {
     business_id: id,
     slug,
     site_url: `${BOOKING_ORIGIN}/${slug}`,
+    demo_expires_at: payload.demo_expires_at,
   });
 }
