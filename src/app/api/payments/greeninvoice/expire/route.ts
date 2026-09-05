@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { sweepExpiredDemos } from "@/lib/outreach/sweep";
 
 // Releases slots held by unpaid deposit bookings. A booking left in
 // payment_status='pending_payment' past the window is expired (slot freed).
@@ -34,7 +35,22 @@ async function run() {
     console.error("expire pending bookings failed:", error);
     return NextResponse.json({ error: "expire failed" }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, expired: data?.length ?? 0 });
+
+  // The demo sweep rides this cron rather than adding its own. The Vercel account is on Hobby,
+  // which rejects more than one cron a day and fails the WHOLE deploy before building — so a
+  // second entry in vercel.json would take the site down, not just skip the job.
+  //
+  // It is deliberately non-fatal: expiring deposit holds frees booking slots and must not be
+  // blocked by a janitor for sales demos.
+  let demos: Awaited<ReturnType<typeof sweepExpiredDemos>> | { error: string };
+  try {
+    demos = await sweepExpiredDemos();
+  } catch (e) {
+    console.error("demo sweep failed (deposit expiry still ran):", e);
+    demos = { error: String(e) };
+  }
+
+  return NextResponse.json({ ok: true, expired: data?.length ?? 0, demos });
 }
 
 export async function GET(req: NextRequest) {

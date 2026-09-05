@@ -66,8 +66,13 @@ export async function GET(req: NextRequest) {
 
   const service = createServiceClient();
 
+  // Sales demos are excluded from analytics entirely. They are real, live, bookable pages for
+  // businesses that have never signed up, so counting their traffic would mean every "visitors"
+  // and "conversion" number Rami reads is partly measuring his own outbound campaign.
+  // `demo_expires_at is null` is the whole test: converting a demo to a real customer clears
+  // it, and that customer starts counting from that moment.
   const [{ data: bizData }, { data: evData }] = await Promise.all([
-    service.from("businesses").select("id, name, slug"),
+    service.from("businesses").select("id, name, slug").is("demo_expires_at", null),
     service.from("page_events")
       .select("business_id, session_id, event, step, source")
       .gte("created_at", startISO)
@@ -76,7 +81,11 @@ export async function GET(req: NextRequest) {
   ]);
 
   const businesses = (bizData ?? []) as { id: string; name: string; slug: string | null }[];
-  const events = (evData ?? []) as EventRow[];
+  const realBusinessIds = new Set(businesses.map((b) => b.id));
+  // Events are fetched unfiltered (page_events has no demo marker of its own), so the demo
+  // rows are dropped here. Without this the per-business list would exclude demos while the
+  // totals still counted them, which is worse than not filtering at all.
+  const events = ((evData ?? []) as EventRow[]).filter((e) => realBusinessIds.has(e.business_id));
 
   const byBiz = new Map<string, EventRow[]>();
   for (const e of events) {

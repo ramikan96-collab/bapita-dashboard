@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import { createClient } from "@/lib/supabase/server";
+import { sendTenantMail } from "@/lib/mail";
 
 function esc(s: unknown): string {
   return String(s ?? "")
@@ -11,15 +11,6 @@ function esc(s: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -87,13 +78,15 @@ export async function POST(req: NextRequest) {
   `;
 
   try {
-    await transporter.sendMail({
+    const { sent } = await sendTenantMail({
+      businessId,
       from: `Bapita <${process.env.GMAIL_USER}>`,
       to: customerEmail,
       bcc: bccEmail,
       subject: `Appointment rescheduled - ${businessName}`,
       html,
     });
+    if (!sent) return NextResponse.json({ ok: true, blocked: "demo" });
   } catch (e) {
     console.error("Reschedule email send failed:", e);
     return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });

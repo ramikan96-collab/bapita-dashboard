@@ -107,6 +107,8 @@ export interface Business {
    * Admin-only: never granted to anon, never selected by a public page.
    */
   lead_source?: string | null;
+  /** Demo lifecycle clock. Not null = a sales demo the nightly sweep deletes. Cleared on conversion. */
+  demo_expires_at?: string | null;
   business_type?: BusinessType | null;
   /**
    * Stay businesses: per-unit photo grouping for the public gallery,

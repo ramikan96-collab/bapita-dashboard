@@ -2,7 +2,6 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { bookingsForStaff } from "@/lib/availability";
 import type { BusinessHours } from "@/types";
-import nodemailer from "nodemailer";
 import { pushBookingCreated } from "@/lib/google-calendar";
 import { resolvePayment, NO_PAYMENT } from "@/lib/payments";
 import { withoutExpiredHolds, releaseExpiredHolds } from "@/lib/payment-holds";
@@ -12,6 +11,7 @@ import {
   unavailableRanges, validateStayRequest,
   type StayBookingRow, type StayValidationError,
 } from "@/lib/stay";
+import { sendTenantMail } from "@/lib/mail";
 
 interface ExistingBookingRow {
   appointment_time: string;
@@ -99,15 +99,6 @@ function checkIpLimit(ip: string): boolean {
   return true;
 }
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
 
 export async function POST(req: NextRequest) {
   const {
@@ -467,7 +458,8 @@ export async function POST(req: NextRequest) {
           servicePrice: svcPrice,
           cancelUrl,
         });
-        await transporter.sendMail({
+        await sendTenantMail({
+        businessId,
           from: `Bapita <${process.env.GMAIL_USER}>`,
           to: customerEmail,
           subject,
@@ -480,7 +472,8 @@ export async function POST(req: NextRequest) {
 
     // Always send barber notification regardless of whether customer has email
     try {
-      await transporter.sendMail({
+      await sendTenantMail({
+        businessId,
         from: `Bapita <${process.env.GMAIL_USER}>`,
         to: bccEmail,
         subject: `הזמנה חדשה — ${customerName} | ${svcName}`,
@@ -648,7 +641,8 @@ async function handleStayRequest(args: StayArgs) {
 
     // Host notification — always sent, this is the whole point of the request flow.
     try {
-      await transporter.sendMail({
+      await sendTenantMail({
+        businessId,
         from: `Bapita <${process.env.GMAIL_USER}>`,
         to: hostEmail,
         subject: `בקשת אירוח חדשה — ${customerName} | ${unitName}`,
@@ -680,7 +674,8 @@ async function handleStayRequest(args: StayArgs) {
     if (customerEmail && emailValid) {
       const he = lang === "he";
       try {
-        await transporter.sendMail({
+        await sendTenantMail({
+        businessId,
           from: `Bapita <${process.env.GMAIL_USER}>`,
           to: customerEmail,
           subject: he ? `הבקשה שלך התקבלה — ${bizName}` : `We got your request — ${bizName}`,

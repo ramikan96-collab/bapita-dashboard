@@ -7,16 +7,10 @@
 // findPaidDocumentForBooking); this module never trusts a raw callback body.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import nodemailer from "nodemailer";
 import { bookingRemark, type VerifiedPayment } from "@/lib/greeninvoice";
 import { resolvePayment, formatIls } from "@/lib/payments";
+import { sendTenantMail } from "@/lib/mail";
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
-});
 
 function esc(s: unknown): string {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -184,7 +178,8 @@ async function sendPaidConfirmation(p: {
     : `Hi ${esc(p.booking.customer_name)}, your payment went through and your appointment is confirmed.`;
 
   try {
-    await transporter.sendMail({
+    await sendTenantMail({
+      businessId: p.booking.business_id,
       from: `Bapita <${process.env.GMAIL_USER}>`,
       to: email,
       subject,
