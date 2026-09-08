@@ -7,7 +7,7 @@ export const he = {
   location: { title: "מיקום", directions: "← נווט" },
   reviews: { title: "מה הלקוחות אומרים", leaveReview: "השאר ביקורת בגוגל", showMore: "הצג עוד", showLess: "הצג פחות" },
   staff: { title: "הצוות" },
-  footer: { poweredBy: "מופעל על ידי", brand: "Bapita" },
+  footer: { poweredBy: "מופעל על ידי", brand: "Bapita", privacy: "פרטיות", terms: "תנאי שימוש" },
   social: { happyClients: "4.9 · 340 לקוחות מרוצים", happyGuests: "הזמנה ישירה מול המארח" },
   min: "דק׳",
   status: {
@@ -31,6 +31,18 @@ export const he = {
     redirectNote: "תועברו לעמוד תשלום מאובטח. התור מאושר ברגע שהתשלום עובר.",
     payAndConfirm: (amount: string) => `לתשלום ${amount} ואישור`,
     redirecting: "פותח תשלום…",
+    disclosure: {
+      seller: "התשלום מתבצע ל",
+      businessId: "מספר עוסק",
+      details: "פרטי תשלום וביטול",
+      hide: "הסתר פרטים",
+      totalPrice: "מחיר מלא",
+      dueNowLabel: "לתשלום עכשיו",
+      atVenueLabel: "לתשלום בעסק",
+      cancellationTitle: "ביטול והחזרים",
+      cancellationDefault: "ביטול ללא עלות עד 24 שעות לפני התור. ביטול מאוחר יותר — המקדמה אינה ניתנת להחזר.",
+      processorNote: "התשלום מעובד באופן מאובטח באמצעות Green Invoice / Grow. Bapita אינה מחזיקה ואינה מעבירה את כספכם.",
+    },
   },
   overlay: { stepOf: (n: number, t: number) => `${n} מתוך ${t}` },
   steps: {

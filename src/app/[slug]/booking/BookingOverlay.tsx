@@ -271,6 +271,11 @@ export function BookingOverlay({ business, services, initialService, onClose, ac
               t={t.steps.contact}
               payment={selectedPayment}
               payT={t.payment}
+              businessName={business.name}
+              businessAddress={business.address}
+              businessPhone={business.phone}
+              businessIdNumber={business.business_id_number}
+              cancellationPolicy={business.cancellation_policy}
             />
           )}
 

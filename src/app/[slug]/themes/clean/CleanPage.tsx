@@ -376,6 +376,8 @@ export function CleanPage({ business, services, pages }: Props) {
           iconColor={P.text}
           footerLabel={t.footer.poweredBy}
           brandLabel={t.footer.brand}
+          privacyLabel={t.footer.privacy}
+          termsLabel={t.footer.terms}
           topBorder
         />
       </div>

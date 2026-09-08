@@ -22,11 +22,18 @@ export async function POST(req: NextRequest) {
   // Ownership check — the caller must own this business.
   const { data: biz } = await admin
     .from("businesses")
-    .select("id, owner_id")
+    .select("id, owner_id, business_id_number")
     .eq("id", businessId)
     .single();
   if (!biz || biz.owner_id !== user.id) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  // Business ID is required before taking payment — it's shown to customers on
+  // the distance-sale disclosure at checkout. Server-side gate (the settings UI
+  // also blocks this client-side, but this is the real enforcement).
+  if (!biz.business_id_number?.trim()) {
+    return NextResponse.json({ error: "Add your Business ID in Settings → Payments before connecting Green Invoice." }, { status: 400 });
   }
 
   // Payments must be opened by an admin first (the `payments` addon active).
