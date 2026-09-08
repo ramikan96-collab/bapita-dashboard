@@ -213,6 +213,8 @@ export function PageShell({ business, page, service, services, siblings, homeHre
           iconColor={P.text}
           footerLabel={t.footer.poweredBy}
           brandLabel={t.footer.brand}
+          privacyLabel={t.footer.privacy}
+          termsLabel={t.footer.terms}
           topBorder
         />
       </div>

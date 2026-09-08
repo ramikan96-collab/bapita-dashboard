@@ -7,7 +7,7 @@ export const he = {
   location: { title: "מיקום", directions: "← נווט" },
   reviews: { title: "מה הלקוחות אומרים", leaveReview: "השאר ביקורת בגוגל", showMore: "הצג עוד", showLess: "הצג פחות" },
   staff: { title: "הצוות" },
-  footer: { poweredBy: "מופעל על ידי", brand: "Bapita" },
+  footer: { poweredBy: "מופעל על ידי", brand: "Bapita", privacy: "פרטיות", terms: "תנאי שימוש" },
   social: { happyClients: "4.9 · 340 לקוחות מרוצים", happyGuests: "הזמנה ישירה מול המארח" },
   min: "דק׳",
   status: {

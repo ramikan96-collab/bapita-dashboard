@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Business } from "@/types";
 import { IgIcon, WaIcon, FbIcon, TkIcon } from "./icons";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
@@ -16,6 +17,10 @@ interface Props {
   footerLabel: string;
   /** t.footer.brand */
   brandLabel: string;
+  /** t.footer.privacy */
+  privacyLabel: string;
+  /** t.footer.terms */
+  termsLabel: string;
   /** Show paddingTop + borderTop (Clean + Dark). Classic omits. */
   topBorder?: boolean;
   /** Extra styles for the "powered by" label (Dark: Oswald/uppercase) */
@@ -24,7 +29,7 @@ interface Props {
 
 export function ThemeFooter({
   business, accent, colors, socialShape, socialBg, iconColor,
-  footerLabel, brandLabel, topBorder, footerLabelStyle,
+  footerLabel, brandLabel, privacyLabel, termsLabel, topBorder, footerLabelStyle,
 }: Props) {
   const radius    = socialShape === "circle" ? "50%" : 2;
   const showBorder = socialShape === "circle" && colors.border !== "transparent";
@@ -85,8 +90,16 @@ export function ThemeFooter({
         </a>
       </div>
 
-      <div style={{ marginTop: 14, color: colors.muted }}>
+      <div style={{ marginTop: 14, color: colors.muted, display: "flex", justifyContent: "center", alignItems: "center", gap: 10, fontSize: 12 }}>
         <AccessibilityMenu />
+        <span style={{ opacity: 0.4 }}>·</span>
+        <Link href="/privacy" style={{ color: "inherit", opacity: 0.6, textDecoration: "underline", textUnderlineOffset: 2 }}>
+          {privacyLabel}
+        </Link>
+        <span style={{ opacity: 0.4 }}>·</span>
+        <Link href="/terms" style={{ color: "inherit", opacity: 0.6, textDecoration: "underline", textUnderlineOffset: 2 }}>
+          {termsLabel}
+        </Link>
       </div>
     </footer>
   );

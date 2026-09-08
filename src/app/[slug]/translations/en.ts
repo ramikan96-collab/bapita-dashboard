@@ -7,7 +7,7 @@ export const en = {
   location: { title: "Location", directions: "Get Directions →" },
   reviews: { title: "What Clients Say", leaveReview: "Leave a review on Google", showMore: "Show more", showLess: "Show less" },
   staff: { title: "Team" },
-  footer: { poweredBy: "Powered by", brand: "Bapita" },
+  footer: { poweredBy: "Powered by", brand: "Bapita", privacy: "Privacy", terms: "Terms" },
   social: { happyClients: "4.9 · 340 happy clients", happyGuests: "Booked directly with the host" },
   min: "min",
   status: {

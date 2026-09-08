@@ -343,6 +343,8 @@ export function ClassicPage({ business, services, pages }: Props) {
           iconColor={C.dark}
           footerLabel={t.footer.poweredBy}
           brandLabel={t.footer.brand}
+          privacyLabel={t.footer.privacy}
+          termsLabel={t.footer.terms}
           footerLabelStyle={{ color: "rgba(34,21,16,0.7)" }}
         />
       </div>

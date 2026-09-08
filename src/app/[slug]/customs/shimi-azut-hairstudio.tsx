@@ -504,6 +504,8 @@ export function ShimiAzutHairstudioPage({ business, services }: Props) {
           iconColor={C.dark}
           footerLabel={t.footer.poweredBy}
           brandLabel={t.footer.brand}
+          privacyLabel={t.footer.privacy}
+          termsLabel={t.footer.terms}
           footerLabelStyle={{ color: "rgba(34,21,16,0.7)" }}
         />
       </div>

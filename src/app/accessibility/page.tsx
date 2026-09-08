@@ -38,6 +38,12 @@ export default function AccessibilityPage() {
         by our customers&apos; clients.
       </p>
 
+      <h2 style={{ fontSize: 18, fontWeight: 700, marginTop: 32, marginBottom: 10 }}>Accessibility coordinator</h2>
+      <p style={{ marginBottom: 20 }}>
+        Rami Kan is Bapita&apos;s accessibility coordinator (רכז נגישות) and can be reached at{" "}
+        <a href="mailto:info.bapita@gmail.com" style={{ color: "#E8920A" }}>info.bapita@gmail.com</a>.
+      </p>
+
       <h2 style={{ fontSize: 18, fontWeight: 700, marginTop: 32, marginBottom: 10 }}>Feedback &amp; contact</h2>
       <p style={{ marginBottom: 8 }}>
         If you encounter an accessibility barrier on any Bapita-powered site, please contact us:
