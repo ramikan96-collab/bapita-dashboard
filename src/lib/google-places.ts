@@ -26,7 +26,7 @@ export async function fetchPlaceData(placeId: string): Promise<PlaceData> {
 
   const url =
     `https://maps.googleapis.com/maps/api/place/details/json` +
-    `?place_id=${encodeURIComponent(placeId)}&fields=reviews,rating,user_ratings_total,geometry/location&key=${apiKey}`;
+    `?place_id=${encodeURIComponent(placeId)}&fields=reviews,rating,user_ratings_total,geometry/location&reviews_sort=newest&key=${apiKey}`;
 
   try {
     const res = await fetch(url, { next: { revalidate: 3600 } });
