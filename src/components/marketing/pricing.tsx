@@ -30,12 +30,14 @@ import { cn } from "@/lib/hub/cn";
  *
  * ── The numbers ──
  *
- * ₪1,500 to build, ₪200 a month, no commission. Every add-on is ₪200 — per
- * month for the four that run every month, once for the two that are a setup —
- * so the picker is a real quote builder and the two totals move as the pita
- * fills. They were deliberately blank in the first port, on the grounds that
- * add-ons are volume priced; a flat ₪200 is both simpler to explain and the
- * actual price, so the honest thing is now also the thing that reacts.
+ * Site + dashboard is ₪150 a month or ₪1,500 a year (Rami, Sep 2026 — replaces
+ * the old ₪1,500 setup + ₪200/mo). A cadence toggle swaps which of the two
+ * bill boxes the site's price lands in: monthly puts it in "every month" and
+ * "due now" shows only one-time add-on setups; yearly puts the ₪1,500 in "due
+ * now" and "every month" shows only recurring add-ons. No commission, ever.
+ * Every add-on is ₪200 — per month for the four that run every month, once
+ * for the three that are a setup, unchanged by the toggle — so the picker is
+ * a real quote builder and the two totals move as the pita fills.
  *
  * ── One screen ──
  *
@@ -102,9 +104,9 @@ const ADDONS: Addon[] = [
 const SCROLL_PER_ADDON = 22; // vh
 const FILL_AT = [0.1, 0.2, 0.3, 0.4, 0.5, 0.61, 0.72];
 
-const SETUP = 1500;
-const MONTHLY = 200;
-/** Flat, whichever add-on it is. The monthly four recur; the two setups are once. */
+const BASE_MONTHLY = 150;
+const BASE_YEARLY = 1500;
+/** Flat, whichever add-on it is. The monthly four recur; the three setups are once. */
 const ADDON_PRICE = 200;
 
 const shekel = (n: number) => `₪${n.toLocaleString("en-US")}`;
@@ -186,6 +188,9 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
   const fitBox = useRef<HTMLDivElement>(null);
   const fitContent = useRef<HTMLDivElement>(null);
   const fit = useFitToBox(fitBox, fitContent, pinned);
+  /** Which bill box the site's ₪150/mo or ₪1,500/yr lands in. Independent of
+   *  the scroll-driven add-on fill below — a click, not a scroll threshold. */
+  const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
   const [picked, setPicked] = useState<string[]>([]);
   /**
    * Which add-ons have ever been in the pita. One that is off because it was
@@ -223,9 +228,48 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
   const chosen = ADDONS.filter((a) => picked.includes(a.id));
   const monthlyAddons = chosen.filter((a) => a.cadence === "monthly");
   const onceAddons = chosen.filter((a) => a.cadence === "once");
+  const yearly = cadence === "yearly";
 
-  const buildTotal = SETUP + onceAddons.length * ADDON_PRICE;
-  const monthlyTotal = MONTHLY + monthlyAddons.length * ADDON_PRICE;
+  const buildTotal = (yearly ? BASE_YEARLY : 0) + onceAddons.length * ADDON_PRICE;
+  const monthlyTotal = (yearly ? 0 : BASE_MONTHLY) + monthlyAddons.length * ADDON_PRICE;
+
+  const buildDetail =
+    onceAddons.length > 0
+      ? yearly
+        ? fill(
+            onceAddons.length > 1
+              ? t.buildDetailWithAddonsPlural
+              : t.buildDetailWithAddons,
+            { base: shekel(BASE_YEARLY), count: onceAddons.length },
+          )
+        : fill(
+            onceAddons.length > 1
+              ? t.buildDetailOnceOnlyPlural
+              : t.buildDetailOnceOnly,
+            { count: onceAddons.length },
+          )
+      : yearly
+        ? t.buildDetail
+        : t.buildDetailMonthlyEmpty;
+
+  const monthlyDetail =
+    monthlyAddons.length > 0
+      ? yearly
+        ? fill(
+            monthlyAddons.length > 1
+              ? t.monthlyDetailYearlyWithAddonsPlural
+              : t.monthlyDetailYearlyWithAddons,
+            { count: monthlyAddons.length },
+          )
+        : fill(
+            monthlyAddons.length > 1
+              ? t.monthlyDetailWithAddonsPlural
+              : t.monthlyDetailWithAddons,
+            { base: shekel(BASE_MONTHLY), count: monthlyAddons.length },
+          )
+      : yearly
+        ? t.monthlyDetailYearly
+        : t.monthlyDetail;
 
   const header = (
     <Reveal>
@@ -247,7 +291,33 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
   const panel = (
     <Reveal delay={80}>
       <div className="mt-4 rounded-3xl border border-espresso/[0.09] bg-paper-warm p-3.5 phone-short:mt-4 phone-short:p-3 sm:mt-9 sm:p-7">
-        <p className="text-center text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-espresso/35">
+        <div className="flex justify-center">
+          <div className="inline-flex rounded-pill border border-espresso/[0.09] p-1">
+            {(["monthly", "yearly"] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-pressed={cadence === c}
+                onClick={() => setCadence(c)}
+                className={cn(
+                  "min-h-9 rounded-pill border px-3.5 py-1.5 text-[0.8125rem] font-semibold transition-colors duration-150",
+                  cadence === c
+                    ? "border-cinnamon/40 bg-cinnamon/10 text-cinnamon"
+                    : "border-transparent text-espresso/55 hover:text-espresso",
+                )}
+              >
+                {c === "monthly" ? t.cadenceMonthly : t.cadenceYearly}
+                {c === "yearly" && (
+                  <span className="ml-1.5 text-[0.6875rem] font-bold opacity-70">
+                    {t.cadenceYearlySave}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <p className="mt-3 text-center text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-espresso/35">
           {t.chipsLabel}
         </p>
         <div className="mt-3 flex flex-wrap justify-center gap-1.5 sm:gap-2">
@@ -325,40 +395,18 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
           {/* ── The bill ── */}
           <div className="min-w-0">
             <div className="grid grid-cols-2 gap-4">
-              <Total
-                value={buildTotal}
-                label={t.buildTotal}
-                detail={
-                  onceAddons.length > 0
-                    ? fill(
-                        onceAddons.length > 1
-                          ? t.buildDetailWithAddonsPlural
-                          : t.buildDetailWithAddons,
-                        { base: shekel(SETUP), count: onceAddons.length },
-                      )
-                    : t.buildDetail
-                }
-              />
-              <Total
-                value={monthlyTotal}
-                label={t.monthlyTotal}
-                detail={
-                  monthlyAddons.length > 0
-                    ? fill(
-                        monthlyAddons.length > 1
-                          ? t.monthlyDetailWithAddonsPlural
-                          : t.monthlyDetailWithAddons,
-                        { base: shekel(MONTHLY), count: monthlyAddons.length },
-                      )
-                    : t.monthlyDetail
-                }
-              />
+              <Total value={buildTotal} label={t.buildTotal} detail={buildDetail} />
+              <Total value={monthlyTotal} label={t.monthlyTotal} detail={monthlyDetail} />
             </div>
 
             <ul className="mt-4 hidden flex-col gap-1.5 border-t border-espresso/[0.09] pt-4 sm:flex">
               <LineItem
                 label={t.lineBase}
-                price={`${shekel(SETUP)} · ${shekel(MONTHLY)}${t.perMonth}`}
+                price={
+                  yearly
+                    ? `${shekel(BASE_YEARLY)}${t.perYear}`
+                    : `${shekel(BASE_MONTHLY)}${t.perMonth}`
+                }
                 base
               />
               {chosen.map((a) => (
@@ -392,7 +440,11 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
                   so it does not cost the pinned phone layout a screen. */}
               <p className="mt-3 rounded-hub-lg border border-cinnamon/20 bg-cinnamon/[0.06] px-3 py-2 text-center text-[0.75rem] leading-snug text-espresso/60 sm:text-[0.8125rem]">
                 <span className="font-bold text-espresso">{t.foundingLead}</span>{" "}
-                {t.foundingBody}
+                {fill(t.foundingBody, {
+                  price: yearly
+                    ? `${shekel(BASE_YEARLY)}${t.perYearWord}`
+                    : `${shekel(BASE_MONTHLY)}${t.perMonthWord}`,
+                })}
               </p>
               <p className="mt-2.5 text-center text-[0.8125rem] text-espresso/40">
                 {t.noteBefore}{" "}

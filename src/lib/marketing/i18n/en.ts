@@ -457,27 +457,41 @@ export const en = {
     chipsLabel: "Add ons · tap to drop one in",
     base: "Booking website",
     lineBase: "Booking website + dashboard",
-    buildTotal: "To build, once",
-    buildDetail: "Built, launched, in your name",
+    cadenceMonthly: "Monthly",
+    cadenceYearly: "Annual",
+    cadenceYearlySave: "2 months free",
+    buildTotal: "Due now",
+    buildDetail: "Booking website + dashboard, billed yearly",
+    buildDetailMonthlyEmpty: "Nothing due today",
     monthlyTotal: "Every month",
     monthlyDetail: "Hosting, updates, 3 edits",
-    /** `{count}` is the number of add-ons picked. */
+    monthlyDetailYearly: "Nothing else recurs",
+    /** `{count}` is the number of add-ons picked, `{base}` the shekel amount of the recurring or one-time base fee. */
     buildDetailWithAddons: "{base} + {count} setup",
     buildDetailWithAddonsPlural: "{base} + {count} setups",
+    buildDetailOnceOnly: "{count} setup",
+    buildDetailOnceOnlyPlural: "{count} setups",
     monthlyDetailWithAddons: "{base} + {count} add on",
     monthlyDetailWithAddonsPlural: "{base} + {count} add ons",
+    monthlyDetailYearlyWithAddons: "{count} add on",
+    monthlyDetailYearlyWithAddonsPlural: "{count} add ons",
     perMonth: "/mo",
+    perYear: "/yr",
+    perMonthWord: " a month",
+    perYearWord: " a year",
     once: "once",
     empty: "Tap an add on above to drop one in.",
     cta: "Build My Website",
     noteBefore: "Free call, no commitment. Bigger build?",
     noteLink: "We quote it",
     /* The founding-customer lock. This is a commercial commitment, not a
-       marketing line: whoever signs under it keeps ₪200/mo when the price
-       rises, and Phase 4.5's onboarding checklist is where that is recorded. */
+       marketing line: whoever signs under it keeps today's price when the
+       price rises, and Phase 4.5's onboarding checklist is where that is
+       recorded. `{price}` is filled with the cadence the visitor has
+       selected — ₪150 a month or ₪1,500 a year. */
     foundingLead: "Founding customer pricing.",
     foundingBody:
-      "Sign up while we are in early access and your ₪200 a month is locked for as long as you stay — including after the price goes up.",
+      "Sign up while we are in early access and your {price} is locked for as long as you stay — including after the price goes up.",
     labels: {
       reminders: "Reminders",
       payments: "Payments",
@@ -539,7 +553,7 @@ export const en = {
       },
       founding: {
         q: "What does \u201cearly access\u201d mean, and what happens to my price?",
-        a: "It means the product is built and running for real businesses, and we are still taking on our first customers by hand rather than at scale. You get us on the phone, and changes you ask for get made. In exchange your price is locked: ₪200 a month for as long as you stay with us, including after we raise it for new customers. That is a commitment, not an introductory offer with an end date.",
+        a: "It means the product is built and running for real businesses, and we are still taking on our first customers by hand rather than at scale. You get us on the phone, and changes you ask for get made. In exchange your price is locked: ₪150 a month for as long as you stay with us, including after we raise it for new customers. That is a commitment, not an introductory offer with an end date.",
       },
     },
   },
