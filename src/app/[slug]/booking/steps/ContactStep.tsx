@@ -4,6 +4,7 @@ import { BookingSummaryCard } from "../../components/BookingSummaryCard";
 import type { Service } from "@/types";
 import type { ContactInfo } from "../../hooks/useBookingFlow";
 import { formatIls, type ResolvedPayment } from "@/lib/payments";
+import { PaymentDisclosure, type DisclosureT } from "../PaymentDisclosure";
 
 interface ContactT {
   title: string;
@@ -27,6 +28,7 @@ export interface PaymentT {
   redirecting: string;
   depositBadge: (amount: string) => string;
   prepaidBadge: string;
+  disclosure: DisclosureT;
 }
 
 interface Props {
@@ -45,9 +47,14 @@ interface Props {
   /** Null when this service takes no online payment. */
   payment?: ResolvedPayment | null;
   payT: PaymentT;
+  businessName: string;
+  businessAddress: string | null;
+  businessPhone: string | null;
+  businessIdNumber: string | null;
+  cancellationPolicy: string | null;
 }
 
-export function ContactStep({ service, date, time, contact, onChange, onSubmit, submitting, error, accentColor, darkColor, bgColor, t, payment, payT }: Props) {
+export function ContactStep({ service, date, time, contact, onChange, onSubmit, submitting, error, accentColor, darkColor, bgColor, t, payment, payT, businessName, businessAddress, businessPhone, businessIdNumber, cancellationPolicy }: Props) {
   const paying = !!payment && payment.mode !== "none";
   const dueLabel = paying
     ? (payment!.mode === "full"
@@ -85,6 +92,17 @@ export function ContactStep({ service, date, time, contact, onChange, onSubmit, 
           <div style={{ fontSize:12, color:darkColor, opacity:0.6, marginTop:4, lineHeight:1.5 }}>
             {payT.redirectNote}
           </div>
+          <PaymentDisclosure
+            businessName={businessName}
+            businessAddress={businessAddress}
+            businessPhone={businessPhone}
+            businessIdNumber={businessIdNumber}
+            cancellationPolicy={cancellationPolicy}
+            payment={payment!}
+            accentColor={accentColor}
+            darkColor={darkColor}
+            t={payT.disclosure}
+          />
         </div>
       )}
 

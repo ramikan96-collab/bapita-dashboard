@@ -68,6 +68,8 @@ interface FormData {
   tagline_he:         string;
   phone:              string;
   address:            string;
+  business_id_number: string;
+  cancellation_policy: string;
   email:              string;
   owner_email:        string;
   instagram_url:      string;
@@ -131,7 +133,7 @@ type Tab = "profile" | "design" | "gallery" | "services" | "plan" | "hours" | "r
 
 const EMPTY_FORM: FormData = {
   name: "", name_he: "", slug: "", template_style: "classic", business_type: "appointment", default_lang: "he",
-  tagline: "", tagline_he: "", phone: "", address: "", email: "", owner_email: "",
+  tagline: "", tagline_he: "", phone: "", address: "", business_id_number: "", cancellation_policy: "", email: "", owner_email: "",
   instagram_url: "", facebook_url: "", tiktok_url: "", whatsapp_number: "",
   external_booking_url: "", cta_label: "", cta_label_he: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
@@ -201,6 +203,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           tagline_he:         b.tagline_he          || "",
           phone:              b.phone               || "",
           address:            b.address             || "",
+          business_id_number: b.business_id_number  || "",
+          cancellation_policy: b.cancellation_policy || "",
           email:              b.email               || "",
           owner_email:        (b as unknown as { owner_email?: string | null }).owner_email || "",
           instagram_url:      b.instagram_url       || "",
@@ -415,6 +419,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       tagline_he:         form.tagline_he         || null,
       phone:              form.phone              || null,
       address:            form.address            || null,
+      business_id_number: form.business_id_number || null,
+      cancellation_policy: form.cancellation_policy || null,
       email:              form.email              || null,
       owner_email:        form.owner_email        || null,
       instagram_url:      form.instagram_url      || null,
@@ -571,6 +577,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       tagline_he:         form.tagline_he         || null,
       phone:              form.phone              || null,
       address:            form.address            || null,
+      business_id_number: form.business_id_number || null,
+      cancellation_policy: form.cancellation_policy || null,
       email:              form.email              || null,
       owner_email:        form.owner_email        || null,
       instagram_url:      form.instagram_url      || null,
@@ -1066,6 +1074,14 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   </Field>
                   <Field label="Public Email">
                     <input value={form.email} onChange={e => set("email", e.target.value)} placeholder="avi@example.com" style={inputStyle} />
+                  </Field>
+                </Row>
+                <Row>
+                  <Field label="Business ID (ת.ז / ח.פ) — required before payments can connect">
+                    <input value={form.business_id_number} onChange={e => set("business_id_number", e.target.value)} placeholder="123456789" style={inputStyle} />
+                  </Field>
+                  <Field label="Cancellation policy — shown to customers at payment, blank = default 24h">
+                    <input value={form.cancellation_policy} onChange={e => set("cancellation_policy", e.target.value)} placeholder="Free cancellation up to 24 hours before your appointment." style={inputStyle} />
                   </Field>
                 </Row>
               </SectionCard>

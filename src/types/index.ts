@@ -93,6 +93,10 @@ export interface Business {
   phone: string | null;
   email: string | null;
   address: string | null;
+  /** ת.ז / ח.פ / עוסק. Required before Green Invoice can be connected. */
+  business_id_number: string | null;
+  /** Free text shown on the payment disclosure; empty falls back to a default 24h line. */
+  cancellation_policy: string | null;
   instagram_url: string | null;
   facebook_url: string | null;
   tiktok_url: string | null;

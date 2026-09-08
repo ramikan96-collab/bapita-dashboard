@@ -30,26 +30,32 @@ export async function POST(req: NextRequest) {
   // recipient turns this authed route into a spoofable mailer.
   let bccEmail = process.env.GMAIL_USER || "info.bapita@gmail.com";
   let businessName = "";
+  let cancellationPolicy = "";
   if (businessId) {
     const { data: biz } = await supabase
       .from("businesses")
-      .select("name, notification_email, owner_email")
+      .select("name, notification_email, owner_email, cancellation_policy")
       .eq("id", businessId)
       .or(`owner_id.eq.${user.id},owner_email.eq.${user.email ?? ""}`)
       .single();
     bccEmail = biz?.notification_email || biz?.owner_email || bccEmail;
     businessName = biz?.name || "";
+    cancellationPolicy = biz?.cancellation_policy || "";
   } else {
     const { data: bizRows } = await supabase
       .from("businesses")
-      .select("name, notification_email, owner_email")
+      .select("name, notification_email, owner_email, cancellation_policy")
       .eq("owner_id", user.id)
       .order("created_at", { ascending: true })
       .limit(1);
     const biz = bizRows?.[0];
     bccEmail = biz?.notification_email || biz?.owner_email || bccEmail;
     businessName = biz?.name || "";
+    cancellationPolicy = biz?.cancellation_policy || "";
   }
+  // Same default the public payment disclosure falls back to — see
+  // src/app/[slug]/translations/{en,he}.ts payment.disclosure.cancellationDefault.
+  const cancellationText = cancellationPolicy.trim() || "Free cancellation up to 24 hours before your appointment.";
 
   const formattedDate = new Date(date + "T00:00:00").toLocaleDateString("he-IL", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -65,6 +71,7 @@ export async function POST(req: NextRequest) {
         <div style="margin-bottom: 8px;"><strong>Date:</strong> ${esc(formattedDate)}</div>
         <div><strong>Time:</strong> ${esc(time.slice(0, 5))}</div>
       </div>
+      <p style="color: #555; font-size: 13px; margin: 0 0 4px;"><strong>Cancellation:</strong> ${esc(cancellationText)}</p>
       <p style="color: #888; font-size: 13px;">To cancel or reschedule, contact the business directly.</p>
     </div>
   `;

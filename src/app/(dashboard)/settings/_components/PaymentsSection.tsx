@@ -107,6 +107,26 @@ export function PaymentsSection({
     }
   }
 
+  // ── Legal details (business ID + cancellation policy) ──
+  // Required before Green Invoice can be connected — see connect route gate.
+  const [businessIdNumber, setBusinessIdNumber] = useState((business.business_id_number as string | null) || "");
+  const [cancellationPolicy, setCancellationPolicy] = useState((business.cancellation_policy as string | null) || "");
+  const [savingLegal, setSavingLegal] = useState(false);
+
+  async function saveLegal() {
+    setSavingLegal(true);
+    const { error } = await supabase
+      .from("businesses")
+      .update({
+        business_id_number: businessIdNumber.trim() || null,
+        cancellation_policy: cancellationPolicy.trim() || null,
+      })
+      .eq("id", business.id);
+    setSavingLegal(false);
+    if (error) showToast(t("Failed to save."), "error");
+    else { showToast(t("Saved."), "success"); await refresh(); }
+  }
+
   // ── Connection state ──
   const [connected, setConnected] = useState(false);
   const [apiId, setApiId] = useState("");
@@ -127,6 +147,7 @@ export function PaymentsSection({
   useEffect(() => { loadConnection(); }, [loadConnection]);
 
   async function connect() {
+    if (!businessIdNumber.trim()) { showToast(t("Add your Business ID above before connecting."), "error"); return; }
     if (!apiId.trim() || !apiSecret.trim()) { showToast(t("Enter both the API ID and Secret."), "error"); return; }
     setConnecting(true);
     try {
@@ -291,6 +312,34 @@ export function PaymentsSection({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Legal details — shown to customers on the payment disclosure */}
+      <div style={card}>
+        <div style={cardHead}><h3 style={headText}>{t("Legal details")}</h3></div>
+        <div style={cardBody}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)", marginBottom: 4 }}>
+              {t("Business ID")}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--color-muted)", marginBottom: 8 }}>
+              {t("ת.ז / ח.פ / עוסק — required before you can connect Green Invoice. Shown to customers when they pay.")}
+            </div>
+            <input value={businessIdNumber} onChange={(e) => setBusinessIdNumber(e.target.value)} placeholder="123456789" style={input} />
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-dark)", marginBottom: 4 }}>
+              {t("Cancellation policy")}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--color-muted)", marginBottom: 8 }}>
+              {t("Shown to customers when they pay a deposit. Leave blank to use the default: free cancellation up to 24 hours before.")}
+            </div>
+            <input value={cancellationPolicy} onChange={(e) => setCancellationPolicy(e.target.value)} placeholder={t("Free cancellation up to 24 hours before your appointment.")} style={input} />
+          </div>
+          <button onClick={saveLegal} disabled={savingLegal} style={btn("var(--color-dark)", "var(--color-surface)")}>
+            {savingLegal ? t("Saving…") : t("Save")}
+          </button>
+        </div>
+      </div>
+
       {/* Connect */}
       <div style={card}>
         <div style={cardHead}><h3 style={headText}>{t("Green Invoice")}</h3></div>

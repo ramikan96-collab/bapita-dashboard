@@ -31,6 +31,18 @@ export const en = {
     redirectNote: "You'll be taken to a secure payment page. Your booking is confirmed once the payment goes through.",
     payAndConfirm: (amount: string) => `Pay ${amount} & Confirm`,
     redirecting: "Opening payment…",
+    disclosure: {
+      seller: "Charged by",
+      businessId: "Business ID",
+      details: "Payment & cancellation details",
+      hide: "Hide details",
+      totalPrice: "Total price",
+      dueNowLabel: "Due now",
+      atVenueLabel: "Due at the business",
+      cancellationTitle: "Cancellation & refunds",
+      cancellationDefault: "Free cancellation up to 24 hours before your appointment. Cancel later and the deposit is not refunded.",
+      processorNote: "Payment is processed securely by Green Invoice / Grow. Bapita does not hold or move your payment.",
+    },
   },
   overlay: { stepOf: (n: number, t: number) => `${n} of ${t}` },
   steps: {

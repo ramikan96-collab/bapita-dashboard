@@ -31,6 +31,18 @@ export const he = {
     redirectNote: "תועברו לעמוד תשלום מאובטח. התור מאושר ברגע שהתשלום עובר.",
     payAndConfirm: (amount: string) => `לתשלום ${amount} ואישור`,
     redirecting: "פותח תשלום…",
+    disclosure: {
+      seller: "התשלום מתבצע ל",
+      businessId: "מספר עוסק",
+      details: "פרטי תשלום וביטול",
+      hide: "הסתר פרטים",
+      totalPrice: "מחיר מלא",
+      dueNowLabel: "לתשלום עכשיו",
+      atVenueLabel: "לתשלום בעסק",
+      cancellationTitle: "ביטול והחזרים",
+      cancellationDefault: "ביטול ללא עלות עד 24 שעות לפני התור. ביטול מאוחר יותר — המקדמה אינה ניתנת להחזר.",
+      processorNote: "התשלום מעובד באופן מאובטח באמצעות Green Invoice / Grow. Bapita אינה מחזיקה ואינה מעבירה את כספכם.",
+    },
   },
   overlay: { stepOf: (n: number, t: number) => `${n} מתוך ${t}` },
   steps: {
