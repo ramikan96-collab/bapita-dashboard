@@ -478,6 +478,8 @@ export const en = {
     foundingLead: "Founding customer pricing.",
     foundingBody:
       "Sign up while we are in early access and your ₪200 a month is locked for as long as you stay — including after the price goes up.",
+    domainLabel: "Your own domain",
+    domainNote: "yourbrand.com instead of book.bapita.com/slug",
     labels: {
       reminders: "Reminders",
       payments: "Payments",

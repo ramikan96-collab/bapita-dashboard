@@ -107,6 +107,17 @@ const MONTHLY = 200;
 /** Flat, whichever add-on it is. The monthly four recur; the two setups are once. */
 const ADDON_PRICE = 200;
 
+/**
+ * Your own domain (Rami, Sep 2026) — not one of the ADDONS. It rides on the
+ * booking site's own domain routing (`businesses.custom_domain` +
+ * `src/middleware.ts`) rather than being a feature toggle, and at ₪29/mo it
+ * would break "every add on is ₪200" if it joined that list — so it is its
+ * own line, own price, no falafel in the pita, no scroll threshold. We
+ * register and own the domain (Cloudflare, ~₪30-35/yr) and point it at the
+ * business's booking page.
+ */
+const DOMAIN_PRICE = 29;
+
 const shekel = (n: number) => `₪${n.toLocaleString("en-US")}`;
 
 /**
@@ -187,6 +198,7 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
   const fitContent = useRef<HTMLDivElement>(null);
   const fit = useFitToBox(fitBox, fitContent, pinned);
   const [picked, setPicked] = useState<string[]>([]);
+  const [domain, setDomain] = useState(false);
   /**
    * Which add-ons have ever been in the pita. One that is off because it was
    * taken out plays the exit animation; one that is off because the page has
@@ -225,7 +237,10 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
   const onceAddons = chosen.filter((a) => a.cadence === "once");
 
   const buildTotal = SETUP + onceAddons.length * ADDON_PRICE;
-  const monthlyTotal = MONTHLY + monthlyAddons.length * ADDON_PRICE;
+  const monthlyTotal = MONTHLY + monthlyAddons.length * ADDON_PRICE + (domain ? DOMAIN_PRICE : 0);
+  // Domain counts toward the "+N add on(s)" detail line even though it isn't
+  // in ADDONS, so that line stays honest about what the total includes.
+  const monthlyDisplayCount = monthlyAddons.length + (domain ? 1 : 0);
 
   const header = (
     <Reveal>
@@ -343,19 +358,36 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
                 value={monthlyTotal}
                 label={t.monthlyTotal}
                 detail={
-                  monthlyAddons.length > 0
+                  monthlyDisplayCount > 0
                     ? fill(
-                        monthlyAddons.length > 1
+                        monthlyDisplayCount > 1
                           ? t.monthlyDetailWithAddonsPlural
                           : t.monthlyDetailWithAddons,
-                        { base: shekel(MONTHLY), count: monthlyAddons.length },
+                        { base: shekel(MONTHLY), count: monthlyDisplayCount },
                       )
                     : t.monthlyDetail
                 }
               />
             </div>
 
-            <ul className="mt-4 hidden flex-col gap-1.5 border-t border-espresso/[0.09] pt-4 sm:flex">
+            <label className="mt-4 flex min-h-11 cursor-pointer items-center justify-center gap-2 border-t border-espresso/[0.09] pt-4 text-center text-[0.8125rem] text-espresso/70">
+              <input
+                type="checkbox"
+                checked={domain}
+                onChange={() => setDomain((d) => !d)}
+                className="h-4 w-4 shrink-0 rounded border-espresso/25 accent-cinnamon"
+              />
+              <span>
+                {t.domainLabel}{" "}
+                <span className="text-espresso/40">({t.domainNote})</span> —{" "}
+                <span className="font-semibold text-espresso">
+                  {shekel(DOMAIN_PRICE)}
+                  {t.perMonth}
+                </span>
+              </span>
+            </label>
+
+            <ul className="mt-4 hidden flex-col gap-1.5 sm:flex">
               <LineItem
                 label={t.lineBase}
                 price={`${shekel(SETUP)} · ${shekel(MONTHLY)}${t.perMonth}`}
@@ -372,7 +404,13 @@ export function Pricing({ locale = "en" }: { locale?: Locale }) {
                   }
                 />
               ))}
-              {chosen.length === 0 && (
+              {domain && (
+                <LineItem
+                  label={t.domainLabel}
+                  price={`${shekel(DOMAIN_PRICE)}${t.perMonth}`}
+                />
+              )}
+              {chosen.length === 0 && !domain && (
                 <li className="text-[0.8125rem] text-espresso/40">{t.empty}</li>
               )}
             </ul>

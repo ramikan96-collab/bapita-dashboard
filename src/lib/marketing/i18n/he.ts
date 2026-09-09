@@ -474,6 +474,8 @@ export const he: Dict = {
     foundingLead: "מחיר לקוחות מייסדים",
     foundingBody:
       "נרשמים בזמן הגישה המוקדמת — ו-₪200 לחודש ננעלים לכם כל עוד אתם איתנו, גם אחרי שהמחיר יעלה",
+    domainLabel: "דומיין משלך",
+    domainNote: "yourbrand.com במקום book.bapita.com/slug",
     noteBefore: "שיחה חינם, ללא התחייבות. בנייה גדולה יותר?",
     noteLink: "אנחנו מצטטים את זה",
     labels: {
