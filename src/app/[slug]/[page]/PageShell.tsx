@@ -25,6 +25,8 @@ interface Props {
   service: Service | null;
   /** Every active service, so the booking overlay can offer the others. */
   services: Service[];
+  /** The unit's own photo group — used when the page sets no images. */
+  photos: string[];
   /** Other published pages of the same business, for the "related" section. */
   siblings: Pick<Page, "id" | "slug" | "title" | "title_he">[];
   /** Where the parent site lives from here — "/" on a custom domain, "/<slug>" otherwise. */
@@ -46,7 +48,7 @@ function Body({ text, color, font }: { text: string; color: string; font: string
   );
 }
 
-export function PageShell({ business, page, service, services, siblings, homeHref }: Props) {
+export function PageShell({ business, page, service, services, photos, siblings, homeHref }: Props) {
   const [lang, setLang] = useState<Lang>((business.default_lang as Lang) || "en");
   const [overlayOpen, setOverlayOpen] = useState(false);
 
@@ -61,11 +63,24 @@ export function PageShell({ business, page, service, services, siblings, homeHre
   const headingFont = resolveFont(business.heading_font, "system-ui, sans-serif");
   const bodyFont    = resolveFont(business.body_font, "system-ui, sans-serif");
 
+  // Anything the page leaves empty falls back to its unit, so a detail page is
+  // complete the moment it is created and stays in step when the unit changes.
   const c = page.content || {};
-  const title = (isRtl && page.title_he?.trim()) || page.title;
-  const body  = (isRtl && c.body_he?.trim()) || c.body || null;
-  const specs: PageSpec[] = ((isRtl && c.specs_he?.length ? c.specs_he : c.specs) || []) as PageSpec[];
-  const images = c.images?.length ? c.images : null;
+  const title = (isRtl && (page.title_he?.trim() || service?.name_he?.trim())) || page.title;
+  const body  =
+    (isRtl && (c.body_he?.trim() || service?.description_he?.trim())) ||
+    c.body || service?.description || null;
+  const ownSpecs = ((isRtl && c.specs_he?.length ? c.specs_he : c.specs) || []) as PageSpec[];
+  const unitSpecs: PageSpec[] = stay && service
+    ? [
+        ...(service.max_guests ? [{ label: t.stay.guests, value: t.stay.sleeps(service.max_guests) }] : []),
+        ...(service.min_nights && service.min_nights > 1
+          ? [{ label: t.page.minStay, value: t.stay.minNights(service.min_nights) }]
+          : []),
+      ]
+    : [];
+  const specs = ownSpecs.length ? ownSpecs : unitSpecs;
+  const images = c.images?.length ? c.images : photos.length ? photos : null;
   const hero   = c.hero_image_url || images?.[0] || business.hero_image_url || null;
 
   // The page's own label wins, then the business's, then the theme string —

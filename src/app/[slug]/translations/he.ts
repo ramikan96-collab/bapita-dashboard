@@ -112,5 +112,6 @@ export const he = {
     details: "פרטים",
     more: "עוד",
     gallery: "תמונות",
+    minStay: "שהייה מינימלית",
   },
 };

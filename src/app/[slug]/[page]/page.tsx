@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import type { Business, Page, Service } from "@/types";
 import { resolveCanonical } from "@/lib/canonical";
-import { isStay } from "@/lib/stay";
+import { isStay, unitPhotos } from "@/lib/stay";
 import { shouldNoindex, NOINDEX_ROBOTS } from "@/lib/noindex";
 import { PageShell } from "./PageShell";
 
@@ -20,7 +20,7 @@ function getPublicClient() {
 }
 
 const BUSINESS_COLUMNS =
-  "id, name, name_he, slug, status, business_type, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, template_style, hero_image_url, image_focal, accent_color, external_booking_url, cta_label, cta_label_he, default_lang, heading_font, body_font, custom_domain, custom_domain_verified";
+  "id, name, name_he, slug, status, business_type, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, template_style, hero_image_url, image_focal, accent_color, external_booking_url, cta_label, cta_label_he, default_lang, heading_font, body_font, custom_domain, custom_domain_verified, gallery_images, gallery_hidden, gallery_groups";
 
 interface Props {
   params: Promise<{ slug: string; page: string }>;
@@ -31,6 +31,8 @@ interface Loaded {
   page: Page;
   service: Service | null;
   services: Service[];
+  /** The unit's own photo group, for pages that set no images of their own. */
+  photos: string[];
   siblings: Pick<Page, "id" | "slug" | "title" | "title_he">[];
 }
 
@@ -66,6 +68,14 @@ async function load(slug: string, pageSlug: string): Promise<Loaded | null> {
     .order("display_order");
 
   const all = (services || []) as Service[];
+  const service = all.find((s) => s.id === p.service_id) ?? null;
+
+  // A detail page with no images of its own shows its unit's photo group, so
+  // the page is useful the moment it is created. Hidden photos stay out, the
+  // same rule the homepage gallery follows.
+  const hidden = new Set(b.gallery_hidden ?? []);
+  const visible = new Set((b.gallery_images ?? []).filter((u) => !hidden.has(u)));
+  const photos = service ? unitPhotos(b, service.id).filter((u) => visible.has(u)) : [];
 
   const { data: siblings } = await supabase
     .from("pages")
@@ -77,8 +87,9 @@ async function load(slug: string, pageSlug: string): Promise<Loaded | null> {
   return {
     business: b,
     page: p,
-    service: all.find((s) => s.id === p.service_id) ?? null,
+    service,
     services: all,
+    photos,
     siblings: (siblings || []) as Pick<Page, "id" | "slug" | "title" | "title_he">[],
   };
 }
@@ -88,7 +99,9 @@ export default async function ExtraPage({ params }: Props) {
   const loaded = await load(slug, pageSlug);
   if (!loaded) return notFound();
 
-  const { business: b, page, service, services, siblings } = loaded;
+  const { business: b, page, service, services, photos, siblings } = loaded;
+  const image = page.content?.hero_image_url || photos[0] || b.hero_image_url;
+  const description = page.seo_description || service?.description || null;
 
   // Same rule the homepage runs: when a verified custom domain exists, the
   // book.bapita copy is a duplicate and sends users (and link equity) to the
@@ -114,10 +127,8 @@ export default async function ExtraPage({ params }: Props) {
           "@type": "Accommodation",
           name: page.title,
           url: pageUrl,
-          ...(page.seo_description && { description: page.seo_description }),
-          ...(page.content?.hero_image_url || b.hero_image_url
-            ? { image: page.content?.hero_image_url || b.hero_image_url }
-            : {}),
+          ...(description && { description }),
+          ...(image ? { image } : {}),
           ...(service.max_guests ? { occupancy: { "@type": "QuantitativeValue", maxValue: service.max_guests } } : {}),
           ...(service.price > 0 && {
             potentialAction: {
@@ -162,6 +173,7 @@ export default async function ExtraPage({ params }: Props) {
         page={page}
         service={service}
         services={services}
+        photos={photos}
         siblings={siblings}
         homeHref={homeHref}
       />
@@ -174,12 +186,14 @@ export async function generateMetadata({ params }: Props) {
   const loaded = await load(slug, pageSlug);
   if (!loaded) return { title: "Not found" };
 
-  const { business: b, page } = loaded;
+  const { business: b, page, service, photos } = loaded;
   const { canonicalBase, pageUrl, hasCustomDomain } = resolveCanonical(slug, b, page.slug);
 
   const title = page.seo_title || `${page.title} | ${b.name}`;
-  const description = page.seo_description || page.content?.body?.slice(0, 155) || undefined;
-  const image = page.og_image_url || page.content?.hero_image_url || b.hero_image_url || `${canonicalBase}/og-image.png`;
+  const description =
+    page.seo_description || page.content?.body?.slice(0, 155) || service?.description?.slice(0, 155) || undefined;
+  const image =
+    page.og_image_url || page.content?.hero_image_url || photos[0] || b.hero_image_url || `${canonicalBase}/og-image.png`;
 
   // Both languages live on one URL (the toggle is client-side), so hreflang
   // points at the same href — the correct signal for a bilingual page rather

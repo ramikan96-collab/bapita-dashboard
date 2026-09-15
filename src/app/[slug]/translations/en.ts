@@ -112,5 +112,6 @@ export const en = {
     details: "Details",
     more: "More",
     gallery: "Photos",
+    minStay: "Minimum stay",
   },
 };
