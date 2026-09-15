@@ -75,7 +75,7 @@ async function load(slug: string, pageSlug: string): Promise<Loaded | null> {
   // same rule the homepage gallery follows.
   const hidden = new Set(b.gallery_hidden ?? []);
   const visible = new Set((b.gallery_images ?? []).filter((u) => !hidden.has(u)));
-  const photos = service ? unitPhotos(b, service.id).filter((u) => visible.has(u)) : [];
+  const photos = p.kind === "detail" && service ? unitPhotos(b, service.id).filter((u) => visible.has(u)) : [];
 
   const { data: siblings } = await supabase
     .from("pages")

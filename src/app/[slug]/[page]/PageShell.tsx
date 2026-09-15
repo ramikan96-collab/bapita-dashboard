@@ -66,22 +66,25 @@ export function PageShell({ business, page, service, services, photos, siblings,
   // Anything the page leaves empty falls back to its unit, so a detail page is
   // complete the moment it is created and stays in step when the unit changes.
   const c = page.content || {};
-  const title = (isRtl && (page.title_he?.trim() || service?.name_he?.trim())) || page.title;
+  const unit = page.kind === "detail" ? service : null;
+  const title = (isRtl && (page.title_he?.trim() || unit?.name_he?.trim())) || page.title;
   const body  =
-    (isRtl && (c.body_he?.trim() || service?.description_he?.trim())) ||
-    c.body || service?.description || null;
+    (isRtl && (c.body_he?.trim() || unit?.description_he?.trim())) ||
+    c.body || unit?.description || null;
   const ownSpecs = ((isRtl && c.specs_he?.length ? c.specs_he : c.specs) || []) as PageSpec[];
-  const unitSpecs: PageSpec[] = stay && service
+  const unitSpecs: PageSpec[] = stay && unit
     ? [
-        ...(service.max_guests ? [{ label: t.stay.guests, value: t.stay.sleeps(service.max_guests) }] : []),
-        ...(service.min_nights && service.min_nights > 1
-          ? [{ label: t.page.minStay, value: t.stay.minNights(service.min_nights) }]
+        ...(unit.max_guests ? [{ label: t.stay.guests, value: t.stay.sleeps(unit.max_guests) }] : []),
+        ...(unit.min_nights && unit.min_nights > 1
+          ? [{ label: t.page.minStay, value: t.stay.minNights(unit.min_nights) }]
           : []),
       ]
     : [];
   const specs = ownSpecs.length ? ownSpecs : unitSpecs;
-  const images = c.images?.length ? c.images : photos.length ? photos : null;
+  const images = c.images?.length ? c.images : unit && photos.length ? photos : null;
   const hero   = c.hero_image_url || images?.[0] || business.hero_image_url || null;
+  // The hero is already on screen — don't repeat it as the first gallery tile.
+  const galleryImages = images ? images.filter((src) => src !== hero) : [];
 
   // The page's own label wins, then the business's, then the theme string —
   // resolveCta already handles the last two, so only the override goes in here.
@@ -115,11 +118,11 @@ export function PageShell({ business, page, service, services, photos, siblings,
 
     body: body ? <div key="body"><Body text={body} color={P.text} font={bodyFont} /></div> : null,
 
-    gallery: images && images.length > 1 ? (
+    gallery: galleryImages.length > 0 ? (
       <section key="gallery">
         <h2 style={{ fontFamily: headingFont, fontSize: 20, fontWeight: 700, color: P.text, margin: "0 0 16px" }}>{t.page.gallery}</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
-          {images.map((src) => (
+          {galleryImages.map((src) => (
             <div key={src} style={{ borderRadius: P.radius, overflow: "hidden", background: P.surface, aspectRatio: "4/3" }}>
               <SmartImg src={src} alt={title} maxWidth={400} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
