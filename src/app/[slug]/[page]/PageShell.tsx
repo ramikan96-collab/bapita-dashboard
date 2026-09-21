@@ -14,6 +14,7 @@ import { resolveFont } from "../_shared/fonts";
 import { useExternalCta } from "../_shared/useExternalCta";
 import { pagePalette, themeKey } from "../_shared/pageTheme";
 import { isStay } from "@/lib/stay";
+import { amenityLabels } from "@/lib/amenities";
 import type { PageSpec } from "@/types";
 
 const DEFAULT_ORDER = ["hero", "body", "gallery", "specs", "related", "cta"];
@@ -81,6 +82,7 @@ export function PageShell({ business, page, service, services, photos, siblings,
       ]
     : [];
   const specs = ownSpecs.length ? ownSpecs : unitSpecs;
+  const amenities = stay && unit ? amenityLabels(unit.amenities, isRtl ? "he" : "en") : [];
   const images = c.images?.length ? c.images : unit && photos.length ? photos : null;
   const hero   = c.hero_image_url || images?.[0] || business.hero_image_url || null;
   // The hero is already on screen — don't repeat it as the first gallery tile.
@@ -131,24 +133,50 @@ export function PageShell({ business, page, service, services, photos, siblings,
       </section>
     ) : null,
 
-    specs: specs.length ? (
-      <section key="specs">
-        <h2 style={{ fontFamily: headingFont, fontSize: 20, fontWeight: 700, color: P.text, margin: "0 0 16px" }}>{t.page.details}</h2>
-        <dl style={{ margin: 0, display: "grid", gap: 0, border: `1px solid ${P.border}`, borderRadius: P.radius, overflow: "hidden" }}>
-          {specs.map((s, i) => (
-            <div
-              key={`${s.label}-${i}`}
-              style={{
-                display: "flex", justifyContent: "space-between", gap: 16, padding: "12px 16px",
-                background: i % 2 ? P.surface : "transparent",
-                fontFamily: bodyFont, fontSize: 15,
-              }}
-            >
-              <dt style={{ color: P.muted }}>{s.label}</dt>
-              <dd style={{ margin: 0, color: P.text, fontWeight: 600, textAlign: isRtl ? "left" : "right" }}>{s.value}</dd>
-            </div>
-          ))}
-        </dl>
+    specs: specs.length || amenities.length ? (
+      <section key="specs" style={{ display: "grid", gap: 28 }}>
+        {specs.length > 0 && (
+          <div>
+            <h2 style={{ fontFamily: headingFont, fontSize: 20, fontWeight: 700, color: P.text, margin: "0 0 16px" }}>{t.page.details}</h2>
+            <dl style={{ margin: 0, display: "grid", gap: 0, border: `1px solid ${P.border}`, borderRadius: P.radius, overflow: "hidden" }}>
+              {specs.map((s, i) => (
+                <div
+                  key={`${s.label}-${i}`}
+                  style={{
+                    display: "flex", justifyContent: "space-between", gap: 16, padding: "12px 16px",
+                    background: i % 2 ? P.surface : "transparent",
+                    fontFamily: bodyFont, fontSize: 15,
+                  }}
+                >
+                  <dt style={{ color: P.muted }}>{s.label}</dt>
+                  <dd style={{ margin: 0, color: P.text, fontWeight: 600, textAlign: isRtl ? "left" : "right" }}>{s.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+        {amenities.length > 0 && (
+          <div>
+            <h2 style={{ fontFamily: headingFont, fontSize: 20, fontWeight: 700, color: P.text, margin: "0 0 16px" }}>{t.stay.amenities}</h2>
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 200px), 1fr))", gap: 10 }}>
+              {amenities.map((label) => (
+                <li
+                  key={label}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
+                    border: `1px solid ${P.border}`, borderRadius: P.radius, background: P.surface,
+                    fontFamily: bodyFont, fontSize: 15, color: P.text,
+                  }}
+                >
+                  <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                  {label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
     ) : null,
 

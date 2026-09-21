@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { Business, Service } from "@/types";
 import { PageLink } from "../_shared/PageLink";
 import { unitPhotos } from "@/lib/stay";
+import { amenityLabels } from "@/lib/amenities";
 import type { Translations } from "../translations";
 
 export interface UnitCardTokens {
@@ -23,6 +25,9 @@ export interface UnitCardTokens {
   /** uppercase, letterspaced CTA (dark theme) vs plain (clean/classic) */
   ctaUppercase?: boolean;
 }
+
+/** Cards stay scannable: a few amenities up front, the full list on the unit page. */
+const MAX_CARD_AMENITIES = 4;
 
 interface Props {
   business: Business;
@@ -55,15 +60,50 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, href
         const cover = photos[0] ?? business.hero_image_url ?? null;
         const name = isRtl && unit.name_he ? unit.name_he : unit.name;
         const desc = isRtl && unit.description_he ? unit.description_he : unit.description;
+        const amenities = amenityLabels(unit.amenities, isRtl ? "he" : "en");
+        const shownAmenities = amenities.slice(0, MAX_CARD_AMENITIES);
+        const hiddenAmenities = amenities.length - shownAmenities.length;
         const isHover = hovered === unit.id;
+        // A unit with its own page: the photo and the name go to that page, and
+        // only the CTA opens booking. Without a page, the photo opens booking too.
+        // Never nest the two — one click must do exactly one thing.
+        const href = hrefForUnit?.(unit.id) ?? null;
+
+        const coverImage = cover ? (
+          <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3", background: raised }}>
+            <Image
+              src={cover}
+              alt={name}
+              fill
+              sizes="(max-width: 768px) 100vw, 360px"
+              style={{
+                objectFit: "cover",
+                objectPosition: business.image_focal?.[cover] || "center",
+                transform: isHover ? "scale(1.04)" : "scale(1)",
+                transition: "transform 0.5s cubic-bezier(0.4,0,0.2,1)",
+              }}
+            />
+            {photos.length > 1 && (
+              <div style={{
+                position: "absolute", bottom: 10, insetInlineEnd: 10,
+                background: "rgba(0,0,0,0.55)", color: "#fff",
+                fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 20,
+                backdropFilter: "blur(4px)",
+              }}>
+                {t.stay.photos(photos.length)}
+              </div>
+            )}
+          </div>
+        ) : null;
 
         return (
-          <button
+          <div
             key={unit.id}
-            type="button"
-            onClick={() => onSelect(unit)}
             onMouseEnter={() => setHovered(unit.id)}
             onMouseLeave={() => setHovered(null)}
+            // Keyboard users get the same highlighted state as the mouse.
+            onFocus={() => setHovered(unit.id)}
+            onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHovered(null); }}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -72,44 +112,29 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, href
               border: `1px solid ${isHover ? accent + "55" : border}`,
               borderRadius: radius,
               overflow: "hidden",
-              padding: 0,
-              cursor: "pointer",
-              fontFamily: "inherit",
               transition: "background 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s",
               transform: isHover ? "translateY(-3px)" : "none",
               boxShadow: isHover ? `0 10px 30px ${accent}1F` : "none",
             }}
           >
-            {cover && (
-              <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3", background: raised }}>
-                <Image
-                  src={cover}
-                  alt={name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 360px"
-                  style={{
-                    objectFit: "cover",
-                    objectPosition: business.image_focal?.[cover] || "center",
-                    transform: isHover ? "scale(1.04)" : "scale(1)",
-                    transition: "transform 0.5s cubic-bezier(0.4,0,0.2,1)",
-                  }}
-                />
-                {photos.length > 1 && (
-                  <div style={{
-                    position: "absolute", bottom: 10, insetInlineEnd: 10,
-                    background: "rgba(0,0,0,0.55)", color: "#fff",
-                    fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 20,
-                    backdropFilter: "blur(4px)",
-                  }}>
-                    {t.stay.photos(photos.length)}
-                  </div>
-                )}
-              </div>
-            )}
+            {coverImage && (href ? (
+              <Link href={href} tabIndex={-1} aria-hidden style={{ display: "block" }}>
+                {coverImage}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onSelect(unit)}
+                aria-label={`${t.stay.check}: ${name}`}
+                style={{ display: "block", width: "100%", padding: 0, border: "none", background: "none", cursor: "pointer" }}
+              >
+                {coverImage}
+              </button>
+            ))}
 
             <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: text }}>
-                <PageLink href={hrefForUnit?.(unit.id) ?? null} inline>{name}</PageLink>
+                <PageLink href={href} inline>{name}</PageLink>
               </div>
 
               {desc && (
@@ -121,6 +146,30 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, href
                 {unit.min_nights && unit.min_nights > 1 ? <span>· {t.stay.minNights(unit.min_nights)}</span> : null}
               </div>
 
+              {shownAmenities.length > 0 && (
+                <ul
+                  aria-label={t.stay.amenities}
+                  style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}
+                >
+                  {shownAmenities.map((label) => (
+                    <li
+                      key={label}
+                      style={{
+                        fontSize: 11, color: text, border: `1px solid ${border}`,
+                        borderRadius: 999, padding: "3px 9px", whiteSpace: "nowrap",
+                      }}
+                    >
+                      {label}
+                    </li>
+                  ))}
+                  {hiddenAmenities > 0 && (
+                    <li style={{ fontSize: 11, color: muted, padding: "3px 4px", whiteSpace: "nowrap" }}>
+                      {t.stay.moreAmenities(hiddenAmenities)}
+                    </li>
+                  )}
+                </ul>
+              )}
+
               <div style={{
                 marginTop: "auto", paddingTop: 12,
                 display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
@@ -129,7 +178,9 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, href
                   ₪{unit.price}
                   <span style={{ fontSize: 12, fontWeight: 500, color: muted }}> / {t.stay.perNight}</span>
                 </span>
-                <span
+                <button
+                  type="button"
+                  onClick={() => onSelect(unit)}
                   style={{
                     fontFamily: displayFont,
                     background: isHover ? accent : "transparent",
@@ -140,16 +191,17 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, href
                     fontSize: 12,
                     fontWeight: 700,
                     whiteSpace: "nowrap",
+                    cursor: "pointer",
                     letterSpacing: tokens.ctaUppercase ? "0.06em" : undefined,
                     textTransform: tokens.ctaUppercase ? "uppercase" : undefined,
                     transition: "background 0.2s, color 0.2s",
                   }}
                 >
                   {t.stay.check}
-                </span>
+                </button>
               </div>
             </div>
-          </button>
+          </div>
         );
       })}
     </div>

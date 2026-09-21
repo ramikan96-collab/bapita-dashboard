@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Business, Page, Service } from "@/types";
 import { resolveCanonical } from "@/lib/canonical";
 import { isStay, unitPhotos } from "@/lib/stay";
+import { amenityLabels } from "@/lib/amenities";
 import { shouldNoindex, NOINDEX_ROBOTS } from "@/lib/noindex";
 import { PageShell } from "./PageShell";
 
@@ -130,6 +131,15 @@ export default async function ExtraPage({ params }: Props) {
           ...(description && { description }),
           ...(image ? { image } : {}),
           ...(service.max_guests ? { occupancy: { "@type": "QuantitativeValue", maxValue: service.max_guests } } : {}),
+          ...(service.amenities?.length
+            ? {
+                amenityFeature: amenityLabels(service.amenities, "en").map((name) => ({
+                  "@type": "LocationFeatureSpecification",
+                  name,
+                  value: true,
+                })),
+              }
+            : {}),
           ...(service.price > 0 && {
             potentialAction: {
               "@type": "ReserveAction",
