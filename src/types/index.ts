@@ -334,6 +334,8 @@ export interface Service {
   min_nights?: number | null;
   /** Sleeps up to N guests. Null = not specified, no cap enforced. */
   max_guests?: number | null;
+  /** Amenity keys from lib/amenities.ts. Empty = none listed. */
+  amenities?: string[] | null;
 }
 
 export const STATUS_COLOR: Record<BookingStatus, string> = {

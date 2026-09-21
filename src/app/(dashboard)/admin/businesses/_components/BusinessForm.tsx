@@ -11,6 +11,7 @@ import { prepareImageUpload } from "@/lib/image-upload";
 import { SmartImg } from "@/components/SmartImg";
 import { FontPicker } from "@/components/FontPicker";
 import { isReservedSlug } from "@/lib/reserved-slugs";
+import { AMENITIES } from "@/lib/amenities";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -2527,6 +2528,7 @@ function ServicesPanel({ businessId, services, setServices, stayMode }: {
   const [descHe,   setDescHe]   = useState("");
   const [minNights, setMinNights] = useState("");
   const [maxGuests, setMaxGuests] = useState("");
+  const [amenities, setAmenities] = useState<string[]>([]);
   const [saving,   setSaving]   = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -2558,8 +2560,8 @@ function ServicesPanel({ businessId, services, setServices, stayMode }: {
     if (results.some((r) => r.error)) setServices(prev);
   }
 
-  function startAdd()             { setEditing(null); setName(""); setNameHe(""); setPrice(""); setDuration(""); setDesc(""); setDescHe(""); setMinNights(""); setMaxGuests(""); setAdding(true); }
-  function startEdit(s: Service)  { setEditing(s); setName(s.name); setNameHe(s.name_he || ""); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(s.description || ""); setDescHe(s.description_he || ""); setMinNights(s.min_nights != null ? String(s.min_nights) : ""); setMaxGuests(s.max_guests != null ? String(s.max_guests) : ""); setAdding(true); }
+  function startAdd()             { setEditing(null); setName(""); setNameHe(""); setPrice(""); setDuration(""); setDesc(""); setDescHe(""); setMinNights(""); setMaxGuests(""); setAmenities([]); setAdding(true); }
+  function startEdit(s: Service)  { setEditing(s); setName(s.name); setNameHe(s.name_he || ""); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(s.description || ""); setDescHe(s.description_he || ""); setMinNights(s.min_nights != null ? String(s.min_nights) : ""); setMaxGuests(s.max_guests != null ? String(s.max_guests) : ""); setAmenities(s.amenities ?? []); setAdding(true); }
   function cancelAdd()            { setAdding(false); setEditing(null); }
 
   async function saveService() {
@@ -2571,7 +2573,7 @@ function ServicesPanel({ businessId, services, setServices, stayMode }: {
       min_nights: stayMode ? Math.max(1, Number(minNights) || 1) : undefined,
       max_guests: stayMode ? (maxGuests ? Number(maxGuests) : null) : undefined,
     };
-    const stayPatch = stayMode ? { min_nights: stayFields.min_nights, max_guests: stayFields.max_guests } : {};
+    const stayPatch = stayMode ? { min_nights: stayFields.min_nights, max_guests: stayFields.max_guests, amenities } : {};
     setSaving(true);
     if (editing) {
       await supabase.from("services").update({ name: name.trim(), name_he: nameHe.trim() || null, price: Number(price), duration: durationValue, description: desc || null, description_he: descHe.trim() || null, ...stayPatch }).eq("id", editing.id);
@@ -2656,6 +2658,23 @@ function ServicesPanel({ businessId, services, setServices, stayMode }: {
             </div>
             {stayMode && (
               <div><label style={labelStyle}>Minimum nights</label><input value={minNights} onChange={e => setMinNights(e.target.value)} type="number" min="1" placeholder="1" style={inputStyle} /></div>
+            )}
+            {stayMode && (
+              <div>
+                <label style={labelStyle}>Amenities</label>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(150px, 1fr))", gap:6 }}>
+                  {AMENITIES.map(a => (
+                    <label key={a.key} style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, color:"var(--color-dark)", cursor:"pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={amenities.includes(a.key)}
+                        onChange={e => setAmenities(prev => e.target.checked ? [...prev, a.key] : prev.filter(k => k !== a.key))}
+                      />
+                      {a.en}
+                    </label>
+                  ))}
+                </div>
+              </div>
             )}
             <div><label style={labelStyle}>Name (HE) — שם בעברית</label><input value={nameHe} onChange={e => setNameHe(e.target.value)} placeholder={stayMode ? "קאסה גדולה" : "תספורת"} dir="rtl" style={inputStyle} /></div>
             <div style={{ display:"flex", gap:8 }}>

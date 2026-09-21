@@ -30,6 +30,13 @@ const BRAND_SEO: Record<string, { title: string; description: string }> = {
     description:
       "A luxury hair studio where artistry, expertise and exceptional hospitality come together to create a truly personalized experience. 25+ years of craft in Herzliya. Book online.",
   },
+  // Copy approved by Rami 2026-09-21 (Debby). Name stays "Good Living" to match
+  // the Google Business Profile.
+  "good-living-herzeliya": {
+    title: "Good Living | Three Holiday Apartments in Herzliya",
+    description:
+      "Three private apartments in Herzliya, each sleeping 3: two bedrooms with a garden, a studio with a terrace, or a quiet studio with its own entrance.",
+  },
 };
 
 /**
@@ -247,11 +254,14 @@ export default async function BookPage({ params }: Props) {
     ...(b.google_place_id && {
       identifier: { "@type": "PropertyValue", propertyID: "GooglePlaceId", value: b.google_place_id },
     }),
-    ...(b.stat_rating && {
+    // Google rejects an AggregateRating with no count, so a hand-typed rating
+    // stays on the page for people and out of the markup. The count only
+    // exists when it came from Google Places, which makes the pair verifiable.
+    ...(b.stat_rating && b.google_review_count && {
       aggregateRating: {
         "@type": "AggregateRating",
         ratingValue: b.stat_rating,
-        ...(b.google_review_count && { reviewCount: b.google_review_count }),
+        reviewCount: b.google_review_count,
       },
     }),
   };
@@ -312,7 +322,9 @@ export async function generateMetadata({ params }: Props) {
     // index. So is any business that is not live: draft pitch sites must not be
     // crawlable under a real business's name.
     ...(shouldNoindex(slug, data.status) && { robots: NOINDEX_ROBOTS }),
-    alternates: { canonical: pageUrl },
+    // Both languages live on one URL (the toggle is client-side) — same signal
+    // the detail pages send, so Google knows the Hebrew version exists here.
+    alternates: { canonical: pageUrl, languages: { en: pageUrl, he: pageUrl, "x-default": pageUrl } },
     ...(brand && {
       icons: {
         // Multiple sizes so Google's SERP favicon crawler has a >=48px square

@@ -24,6 +24,8 @@ interface Props {
   borderColor: string;
   reviewLink?: string | null;
   leaveReviewLabel: string;
+  /** One line under the review button, e.g. why a review helps. */
+  leaveReviewHint?: string;
   showMoreLabel?: string;
   showLessLabel?: string;
 }
@@ -40,7 +42,7 @@ function toggleBtnStyle(accentColor: string): CSSProperties {
   };
 }
 
-export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borderColor, reviewLink, leaveReviewLabel, showMoreLabel = "Show more", showLessLabel = "Show less" }: Props) {
+export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borderColor, reviewLink, leaveReviewLabel, leaveReviewHint, showMoreLabel = "Show more", showLessLabel = "Show less" }: Props) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
 
   if (!reviews.length && !reviewLink) return null;
@@ -131,6 +133,9 @@ export function SectionReviews({ reviews, accentColor, darkColor, bgColor, borde
           </svg>
           {leaveReviewLabel}
         </a>
+      )}
+      {reviewLink && leaveReviewHint && (
+        <p style={{ margin: 0, textAlign: "center", fontSize: 12, color: darkColor, opacity: 0.7, lineHeight: 1.5 }}>{leaveReviewHint}</p>
       )}
     </div>
   );
