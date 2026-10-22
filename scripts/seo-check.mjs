@@ -15,7 +15,7 @@ const base = (args.find((a) => !a.startsWith('--')) || 'https://book.bapita.com'
 const PROD = 'https://book.bapita.com'
 const SLUG = 'good-living-herzeliya'
 const BRAND = 'Good Living Herzliya'
-const HERO_FILE = 'afe526d7-1.jpg'
+const HERO_FILE = 'afe526d7-3.jpg'
 const UNITS = ['', 'big-kasa', 'small-kasa', 'quiet-studio']
 
 const pathOf = (lang, unit) => `/${SLUG}${lang === 'he' ? '/he' : ''}${unit ? `/${unit}` : ''}`
