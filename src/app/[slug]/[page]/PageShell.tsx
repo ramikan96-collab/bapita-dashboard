@@ -16,6 +16,7 @@ import { pagePalette, themeKey } from "../_shared/pageTheme";
 import { isStay } from "@/lib/stay";
 import { amenityLabels } from "@/lib/amenities";
 import type { PageSpec } from "@/types";
+import { langPath, photoAlt, type BrandCopy } from "@/lib/brand-copy";
 
 const DEFAULT_ORDER = ["hero", "body", "gallery", "specs", "related", "cta"];
 
@@ -32,6 +33,8 @@ interface Props {
   siblings: Pick<Page, "id" | "slug" | "title" | "title_he">[];
   /** Where the parent site lives from here — "/" on a custom domain, "/<slug>" otherwise. */
   homeHref: string;
+  /** Approved copy, photo alts and language URLs (lib/brand-copy), when the business has a pack. */
+  copy?: BrandCopy | null;
 }
 
 /**
@@ -49,7 +52,7 @@ function Body({ text, color, font }: { text: string; color: string; font: string
   );
 }
 
-export function PageShell({ business, page, service, services, photos, siblings, homeHref }: Props) {
+export function PageShell({ business, page, service, services, photos, siblings, homeHref, copy }: Props) {
   const [lang, setLang] = useState<Lang>((business.default_lang as Lang) || "en");
   const [overlayOpen, setOverlayOpen] = useState(false);
 
@@ -69,9 +72,16 @@ export function PageShell({ business, page, service, services, photos, siblings,
   const c = page.content || {};
   const unit = page.kind === "detail" ? service : null;
   const title = (isRtl && (page.title_he?.trim() || unit?.name_he?.trim())) || page.title;
+  // A brand copy pack's intro wins; the page language is the URL's, so `lang`
+  // never changes in place there.
   const body  =
+    copy?.units[page.slug]?.[lang]?.intro ||
     (isRtl && (c.body_he?.trim() || unit?.description_he?.trim())) ||
     c.body || unit?.description || null;
+  const altFor = (src: string) => photoAlt(copy, src, lang) ?? title;
+  const langHrefs = copy && business.slug
+    ? { en: langPath(business.slug, "en", page.slug), he: langPath(business.slug, "he", page.slug) }
+    : null;
   const ownSpecs = ((isRtl && c.specs_he?.length ? c.specs_he : c.specs) || []) as PageSpec[];
   const unitSpecs: PageSpec[] = stay && unit
     ? [
@@ -111,7 +121,7 @@ export function PageShell({ business, page, service, services, photos, siblings,
       <div key="hero" style={{ borderRadius: P.radius, overflow: "hidden", background: P.surface, aspectRatio: "16/9" }}>
         <SmartImg
           src={hero}
-          alt={title}
+          alt={altFor(hero)}
           maxWidth={820}
           style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: business.image_focal?.[hero] || "center" }}
         />
@@ -126,7 +136,7 @@ export function PageShell({ business, page, service, services, photos, siblings,
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
           {galleryImages.map((src) => (
             <div key={src} style={{ borderRadius: P.radius, overflow: "hidden", background: P.surface, aspectRatio: "4/3" }}>
-              <SmartImg src={src} alt={title} maxWidth={400} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <SmartImg src={src} alt={altFor(src)} maxWidth={400} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           ))}
         </div>
@@ -223,7 +233,7 @@ export function PageShell({ business, page, service, services, photos, siblings,
       style={{ background: P.bg, color: P.text, minHeight: "100vh", fontFamily: bodyFont }}
     >
       <FontLoader fonts={[business.heading_font, business.body_font]} />
-      <LangToggle lang={lang} setLang={setLang} {...(P.dark ? { variant: "bordered" as const } : {})} />
+      <LangToggle lang={lang} setLang={setLang} hrefs={langHrefs} {...(P.dark ? { variant: "bordered" as const } : {})} />
 
       <main style={{ maxWidth: 820, margin: "0 auto", padding: "72px 20px 64px", display: "grid", gap: 36 }}>
         <div>

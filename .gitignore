@@ -44,3 +44,6 @@ next-env.d.ts
 # local tooling artifacts
 /graphify-out/
 /.claude/
+
+# data-script backups (scripts/*-data-*.mjs --apply); may hold customer data
+/backups/

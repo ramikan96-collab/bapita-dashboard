@@ -1,0 +1,422 @@
+import { loadBusinessPaymentsConfig } from "@/lib/payments-server";
+import { notFound, permanentRedirect } from "next/navigation";
+import { headers } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
+import BookingShell from "./BookingShell";
+import type { Business, Page, Service } from "@/types";
+import { fetchPlaceData } from "@/lib/google-places";
+import { resolveCanonical } from "@/lib/canonical";
+import { shouldNoindex, NOINDEX_ROBOTS } from "@/lib/noindex";
+import type { CopyLang } from "@/lib/brand-copy";
+import { brandCopy } from "@/lib/brand-copy/registry";
+
+// The business homepage, shared by /<slug> and (for a business with a brand
+// copy pack) /<slug>/he. Lives outside page.tsx because a page file may only
+// export the page itself.
+
+function getPublicClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
+// Per-business brand assets (favicon + share image) under public/clients/<slug>/.
+const BRAND_ASSET_SLUGS = new Set(["shimi-azut-hairstudio"]);
+
+// Live Google Places data stays off these pages until Rami approves the change
+// there. The Places lookup was broken for every business until 2026-10-10;
+// fixing it would otherwise switch this page's rating line and reviews from the
+// hand-entered values to Google's overnight.
+const PLACES_HELD_SLUGS = new Set(["shimi-azut-hairstudio"]);
+
+// Per-slug SEO copy overrides. Some businesses run a Hebrew-first site (toggle
+// on-page) but want an ENGLISH SERP entry — Google's global audience reads the
+// English title/description while the page itself stays HE. Keyed by slug so it
+// only ever affects the named business; everyone else keeps buildSeoCopy().
+// A business with a brand copy pack (lib/brand-copy) takes its copy from there.
+const BRAND_SEO: Record<string, { title: string; description: string }> = {
+  "shimi-azut-hairstudio": {
+    title: "Shimi Azut | Book online",
+    description:
+      "A luxury hair studio where artistry, expertise and exceptional hospitality come together to create a truly personalized experience. 25+ years of craft in Herzliya. Book online.",
+  },
+};
+
+/**
+ * Known cities for DB-driven SEO copy + structured address. Parsed from the
+ * free-text address string (HE or EN) so title/description/schema stay keyed
+ * off DB data, never a client name. Extend as new cities are onboarded.
+ */
+const SEO_CITIES = [
+  { match: /הרצליה|herzl/i, en: "Herzliya", he: "הרצליה", region: "Tel Aviv District" },
+] as const;
+
+type SeoCity = (typeof SEO_CITIES)[number];
+
+function parseCity(address?: string | null): SeoCity | null {
+  if (!address) return null;
+  return SEO_CITIES.find((c) => c.match.test(address)) ?? null;
+}
+
+/**
+ * Human, keyword + location aware title/description. No hyphens or dashes.
+ * HE copy when default_lang === "he", else EN. General helper (name + city
+ * interpolated), shipped with smart defaults; a real meta_title/meta_description
+ * field can override this later.
+ */
+function buildSeoCopy(opts: {
+  name: string;
+  nameHe?: string | null;
+  city: SeoCity | null;
+  lang: "he" | "en";
+  businessType?: string | null;
+}): { title: string; description: string } {
+  const { name, nameHe, city, lang, businessType } = opts;
+  const stay = businessType === "stay";
+
+  if (lang === "he") {
+    const displayName = nameHe || name;
+    const inCity = city ? ` ב${city.he}` : "";
+    if (stay) {
+      return {
+        title: `${displayName} | דירות נופש${inCity}`,
+        description: `${displayName}${inCity}. דירות אירוח פרטיות להזמנה ישירה מול המארח. בדקו זמינות ושלחו בקשה אונליין.`,
+      };
+    }
+    return {
+      title: `${displayName} | מספרה וברבר${inCity}`,
+      description: `מספרה של ${displayName}${inCity}. תספורות גבר, עיצוב זקן וטיפוח מקצועי. קבעו תור אונליין בקלות ובכמה קליקים.`,
+    };
+  }
+
+  const inCity = city ? ` in ${city.en}` : "";
+  if (stay) {
+    return {
+      title: `${name} | Holiday Apartments${inCity}`,
+      description: `${name}${inCity}. Private self contained apartments booked directly with the host. Check availability and request your dates online.`,
+    };
+  }
+  return {
+    title: `${name} | Barber and Hair Studio${inCity}`,
+    description: `${name} hair studio${inCity}. Men's cuts, beard styling and grooming. Book your appointment online in seconds.`,
+  };
+}
+
+/** Canonical URL of the homepage in one language — "he" adds the /he segment. */
+function homeUrl(slug: string, b: Parameters<typeof resolveCanonical>[1], lang: CopyLang) {
+  return resolveCanonical(slug, b, lang === "he" ? "he" : undefined).pageUrl;
+}
+
+/**
+ * `urlLang` is set only by the /<slug>/he route. Without a brand copy pack
+ * there is no Hebrew URL, so that route 404s exactly as it did before it
+ * existed.
+ */
+export async function renderTenantPage(slug: string, urlLang?: "he") {
+  const copy = brandCopy(slug);
+  if (urlLang && !copy) return notFound();
+  const lang: CopyLang = urlLang ?? "en";
+
+  const supabase = getPublicClient();
+
+  const { data: business, error } = await supabase
+    .from("businesses")
+    .select("id, name, slug, status, business_type, gallery_groups, gallery_grouped, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, business_hours, template_style, tagline, hero_image_url, hero_position, image_focal, gallery_images, gallery_hidden, about_text, accent_color, external_booking_url, cta_label, cta_label_he, show_gallery, show_about, show_hours, show_location, default_lang, stat_years, stat_clients, stat_rating, google_reviews, google_place_id, show_reviews, section_order, name_he, tagline_he, about_text_he, show_services, show_stats, show_open_status, profile_image_url, show_staff, staff_members, heading_font, body_font, gallery_source, instagram_embed, custom_domain, custom_domain_verified, business_id_number, cancellation_policy")
+    .eq("slug", slug)
+    .single();
+
+  if (error || !business) return notFound();
+
+  const { data: services } = await supabase
+    .from("services")
+    .select("*")
+    .eq("business_id", (business as unknown as Business).id)
+    .eq("active", true)
+    .order("display_order");
+
+  // Online-payment config. The anon key cannot read the deposit columns or the
+  // addons table (by design), so this comes from the service client and is
+  // merged onto the business object the themes already receive. Only booleans
+  // and amounts cross to the browser — never credentials.
+  // Published extra pages, so a service card and a section heading can link to
+  // the page that belongs to it. RLS already hides unpublished rows from anon.
+  const { data: pages } = await supabase
+    .from("pages")
+    .select("slug, service_id, section_key")
+    .eq("business_id", (business as unknown as Business).id)
+    .order("display_order");
+
+  const paymentsCfg = await loadBusinessPaymentsConfig((business as unknown as Business).id);
+
+  const b = {
+    ...(business as unknown as Business),
+    payments_active: paymentsCfg.active,
+    deposit_enabled: paymentsCfg.deposit_enabled,
+    deposit_default_type: paymentsCfg.deposit_default_type as Business["deposit_default_type"],
+    deposit_default_value: paymentsCfg.deposit_default_value,
+  } as Business;
+
+  // book.bapita.com/<slug> is a duplicate of the brand's own domain. When the
+  // business has a verified custom domain, send real users (and link equity)
+  // there with a permanent redirect. The custom-domain host reaches this page
+  // via middleware rewrite with its own host header, so the condition is false
+  // there and it renders normally — no redirect loop.
+  const domain = b.custom_domain?.replace(/^www\./, "") ?? "";
+  if (domain && b.custom_domain_verified === true) {
+    const reqHost = (await headers()).get("host")?.toLowerCase().replace(/:\d+$/, "").replace(/^www\./, "") ?? "";
+    if (reqHost === "book.bapita.com") {
+      permanentRedirect(`https://www.${domain}/`);
+    }
+  }
+
+  // A brand copy pack names the business the same in both languages and fixes
+  // the page language to the URL's, so the server-rendered HTML and the first
+  // client render agree.
+  if (copy) {
+    b.name = copy.name;
+    b.name_he = null;
+    b.default_lang = lang;
+  }
+
+  // Hide images flagged as "not in gallery" (e.g. backgrounds/covers) from the
+  // public gallery grid. They stay available as hero/cover via hero_image_url.
+  if (Array.isArray(b.gallery_hidden) && b.gallery_hidden.length > 0 && Array.isArray(b.gallery_images)) {
+    const hidden = new Set(b.gallery_hidden);
+    b.gallery_images = b.gallery_images.filter((url) => !hidden.has(url));
+  }
+
+  // Merge Google Places reviews (server-side, 1h cache) with manual testimonials,
+  // and auto-populate the hero rating + review count straight from Google.
+  let placeLocation: { lat: number; lng: number } | null = null;
+  let liveGoogleCount = false;
+  if (b.google_place_id && !PLACES_HELD_SLUGS.has(slug)) {
+    const place = await fetchPlaceData(b.google_place_id);
+    if (place.reviews.length > 0) {
+      const manual = Array.isArray(b.google_reviews) ? b.google_reviews : [];
+      b.google_reviews = [...place.reviews, ...manual];
+    }
+    // Google's live numbers override the manual stat fields when present.
+    if (place.rating != null) b.stat_rating = place.rating.toFixed(1);
+    if (place.total  != null) b.google_review_count = place.total;
+    liveGoogleCount = place.total != null;
+    placeLocation = place.location;
+  }
+
+  // Google's numbers on this page. When Places did not answer, the admin's
+  // hand-typed rating and count stand in for them, shown as Google reviews
+  // (the count is the Maps review count, not a guest count).
+  if (copy?.googleRatingOnly) {
+    if (!liveGoogleCount && b.stat_clients) b.google_review_count = b.stat_clients;
+    b.stat_clients = null;
+    if (b.google_review_count == null) b.stat_rating = null;
+  }
+
+  // A short-term rental is lodging, not a salon. Emitting HairSalon on a
+  // property page is worse than emitting nothing: it tells Google the page is
+  // about something it is not.
+  const isStayBusiness = b.business_type === "stay";
+
+  const city = parseCity(b.address);
+
+  const { canonicalBase, pageUrl: basePageUrl } = resolveCanonical(slug, b);
+  const pageUrl = copy ? homeUrl(slug, b, lang) : basePageUrl;
+  const home = copy?.home[lang];
+
+  // Brand share image, served from the same host as the canonical URL so it
+  // never points off-domain. Falls back to the hero image for non-brand slugs.
+  const schemaImage = BRAND_ASSET_SLUGS.has(slug)
+    ? `${canonicalBase}/clients/${slug}/og.png`
+    : b.hero_image_url;
+
+  // Days with valid open hours, mapped to schema.org OpeningHoursSpecification.
+  const dayNames: Record<keyof NonNullable<Business["business_hours"]>, string> = {
+    monday: "Monday",
+    tuesday: "Tuesday",
+    wednesday: "Wednesday",
+    thursday: "Thursday",
+    friday: "Friday",
+    saturday: "Saturday",
+    sunday: "Sunday",
+  };
+  const openingHoursSpecification = !isStayBusiness && b.business_hours
+    ? (Object.keys(dayNames) as (keyof typeof dayNames)[])
+        .filter((day) => b.business_hours?.[day]?.open)
+        .map((day) => ({
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: `https://schema.org/${dayNames[day]}`,
+          opens: b.business_hours![day].start,
+          closes: b.business_hours![day].end,
+        }))
+    : [];
+
+  const sameAs = [b.instagram_url, b.facebook_url, b.google_review_link].filter(
+    (url): url is string => Boolean(url)
+  );
+
+  const description = home?.description || BRAND_SEO[slug]?.description || b.tagline || b.tagline_he;
+
+  const localBusinessSchema = {
+    "@context": "https://schema.org",
+    "@type": isStayBusiness ? ["LodgingBusiness"] : ["HairSalon", "BarberShop"],
+    name: b.name,
+    ...(b.name_he && { alternateName: b.name_he }),
+    url: pageUrl,
+    ...(copy && { inLanguage: lang }),
+    ...(description && { description }),
+    ...(b.phone && { telephone: b.phone }),
+    ...(b.email && { email: b.email }),
+    ...(b.address && {
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: b.address,
+        ...(city && { addressLocality: city.en, addressRegion: city.region }),
+        addressCountry: "IL",
+      },
+    }),
+    ...(placeLocation && {
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: placeLocation.lat,
+        longitude: placeLocation.lng,
+      },
+    }),
+    priceRange: "₪₪",
+    ...(city && { areaServed: city.en }),
+    ...(schemaImage && { image: schemaImage }),
+    ...(b.google_maps_url && { hasMap: b.google_maps_url }),
+    ...(sameAs.length > 0 && { sameAs }),
+    ...(openingHoursSpecification.length > 0 && { openingHoursSpecification }),
+    ...(b.google_place_id && {
+      identifier: { "@type": "PropertyValue", propertyID: "GooglePlaceId", value: b.google_place_id },
+    }),
+    // Google rejects an AggregateRating with no count, so a hand-typed rating
+    // stays on the page for people and out of the markup. The count only
+    // exists when it came from Google Places, which makes the pair verifiable.
+    ...(b.stat_rating && b.google_review_count && liveGoogleCount && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: b.stat_rating,
+        reviewCount: b.google_review_count,
+      },
+    }),
+  };
+
+  // The same text as the visible FAQ, which only the dark theme renders. No
+  // visible FAQ, no markup: Google treats FAQ markup without it as spam.
+  const faqSchema = home?.faq.length && b.template_style === "dark"
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        inLanguage: lang,
+        mainEntity: home.faq.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      }
+    : null;
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(localBusinessSchema).replace(/</g, "\\u003c"),
+        }}
+      />
+      {faqSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }}
+        />
+      )}
+      <BookingShell
+        business={b}
+        services={(services || []) as Service[]}
+        pages={(pages || []) as Pick<Page, "slug" | "service_id" | "section_key">[]}
+        copy={copy}
+      />
+    </>
+  );
+}
+
+export async function tenantMetadata(slug: string, urlLang?: "he") {
+  const copy = brandCopy(slug);
+  if (urlLang && !copy) return { title: "Not found" };
+  const lang: CopyLang = urlLang ?? "en";
+
+  const supabase = getPublicClient();
+  const { data } = await supabase
+    .from("businesses")
+    .select("name, name_he, tagline, hero_image_url, address, default_lang, business_type, status, custom_domain, custom_domain_verified")
+    .eq("slug", slug)
+    .single();
+
+  if (!data) return { title: "Book an appointment" };
+
+  const { canonicalBase, pageUrl: basePageUrl } = resolveCanonical(slug, data);
+  const pageUrl = copy ? homeUrl(slug, data, lang) : basePageUrl;
+
+  // Keyword + location aware copy, HE or EN by default_lang. No dashes.
+  // A brand copy pack wins, then a per-slug BRAND_SEO override (e.g. English
+  // SERP for a Hebrew-first site).
+  const { title, description } = copy?.home[lang] ?? BRAND_SEO[slug] ?? buildSeoCopy({
+    name: data.name,
+    nameHe: data.name_he,
+    city: parseCity(data.address),
+    lang: data.default_lang === "he" ? "he" : "en",
+    businessType: data.business_type,
+  });
+
+  // Per-business brand assets (favicon + share image). Lives under
+  // public/clients/<slug>/. Same per-slug override pattern as customs/.
+  const brand = BRAND_ASSET_SLUGS.has(slug) ? `/clients/${slug}` : null;
+
+  const image = brand
+    ? `${canonicalBase}${brand}/og.png`
+    : data.hero_image_url || `${canonicalBase}/og-image.png`;
+
+  // With a brand copy pack each language has its own URL and they point at
+  // each other. Everyone else keeps a canonical only, as before.
+  const languages = copy
+    ? { en: homeUrl(slug, data, "en"), he: homeUrl(slug, data, "he"), "x-default": homeUrl(slug, data, "en") }
+    : null;
+
+  return {
+    title,
+    description,
+    // Demo/template pages are near-duplicate showcases — keep them out of the
+    // index. So is any business that is not live: draft pitch sites must not be
+    // crawlable under a real business's name.
+    ...(shouldNoindex(slug, data.status) && { robots: NOINDEX_ROBOTS }),
+    alternates: { canonical: pageUrl, ...(languages && { languages }) },
+    ...(brand && {
+      icons: {
+        // Multiple sizes so Google's SERP favicon crawler has a >=48px square
+        // (it tends to skip a lone 32px icon and keep its old cached one).
+        icon: [
+          { url: `${brand}/icon-32.png`, type: "image/png", sizes: "32x32" },
+          { url: `${brand}/icon-96.png`, type: "image/png", sizes: "96x96" },
+          { url: `${brand}/icon-512.png`, type: "image/png", sizes: "512x512" },
+        ],
+        apple: [{ url: `${brand}/icon-180.png`, sizes: "180x180" }],
+      },
+    }),
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: copy?.name ?? "Bapita",
+      ...(copy && { locale: lang === "he" ? "he_IL" : "en_US", alternateLocale: [lang === "he" ? "en_US" : "he_IL"] }),
+      images: [{ url: image, width: 1200, height: 630, alt: copy?.home[lang].heroAlt ?? data.name }],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
+}

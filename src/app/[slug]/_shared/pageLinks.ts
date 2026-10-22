@@ -20,9 +20,14 @@ export interface PageLinks {
  * one relative path is correct on both hosts. Same rule as resolveCanonical —
  * they must not disagree.
  */
-export function buildPageLinks(business: Business, pages: LinkablePage[] | undefined): PageLinks {
+export function buildPageLinks(
+  business: Business,
+  pages: LinkablePage[] | undefined,
+  /** "/he" on the Hebrew URL of a business with language URLs (lib/brand-copy). */
+  langPrefix = "",
+): PageLinks {
   const hasCustomDomain = !!business.custom_domain && business.custom_domain_verified === true;
-  const base = hasCustomDomain ? "" : `/${business.slug}`;
+  const base = (hasCustomDomain ? "" : `/${business.slug}`) + langPrefix;
   const href = (slug: string) => `${base}/${slug}`;
 
   const byService = new Map<string, string>();

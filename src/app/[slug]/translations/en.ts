@@ -1,8 +1,13 @@
 export const en = {
   hero: { cta: "Book Appointment", bookNow: "Book Now" },
   services: { title: "Services", book: "Book →" },
-  gallery: { title: "Gallery" },
+  gallery: {
+    title: "Gallery",
+    showMore: (n: number) => `Show ${n} more photo${n !== 1 ? "s" : ""}`,
+    showLess: "Show less",
+  },
   about: { title: "About" },
+  faq: { title: "FAQ" },
   hours: { title: "Hours", closed: "Closed" },
   location: { title: "Location", directions: "Get Directions →" },
   reviews: { title: "What Clients Say", titleGuests: "What Guests Say", leaveReviewHintGuests: "Stayed with us? It takes two minutes and helps the next guest choose.", leaveReview: "Leave a review on Google", showMore: "Show more", showLess: "Show less" },

@@ -20,19 +20,97 @@ export interface PlaceData {
 
 const EMPTY_PLACE: PlaceData = { reviews: [], rating: null, total: null, location: null };
 
+/**
+ * Why a Places call came back empty, in the server log, with the key scrubbed.
+ *
+ * Every failure used to collapse into an empty result with no trace — which is
+ * how the public pages and the admin lookup were both silently getting nothing
+ * from Google, and nobody could say why (2026-10-10).
+ */
+export function logPlacesFailure(what: string, detail: unknown, apiKey?: string) {
+  let text = typeof detail === "string" ? detail : JSON.stringify(detail);
+  if (apiKey) text = text.split(apiKey).join("<key>");
+  console.error(`google-places: ${what}: ${text.slice(0, 300)}`);
+}
+
+interface NewPlaceReview {
+  rating?: number;
+  text?: { text?: string };
+  originalText?: { text?: string };
+  relativePublishTimeDescription?: string;
+  publishTime?: string;
+  authorAttribution?: { displayName?: string };
+}
+
+/**
+ * Place Details on Places API (New). Google stopped offering the legacy Places
+ * API to new Cloud projects, and a key restricted to the new API gets
+ * REQUEST_DENIED from every legacy endpoint. Same place ids on both. Null when
+ * the call fails, so the caller can fall back to legacy.
+ */
+async function fetchPlaceDataNew(placeId: string, apiKey: string): Promise<PlaceData | null> {
+  try {
+    const res = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
+      headers: {
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "rating,userRatingCount,location,reviews",
+      },
+      next: { revalidate: 86400 },
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      logPlacesFailure(`details (new) HTTP ${res.status}`, data?.error ?? data, apiKey);
+      return null;
+    }
+
+    const raw: NewPlaceReview[] = data.reviews ?? [];
+    return {
+      reviews: raw.slice(0, 5).map((r, i) => ({
+        id:     `gplace-${i}-${r.publishTime ?? i}`,
+        author: r.authorAttribution?.displayName ?? "",
+        rating: r.rating ?? 0,
+        text:   r.originalText?.text ?? r.text?.text ?? "",
+        date:   r.relativePublishTimeDescription ?? "",
+      })),
+      rating: typeof data.rating === "number" ? data.rating : null,
+      total:  typeof data.userRatingCount === "number" ? data.userRatingCount : null,
+      location:
+        typeof data.location?.latitude === "number" && typeof data.location?.longitude === "number"
+          ? { lat: data.location.latitude, lng: data.location.longitude }
+          : null,
+    };
+  } catch (err) {
+    logPlacesFailure("details (new) threw", String(err), apiKey);
+    return null;
+  }
+}
+
 export async function fetchPlaceData(placeId: string): Promise<PlaceData> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey || !placeId) return EMPTY_PLACE;
+  if (!placeId) return EMPTY_PLACE;
+  if (!apiKey) {
+    logPlacesFailure("details", "GOOGLE_PLACES_API_KEY is not set");
+    return EMPTY_PLACE;
+  }
+
+  const fresh = await fetchPlaceDataNew(placeId, apiKey);
+  if (fresh) return fresh;
 
   const url =
     `https://maps.googleapis.com/maps/api/place/details/json` +
     `?place_id=${encodeURIComponent(placeId)}&fields=reviews,rating,user_ratings_total,geometry/location&reviews_sort=newest&key=${apiKey}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
-    if (!res.ok) return EMPTY_PLACE;
+    const res = await fetch(url, { next: { revalidate: 86400 } });
+    if (!res.ok) {
+      logPlacesFailure(`details (legacy) HTTP ${res.status}`, await res.text(), apiKey);
+      return EMPTY_PLACE;
+    }
     const data = await res.json();
-    if (data.status !== "OK") return EMPTY_PLACE;
+    if (data.status !== "OK") {
+      logPlacesFailure(`details (legacy) ${data.status}`, data.error_message ?? "", apiKey);
+      return EMPTY_PLACE;
+    }
 
     const raw: PlaceReview[] = data.result?.reviews ?? [];
     const reviews = raw.slice(0, 5).map((r, i) => ({
@@ -53,7 +131,8 @@ export async function fetchPlaceData(placeId: string): Promise<PlaceData> {
           ? { lat: loc.lat, lng: loc.lng }
           : null,
     };
-  } catch {
+  } catch (err) {
+    logPlacesFailure("details (legacy) threw", String(err), apiKey);
     return EMPTY_PLACE;
   }
 }

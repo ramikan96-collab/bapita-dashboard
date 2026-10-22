@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { ComponentType } from "react";
 import type { Business, Service } from "@/types";
 import type { LinkablePage } from "./_shared/pageLinks";
+import type { BrandCopy } from "@/lib/brand-copy";
 import { track } from "@/lib/analytics/track";
 import { ClassicPage } from "./themes/classic/ClassicPage";
 import { CleanPage }   from "./themes/clean/CleanPage";
@@ -27,9 +28,14 @@ interface Props {
   services: Service[];
   /** Published extra pages, for the service-card and section-heading links. */
   pages?: LinkablePage[];
+  /**
+   * Approved SEO copy + language URLs (lib/brand-copy). Only the dark theme
+   * renders it, the one theme a business with a pack uses today.
+   */
+  copy?: BrandCopy | null;
 }
 
-export default function BookingShell({ business, services, pages }: Props) {
+export default function BookingShell({ business, services, pages, copy }: Props) {
   const initialTheme = (business.template_style as ThemeKey) ?? "classic";
   const [previewTheme, setPreviewTheme] = useState<ThemeKey>(initialTheme);
 
@@ -56,7 +62,7 @@ export default function BookingShell({ business, services, pages }: Props) {
         <DemoThemeSwitcher active={previewTheme} onSwitch={setPreviewTheme} />
       )}
       {theme === "clean" && <CleanPage business={business} services={services} pages={pages} />}
-      {theme === "dark"  && <DarkPage  business={business} services={services} pages={pages} />}
+      {theme === "dark"  && <DarkPage  business={business} services={services} pages={pages} copy={copy} />}
       {(theme === "classic" || !["clean","dark"].includes(theme)) && (
         <ClassicPage business={business} services={services} pages={pages} />
       )}
