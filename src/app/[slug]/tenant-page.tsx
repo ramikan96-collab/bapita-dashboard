@@ -189,6 +189,7 @@ export async function renderTenantPage(slug: string, urlLang?: "he") {
   // Merge Google Places reviews (server-side, 1h cache) with manual testimonials,
   // and auto-populate the hero rating + review count straight from Google.
   let placeLocation: { lat: number; lng: number } | null = null;
+  let liveGoogleCount = false;
   if (b.google_place_id && !PLACES_HELD_SLUGS.has(slug)) {
     const place = await fetchPlaceData(b.google_place_id);
     if (place.reviews.length > 0) {
@@ -198,12 +199,15 @@ export async function renderTenantPage(slug: string, urlLang?: "he") {
     // Google's live numbers override the manual stat fields when present.
     if (place.rating != null) b.stat_rating = place.rating.toFixed(1);
     if (place.total  != null) b.google_review_count = place.total;
+    liveGoogleCount = place.total != null;
     placeLocation = place.location;
   }
 
-  // Only Google's own numbers on this page: no hand-typed guest count, and no
-  // hand-typed rating when Google did not answer.
+  // Google's numbers on this page. When Places did not answer, the admin's
+  // hand-typed rating and count stand in for them, shown as Google reviews
+  // (the count is the Maps review count, not a guest count).
   if (copy?.googleRatingOnly) {
+    if (!liveGoogleCount && b.stat_clients) b.google_review_count = b.stat_clients;
     b.stat_clients = null;
     if (b.google_review_count == null) b.stat_rating = null;
   }
@@ -289,7 +293,7 @@ export async function renderTenantPage(slug: string, urlLang?: "he") {
     // Google rejects an AggregateRating with no count, so a hand-typed rating
     // stays on the page for people and out of the markup. The count only
     // exists when it came from Google Places, which makes the pair verifiable.
-    ...(b.stat_rating && b.google_review_count && {
+    ...(b.stat_rating && b.google_review_count && liveGoogleCount && {
       aggregateRating: {
         "@type": "AggregateRating",
         ratingValue: b.stat_rating,
