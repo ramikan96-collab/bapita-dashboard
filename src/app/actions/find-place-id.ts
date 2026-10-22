@@ -1,5 +1,6 @@
 "use server";
 
+import { isAdminRequest } from "@/lib/admin";
 import { logPlacesFailure } from "@/lib/google-places";
 
 export interface PlaceLookupResult {
@@ -29,13 +30,17 @@ export async function findPlaceId(
   businessName: string,
   businessAddress: string,
 ): Promise<PlaceLookup> {
+  // Server actions are callable by anyone who has the page JS; each call spends
+  // the billed Places key, so only an admin session may run one.
+  if (!(await isAdminRequest())) throw new Error("Forbidden");
+
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
     logPlacesFailure("text search", "GOOGLE_PLACES_API_KEY is not set");
     return { ok: false, reason: "not-configured" };
   }
 
-  const query = `${businessName} ${businessAddress}`.trim();
+  const query = `${businessName} ${businessAddress}`.trim().slice(0, 200);
 
   try {
     const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
