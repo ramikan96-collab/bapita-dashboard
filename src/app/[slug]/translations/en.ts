@@ -10,7 +10,7 @@ export const en = {
   faq: { title: "FAQ" },
   hours: { title: "Hours", closed: "Closed" },
   location: { title: "Location", directions: "Get Directions →" },
-  reviews: { title: "What Clients Say", titleGuests: "What Guests Say", leaveReviewHintGuests: "Stayed with us? It takes two minutes and helps the next guest choose.", leaveReview: "Leave a review on Google", leaveReviewGuests: "Leave a review on Google", showMore: "Show more", showLess: "Show less" },
+  reviews: { title: "What Clients Say", titleGuests: "What Guests Say", leaveReviewHintGuests: "Stayed with us? It takes two minutes and helps the next guest choose.", leaveReview: "Leave a review on Google", showMore: "Show more", showLess: "Show less" },
   staff: { title: "Team" },
   footer: { poweredBy: "Powered by", brand: "Bapita", privacy: "Privacy", terms: "Terms" },
   social: { happyClients: "4.9 · 340 happy clients", happyGuests: "Booked directly with the host" },

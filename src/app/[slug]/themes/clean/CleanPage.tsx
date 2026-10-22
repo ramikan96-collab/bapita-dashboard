@@ -332,7 +332,7 @@ export function CleanPage({ business, services, pages }: Props) {
             case "reviews":
               return business.show_reviews !== false && ((business.google_reviews && business.google_reviews.length > 0) || !!business.google_review_link) ? (
                 <section key={key} style={{ paddingTop: 56 }}>
-                  <PageLink href={pageLinks.section("reviews")}><SectionTitle title={t.reviews.title} accent={accent} headingFont={headingFont} /></PageLink>
+                  <PageLink href={pageLinks.section("reviews")}><SectionTitle title={stayMode ? t.reviews.titleGuests : t.reviews.title} accent={accent} headingFont={headingFont} /></PageLink>
                   <div style={{ marginTop: 20 }}>
                     <SectionReviews
                       reviews={business.google_reviews ?? []}
@@ -342,6 +342,7 @@ export function CleanPage({ business, services, pages }: Props) {
                       borderColor={P.border}
                       reviewLink={business.google_review_link}
                       leaveReviewLabel={t.reviews.leaveReview}
+                      leaveReviewHint={stayMode ? t.reviews.leaveReviewHintGuests : undefined}
                       showMoreLabel={t.reviews.showMore}
                       showLessLabel={t.reviews.showLess}
                     />

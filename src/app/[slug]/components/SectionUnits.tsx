@@ -39,12 +39,6 @@ interface Props {
   onSelect: (unit: Service) => void;
   /** Href of this unit's own page, when the business has one. */
   hrefForUnit?: (unitId: string) => string | null;
-  /**
-   * Split card (lib/brand-copy businesses only): photo and name go to the unit
-   * page, the CTA opens booking, amenities show on the card. Everyone else keeps
-   * the whole card as one booking button.
-   */
-  splitActions?: boolean;
 }
 
 /**
@@ -55,7 +49,7 @@ interface Props {
  * over a barber booking page, so it gets a photo even when the theme's service
  * list does not.
  */
-export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, hrefForUnit, splitActions = false }: Props) {
+export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, hrefForUnit }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const altFor = usePhotoAlt();
   const { surface, raised, border, text, muted, accent, radius } = tokens;
@@ -68,7 +62,7 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, href
         const cover = photos[0] ?? business.hero_image_url ?? null;
         const name = isRtl && unit.name_he ? unit.name_he : unit.name;
         const desc = isRtl && unit.description_he ? unit.description_he : unit.description;
-        const amenities = splitActions ? amenityLabels(unit.amenities, isRtl ? "he" : "en") : [];
+        const amenities = amenityLabels(unit.amenities, isRtl ? "he" : "en");
         const shownAmenities = amenities.slice(0, MAX_CARD_AMENITIES);
         const hiddenAmenities = amenities.length - shownAmenities.length;
         const isHover = hovered === unit.id;
@@ -104,109 +98,6 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, href
           </div>
         ) : null;
 
-        const cta = { label: t.stay.check, style: {
-          fontFamily: displayFont,
-          background: isHover ? accent : "transparent",
-          color: isHover ? surface : accent,
-          border: `1.5px solid ${accent}`,
-          borderRadius: radius,
-          padding: "8px 16px",
-          fontSize: 12,
-          fontWeight: 700,
-          whiteSpace: "nowrap" as const,
-          letterSpacing: tokens.ctaUppercase ? "0.06em" : undefined,
-          textTransform: tokens.ctaUppercase ? ("uppercase" as const) : undefined,
-          transition: "background 0.2s, color 0.2s",
-        } };
-
-        const body = (
-          <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: text }}>
-              <PageLink href={href} inline>{name}</PageLink>
-            </div>
-
-            {desc && (
-              <div style={{ fontSize: 13, color: muted, lineHeight: 1.5 }}>{desc}</div>
-            )}
-
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, fontSize: 12, color: muted }}>
-              {unit.max_guests ? <span>{t.stay.sleeps(unit.max_guests)}</span> : null}
-              {unit.min_nights && unit.min_nights > 1 ? <span>· {t.stay.minNights(unit.min_nights)}</span> : null}
-            </div>
-
-            {shownAmenities.length > 0 && (
-              <ul
-                aria-label={t.stay.amenities}
-                style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}
-              >
-                {shownAmenities.map((label) => (
-                  <li
-                    key={label}
-                    style={{
-                      fontSize: 11, color: text, border: `1px solid ${border}`,
-                      borderRadius: 999, padding: "3px 9px", whiteSpace: "nowrap",
-                    }}
-                  >
-                    {label}
-                  </li>
-                ))}
-                {hiddenAmenities > 0 && (
-                  <li style={{ fontSize: 11, color: muted, padding: "3px 4px", whiteSpace: "nowrap" }}>
-                    {t.stay.moreAmenities(hiddenAmenities)}
-                  </li>
-                )}
-              </ul>
-            )}
-
-            <div style={{
-              marginTop: "auto", paddingTop: 12,
-              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-            }}>
-              <span style={{ fontFamily: displayFont, fontSize: 20, fontWeight: 700, color: accent, whiteSpace: "nowrap" }}>
-                ₪{unit.price}
-                <span style={{ fontSize: 12, fontWeight: 500, color: muted }}> / {t.stay.perNight}</span>
-              </span>
-              {splitActions ? (
-                <button type="button" onClick={() => onSelect(unit)} style={{ ...cta.style, cursor: "pointer" }}>
-                  {cta.label}
-                </button>
-              ) : (
-                <span style={cta.style}>{cta.label}</span>
-              )}
-            </div>
-          </div>
-        );
-
-        const cardStyle = {
-          display: "flex",
-          flexDirection: "column" as const,
-          textAlign: (isRtl ? "right" : "left") as "right" | "left",
-          background: isHover ? raised : surface,
-          border: `1px solid ${isHover ? accent + "55" : border}`,
-          borderRadius: radius,
-          overflow: "hidden",
-          transition: "background 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s",
-          transform: isHover ? "translateY(-3px)" : "none",
-          boxShadow: isHover ? `0 10px 30px ${accent}1F` : "none",
-        };
-
-        // Whole card is one booking button, as it always was.
-        if (!splitActions) {
-          return (
-            <button
-              key={unit.id}
-              type="button"
-              onClick={() => onSelect(unit)}
-              onMouseEnter={() => setHovered(unit.id)}
-              onMouseLeave={() => setHovered(null)}
-              style={{ ...cardStyle, padding: 0, cursor: "pointer", fontFamily: "inherit" }}
-            >
-              {coverImage}
-              {body}
-            </button>
-          );
-        }
-
         return (
           <div
             key={unit.id}
@@ -215,7 +106,18 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, href
             // Keyboard users get the same highlighted state as the mouse.
             onFocus={() => setHovered(unit.id)}
             onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHovered(null); }}
-            style={cardStyle}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              textAlign: isRtl ? "right" : "left",
+              background: isHover ? raised : surface,
+              border: `1px solid ${isHover ? accent + "55" : border}`,
+              borderRadius: radius,
+              overflow: "hidden",
+              transition: "background 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s",
+              transform: isHover ? "translateY(-3px)" : "none",
+              boxShadow: isHover ? `0 10px 30px ${accent}1F` : "none",
+            }}
           >
             {coverImage && (href ? (
               <Link href={href} tabIndex={-1} aria-hidden style={{ display: "block" }}>
@@ -231,7 +133,76 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, href
                 {coverImage}
               </button>
             ))}
-            {body}
+
+            <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: text }}>
+                <PageLink href={href} inline>{name}</PageLink>
+              </div>
+
+              {desc && (
+                <div style={{ fontSize: 13, color: muted, lineHeight: 1.5 }}>{desc}</div>
+              )}
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, fontSize: 12, color: muted }}>
+                {unit.max_guests ? <span>{t.stay.sleeps(unit.max_guests)}</span> : null}
+                {unit.min_nights && unit.min_nights > 1 ? <span>· {t.stay.minNights(unit.min_nights)}</span> : null}
+              </div>
+
+              {shownAmenities.length > 0 && (
+                <ul
+                  aria-label={t.stay.amenities}
+                  style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}
+                >
+                  {shownAmenities.map((label) => (
+                    <li
+                      key={label}
+                      style={{
+                        fontSize: 11, color: text, border: `1px solid ${border}`,
+                        borderRadius: 999, padding: "3px 9px", whiteSpace: "nowrap",
+                      }}
+                    >
+                      {label}
+                    </li>
+                  ))}
+                  {hiddenAmenities > 0 && (
+                    <li style={{ fontSize: 11, color: muted, padding: "3px 4px", whiteSpace: "nowrap" }}>
+                      {t.stay.moreAmenities(hiddenAmenities)}
+                    </li>
+                  )}
+                </ul>
+              )}
+
+              <div style={{
+                marginTop: "auto", paddingTop: 12,
+                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+              }}>
+                <span style={{ fontFamily: displayFont, fontSize: 20, fontWeight: 700, color: accent, whiteSpace: "nowrap" }}>
+                  ₪{unit.price}
+                  <span style={{ fontSize: 12, fontWeight: 500, color: muted }}> / {t.stay.perNight}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onSelect(unit)}
+                  style={{
+                    fontFamily: displayFont,
+                    background: isHover ? accent : "transparent",
+                    color: isHover ? surface : accent,
+                    border: `1.5px solid ${accent}`,
+                    borderRadius: radius,
+                    padding: "8px 16px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    whiteSpace: "nowrap",
+                    cursor: "pointer",
+                    letterSpacing: tokens.ctaUppercase ? "0.06em" : undefined,
+                    textTransform: tokens.ctaUppercase ? "uppercase" : undefined,
+                    transition: "background 0.2s, color 0.2s",
+                  }}
+                >
+                  {t.stay.check}
+                </button>
+              </div>
+            </div>
           </div>
         );
       })}
