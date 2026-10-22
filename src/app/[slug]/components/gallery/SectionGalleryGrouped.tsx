@@ -1,6 +1,6 @@
 "use client";
 
-import { SectionGallery } from "./SectionGallery";
+import { SectionGallery, type GalleryLabels } from "./SectionGallery";
 import type { PhotoGroup } from "@/lib/stay";
 
 interface Props {
@@ -20,6 +20,7 @@ interface Props {
     btnText: string;
     btnTextHover: string;
   };
+  labels?: GalleryLabels;
 }
 
 /**
@@ -35,7 +36,7 @@ interface Props {
  */
 export function SectionGalleryGrouped({
   groups, borderRadius, initialCount, desktopInitialCount,
-  focal, altLabel, headingColor, mutedColor, headingFont, ui,
+  focal, altLabel, headingColor, mutedColor, headingFont, ui, labels,
 }: Props) {
   const showHeadings = groups.length > 1;
 
@@ -67,6 +68,7 @@ export function SectionGalleryGrouped({
             focal={focal}
             altLabel={group.title ? `${altLabel ?? ""} ${group.title}`.trim() : altLabel}
             ui={ui}
+            labels={labels}
           />
         </div>
       ))}

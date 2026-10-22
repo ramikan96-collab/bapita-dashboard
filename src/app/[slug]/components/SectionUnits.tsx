@@ -8,6 +8,7 @@ import { PageLink } from "../_shared/PageLink";
 import { unitPhotos } from "@/lib/stay";
 import { amenityLabels } from "@/lib/amenities";
 import type { Translations } from "../translations";
+import { usePhotoAlt } from "../_shared/photoAlt";
 
 export interface UnitCardTokens {
   /** card background */
@@ -50,6 +51,7 @@ interface Props {
  */
 export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, hrefForUnit }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const altFor = usePhotoAlt();
   const { surface, raised, border, text, muted, accent, radius } = tokens;
   const displayFont = tokens.displayFont ?? "inherit";
 
@@ -73,7 +75,7 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, href
           <div style={{ position: "relative", width: "100%", aspectRatio: "4 / 3", background: raised }}>
             <Image
               src={cover}
-              alt={name}
+              alt={altFor(cover) ?? name}
               fill
               sizes="(max-width: 768px) 100vw, 360px"
               style={{

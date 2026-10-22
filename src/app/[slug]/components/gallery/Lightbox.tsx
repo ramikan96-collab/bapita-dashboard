@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { SmartImg } from "@/components/SmartImg";
+import { usePhotoAlt } from "../../_shared/photoAlt";
 
 export interface LightboxProps {
   photos: string[];
@@ -15,6 +16,7 @@ export interface LightboxProps {
 export function Lightbox({ photos, index, onIndexChange, onClose, altLabel }: LightboxProps) {
   const touchX = useRef<number | null>(null);
   const swiped = useRef<boolean>(false);
+  const altFor = usePhotoAlt();
 
   const go = (delta: number) => {
     const next = index + delta;
@@ -99,7 +101,7 @@ export function Lightbox({ photos, index, onIndexChange, onClose, altLabel }: Li
         quality={90}
         sizes="90vw"
         loading="eager"
-        alt={`${altLabel ?? "Gallery"} — photo ${index + 1}`}
+        alt={altFor(photos[index]) ?? `${altLabel ?? "Gallery"} — photo ${index + 1}`}
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: "90vw", maxHeight: "90vh", objectFit: "contain", borderRadius: 4 }}
       />

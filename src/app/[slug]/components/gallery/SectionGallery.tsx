@@ -15,6 +15,13 @@ interface Props {
   focal?: Record<string, string>;
   altLabel?: string;
   ui?: GalleryUi;
+  /** "Show more" button text in the page's language. English when omitted. */
+  labels?: GalleryLabels;
+}
+
+export interface GalleryLabels {
+  more: (hidden: number) => string;
+  less: string;
 }
 
 // "Show more" button colors — defaults suit light themes; Dark overrides.
@@ -43,6 +50,7 @@ export function SectionGallery({
   focal,
   altLabel,
   ui = DEFAULT_UI,
+  labels,
 }: Props) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -96,7 +104,9 @@ export function SectionGallery({
           onMouseEnter={(e) => { e.currentTarget.style.borderColor = ui.btnBorderHover; e.currentTarget.style.color = ui.btnTextHover; }}
           onMouseLeave={(e) => { e.currentTarget.style.borderColor = ui.btnBorder; e.currentTarget.style.color = ui.btnText; }}
         >
-          {expanded ? "Show less" : `Show ${hiddenCount} more photo${hiddenCount !== 1 ? "s" : ""}`}
+          {labels
+            ? (expanded ? labels.less : labels.more(hiddenCount))
+            : (expanded ? "Show less" : `Show ${hiddenCount} more photo${hiddenCount !== 1 ? "s" : ""}`)}
         </button>
       )}
 

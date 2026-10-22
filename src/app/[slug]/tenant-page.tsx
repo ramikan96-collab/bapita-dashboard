@@ -7,8 +7,11 @@ import type { Business, Page, Service } from "@/types";
 import { fetchPlaceData } from "@/lib/google-places";
 import { resolveCanonical } from "@/lib/canonical";
 import { shouldNoindex, NOINDEX_ROBOTS } from "@/lib/noindex";
+import type { CopyLang } from "@/lib/brand-copy";
+import { brandCopy } from "@/lib/brand-copy/registry";
 
-// The business homepage. Lives outside page.tsx because a page file may only
+// The business homepage, shared by /<slug> and (for a business with a brand
+// copy pack) /<slug>/he. Lives outside page.tsx because a page file may only
 // export the page itself.
 
 function getPublicClient() {
@@ -21,22 +24,22 @@ function getPublicClient() {
 // Per-business brand assets (favicon + share image) under public/clients/<slug>/.
 const BRAND_ASSET_SLUGS = new Set(["shimi-azut-hairstudio"]);
 
+// Live Google Places data stays off these pages until Rami approves the change
+// there. The Places lookup was broken for every business until 2026-10-10;
+// fixing it would otherwise switch this page's rating line and reviews from the
+// hand-entered values to Google's overnight.
+const PLACES_HELD_SLUGS = new Set(["shimi-azut-hairstudio"]);
+
 // Per-slug SEO copy overrides. Some businesses run a Hebrew-first site (toggle
 // on-page) but want an ENGLISH SERP entry — Google's global audience reads the
 // English title/description while the page itself stays HE. Keyed by slug so it
 // only ever affects the named business; everyone else keeps buildSeoCopy().
+// A business with a brand copy pack (lib/brand-copy) takes its copy from there.
 const BRAND_SEO: Record<string, { title: string; description: string }> = {
   "shimi-azut-hairstudio": {
     title: "Shimi Azut | Book online",
     description:
       "A luxury hair studio where artistry, expertise and exceptional hospitality come together to create a truly personalized experience. 25+ years of craft in Herzliya. Book online.",
-  },
-  // Copy approved by Rami 2026-09-21 (Debby). Name stays "Good Living" to match
-  // the Google Business Profile.
-  "good-living-herzeliya": {
-    title: "Good Living | Three Holiday Apartments in Herzliya",
-    description:
-      "Three private apartments in Herzliya, each sleeping 3: two bedrooms with a garden, a studio with a terrace, or a quiet studio with its own entrance.",
   },
 };
 
@@ -100,7 +103,21 @@ function buildSeoCopy(opts: {
   };
 }
 
-export async function renderTenantPage(slug: string) {
+/** Canonical URL of the homepage in one language — "he" adds the /he segment. */
+function homeUrl(slug: string, b: Parameters<typeof resolveCanonical>[1], lang: CopyLang) {
+  return resolveCanonical(slug, b, lang === "he" ? "he" : undefined).pageUrl;
+}
+
+/**
+ * `urlLang` is set only by the /<slug>/he route. Without a brand copy pack
+ * there is no Hebrew URL, so that route 404s exactly as it did before it
+ * existed.
+ */
+export async function renderTenantPage(slug: string, urlLang?: "he") {
+  const copy = brandCopy(slug);
+  if (urlLang && !copy) return notFound();
+  const lang: CopyLang = urlLang ?? "en";
+
   const supabase = getPublicClient();
 
   const { data: business, error } = await supabase
@@ -153,6 +170,15 @@ export async function renderTenantPage(slug: string) {
     }
   }
 
+  // A brand copy pack names the business the same in both languages and fixes
+  // the page language to the URL's, so the server-rendered HTML and the first
+  // client render agree.
+  if (copy) {
+    b.name = copy.name;
+    b.name_he = null;
+    b.default_lang = lang;
+  }
+
   // Hide images flagged as "not in gallery" (e.g. backgrounds/covers) from the
   // public gallery grid. They stay available as hero/cover via hero_image_url.
   if (Array.isArray(b.gallery_hidden) && b.gallery_hidden.length > 0 && Array.isArray(b.gallery_images)) {
@@ -163,7 +189,7 @@ export async function renderTenantPage(slug: string) {
   // Merge Google Places reviews (server-side, 1h cache) with manual testimonials,
   // and auto-populate the hero rating + review count straight from Google.
   let placeLocation: { lat: number; lng: number } | null = null;
-  if (b.google_place_id) {
+  if (b.google_place_id && !PLACES_HELD_SLUGS.has(slug)) {
     const place = await fetchPlaceData(b.google_place_id);
     if (place.reviews.length > 0) {
       const manual = Array.isArray(b.google_reviews) ? b.google_reviews : [];
@@ -175,6 +201,13 @@ export async function renderTenantPage(slug: string) {
     placeLocation = place.location;
   }
 
+  // Only Google's own numbers on this page: no hand-typed guest count, and no
+  // hand-typed rating when Google did not answer.
+  if (copy?.googleRatingOnly) {
+    b.stat_clients = null;
+    if (b.google_review_count == null) b.stat_rating = null;
+  }
+
   // A short-term rental is lodging, not a salon. Emitting HairSalon on a
   // property page is worse than emitting nothing: it tells Google the page is
   // about something it is not.
@@ -182,7 +215,9 @@ export async function renderTenantPage(slug: string) {
 
   const city = parseCity(b.address);
 
-  const { canonicalBase, pageUrl } = resolveCanonical(slug, b);
+  const { canonicalBase, pageUrl: basePageUrl } = resolveCanonical(slug, b);
+  const pageUrl = copy ? homeUrl(slug, b, lang) : basePageUrl;
+  const home = copy?.home[lang];
 
   // Brand share image, served from the same host as the canonical URL so it
   // never points off-domain. Falls back to the hero image for non-brand slugs.
@@ -215,15 +250,16 @@ export async function renderTenantPage(slug: string) {
     (url): url is string => Boolean(url)
   );
 
+  const description = home?.description || BRAND_SEO[slug]?.description || b.tagline || b.tagline_he;
+
   const localBusinessSchema = {
     "@context": "https://schema.org",
     "@type": isStayBusiness ? ["LodgingBusiness"] : ["HairSalon", "BarberShop"],
     name: b.name,
     ...(b.name_he && { alternateName: b.name_he }),
     url: pageUrl,
-    ...((BRAND_SEO[slug]?.description || b.tagline || b.tagline_he) && {
-      description: BRAND_SEO[slug]?.description || b.tagline || b.tagline_he,
-    }),
+    ...(copy && { inLanguage: lang }),
+    ...(description && { description }),
     ...(b.phone && { telephone: b.phone }),
     ...(b.email && { email: b.email }),
     ...(b.address && {
@@ -262,6 +298,20 @@ export async function renderTenantPage(slug: string) {
     }),
   };
 
+  // The FAQ is visible on the page; this is the same text as markup.
+  const faqSchema = home?.faq.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        inLanguage: lang,
+        mainEntity: home.faq.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      }
+    : null;
+
   return (
     <>
       <script
@@ -270,16 +320,27 @@ export async function renderTenantPage(slug: string) {
           __html: JSON.stringify(localBusinessSchema).replace(/</g, "\\u003c"),
         }}
       />
+      {faqSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, "\\u003c") }}
+        />
+      )}
       <BookingShell
         business={b}
         services={(services || []) as Service[]}
         pages={(pages || []) as Pick<Page, "slug" | "service_id" | "section_key">[]}
+        copy={copy}
       />
     </>
   );
 }
 
-export async function tenantMetadata(slug: string) {
+export async function tenantMetadata(slug: string, urlLang?: "he") {
+  const copy = brandCopy(slug);
+  if (urlLang && !copy) return { title: "Not found" };
+  const lang: CopyLang = urlLang ?? "en";
+
   const supabase = getPublicClient();
   const { data } = await supabase
     .from("businesses")
@@ -289,12 +350,13 @@ export async function tenantMetadata(slug: string) {
 
   if (!data) return { title: "Book an appointment" };
 
-  const { canonicalBase, pageUrl } = resolveCanonical(slug, data);
+  const { canonicalBase, pageUrl: basePageUrl } = resolveCanonical(slug, data);
+  const pageUrl = copy ? homeUrl(slug, data, lang) : basePageUrl;
 
   // Keyword + location aware copy, HE or EN by default_lang. No dashes.
-  // A per-slug BRAND_SEO override wins when present (e.g. English SERP for a
-  // Hebrew-first site).
-  const { title, description } = BRAND_SEO[slug] ?? buildSeoCopy({
+  // A brand copy pack wins, then a per-slug BRAND_SEO override (e.g. English
+  // SERP for a Hebrew-first site).
+  const { title, description } = copy?.home[lang] ?? BRAND_SEO[slug] ?? buildSeoCopy({
     name: data.name,
     nameHe: data.name_he,
     city: parseCity(data.address),
@@ -310,6 +372,14 @@ export async function tenantMetadata(slug: string) {
     ? `${canonicalBase}${brand}/og.png`
     : data.hero_image_url || `${canonicalBase}/og-image.png`;
 
+  // With a brand copy pack each language has its own URL and they point at
+  // each other. Otherwise both languages live on one URL (the toggle is
+  // client-side) — same signal the detail pages send, so Google knows the
+  // Hebrew version exists here.
+  const languages = copy
+    ? { en: homeUrl(slug, data, "en"), he: homeUrl(slug, data, "he"), "x-default": homeUrl(slug, data, "en") }
+    : { en: pageUrl, he: pageUrl, "x-default": pageUrl };
+
   return {
     title,
     description,
@@ -317,9 +387,7 @@ export async function tenantMetadata(slug: string) {
     // index. So is any business that is not live: draft pitch sites must not be
     // crawlable under a real business's name.
     ...(shouldNoindex(slug, data.status) && { robots: NOINDEX_ROBOTS }),
-    // Both languages live on one URL (the toggle is client-side) — same signal
-    // the detail pages send, so Google knows the Hebrew version exists here.
-    alternates: { canonical: pageUrl, languages: { en: pageUrl, he: pageUrl, "x-default": pageUrl } },
+    alternates: { canonical: pageUrl, languages },
     ...(brand && {
       icons: {
         // Multiple sizes so Google's SERP favicon crawler has a >=48px square
@@ -336,8 +404,9 @@ export async function tenantMetadata(slug: string) {
       title,
       description,
       url: pageUrl,
-      siteName: "Bapita",
-      images: [{ url: image, width: 1200, height: 630, alt: data.name }],
+      siteName: copy?.name ?? "Bapita",
+      ...(copy && { locale: lang === "he" ? "he_IL" : "en_US", alternateLocale: [lang === "he" ? "en_US" : "he_IL"] }),
+      images: [{ url: image, width: 1200, height: 630, alt: copy?.home[lang].heroAlt ?? data.name }],
       type: "website",
     },
     twitter: {

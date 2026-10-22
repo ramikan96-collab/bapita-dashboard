@@ -1,8 +1,13 @@
 export const he = {
   hero: { cta: "קבע תור", bookNow: "הזמן עכשיו" },
   services: { title: "שירותים", book: "הזמן" },
-  gallery: { title: "גלריה" },
+  gallery: {
+    title: "גלריה",
+    showMore: (n: number) => (n === 1 ? "הצג עוד תמונה אחת" : `הצג עוד ${n} תמונות`),
+    showLess: "הצג פחות",
+  },
   about: { title: "אודות" },
+  faq: { title: "שאלות נפוצות" },
   hours: { title: "שעות פעילות", closed: "סגור" },
   location: { title: "מיקום", directions: "← נווט" },
   reviews: { title: "מה הלקוחות אומרים", titleGuests: "מה האורחים אומרים", leaveReviewHintGuests: "התארחת אצלנו? זה לוקח שתי דקות ועוזר לאורח הבא לבחור.", leaveReview: "להשאיר ביקורת בגוגל", showMore: "הצג עוד", showLess: "הצג פחות" },

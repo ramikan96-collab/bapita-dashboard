@@ -2,6 +2,40 @@ import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { BOOKING_HOST, bookingUrl, SITE_HOST, siteUrl } from "@/lib/site-url";
+import { langPath } from "@/lib/brand-copy";
+import { brandCopy } from "@/lib/brand-copy/registry";
+
+// Live rows that are not a business page anyone should land on from search.
+// "bapita-admin" is Bapita's own account row: live so the dashboard works, but
+// its public page is an empty barber template.
+const NOT_LISTED_SLUGS = new Set(["bapita-admin"]);
+
+/**
+ * The sitemap entry for one business page, or two for a business with a brand
+ * copy pack (lib/brand-copy): its English and Hebrew URLs, each listing both as
+ * alternates. lastmod is the later of the DB's own date and the day the pack's
+ * copy last changed, so a copy release shows up as a real update.
+ */
+function routesFor(
+  slug: string,
+  page: string | null,
+  lastModified: Date,
+  changeFrequency: "weekly" | "monthly",
+  priority: number,
+): MetadataRoute.Sitemap {
+  const copy = brandCopy(slug);
+  if (!copy) return [{ url: bookingUrl(langPath(slug, "en", page)), lastModified, changeFrequency, priority }];
+
+  const updated = new Date(copy.updated);
+  const lastmod = updated > lastModified ? updated : lastModified;
+  const en = bookingUrl(langPath(slug, "en", page));
+  const he = bookingUrl(langPath(slug, "he", page));
+  const alternates = { languages: { en, he, "x-default": en } };
+  return [
+    { url: en, lastModified: lastmod, changeFrequency, priority, alternates },
+    { url: he, lastModified: lastmod, changeFrequency, priority, alternates },
+  ];
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createClient(
@@ -99,14 +133,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Exclude businesses with a verified custom domain: their book.bapita URL
       // 308-redirects to the brand domain (which is self-canonical and ships its
       // own single-URL sitemap), so listing the redirecting copy here is wrong.
-      .filter((b) => !(b.custom_domain && b.custom_domain_verified === true));
+      .filter((b) => !(b.custom_domain && b.custom_domain_verified === true))
+      .filter((b) => !NOT_LISTED_SLUGS.has(b.slug));
 
-    slugRoutes = listed.map((b) => ({
-      url: bookingUrl(`/${b.slug}`),
-      lastModified: b.created_at ? new Date(b.created_at) : new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    }));
+    slugRoutes = listed.flatMap((b) =>
+      routesFor(b.slug, null, b.created_at ? new Date(b.created_at) : new Date(), "weekly", 0.8)
+    );
 
     // Extra pages of the businesses listed above, at book.bapita.com/<slug>/<page>.
     // Scoped to `listed` so the demo and custom-domain exclusions apply to a
@@ -124,12 +156,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         (pages ?? []).flatMap((p) => {
           const businessSlug = bySlug.get(p.business_id);
           if (!businessSlug) return [];
-          return [{
-            url: bookingUrl(`/${businessSlug}/${p.slug}`),
-            lastModified: p.updated_at ? new Date(p.updated_at) : new Date(),
-            changeFrequency: "monthly" as const,
-            priority: 0.7,
-          }];
+          return routesFor(businessSlug, p.slug, p.updated_at ? new Date(p.updated_at) : new Date(), "monthly", 0.7);
         })
       );
     }

@@ -342,9 +342,15 @@ export async function middleware(request: NextRequest) {
   //
   // Deliberately NOT restricted to BOOKING_HOST: a preview deployment has to
   // reproduce this, or the fix cannot be verified before it reaches production.
-  const localeSlug = /^\/([^/.]+)(?:\/[^/.]+)?$/.exec(pathname)?.[1];
+  //
+  // /<slug>/he and /<slug>/he/<page> are a business's Hebrew URLs (only a
+  // business with a brand copy pack renders them; for anyone else the route
+  // 404s). They are Hebrew whatever the business's default language is.
+  const localeMatch = /^\/([^/.]+)(\/he)?(?:\/[^/.]+)?$/.exec(pathname);
+  const localeSlug = localeMatch?.[1];
   if (localeSlug && !belongsOnApex(pathname) && !needsAuth(pathname)) {
-    const locale = await bookingLocale(localeSlug);
+    const found = await bookingLocale(localeSlug);
+    const locale = found && localeMatch?.[2] ? "he" : found;
     if (locale) {
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set("x-booking-locale", locale);

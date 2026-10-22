@@ -1764,7 +1764,16 @@ function GooglePlaceIdSection({
     setLooking(true); setMatch(null); setLookErr("");
     const result = await findPlaceId(businessName, businessAddress);
     setLooking(false);
-    if (!result) { setLookErr("No match found — paste Place ID manually"); return; }
+    if (!result.ok) {
+      setLookErr(
+        result.reason === "no-match"
+          ? "No match found — paste Place ID manually"
+          : result.reason === "not-configured"
+            ? "Google lookup is not set up on the server (no Places API key). Paste the Place ID manually."
+            : "Google refused the lookup (check the Places API key). Paste the Place ID manually."
+      );
+      return;
+    }
     setMatch(result);
   }
 

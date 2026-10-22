@@ -8,6 +8,9 @@
 export const RESERVED_PAGE_SLUGS: Set<string> = new Set([
   // Phase 3.2 puts /legal/privacy and /legal/terms under each tenant.
   "legal",
+  // /<slug>/he is a business's Hebrew URL (src/app/[slug]/he); a page with
+  // this slug would be unreachable behind it.
+  "he",
 ]);
 
 export function isReservedPageSlug(slug: string): boolean {

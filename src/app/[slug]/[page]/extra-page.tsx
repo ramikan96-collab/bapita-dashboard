@@ -6,10 +6,13 @@ import { resolveCanonical } from "@/lib/canonical";
 import { isStay, unitPhotos } from "@/lib/stay";
 import { amenityLabels } from "@/lib/amenities";
 import { shouldNoindex, NOINDEX_ROBOTS } from "@/lib/noindex";
+import { langPath, photoAlt, type CopyLang } from "@/lib/brand-copy";
+import { brandCopy } from "@/lib/brand-copy/registry";
 import { PageShell } from "./PageShell";
 
-// An extra page. Lives outside page.tsx because a page file may only export
-// the page itself.
+// An extra page, shared by /<slug>/<page> and (for a business with a brand copy
+// pack) /<slug>/he/<page>. Lives outside page.tsx because a page file may only
+// export the page itself.
 
 // The same anon-key client the business homepage uses. Column-level grants on
 // public.businesses apply here too: adding a column to BUSINESS_COLUMNS without
@@ -92,19 +95,42 @@ async function load(slug: string, pageSlug: string): Promise<Loaded | null> {
   };
 }
 
-export async function renderExtraPage(slug: string, pageSlug: string) {
+/** The URL of this page in one language — "he" puts /he before the page slug. */
+function pageUrlIn(slug: string, b: Business, pageSlug: string, lang: CopyLang) {
+  return resolveCanonical(slug, b, lang === "he" ? `he/${pageSlug}` : pageSlug).pageUrl;
+}
+
+/**
+ * `urlLang` is set only by the /<slug>/he/<page> route. Without a brand copy
+ * pack there is no Hebrew URL, so that route 404s exactly as it did before it
+ * existed.
+ */
+export async function renderExtraPage(slug: string, pageSlug: string, urlLang?: "he") {
+  const copy = brandCopy(slug);
+  if (urlLang && !copy) return notFound();
+  const lang: CopyLang = urlLang ?? "en";
+
   const loaded = await load(slug, pageSlug);
   if (!loaded) return notFound();
 
   const { business: b, page, service, services, photos, siblings } = loaded;
+
+  // Same brand name in both languages, page language fixed to the URL's.
+  if (copy) {
+    b.name = copy.name;
+    b.name_he = null;
+    b.default_lang = lang;
+  }
+  const unitCopy = copy?.units[page.slug]?.[lang];
+
   const image = page.content?.hero_image_url || photos[0] || b.hero_image_url;
-  const description = page.seo_description || service?.description || null;
+  const description = unitCopy?.description || page.seo_description || service?.description || null;
 
   // Same rule the homepage runs: when a verified custom domain exists, the
   // book.bapita copy is a duplicate and sends users (and link equity) to the
   // brand domain. The custom-domain host arrives here via middleware rewrite
   // with its own host header, so this is false there — no redirect loop.
-  const { pageUrl, hasCustomDomain, domain } = resolveCanonical(slug, b, page.slug);
+  const { pageUrl: basePageUrl, hasCustomDomain, domain } = resolveCanonical(slug, b, page.slug);
   if (hasCustomDomain) {
     const reqHost = (await headers()).get("host")?.toLowerCase().replace(/:\d+$/, "").replace(/^www\./, "") ?? "";
     if (reqHost === "book.bapita.com") {
@@ -112,8 +138,13 @@ export async function renderExtraPage(slug: string, pageSlug: string) {
     }
   }
 
-  const homeHref = hasCustomDomain ? "/" : `/${slug}`;
+  const pageUrl = copy ? pageUrlIn(slug, b, page.slug, lang) : basePageUrl;
+  const parentUrl = copy
+    ? resolveCanonical(slug, b, lang === "he" ? "he" : undefined).pageUrl
+    : resolveCanonical(slug, b).pageUrl;
+  const homeHref = hasCustomDomain ? "/" : copy ? langPath(slug, lang) : `/${slug}`;
   const stay = isStay(b);
+  const name = lang === "he" && copy ? page.title_he?.trim() || page.title : page.title;
 
   // A stay unit is lodging, an appointment service is a service, and a free
   // page is neither. Emitting the wrong one is worse than emitting none.
@@ -122,14 +153,15 @@ export async function renderExtraPage(slug: string, pageSlug: string) {
       ? {
           "@context": "https://schema.org",
           "@type": "Accommodation",
-          name: page.title,
+          name,
           url: pageUrl,
+          ...(copy && { inLanguage: lang }),
           ...(description && { description }),
           ...(image ? { image } : {}),
           ...(service.max_guests ? { occupancy: { "@type": "QuantitativeValue", maxValue: service.max_guests } } : {}),
           ...(service.amenities?.length
             ? {
-                amenityFeature: amenityLabels(service.amenities, "en").map((name) => ({
+                amenityFeature: amenityLabels(service.amenities, lang).map((name) => ({
                   "@type": "LocationFeatureSpecification",
                   name,
                   value: true,
@@ -145,7 +177,7 @@ export async function renderExtraPage(slug: string, pageSlug: string) {
           ...(b.address && {
             address: { "@type": "PostalAddress", streetAddress: b.address, addressCountry: "IL" },
           }),
-          containedInPlace: { "@type": "LodgingBusiness", name: b.name, url: resolveCanonical(slug, b).pageUrl },
+          containedInPlace: { "@type": "LodgingBusiness", name: b.name, url: parentUrl },
         }
       : {
           "@context": "https://schema.org",
@@ -154,7 +186,7 @@ export async function renderExtraPage(slug: string, pageSlug: string) {
           url: pageUrl,
           ...(page.seo_description && { description: page.seo_description }),
           serviceType: service.name,
-          provider: { "@type": "LocalBusiness", name: b.name, url: resolveCanonical(slug, b).pageUrl },
+          provider: { "@type": "LocalBusiness", name: b.name, url: parentUrl },
           ...(service.price > 0 && {
             offers: { "@type": "Offer", price: service.price, priceCurrency: "ILS", url: pageUrl },
           }),
@@ -165,7 +197,7 @@ export async function renderExtraPage(slug: string, pageSlug: string) {
         name: page.title,
         url: pageUrl,
         ...(page.seo_description && { description: page.seo_description }),
-        isPartOf: { "@type": "WebSite", name: b.name, url: resolveCanonical(slug, b).pageUrl },
+        isPartOf: { "@type": "WebSite", name: b.name, url: parentUrl },
       };
 
   return (
@@ -182,28 +214,42 @@ export async function renderExtraPage(slug: string, pageSlug: string) {
         photos={photos}
         siblings={siblings}
         homeHref={homeHref}
+        copy={copy}
       />
     </>
   );
 }
 
-export async function extraPageMetadata(slug: string, pageSlug: string) {
+export async function extraPageMetadata(slug: string, pageSlug: string, urlLang?: "he") {
+  const copy = brandCopy(slug);
+  if (urlLang && !copy) return { title: "Not found" };
+  const lang: CopyLang = urlLang ?? "en";
+
   const loaded = await load(slug, pageSlug);
   if (!loaded) return { title: "Not found" };
 
   const { business: b, page, service, photos } = loaded;
-  const { canonicalBase, pageUrl, hasCustomDomain } = resolveCanonical(slug, b, page.slug);
+  const { canonicalBase, pageUrl: basePageUrl, hasCustomDomain } = resolveCanonical(slug, b, page.slug);
+  const unitCopy = copy?.units[page.slug]?.[lang];
+  const pageUrl = copy ? pageUrlIn(slug, b, page.slug, lang) : basePageUrl;
 
-  const title = page.seo_title || `${page.title} | ${b.name}`;
+  const title = unitCopy?.title || page.seo_title || `${page.title} | ${copy?.name ?? b.name}`;
   const description =
-    page.seo_description || page.content?.body?.slice(0, 155) || service?.description?.slice(0, 155) || undefined;
+    unitCopy?.description || page.seo_description || page.content?.body?.slice(0, 155) || service?.description?.slice(0, 155) || undefined;
   const image =
     page.og_image_url || page.content?.hero_image_url || photos[0] || b.hero_image_url || `${canonicalBase}/og-image.png`;
 
-  // Both languages live on one URL (the toggle is client-side), so hreflang
-  // points at the same href — the correct signal for a bilingual page rather
-  // than inventing /he URLs that do not exist.
-  const languages = { en: pageUrl, he: pageUrl, "x-default": pageUrl };
+  // With a brand copy pack each language has its own URL and they point at
+  // each other. Otherwise both languages live on one URL (the toggle is
+  // client-side), so hreflang points at the same href — the correct signal for
+  // a bilingual page rather than inventing /he URLs that do not exist.
+  const languages = copy
+    ? {
+        en: pageUrlIn(slug, b, page.slug, "en"),
+        he: pageUrlIn(slug, b, page.slug, "he"),
+        "x-default": pageUrlIn(slug, b, page.slug, "en"),
+      }
+    : { en: pageUrl, he: pageUrl, "x-default": pageUrl };
 
   return {
     title,
@@ -217,8 +263,9 @@ export async function extraPageMetadata(slug: string, pageSlug: string) {
       title,
       ...(description && { description }),
       url: pageUrl,
-      siteName: hasCustomDomain ? b.name : "Bapita",
-      images: [{ url: image, width: 1200, height: 630, alt: page.title }],
+      siteName: copy?.name ?? (hasCustomDomain ? b.name : "Bapita"),
+      ...(copy && { locale: lang === "he" ? "he_IL" : "en_US", alternateLocale: [lang === "he" ? "en_US" : "he_IL"] }),
+      images: [{ url: image, width: 1200, height: 630, alt: photoAlt(copy, image, lang) ?? page.title }],
       type: "website",
     },
     twitter: {

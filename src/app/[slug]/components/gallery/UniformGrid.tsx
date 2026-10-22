@@ -2,6 +2,7 @@
 
 import { SmartImg } from "@/components/SmartImg";
 import { imgStyle, focalPos } from "./tileStyles";
+import { usePhotoAlt } from "../../_shared/photoAlt";
 
 export interface UniformGridProps {
   photos: string[];
@@ -15,6 +16,7 @@ export interface UniformGridProps {
 }
 
 export function UniformGrid({ photos, cols, rowHeight, gap, borderRadius, focal, altLabel, onPhotoClick }: UniformGridProps) {
+  const altFor = usePhotoAlt();
   // Chunk into rows of `cols`. Each row is a flexbox with `flex: 1 1 0`
   // tiles, so a ragged final row stretches its tiles to fill the full
   // width at the same height — no leftover gaps, no collapsed tiles.
@@ -36,7 +38,7 @@ export function UniformGrid({ photos, cols, rowHeight, gap, borderRadius, focal,
                   src={photo}
                   maxWidth={400}
                   sizes={`(max-width: 700px) ${Math.round(100 / cols)}vw, 400px`}
-                  alt={`${altLabel ?? "Gallery"} — photo ${idx + 1}`}
+                  alt={altFor(photo) ?? `${altLabel ?? "Gallery"} — photo ${idx + 1}`}
                   style={{ ...imgStyle, objectPosition: focalPos(focal, photo) }}
                   onClick={() => onPhotoClick(idx)}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.04)"; }}

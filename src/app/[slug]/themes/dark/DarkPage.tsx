@@ -27,9 +27,12 @@ import { useExternalCta } from "../../_shared/useExternalCta";
 import { PageLink } from "../../_shared/PageLink";
 import { buildPageLinks, type LinkablePage } from "../../_shared/pageLinks";
 import { InstagramFeed } from "../../_shared/InstagramFeed";
+import { PhotoAltProvider } from "../../_shared/photoAlt";
+import { langPath, photoAlt, type BrandCopy } from "@/lib/brand-copy";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=1200&q=80";
-const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews"];
+// "faq" renders only with a brand copy pack; for everyone else it is a no-op.
+const DEFAULT_SECTION_ORDER = ["services", "gallery", "about", "staff", "hours", "location", "reviews", "faq"];
 
 const D = {
   bg:      "#0D0D0D",
@@ -85,9 +88,9 @@ function DarkSectionTitle({ title, accent, isRtl, headingFont }: { title: string
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-interface Props { business: Business; services: Service[]; pages?: LinkablePage[]; }
+interface Props { business: Business; services: Service[]; pages?: LinkablePage[]; copy?: BrandCopy | null; }
 
-export function DarkPage({ business, services, pages }: Props) {
+export function DarkPage({ business, services, pages, copy }: Props) {
   const [overlayOpen,     setOverlayOpen]     = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [hoveredCard,     setHoveredCard]     = useState<string | null>(null);
@@ -95,10 +98,17 @@ export function DarkPage({ business, services, pages }: Props) {
   const [lang,            setLang]            = useState<Lang>((business.default_lang as Lang) || "en");
 
   const t     = translations[lang];
+  // A brand copy pack (lib/brand-copy) brings approved copy and one URL per
+  // language: the page language is the URL's, and the toggle loads the other.
+  const home = copy?.home[lang] ?? null;
+  const langHrefs = copy && business.slug
+    ? { en: langPath(business.slug, "en"), he: langPath(business.slug, "he") }
+    : null;
+  const altFor = (src: string) => photoAlt(copy, src, lang);
   // Extra pages that belong to a service or a section, so the card title and
   // the section heading can link to them. Empty for every business without the
   // multi-page add-on, and PageLink then renders its children unchanged.
-  const pageLinks = buildPageLinks(business, pages);
+  const pageLinks = buildPageLinks(business, pages, copy && lang === "he" ? "/he" : "");
   const isRtl = lang === "he";
 
   const { ref: servicesRef, visible: servicesVisible } = useFadeInOnEnter();
@@ -126,7 +136,12 @@ export function DarkPage({ business, services, pages }: Props) {
   const bodyFont    = resolveFont(business.body_font, "'Inter', system-ui, sans-serif");
   const showInstaGallery = business.show_gallery !== false && business.gallery_source === "instagram" && !!business.instagram_embed;
   const showImageGallery = business.show_gallery !== false && Array.isArray(business.gallery_images) && business.gallery_images.length > 0;
-  const displayAbout = (isRtl && business.about_text_he) ? business.about_text_he : business.about_text;
+  const displayAbout = home?.about ?? ((isRtl && business.about_text_he) ? business.about_text_he : business.about_text);
+  // With a pack the H1 is the approved headline, in the tagline's slot; the
+  // brand name keeps its place and size above it as plain text.
+  const NameTag = home ? "p" : "h1";
+  const TagTag  = home ? "h1" : "p";
+  const tagText = home?.h1 ?? displayTag;
 
   // Stay mode: this business rents places by the night, so a "service" is a unit
   // and the booking widget is a date range. Everything appointment-shaped (the
@@ -160,6 +175,7 @@ export function DarkPage({ business, services, pages }: Props) {
   function closeOverlay()              { setOverlayOpen(false); setSelectedService(null); }
 
   return (
+    <PhotoAltProvider value={altFor}>
     <div className={oswald.className} dir={isRtl ? "rtl" : "ltr"} style={{ background: D.bg, minHeight: "100svh", color: D.text, fontFamily: bodyFont, position: "relative", overflowX: "hidden" }}>
       <FontLoader fonts={[business.heading_font, business.body_font]} />
       <style>{`
@@ -194,8 +210,10 @@ export function DarkPage({ business, services, pages }: Props) {
 
       {/* Sticky header */}
       <div className="dk-sticky" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 150, height: 56, background: "rgba(13,13,13,0.92)", backdropFilter: "blur(20px)", borderBottom: `1px solid ${accent}25`, display: "flex", alignItems: "center", gap: 10, paddingInlineStart: 24, paddingInlineEnd: 14 }}>
-        <span style={{ fontFamily: headingFont, fontWeight: 600, fontSize: 16, color: D.text, letterSpacing: "0.08em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayName}</span>
-        <LangToggle lang={lang} setLang={setLang} variant="bordered" inline />
+        {/* A pack's brand name is Latin on the Hebrew page too: dir="auto" keeps
+            it reading "GOOD LIVING HERZ…" rather than "… LIVING HERZLIYA". */}
+        <span {...(copy ? { dir: "auto" } : {})} style={{ fontFamily: headingFont, fontWeight: 600, fontSize: 16, color: D.text, letterSpacing: "0.08em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0, ...(copy ? { textAlign: isRtl ? "right" : "left" } : {}) }}>{displayName}</span>
+        <LangToggle lang={lang} setLang={setLang} variant="bordered" inline hrefs={langHrefs} />
         <button onClick={openFromCTA}
           style={{ fontFamily: headingFont, flexShrink: 0, height: 34, padding: "0 20px", borderRadius: 2, background: accent, color: D.bg, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", letterSpacing: "0.07em", textTransform: "uppercase", transition: "background 0.2s", whiteSpace: "nowrap" }}
           onMouseEnter={e => { e.currentTarget.style.background = "#fff"; }}
@@ -206,7 +224,7 @@ export function DarkPage({ business, services, pages }: Props) {
       {/* Hero */}
       <section style={{ position: "relative", height: "100svh", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
         <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-          <SmartImg src={heroImage} maxWidth={1920} widths={[640, 828, 1200, 1920, 2048]} sizes="100vw" quality={90} loading="eager" fetchPriority="high" alt="" className="dk-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: heroFocal, transformOrigin: "center center" }} />
+          <SmartImg src={heroImage} maxWidth={1920} widths={[640, 828, 1200, 1920, 2048]} sizes="100vw" quality={90} loading="eager" fetchPriority="high" alt={home?.heroAlt ?? ""} className="dk-hero-img" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: heroFocal, transformOrigin: "center center" }} />
         </div>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(13,13,13,0.6) 0%, rgba(13,13,13,0.1) 30%, rgba(13,13,13,0.1) 55%, rgba(13,13,13,0.88) 100%)" }} />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "0 28px", width: "100%", maxWidth: 720 }}>
@@ -220,13 +238,13 @@ export function DarkPage({ business, services, pages }: Props) {
               <span style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(10px)", color: "#fff", borderRadius: 9999, padding: "5px 16px", fontSize: 12, fontWeight: 600, border: "1px solid rgba(255,255,255,0.14)" }}>📍 {cityLabel}</span>
             ) : null}
           </div>
-          <h1 className="dk-name" style={{ fontFamily: headingFont, fontWeight: 700, fontSize: "clamp(3rem, 11vw, 7rem)", color: "#fff", lineHeight: 0.92, letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: 18 }}>
+          <NameTag className="dk-name" style={{ fontFamily: headingFont, fontWeight: 700, fontSize: "clamp(3rem, 11vw, 7rem)", color: "#fff", lineHeight: 0.92, letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: 18 }}>
             {displayName}
-          </h1>
-          {displayTag && (
-            <p className="dk-tag" style={{ fontFamily: headingFont, fontWeight: 400, fontSize: "clamp(0.9rem, 2.2vw, 1.1rem)", color: accent, lineHeight: 1.5, letterSpacing: "0.1em", marginBottom: 24, textTransform: "uppercase" }}>
-              {displayTag}
-            </p>
+          </NameTag>
+          {tagText && (
+            <TagTag className="dk-tag" style={{ fontFamily: headingFont, fontWeight: 400, fontSize: "clamp(0.9rem, 2.2vw, 1.1rem)", color: accent, lineHeight: 1.5, letterSpacing: "0.1em", marginBottom: 24, textTransform: "uppercase" }}>
+              {tagText}
+            </TagTag>
           )}
           {igHandle && (
             <div className="dk-ig" style={{ marginBottom: 20, display: "flex", justifyContent: "center" }}>
@@ -265,6 +283,10 @@ export function DarkPage({ business, services, pages }: Props) {
 
       {/* Main content */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 20px 140px", position: "relative", zIndex: 1 }}>
+
+        {home && (
+          <p style={{ margin: 0, paddingTop: 44, fontSize: 16, lineHeight: 1.85, color: D.text }}>{home.intro}</p>
+        )}
 
         {/* Sections — ordered by business.section_order, missing keys appended */}
         {(() => {
@@ -386,7 +408,7 @@ export function DarkPage({ business, services, pages }: Props) {
                   {showInstaGallery
                     ? <InstagramFeed embed={business.instagram_embed!} radius={2} />
                     : (groupedView
-                        ? <SectionGalleryGrouped groups={photoGroups} borderRadius={2} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} headingColor={accent} mutedColor={D.muted} headingFont={headingFont} ui={{ btnBorder: "rgba(255,255,255,0.18)", btnBorderHover: accent, btnText: "rgba(255,255,255,0.72)", btnTextHover: "#fff" }} />
+                        ? <SectionGalleryGrouped groups={photoGroups} borderRadius={2} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} headingColor={accent} mutedColor={D.muted} headingFont={headingFont} ui={{ btnBorder: "rgba(255,255,255,0.18)", btnBorderHover: accent, btnText: "rgba(255,255,255,0.72)", btnTextHover: "#fff" }} labels={copy ? { more: t.gallery.showMore, less: t.gallery.showLess } : undefined} />
                         : <SectionGallery photos={galleryPhotos} borderRadius={2} initialCount={4} desktopInitialCount={6} focal={business.image_focal ?? undefined} altLabel={displayName} ui={{ btnBorder: "rgba(255,255,255,0.18)", btnBorderHover: accent, btnText: "rgba(255,255,255,0.72)", btnTextHover: "#fff" }} />)}
                 </div>
               ) : null;
@@ -425,7 +447,25 @@ export function DarkPage({ business, services, pages }: Props) {
                   <GoldDivider accent={accent} />
                   <PageLink href={pageLinks.section("location")}><DarkSectionTitle title={t.location.title} accent={accent} isRtl={isRtl} headingFont={headingFont} /></PageLink>
                   <div style={{ background: D.surface, borderRadius: 2, padding: "20px", border: `1px solid ${D.border}` }}>
+                    {home && <p style={{ margin: "0 0 18px", fontSize: 15, lineHeight: 1.85, color: D.muted }}>{home.location}</p>}
                     <SectionLocation address={business.address} darkColor={D.text} accentColor={accent} directionsLabel={t.location.directions} googleMapsUrl={business.google_maps_url} wazeUrl={business.waze_url} />
+                  </div>
+                </div>
+              ) : null;
+            case "faq":
+              // Every answer stays visible — the FAQPage markup must match what
+              // a visitor can read without clicking.
+              return home?.faq.length ? (
+                <div key={key}>
+                  <GoldDivider accent={accent} />
+                  <DarkSectionTitle title={t.faq.title} accent={accent} isRtl={isRtl} headingFont={headingFont} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {home.faq.map((f) => (
+                      <div key={f.q} style={{ background: D.surface, borderRadius: 2, padding: "18px 20px", border: `1px solid ${D.border}`, borderInlineStart: `3px solid ${accent}60` }}>
+                        <h3 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 600, color: D.text }}>{f.q}</h3>
+                        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.75, color: D.muted }}>{f.a}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ) : null;
@@ -482,5 +522,6 @@ export function DarkPage({ business, services, pages }: Props) {
         : <BookingOverlay business={business} services={services} initialService={selectedService} onClose={closeOverlay} accentColor={accent} darkColor={D.text} bgColor={D.surface} lang={lang} />
       )}
     </div>
+    </PhotoAltProvider>
   );
 }
