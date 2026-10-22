@@ -10,7 +10,7 @@ export const he = {
   faq: { title: "שאלות נפוצות" },
   hours: { title: "שעות פעילות", closed: "סגור" },
   location: { title: "מיקום", directions: "← נווט" },
-  reviews: { title: "מה הלקוחות אומרים", titleGuests: "מה האורחים אומרים", leaveReviewHintGuests: "התארחת אצלנו? זה לוקח שתי דקות ועוזר לאורח הבא לבחור.", leaveReview: "להשאיר ביקורת בגוגל", showMore: "הצג עוד", showLess: "הצג פחות" },
+  reviews: { title: "מה הלקוחות אומרים", titleGuests: "מה האורחים אומרים", leaveReviewHintGuests: "התארחת אצלנו? זה לוקח שתי דקות ועוזר לאורח הבא לבחור.", leaveReview: "השאר ביקורת בגוגל", leaveReviewGuests: "להשאיר ביקורת בגוגל", showMore: "הצג עוד", showLess: "הצג פחות" },
   staff: { title: "הצוות" },
   footer: { poweredBy: "מופעל על ידי", brand: "Bapita", privacy: "פרטיות", terms: "תנאי שימוש" },
   social: { happyClients: "4.9 · 340 לקוחות מרוצים", happyGuests: "הזמנה ישירה מול המארח" },

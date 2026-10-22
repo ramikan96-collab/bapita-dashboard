@@ -19,9 +19,10 @@
  *
  * Idempotent: a step already done is reported and skipped. Old files stay in
  * storage. The dry run reads with the public anon key only; --apply needs the
- * service role and writes a JSON backup of every field it changes first.
+ * service role and writes a JSON backup of every field it changes first, to
+ * backups/ in the repo (git-ignored).
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import sharp from "sharp";
@@ -116,6 +117,7 @@ async function main() {
     const folder = images.find((u) => u.includes(`/galleries/${biz.id}/`))
       ? `galleries/${biz.id}`
       : oldParking.match(/business-images\/(galleries\/[^/]+)\//)?.[1];
+    if (!folder) throw new Error(`No storage folder found for ${file(oldParking)}`);
     const path = `${folder}/${Date.now()}-${PARKING_KEY}.jpg`;
     const out = join(tmpdir(), `${PARKING_KEY}.jpg`);
     const info = await sharp(PARKING_SOURCE)
@@ -143,11 +145,14 @@ async function main() {
 
   console.log(log.map((l) => `  ${l}`).join("\n"));
   if (!apply) {
+    console.log("\nRead with the public anon key, which does not see inactive units. --apply reads with the service role and may see more.");
     console.log("\nDry run, nothing written. Re-run with --apply.");
     return;
   }
 
-  const backup = join(tmpdir(), `good-living-before-${Date.now()}.json`);
+  const backupDir = join(ROOT, "backups");
+  mkdirSync(backupDir, { recursive: true });
+  const backup = join(backupDir, `good-living-before-${Date.now()}.json`);
   writeFileSync(backup, JSON.stringify({ business: biz, services }, null, 2));
   console.log(`\nBackup: ${backup}`);
 

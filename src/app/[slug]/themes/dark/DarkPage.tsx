@@ -314,6 +314,7 @@ export function DarkPage({ business, services, pages, copy }: Props) {
                         }}
                         onSelect={openFromService}
                         hrefForUnit={pageLinks.service}
+                        splitActions={!!copy}
                       />
                     ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -416,7 +417,7 @@ export function DarkPage({ business, services, pages, copy }: Props) {
               return business.show_reviews !== false && ((business.google_reviews && business.google_reviews.length > 0) || !!business.google_review_link) ? (
                 <div key={key}>
                   <GoldDivider accent={accent} />
-                  <PageLink href={pageLinks.section("reviews")}><DarkSectionTitle title={stayMode ? t.reviews.titleGuests : t.reviews.title} accent={accent} isRtl={isRtl} headingFont={headingFont} /></PageLink>
+                  <PageLink href={pageLinks.section("reviews")}><DarkSectionTitle title={copy && stayMode ? t.reviews.titleGuests : t.reviews.title} accent={accent} isRtl={isRtl} headingFont={headingFont} /></PageLink>
                   <SectionReviews
                     reviews={business.google_reviews ?? []}
                     accentColor={accent}
@@ -424,8 +425,8 @@ export function DarkPage({ business, services, pages, copy }: Props) {
                     bgColor={D.surface}
                     borderColor={D.border}
                     reviewLink={business.google_review_link}
-                    leaveReviewLabel={t.reviews.leaveReview}
-                      leaveReviewHint={stayMode ? t.reviews.leaveReviewHintGuests : undefined}
+                    leaveReviewLabel={copy ? t.reviews.leaveReviewGuests : t.reviews.leaveReview}
+                    leaveReviewHint={copy && stayMode ? t.reviews.leaveReviewHintGuests : undefined}
                     showMoreLabel={t.reviews.showMore}
                     showLessLabel={t.reviews.showLess}
                   />

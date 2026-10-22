@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { normalizeCtaUrl } from "@/lib/cta";
 import type { Service, BusinessHours, DayKey, GoogleReview, StaffMember } from "@/types";
 import { findPlaceId } from "@/app/actions/find-place-id";
+import { hasBrandCopy } from "@/lib/brand-copy/slugs";
 import { syncStaffTable, loadStaff } from "@/lib/staff";
 import { prepareImageUpload } from "@/lib/image-upload";
 import { SmartImg } from "@/components/SmartImg";
@@ -451,7 +452,9 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       staff_members:      staffMembers,
       status:             form.status,
       custom_domain:          normalizeCustomDomain(form.custom_domain),
-      custom_domain_verified: form.custom_domain_verified,
+      // A business with Hebrew URLs (lib/brand-copy) stays on book.bapita.com:
+      // its /he pages have no custom-domain route yet.
+      custom_domain_verified: hasBrandCopy(form.slug) ? false : form.custom_domain_verified,
       gallery_images:     urls,
       gallery_hidden:     hiddenUrls,
       hero_image_url:     urls[0]                 || null,
@@ -850,12 +853,18 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                       <label style={{ display:"flex", alignItems:"center", gap:6, marginTop:8, cursor:"pointer" }}>
                         <input
                           type="checkbox"
-                          checked={form.custom_domain_verified}
+                          checked={form.custom_domain_verified && !hasBrandCopy(form.slug)}
+                          disabled={hasBrandCopy(form.slug)}
                           onChange={e => set("custom_domain_verified", e.target.checked)}
                           style={{ width:16, height:16, accentColor:"var(--color-amber)", cursor:"pointer" }}
                         />
                         <span style={{ fontSize:12, fontWeight:600, color:"var(--color-dark)" }}>Domain verified (routes live traffic)</span>
                       </label>
+                      {hasBrandCopy(form.slug) && (
+                        <div style={{ fontSize:11, color:"var(--color-muted)", marginTop:4 }}>
+                          Not available: this business has Hebrew URLs on book.bapita.com, which a custom domain does not serve yet.
+                        </div>
+                      )}
                       {form.custom_domain.trim() && (
                         <div style={{ marginTop:8, background:"var(--color-cream)", borderRadius:9, padding:"10px 12px", fontSize:11, color:"var(--color-muted)", lineHeight:1.6 }}>
                           <div>DNS at the registrar (Cloudflare: set both to <strong>DNS only / gray cloud</strong>, not proxied — proxying breaks Vercel SSL):</div>

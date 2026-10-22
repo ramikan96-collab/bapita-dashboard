@@ -298,8 +298,9 @@ export async function renderTenantPage(slug: string, urlLang?: "he") {
     }),
   };
 
-  // The FAQ is visible on the page; this is the same text as markup.
-  const faqSchema = home?.faq.length
+  // The same text as the visible FAQ, which only the dark theme renders. No
+  // visible FAQ, no markup: Google treats FAQ markup without it as spam.
+  const faqSchema = home?.faq.length && b.template_style === "dark"
     ? {
         "@context": "https://schema.org",
         "@type": "FAQPage",
@@ -373,12 +374,10 @@ export async function tenantMetadata(slug: string, urlLang?: "he") {
     : data.hero_image_url || `${canonicalBase}/og-image.png`;
 
   // With a brand copy pack each language has its own URL and they point at
-  // each other. Otherwise both languages live on one URL (the toggle is
-  // client-side) — same signal the detail pages send, so Google knows the
-  // Hebrew version exists here.
+  // each other. Everyone else keeps a canonical only, as before.
   const languages = copy
     ? { en: homeUrl(slug, data, "en"), he: homeUrl(slug, data, "he"), "x-default": homeUrl(slug, data, "en") }
-    : { en: pageUrl, he: pageUrl, "x-default": pageUrl };
+    : null;
 
   return {
     title,
@@ -387,7 +386,7 @@ export async function tenantMetadata(slug: string, urlLang?: "he") {
     // index. So is any business that is not live: draft pitch sites must not be
     // crawlable under a real business's name.
     ...(shouldNoindex(slug, data.status) && { robots: NOINDEX_ROBOTS }),
-    alternates: { canonical: pageUrl, languages },
+    alternates: { canonical: pageUrl, ...(languages && { languages }) },
     ...(brand && {
       icons: {
         // Multiple sizes so Google's SERP favicon crawler has a >=48px square

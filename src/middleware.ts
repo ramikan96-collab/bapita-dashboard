@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { BOOKING_HOST, BOOKING_URL, SITE_HOST, SITE_URL } from "@/lib/site-url";
+import { hasBrandCopy } from "@/lib/brand-copy/slugs";
 
 // Dashboard routes that require auth — everything else is a public booking page
 const DASHBOARD_ROUTES = [
@@ -345,12 +346,13 @@ export async function middleware(request: NextRequest) {
   //
   // /<slug>/he and /<slug>/he/<page> are a business's Hebrew URLs (only a
   // business with a brand copy pack renders them; for anyone else the route
-  // 404s). They are Hebrew whatever the business's default language is.
+  // 404s). They are Hebrew whatever the business's default language is, and
+  // that business's bare URLs are English whatever it is.
   const localeMatch = /^\/([^/.]+)(\/he)?(?:\/[^/.]+)?$/.exec(pathname);
   const localeSlug = localeMatch?.[1];
   if (localeSlug && !belongsOnApex(pathname) && !needsAuth(pathname)) {
     const found = await bookingLocale(localeSlug);
-    const locale = found && localeMatch?.[2] ? "he" : found;
+    const locale = found && (localeMatch?.[2] ? "he" : hasBrandCopy(localeSlug) ? "en" : found);
     if (locale) {
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set("x-booking-locale", locale);

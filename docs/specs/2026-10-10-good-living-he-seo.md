@@ -15,3 +15,10 @@ canonical; reciprocal hreflang en/he + x-default=EN; HE URLs in sitemap with rea
 name "Good Living Herzliya", no alternateName, aggregateRating only with a Google review count; zero
 empty alts; no other business's page changes (no `/he` route for them, Shimi's Places data held).
 Photo moves and amenities are DB data: `scripts/good-living-data-2026-10-10.mjs` (dry run by default).
+
+**Custom domain (review, 2026-10-22).** The Hebrew URLs exist only on book.bapita.com; the
+custom-domain rewrite and redirect know nothing of `/he`. Rather than teach them, the admin form
+refuses custom-domain verification for a pack slug (`lib/brand-copy/slugs.ts`): the checkbox is
+disabled and the save writes `custom_domain_verified = false`. Lift this only together with a
+`/he` rewrite on the brand domain. Other tenants: hreflang, the split unit card, amenity chips,
+"What Guests Say" and the review hint all render only with a pack, so their pages match main.
