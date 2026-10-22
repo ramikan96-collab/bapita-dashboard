@@ -55,7 +55,7 @@ async function fetchPlaceDataNew(placeId: string, apiKey: string): Promise<Place
         "X-Goog-Api-Key": apiKey,
         "X-Goog-FieldMask": "rating,userRatingCount,location,reviews",
       },
-      next: { revalidate: 3600 },
+      next: { revalidate: 86400 },
     });
     const data = await res.json();
     if (!res.ok) {
@@ -101,7 +101,7 @@ export async function fetchPlaceData(placeId: string): Promise<PlaceData> {
     `?place_id=${encodeURIComponent(placeId)}&fields=reviews,rating,user_ratings_total,geometry/location&reviews_sort=newest&key=${apiKey}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetch(url, { next: { revalidate: 86400 } });
     if (!res.ok) {
       logPlacesFailure(`details (legacy) HTTP ${res.status}`, await res.text(), apiKey);
       return EMPTY_PLACE;
