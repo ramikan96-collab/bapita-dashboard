@@ -42,7 +42,7 @@ const FILE = {
 const ORDER = [218, 202, 216, 201, 206, 220, 207, 211, 214, 205, 219, 212, 203, 221, 217, 215, 208, 209, 210, 213];
 const photo = (n) => `${STORAGE_DIR}/${FILE[n]}.jpg`;
 
-const ABOUT_HE = `בית יוקרה בלב העיר העתיקה בצפת, המשלב ישן עם חדש. כ-200 מ"ר בשני מפלסים: 5 חדרי שינה, 18 מיטות, 3 חדרי רחצה, אחד מהם עם ג'קוזי. שתי מרפסות עם נוף להרים, נדנדה וערסל.
+const ABOUT_HE = `בית יוקרה בלב העיר העתיקה בצפת, המשלב ישן עם חדש. כ-200 מ"ר בשני מפלסים: 5 חדרי שינה, מקום ל-18 אורחים, 3 חדרי רחצה, אחד מהם עם ג'קוזי. שתי מרפסות עם נוף להרים, נדנדה וערסל.
 
 שבת בבית: מפה לבנה, 2 פלטות שבת ומיחם מוכנים לשימוש. בתי הכנסת קרליבך וצאנז במרחק הליכה, ומכולת קרובה פתוחה עד חצות.
 
@@ -52,7 +52,7 @@ const ABOUT_HE = `בית יוקרה בלב העיר העתיקה בצפת, המ�
 
 אין חניה פרטית. חניה בתשלום ברחוב, כחול לבן עם פנגו, קרוב לבית.`;
 
-const ABOUT_EN = `A luxury home in the heart of Safed's Old City (Tzfat), where old stone meets new comfort. 200 m² on two levels: 5 bedrooms, 18 beds, 3 bathrooms, one with a jacuzzi. Two balconies with mountain views, a swing and a hammock.
+const ABOUT_EN = `A luxury home in the heart of Safed's Old City (Tzfat), where old stone meets new comfort. 200 m² on two levels: 5 bedrooms, sleeps 18, 3 bathrooms, one with a jacuzzi. Two balconies with mountain views, a swing and a hammock.
 
 Shabbat at the house: a white tablecloth, 2 Shabbat hotplates and an urn are ready for you. Carlebach and Sanz synagogues are a short walk, and a grocery nearby is open until midnight.
 
@@ -67,7 +67,7 @@ const business = {
   whatsapp_number: "+972534379176",
   phone: "053-437-9176",
   tagline: "Shabbat-ready · Sleeps 18 · Safed Old City",
-  tagline_he: "ערוך לשבת · 18 מיטות · העיר העתיקה בצפת",
+  tagline_he: "ערוך לשבת · ל-18 אורחים · העיר העתיקה בצפת",
   about_text: ABOUT_EN,
   about_text_he: ABOUT_HE,
   show_about: true,
@@ -80,8 +80,8 @@ const business = {
 const unit = {
   name: "Beit Rakia",
   name_he: "בית רקיע",
-  description: "Whole house, 5 bedrooms, 18 beds, 3 bathrooms. Friday and Saturday nights ₪3,500, so a Shabbat stay is ₪7,000.",
-  description_he: "כל הבית, 5 חדרי שינה, 18 מיטות, 3 חדרי רחצה. ליל שישי ושבת 3,500 ₪, שבת שלמה 7,000 ₪.",
+  description: "Whole house, 5 bedrooms, sleeps 18, 3 bathrooms. Friday and Saturday nights ₪3,500, so a Shabbat stay is ₪7,000.",
+  description_he: "כל הבית, 5 חדרי שינה, ל-18 אורחים, 3 חדרי רחצה. ליל שישי ושבת 3,500 ₪, שבת שלמה 7,000 ₪.",
   price: 1500,
   weekend_price: 3500,
   amenities: ["wifi", "air-conditioning", "kitchen", "terrace", "bed-linens"],
