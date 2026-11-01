@@ -330,6 +330,8 @@ export interface Service {
   deposit_value?: number | null;
   // stay mode (business_type = "stay"): a service row IS a rentable unit.
   // `price` is the nightly rate and `duration` is unused.
+  /** Friday and Saturday night rate. Null = `price` every night. */
+  weekend_price?: number | null;
   /** Minimum nights per reservation. Defaults to 1. */
   min_nights?: number | null;
   /** Sleeps up to N guests. Null = not specified, no cap enforced. */

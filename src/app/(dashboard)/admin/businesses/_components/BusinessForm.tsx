@@ -2546,6 +2546,7 @@ function ServicesPanel({ businessId, services, setServices, stayMode }: {
   const [descHe,   setDescHe]   = useState("");
   const [minNights, setMinNights] = useState("");
   const [maxGuests, setMaxGuests] = useState("");
+  const [weekendPrice, setWeekendPrice] = useState("");
   const [amenities, setAmenities] = useState<string[]>([]);
   const [saving,   setSaving]   = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -2578,8 +2579,8 @@ function ServicesPanel({ businessId, services, setServices, stayMode }: {
     if (results.some((r) => r.error)) setServices(prev);
   }
 
-  function startAdd()             { setEditing(null); setName(""); setNameHe(""); setPrice(""); setDuration(""); setDesc(""); setDescHe(""); setMinNights(""); setMaxGuests(""); setAmenities([]); setAdding(true); }
-  function startEdit(s: Service)  { setEditing(s); setName(s.name); setNameHe(s.name_he || ""); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(s.description || ""); setDescHe(s.description_he || ""); setMinNights(s.min_nights != null ? String(s.min_nights) : ""); setMaxGuests(s.max_guests != null ? String(s.max_guests) : ""); setAmenities(s.amenities ?? []); setAdding(true); }
+  function startAdd()             { setEditing(null); setName(""); setNameHe(""); setPrice(""); setDuration(""); setDesc(""); setDescHe(""); setMinNights(""); setMaxGuests(""); setWeekendPrice(""); setAmenities([]); setAdding(true); }
+  function startEdit(s: Service)  { setEditing(s); setWeekendPrice(s.weekend_price != null ? String(s.weekend_price) : ""); setName(s.name); setNameHe(s.name_he || ""); setPrice(String(s.price)); setDuration(String(s.duration)); setDesc(s.description || ""); setDescHe(s.description_he || ""); setMinNights(s.min_nights != null ? String(s.min_nights) : ""); setMaxGuests(s.max_guests != null ? String(s.max_guests) : ""); setAmenities(s.amenities ?? []); setAdding(true); }
   function cancelAdd()            { setAdding(false); setEditing(null); }
 
   async function saveService() {
@@ -2591,7 +2592,9 @@ function ServicesPanel({ businessId, services, setServices, stayMode }: {
       min_nights: stayMode ? Math.max(1, Number(minNights) || 1) : undefined,
       max_guests: stayMode ? (maxGuests ? Number(maxGuests) : null) : undefined,
     };
-    const stayPatch = stayMode ? { min_nights: stayFields.min_nights, max_guests: stayFields.max_guests, amenities } : {};
+    const stayPatch = stayMode
+      ? { min_nights: stayFields.min_nights, max_guests: stayFields.max_guests, weekend_price: weekendPrice ? Number(weekendPrice) : null, amenities }
+      : {};
     setSaving(true);
     if (editing) {
       await supabase.from("services").update({ name: name.trim(), name_he: nameHe.trim() || null, price: Number(price), duration: durationValue, description: desc || null, description_he: descHe.trim() || null, ...stayPatch }).eq("id", editing.id);
@@ -2667,7 +2670,10 @@ function ServicesPanel({ businessId, services, setServices, stayMode }: {
               <div><label style={labelStyle}>Name *</label><input value={name} onChange={e => setName(e.target.value)} placeholder={stayMode ? "Big Kasa" : "Haircut"} style={inputStyle} /></div>
               <div><label style={labelStyle}>{stayMode ? "Price per night (₪) *" : "Price (₪) *"}</label><input value={price} onChange={e => setPrice(e.target.value)} type="number" placeholder={stayMode ? "650" : "80"} style={inputStyle} /></div>
               {stayMode
-                ? <div><label style={labelStyle}>Sleeps</label><input value={maxGuests} onChange={e => setMaxGuests(e.target.value)} type="number" placeholder="4" style={inputStyle} /></div>
+                ? <>
+                    <div><label style={labelStyle}>Sleeps</label><input value={maxGuests} onChange={e => setMaxGuests(e.target.value)} type="number" placeholder="4" style={inputStyle} /></div>
+                    <div><label style={labelStyle}>Fri and Sat night rate (₪)</label><input value={weekendPrice} onChange={e => setWeekendPrice(e.target.value)} type="number" placeholder="Same as nightly" style={inputStyle} /></div>
+                  </>
                 : <div><label style={labelStyle}>Duration (min) *</label><input value={duration} onChange={e => setDuration(e.target.value)} type="number" placeholder="30" style={inputStyle} /></div>}
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>

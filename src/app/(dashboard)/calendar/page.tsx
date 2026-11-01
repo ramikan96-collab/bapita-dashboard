@@ -102,7 +102,7 @@ function CalendarPageInner() {
 
     const { data } = await supabase
       .from("bookings")
-      .select("*, service:services(name, duration, price), label:labels(id,name,color), staff:staff(id,name,color)")
+      .select("*, service:services(name, duration, price, weekend_price), label:labels(id,name,color), staff:staff(id,name,color)")
       .eq("business_id", business.id)
       .gte("appointment_date", format(lowerBound, "yyyy-MM-dd"))
       .lte("appointment_date", format(e, "yyyy-MM-dd"))
@@ -170,7 +170,7 @@ function CalendarPageInner() {
     if (!bookingParam) return;
     createClient()
       .from("bookings")
-      .select("*, service:services(name, duration, price), label:labels(id,name,color), staff:staff(id,name,color)")
+      .select("*, service:services(name, duration, price, weekend_price), label:labels(id,name,color), staff:staff(id,name,color)")
       .eq("id", bookingParam)
       .single()
       .then(({ data }) => {
@@ -237,7 +237,7 @@ function CalendarPageInner() {
     const timer = setTimeout(async () => {
       const { data } = await supabase
         .from("bookings")
-        .select("*, service:services(name, duration, price), label:labels(id,name,color), staff:staff(id,name,color)")
+        .select("*, service:services(name, duration, price, weekend_price), label:labels(id,name,color), staff:staff(id,name,color)")
         .eq("business_id", business.id)
         .ilike("customer_name", `%${q}%`)
         .order("appointment_date", { ascending: false })

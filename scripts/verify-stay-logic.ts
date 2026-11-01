@@ -11,7 +11,7 @@
 
 import {
   addDaysIso, isIsoDate, nightsBetween, nightsInRange, rangesOverlap,
-  unavailableNights, unavailableRanges, validateStayRequest, stayTotal,
+  unavailableNights, unavailableRanges, validateStayRequest, stayTotal, stayQuote, isWeekendNight, hasWeekendRate,
   unitPhotos, ungroupedPhotos,
 } from "../src/lib/stay";
 import type { Business } from "../src/types";
@@ -156,8 +156,8 @@ check(
 );
 
 console.log("\nstayTotal");
-check("nightly rate times nights", stayTotal(650, 3), 1950);
-check("zero nights is zero", stayTotal(650, 0), 0);
+check("nightly rate times nights", stayTotal({ price: 650 }, "2026-09-01", "2026-09-04"), 1950);
+check("zero nights is zero", stayTotal({ price: 650 }, "2026-09-01", "2026-09-01"), 0);
 
 console.log("\ngallery grouping");
 const biz = {
@@ -177,6 +177,25 @@ check(
   unitPhotos({ gallery_groups: { big: ["hidden-cover.jpg"] } } as unknown as Business, "big"),
   ["hidden-cover.jpg"],
 );
+
+// Weekend rate. 2026-11-13 is a Friday.
+check("Friday is a weekend night", isWeekendNight("2026-11-13"), true);
+check("Saturday is a weekend night", isWeekendNight("2026-11-14"), true);
+check("Thursday is a weekday night", isWeekendNight("2026-11-12"), false);
+check("Sunday is a weekday night", isWeekendNight("2026-11-15"), false);
+const twoRates = { price: 1500, weekend_price: 3500 };
+check("Fri to Sun charges two weekend nights", stayTotal(twoRates, "2026-11-13", "2026-11-15"), 7000);
+check("Thu to Sun mixes the rates", stayTotal(twoRates, "2026-11-12", "2026-11-15"), 8500);
+check("Sun to Tue charges weekdays only", stayTotal(twoRates, "2026-11-15", "2026-11-17"), 3000);
+check("a week holds both", stayTotal(twoRates, "2026-11-15", "2026-11-22"), 14500);
+check("no weekend rate stays linear", stayTotal({ price: 1500 }, "2026-11-13", "2026-11-15"), 3000);
+check("null weekend rate stays linear", stayTotal({ price: 1500, weekend_price: null }, "2026-11-13", "2026-11-15"), 3000);
+check("numeric strings from Postgres work", stayTotal({ price: "1500", weekend_price: "3500" }, "2026-11-13", "2026-11-15"), 7000);
+check("the quote splits the nights", stayQuote(twoRates, "2026-11-12", "2026-11-15"), {
+  weekdayNights: 1, weekendNights: 2, weekdayRate: 1500, weekendRate: 3500, total: 8500,
+});
+check("an equal weekend rate is not a weekend rate", hasWeekendRate({ price: 1500, weekend_price: 1500 }), false);
+check("a higher weekend rate is one", hasWeekendRate(twoRates), true);
 
 console.log(failures === 0 ? "\nAll stay logic checks passed.\n" : `\n${failures} check(s) FAILED.\n`);
 process.exit(failures === 0 ? 0 : 1);

@@ -6,7 +6,7 @@ import type { Business, Service } from "@/types";
 import { StayRangePicker } from "../components/StayRangePicker";
 import { translations, type Lang } from "../translations";
 import { track } from "@/lib/analytics/track";
-import { addDaysIso, nightsBetween, stayTotal, unitPhotos, validateStayRequest } from "@/lib/stay";
+import { addDaysIso, hasWeekendRate, nightsBetween, stayQuote, unitPhotos, validateStayRequest } from "@/lib/stay";
 
 interface Props {
   business: Business;
@@ -144,7 +144,8 @@ export function StayOverlay({
   const availLoading = !unitId || !activeAvail;
   const unavailableSet = useMemo(() => new Set(activeAvail?.nights ?? []), [activeAvail]);
   const nights = checkIn && checkOut ? nightsBetween(checkIn, checkOut) : 0;
-  const total = stayTotal(unit?.price ?? 0, nights);
+  const quote = unit && checkIn && checkOut ? stayQuote(unit, checkIn, checkOut) : null;
+  const total = quote?.total ?? 0;
   const maxGuests = activeAvail?.maxGuests ?? unitMaxGuests ?? null;
   const minNights = activeAvail?.minNights ?? unitMinNights ?? 1;
 
@@ -355,6 +356,9 @@ export function StayOverlay({
                         <span style={{ marginTop: "auto", paddingTop: 6, fontSize: 15, fontWeight: 800, color: accentColor }}>
                           ₪{u.price}
                           <span style={{ fontSize: 12, fontWeight: 500, color: darkColor, opacity: 0.5 }}> / {t.stay.perNight}</span>
+                          {hasWeekendRate(u) && (
+                            <span style={{ fontSize: 12, fontWeight: 500, color: darkColor, opacity: 0.5 }}> · ₪{u.weekend_price} / {t.stay.weekendRate}</span>
+                          )}
                           {u.max_guests ? (
                             <span style={{ fontSize: 12, fontWeight: 500, color: darkColor, opacity: 0.5 }}> · {t.stay.sleeps(u.max_guests)}</span>
                           ) : null}
@@ -385,6 +389,11 @@ export function StayOverlay({
                 <span style={{ fontSize: 18, fontWeight: 800, color: accentColor }}>
                   ₪{unit.price}
                   <span style={{ fontSize: 13, fontWeight: 500, color: darkColor, opacity: 0.5 }}> / {t.stay.perNight}</span>
+                  {hasWeekendRate(unit) && (
+                    <span style={{ display: "block", marginTop: 2, fontSize: 12, fontWeight: 500, color: darkColor, opacity: 0.6 }}>
+                      ₪{unit.weekend_price} / {t.stay.weekendRate}
+                    </span>
+                  )}
                 </span>
                 {maxGuests ? <span style={{ fontSize: 13, color: darkColor, opacity: 0.5 }}>{t.stay.sleeps(maxGuests)}</span> : null}
               </div>
@@ -482,7 +491,15 @@ export function StayOverlay({
                 <Row k={t.stay.checkIn} v={fmtDate(checkIn)} darkColor={darkColor} />
                 <Row k={t.stay.checkOut} v={fmtDate(checkOut)} darkColor={darkColor} />
                 <div style={{ height: 1, background: dividerClr, margin: "10px 0" }} />
-                <Row k={`₪${unit.price} × ${t.stay.nights(nights)}`} v={`₪${total}`} darkColor={darkColor} bold />
+                {quote && quote.weekdayNights > 0 && quote.weekendNights > 0 ? (
+                  <>
+                    <Row k={`₪${quote.weekdayRate} × ${t.stay.weekdayNights(quote.weekdayNights)}`} v={`₪${quote.weekdayRate * quote.weekdayNights}`} darkColor={darkColor} />
+                    <Row k={`₪${quote.weekendRate} × ${t.stay.weekendNights(quote.weekendNights)}`} v={`₪${quote.weekendRate * quote.weekendNights}`} darkColor={darkColor} />
+                    <Row k={t.stay.total} v={`₪${total}`} darkColor={darkColor} bold />
+                  </>
+                ) : (
+                  <Row k={`₪${quote?.weekendNights ? quote.weekendRate : unit.price} × ${t.stay.nights(nights)}`} v={`₪${total}`} darkColor={darkColor} bold />
+                )}
               </div>
 
               <div>

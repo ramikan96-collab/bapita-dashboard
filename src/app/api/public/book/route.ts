@@ -554,7 +554,7 @@ async function handleStayRequest(args: StayArgs) {
   // Unit must belong to this business — blocks a cross-tenant serviceId.
   const { data: unit } = await supabase
     .from("services")
-    .select("id, name, price, min_nights, max_guests")
+    .select("id, name, price, weekend_price, min_nights, max_guests")
     .eq("id", serviceId)
     .eq("business_id", businessId)
     .single();
@@ -582,7 +582,7 @@ async function handleStayRequest(args: StayArgs) {
   if (invalid) return fail(invalid, invalid === "unavailable" ? 409 : 400);
 
   const nights = nightsBetween(checkIn, checkOut);
-  const total  = stayTotal(Number(unit.price) || 0, nights);
+  const total  = stayTotal(unit, checkIn, checkOut);
 
   const { data: customer, error: customerError } = await supabase
     .from("customers")

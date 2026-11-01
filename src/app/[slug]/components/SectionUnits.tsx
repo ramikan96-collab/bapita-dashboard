@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Business, Service } from "@/types";
 import { PageLink } from "../_shared/PageLink";
-import { unitPhotos } from "@/lib/stay";
+import { hasWeekendRate, unitPhotos } from "@/lib/stay";
 import { amenityLabels } from "@/lib/amenities";
 import type { Translations } from "../translations";
 import { usePhotoAlt } from "../_shared/photoAlt";
@@ -179,6 +179,11 @@ export function SectionUnits({ business, units, t, isRtl, tokens, onSelect, href
                 <span style={{ fontFamily: displayFont, fontSize: 20, fontWeight: 700, color: accent, whiteSpace: "nowrap" }}>
                   ₪{unit.price}
                   <span style={{ fontSize: 12, fontWeight: 500, color: muted }}> / {t.stay.perNight}</span>
+                  {hasWeekendRate(unit) && (
+                    <span style={{ display: "block", marginTop: 2, fontSize: 12, fontWeight: 500, color: muted, whiteSpace: "normal" }}>
+                      ₪{unit.weekend_price} / {t.stay.weekendRate}
+                    </span>
+                  )}
                 </span>
                 <button
                   type="button"

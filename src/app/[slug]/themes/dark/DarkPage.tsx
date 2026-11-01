@@ -395,7 +395,7 @@ export function DarkPage({ business, services, pages, copy }: Props) {
                           <span style={{ fontFamily: headingFont, fontSize: 13, color: accent, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>{displayName}</span>
                         </div>
                       )}
-                      <p style={{ fontSize: 15, lineHeight: 1.85, color: D.muted, margin: 0 }}>{displayAbout}</p>
+                      <p style={{ fontSize: 15, lineHeight: 1.85, color: D.muted, margin: 0, whiteSpace: stayMode ? "pre-line" : undefined }}>{displayAbout}</p>
                     </div>
                   </div>
                 </div>

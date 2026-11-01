@@ -174,9 +174,53 @@ export function validateStayRequest(input: StayValidationInput): StayValidationE
   return null;
 }
 
-/** Nightly rate x nights. Stay pricing is linear in phase 1 — no seasonal rates. */
-export function stayTotal(nightlyPrice: number, nights: number): number {
-  return Math.round(nightlyPrice * nights);
+/** The two prices a unit can charge per night. */
+export type StayRates = {
+  price: number | string | null;
+  weekend_price?: number | string | null;
+};
+
+/**
+ * Friday and Saturday nights are the weekend here, not Saturday and Sunday: the
+ * Israeli weekend, and the two nights of a Shabbat stay. Thursday stays a weekday.
+ */
+export function isWeekendNight(iso: string): boolean {
+  const day = new Date(`${iso}T12:00:00Z`).getUTCDay();
+  return day === 5 || day === 6;
+}
+
+/** Weekday/weekend night counts for a stay, and what it costs. */
+export interface StayQuote {
+  weekdayNights: number;
+  weekendNights: number;
+  weekdayRate: number;
+  weekendRate: number;
+  total: number;
+}
+
+/**
+ * What a stay costs. A unit with no `weekend_price` charges `price` every night,
+ * exactly as before that column existed. Public page, booking API and dashboard
+ * all come through here so the guest and the host never see different totals.
+ */
+export function stayQuote(rates: StayRates, start: string, end: string): StayQuote {
+  const weekdayRate = Number(rates.price) || 0;
+  const weekendRate = Number(rates.weekend_price) || weekdayRate;
+  const nights = nightsInRange({ start, end });
+  const weekendNights = nights.filter(isWeekendNight).length;
+  const weekdayNights = nights.length - weekendNights;
+  const total = Math.round(weekdayNights * weekdayRate + weekendNights * weekendRate);
+  return { weekdayNights, weekendNights, weekdayRate, weekendRate, total };
+}
+
+export function stayTotal(rates: StayRates, start: string, end: string): number {
+  return stayQuote(rates, start, end).total;
+}
+
+/** True when the unit really charges more for a weekend. */
+export function hasWeekendRate(rates: StayRates): boolean {
+  const weekend = Number(rates.weekend_price) || 0;
+  return weekend > 0 && weekend !== (Number(rates.price) || 0);
 }
 
 // ─── Gallery grouping ─────────────────────────────────────────────────────────

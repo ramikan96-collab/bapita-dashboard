@@ -36,6 +36,10 @@ const PLACES_HELD_SLUGS = new Set(["shimi-azut-hairstudio"]);
 // only ever affects the named business; everyone else keeps buildSeoCopy().
 // A business with a brand copy pack (lib/brand-copy) takes its copy from there.
 const BRAND_SEO: Record<string, { title: string; description: string }> = {
+  "beit-rakia": {
+    title: "בית רקיע | בית אירוח בצפת העתיקה, 18 מיטות, ערוך לשבת",
+    description: "בית אירוח למשפחות גדולות בלב העיר העתיקה בצפת. 5 חדרי שינה, 18 מיטות, 3 חדרי רחצה ושתי מרפסות עם נוף להרים. ערוך לשבת, הזמנה ישירה מול המארח.",
+  },
   "shimi-azut-hairstudio": {
     title: "Shimi Azut | Book online",
     description:
@@ -50,6 +54,7 @@ const BRAND_SEO: Record<string, { title: string; description: string }> = {
  */
 const SEO_CITIES = [
   { match: /הרצליה|herzl/i, en: "Herzliya", he: "הרצליה", region: "Tel Aviv District" },
+  { match: /צפת|safed|tzfat/i, en: "Safed", he: "צפת", region: "Northern District" },
 ] as const;
 
 type SeoCity = (typeof SEO_CITIES)[number];

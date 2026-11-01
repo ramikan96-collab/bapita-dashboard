@@ -33,6 +33,12 @@ const nextConfig: NextConfig = {
     // the origin file is fetched once, not once per visitor.
     minimumCacheTTL: 31536000,
   },
+  async redirects() {
+    return [
+      // The unit's old name. This link went out to the owner before the rename.
+      { source: "/beit-chai", destination: "/beit-rakia", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

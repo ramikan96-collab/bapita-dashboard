@@ -625,7 +625,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
   function renderPayment() {
     // Nightly rate x nights for a stay; the flat service price otherwise.
     const price = stay && current.service?.price != null
-      ? stayTotal(Number(current.service.price), nights)
+      ? stayTotal(current.service, current.appointment_date, current.check_out as string)
       : current.service?.price;
     const ps = current.payment_status;
 

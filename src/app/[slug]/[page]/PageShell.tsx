@@ -13,7 +13,7 @@ import { FontLoader } from "../_shared/FontLoader";
 import { resolveFont } from "../_shared/fonts";
 import { useExternalCta } from "../_shared/useExternalCta";
 import { pagePalette, themeKey } from "../_shared/pageTheme";
-import { isStay } from "@/lib/stay";
+import { hasWeekendRate, isStay } from "@/lib/stay";
 import { amenityLabels } from "@/lib/amenities";
 import type { PageSpec } from "@/types";
 import { langPath, photoAlt, type BrandCopy } from "@/lib/brand-copy";
@@ -252,6 +252,7 @@ export function PageShell({ business, page, service, services, photos, siblings,
           {service && stay && service.price > 0 && (
             <div style={{ marginTop: 8, color: accent, fontWeight: 700, fontSize: 18 }}>
               ₪{service.price} / {t.stay.perNight}
+              {hasWeekendRate(service) ? ` · ₪${service.weekend_price} / ${t.stay.weekendRate}` : ""}
             </div>
           )}
         </div>
