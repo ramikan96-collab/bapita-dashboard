@@ -529,6 +529,7 @@ const STAY_ERROR_COPY: Record<StayValidationError, { en: string; he: string }> =
   past_date:       { en: "That date has already passed.", he: "התאריך הזה כבר עבר." },
   too_short:       { en: "That stay is shorter than the minimum for this place.", he: "השהייה קצרה מהמינימום של הדירה הזו." },
   too_long:        { en: "That stay is too long to request online. Please contact the host.", he: "השהייה ארוכה מדי לבקשה אונליין. צרו קשר עם המארח." },
+  weekend_split:   { en: "Friday and Saturday nights are booked together.", he: "ליל שישי ושבת מוזמנים יחד." },
   too_many_guests: { en: "That is more guests than this place sleeps.", he: "מספר האורחים גדול מהקיבולת של הדירה." },
   unavailable:     { en: "Those dates are no longer available. Please pick another range.", he: "התאריכים האלה כבר לא זמינים. בחרו טווח אחר." },
 };

@@ -11,7 +11,7 @@
 
 import {
   addDaysIso, isIsoDate, nightsBetween, nightsInRange, rangesOverlap,
-  unavailableNights, unavailableRanges, validateStayRequest, stayTotal, stayQuote, isWeekendNight, hasWeekendRate,
+  unavailableNights, unavailableRanges, validateStayRequest, stayTotal, stayQuote, isWeekendNight, hasWeekendRate, splitsWeekend,
   unitPhotos, ungroupedPhotos,
 } from "../src/lib/stay";
 import type { Business } from "../src/types";
@@ -194,6 +194,22 @@ check("numeric strings from Postgres work", stayTotal({ price: "1500", weekend_p
 check("the quote splits the nights", stayQuote(twoRates, "2026-11-12", "2026-11-15"), {
   weekdayNights: 1, weekendNights: 2, weekdayRate: 1500, weekendRate: 3500, total: 8500,
 });
+check("Fri to Sun keeps the pair", splitsWeekend("2026-11-13", "2026-11-15"), false);
+check("Thu to Sun keeps the pair", splitsWeekend("2026-11-12", "2026-11-15"), false);
+check("Thu to Sat splits it", splitsWeekend("2026-11-12", "2026-11-14"), true);
+check("Sat to Mon splits it", splitsWeekend("2026-11-14", "2026-11-16"), true);
+check("Fri to Sat alone splits it", splitsWeekend("2026-11-13", "2026-11-14"), true);
+check("Sun to Thu has no weekend", splitsWeekend("2026-11-15", "2026-11-19"), false);
+check("Fri to next Sat splits the second weekend", splitsWeekend("2026-11-13", "2026-11-21"), true);
+check("the rule applies to a unit with a weekend rate", validateStayRequest({
+  start: "2026-11-12", end: "2026-11-14", today: "2026-11-01", unavailable: [],
+  unit: { min_nights: 2, max_guests: 18, price: 1500, weekend_price: 3500 },
+}), "weekend_split");
+check("a unit without a weekend rate is untouched", validateStayRequest({
+  start: "2026-11-12", end: "2026-11-14", today: "2026-11-01", unavailable: [],
+  unit: { min_nights: 2, max_guests: 18, price: 1500, weekend_price: null },
+}), null);
+
 check("an equal weekend rate is not a weekend rate", hasWeekendRate({ price: 1500, weekend_price: 1500 }), false);
 check("a higher weekend rate is one", hasWeekendRate(twoRates), true);
 

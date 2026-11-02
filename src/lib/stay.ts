@@ -134,13 +134,14 @@ export type StayValidationError =
   | "too_short"
   | "too_long"
   | "too_many_guests"
+  | "weekend_split"
   | "unavailable";
 
 export interface StayValidationInput {
   start: string;
   end: string;
   guests?: number | null;
-  unit: Pick<Service, "min_nights" | "max_guests"> | null;
+  unit: (Pick<Service, "min_nights" | "max_guests"> & Partial<StayRates>) | null;
   unavailable: DateRange[];
   today?: string;
 }
@@ -168,6 +169,10 @@ export function validateStayRequest(input: StayValidationInput): StayValidationE
     return "too_many_guests";
   }
 
+  if (unit && hasWeekendRate({ price: unit.price ?? 0, weekend_price: unit.weekend_price }) && splitsWeekend(start, end)) {
+    return "weekend_split";
+  }
+
   const requested: DateRange = { start, end };
   if (unavailable.some((r) => rangesOverlap(requested, r))) return "unavailable";
 
@@ -187,6 +192,21 @@ export type StayRates = {
 export function isWeekendNight(iso: string): boolean {
   const day = new Date(`${iso}T12:00:00Z`).getUTCDay();
   return day === 5 || day === 6;
+}
+
+/**
+ * True when a stay holds a Friday night without the Saturday night after it, or
+ * a Saturday night without the Friday night before it. A unit with a weekend
+ * rate sells those two nights only as a pair.
+ */
+export function splitsWeekend(start: string, end: string): boolean {
+  const nights = new Set(nightsInRange({ start, end }));
+  for (const night of nights) {
+    const day = new Date(`${night}T12:00:00Z`).getUTCDay();
+    if (day === 5 && !nights.has(addDaysIso(night, 1))) return true;
+    if (day === 6 && !nights.has(addDaysIso(night, -1))) return true;
+  }
+  return false;
 }
 
 /** Weekday/weekend night counts for a stay, and what it costs. */

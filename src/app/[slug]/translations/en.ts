@@ -110,6 +110,7 @@ export const en = {
       too_short: "That stay is shorter than the minimum for this place.",
       too_long: "That stay is too long to request online. Please contact the host.",
       too_many_guests: "That is more guests than this place sleeps.",
+      weekend_split: "Friday and Saturday nights are booked together.",
       unavailable: "Those dates are no longer available. Please pick another range.",
     },
   },

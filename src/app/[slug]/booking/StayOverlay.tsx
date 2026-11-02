@@ -188,7 +188,7 @@ export function StayOverlay({
 
     const invalid = validateStayRequest({
       start: ci, end: co, guests,
-      unit: { min_nights: minNights, max_guests: maxGuests },
+      unit: { min_nights: minNights, max_guests: maxGuests, price: unit?.price ?? 0, weekend_price: unit?.weekend_price },
       // Night conflicts are impossible here: the picker refuses to build a
       // range spanning a blocked night. This only checks the rules it cannot
       // express, such as the minimum stay.
