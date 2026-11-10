@@ -66,7 +66,7 @@ export function BackLink({ slug, label }: { slug: string; label: string }) {
   );
 }
 
-export type PayStatus = "pending" | "paid" | "expired" | "confirmed" | "unknown";
+export type PayStatus = "pending" | "paid" | "received" | "expired" | "confirmed" | "unknown";
 
 /**
  * Polls the booking's payment state. Green Invoice's callback settles the
@@ -93,7 +93,7 @@ export function usePaymentStatus(bookingId: string): { status: PayStatus; timedO
         const next = String(data.status || "unknown") as PayStatus;
         if (stop) return;
         setStatus(next);
-        if (next === "paid" || next === "expired" || next === "confirmed") return;
+        if (next === "paid" || next === "received" || next === "expired" || next === "confirmed") return;
       } catch {
         // Network hiccup — keep polling until the attempt budget runs out.
       }

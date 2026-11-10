@@ -21,6 +21,8 @@ const COPY = {
     slowBody: "Your payment went through. Confirmation is taking longer than usual — the business will see your booking, and your invoice will arrive by email.",
     expiredTitle: "Booking not confirmed",
     expiredBody: "We could not confirm a payment for this booking, so the time slot was released. If you were charged, contact the business and they will sort it out.",
+    receivedTitle: "Payment received",
+    receivedBody: "Thank you — your payment went through. Your host will confirm your booking shortly and your receipt will arrive by email.",
     back: "Back to booking page",
   },
   he: {
@@ -32,6 +34,8 @@ const COPY = {
     slowBody: "התשלום עבר. האישור לוקח יותר זמן מהרגיל — העסק יראה את ההזמנה שלך והחשבונית תגיע במייל.",
     expiredTitle: "ההזמנה לא אושרה",
     expiredBody: "לא הצלחנו לאתר תשלום להזמנה הזו והתור שוחרר. אם חויבת, פנה לעסק והם יטפלו בזה.",
+    receivedTitle: "התשלום התקבל",
+    receivedBody: "תודה — התשלום עבר. המארח יאשר את ההזמנה בקרוב והקבלה תגיע במייל.",
     back: "חזרה לעמוד העסק",
   },
 } as const;
@@ -53,6 +57,10 @@ function SuccessInner() {
 
   if (status === "paid" || status === "confirmed") {
     return <PayCard lang={lang} icon="✅" title={t.okTitle} body={t.okBody}><BackLink slug={slug} label={t.back} /></PayCard>;
+  }
+
+  if (status === "received") {
+    return <PayCard lang={lang} icon="✅" title={t.receivedTitle} body={t.receivedBody}><BackLink slug={slug} label={t.back} /></PayCard>;
   }
 
   if (status === "expired") {

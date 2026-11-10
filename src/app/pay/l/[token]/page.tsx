@@ -29,6 +29,7 @@ const COPY = {
     unit: "Unit", checkIn: "Check-in", checkOut: "Check-out", nights: "Nights", guests: "Guests", total: "Total",
     pay: (a: string) => `Pay ${a} securely`,
     paidTitle: "Already paid", paidBody: "This booking is paid and confirmed. You can close this page.",
+    receivedTitle: "Payment received", receivedBody: "Your payment went through. Your host will confirm your booking shortly.",
     goneTitle: "Link no longer active", goneBody: "This payment link has expired or was replaced. Ask your host for a new one.",
     closedTitle: "Booking closed", closedBody: "This booking can no longer be paid online. Please contact your host.",
     missingTitle: "Link not found", missingBody: "Check that you opened the full link your host sent.",
@@ -48,6 +49,7 @@ const COPY = {
     unit: "יחידה", checkIn: "צ׳ק אין", checkOut: "צ׳ק אאוט", nights: "לילות", guests: "אורחים", total: "סה״כ",
     pay: (a: string) => `לתשלום מאובטח ${a}`,
     paidTitle: "ההזמנה שולמה", paidBody: "ההזמנה שולמה ואושרה. אפשר לסגור את העמוד.",
+    receivedTitle: "התשלום התקבל", receivedBody: "התשלום עבר. המארח יאשר את ההזמנה בקרוב.",
     goneTitle: "הקישור כבר לא פעיל", goneBody: "קישור התשלום פג תוקף או הוחלף. בקשו מהמארח קישור חדש.",
     closedTitle: "ההזמנה סגורה", closedBody: "לא ניתן לשלם על ההזמנה הזו אונליין. צרו קשר עם המארח.",
     missingTitle: "הקישור לא נמצא", missingBody: "ודאו שפתחתם את הקישור המלא שהמארח שלח.",
@@ -93,7 +95,9 @@ export default async function PayLinkPage({ params, searchParams }: Props) {
     return <PayCard lang={lang} icon="🔒" title={t.closedTitle} body={t.closedBody} />;
   }
   if (booking.payment_status === "deposit_paid" || link.status === "paid") {
-    return <PayCard lang={lang} icon="✅" title={t.paidTitle} body={t.paidBody} />;
+    return booking.status === "confirmed"
+      ? <PayCard lang={lang} icon="✅" title={t.paidTitle} body={t.paidBody} />
+      : <PayCard lang={lang} icon="✅" title={t.receivedTitle} body={t.receivedBody} />;
   }
   if (linkState(link) !== "payable") {
     return <PayCard lang={lang} icon="⏳" title={t.goneTitle} body={t.goneBody} />;

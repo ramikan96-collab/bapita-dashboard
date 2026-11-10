@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { createPaymentForm, bookingRemark, findPaidDocumentForBooking, documentIdOf } from "@/lib/greeninvoice";
+import { createPaymentForm, bookingRemark, findPaidDocumentsForBooking } from "@/lib/greeninvoice";
 import type { SettleBookingRow } from "@/lib/payment-settle";
-import { settleStayPayment } from "@/lib/stay-payment-settle";
+import { settleStayDocuments } from "@/lib/stay-payment-settle";
 import { linkState, loadLinkByToken, payLinkUrl } from "@/lib/payment-links";
 import { rangesOverlap, unavailableRanges, type StayBookingRow } from "@/lib/stay";
 import { bookingUrl } from "@/lib/site-url";
@@ -76,13 +76,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Already paid on an earlier attempt? Settle instead of charging again.
-  // findPaidDocumentForBooking THROWS when Green Invoice cannot answer — then we
+  // findPaidDocumentsForBooking THROWS when Green Invoice cannot answer — then we
   // stop rather than risk a second charge.
   try {
-    const verified = await findPaidDocumentForBooking(booking.business_id, booking.id);
-    if (verified?.paid) {
-      const docId = documentIdOf(verified.raw);
-      if (docId) await settleStayPayment({ supabase, bookingId: booking.id, verified, providerTxnId: docId });
+    const docs = await findPaidDocumentsForBooking(booking.business_id, booking.id);
+    if (docs.length) {
+      await settleStayDocuments(supabase, booking.id, docs);
       // Paid already — never open a second payment page, whatever settle decided.
       return NextResponse.redirect(successUrl, 303);
     }

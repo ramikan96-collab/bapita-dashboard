@@ -19,7 +19,7 @@
 // (callback, reconcile poll, checkout pre-check), so the unique
 // (provider, provider_txn_id) index makes a second delivery a no-op.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { VerifiedPayment } from "@/lib/greeninvoice";
+import type { PaidStayDocument, VerifiedPayment } from "@/lib/greeninvoice";
 import { sendPaidConfirmation } from "@/lib/payment-settle";
 import { sendTenantMail } from "@/lib/mail";
 import { formatIls } from "@/lib/payments";
@@ -95,12 +95,16 @@ export async function settleStayPayment(params: {
     invoice_url: verified.invoiceUrl || null,
     status: "paid",
   });
-  if (txnErr) {
-    if ((txnErr as { code?: string }).code === "23505") {
-      return { ok: true, paid: true, duplicate: true, confirmed: booking.status === "confirmed" };
-    }
+  const duplicate = !!txnErr && (txnErr as { code?: string }).code === "23505";
+  if (txnErr && !duplicate) {
     console.error("stay transaction insert failed:", txnErr);
     return { ok: false, error: "failed to record transaction" };
+  }
+  // Already recorded. If the booking already reflects money, an earlier run
+  // finished — stop. If it still shows none, an earlier run died between the
+  // insert and the confirm: carry on and finish it.
+  if (duplicate && booking.payment_status !== "none") {
+    return { ok: true, paid: true, duplicate: true, confirmed: booking.status === "confirmed" };
   }
 
   // 2. Decide whether this payment may confirm the booking.
@@ -145,13 +149,19 @@ export async function settleStayPayment(params: {
   if (!problem) {
     // Conditional on still-unpaid: if a parallel delivery got here first with a
     // different document, that is a second real payment — handled below.
-    const { data: claimed } = await supabase
+    const { data: claimed, error: claimErr } = await supabase
       .from("bookings")
       .update({ status: "confirmed", payment_status: "deposit_paid" })
       .eq("id", booking.id)
       .eq("payment_status", "none")
       .not("status", "in", "(cancelled,completed,no_show)")
       .select("id");
+    if (claimErr) {
+      // Transient DB failure: report it so the caller retries. The transaction
+      // row is in, and the duplicate branch above resumes from here next time.
+      console.error("stay confirm update failed:", claimErr);
+      return { ok: false, error: "failed to confirm booking" };
+    }
     if (!claimed || claimed.length === 0) {
       problem = `This booking was already paid — this is a second payment of ${formatIls(paidAmount)}.`;
     }
@@ -183,7 +193,7 @@ export async function settleStayPayment(params: {
       invoiceUrl: verified.invoiceUrl || "",
       lang: link.lang === "he" ? "he" : "en",
     });
-    return { ok: true, paid: true, duplicate: false, confirmed: true };
+    return { ok: true, paid: true, duplicate, confirmed: true };
   }
 
   // 3. Money in, booking not confirmed. Make the money visible on the booking
@@ -206,7 +216,28 @@ export async function settleStayPayment(params: {
     problem: problem!,
     invoiceUrl: verified.invoiceUrl || "",
   });
-  return { ok: true, paid: true, duplicate: false, confirmed: false, problem: problem! };
+  return { ok: true, paid: true, duplicate, confirmed: false, problem: problem! };
+}
+
+/**
+ * Settle every paid document found for a stay booking. Each is its own
+ * transaction (idempotent on its document id), so a guest who paid twice gets
+ * both payments recorded and the host is alerted about the second.
+ */
+export async function settleStayDocuments(
+  supabase: SupabaseClient,
+  bookingId: string,
+  docs: PaidStayDocument[],
+): Promise<{ ok: boolean; anyPaid: boolean }> {
+  let ok = true;
+  let anyPaid = false;
+  // Oldest first, so the first payment is the one that confirms.
+  for (const doc of [...docs].reverse()) {
+    const r = await settleStayPayment({ supabase, bookingId, verified: doc, providerTxnId: doc.docKey });
+    if (!r.ok) ok = false;
+    else if (r.paid) anyPaid = true;
+  }
+  return { ok, anyPaid };
 }
 
 async function alertHost(a: {

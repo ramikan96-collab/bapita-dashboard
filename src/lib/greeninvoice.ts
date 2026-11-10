@@ -373,14 +373,57 @@ export async function findPaidDocumentForBooking(
 ): Promise<VerifiedPayment | null> {
   if (!bookingId) return null;
   const { token, apiBase } = await getBusinessGiContext(businessId);
-  const marker = bookingRemark(bookingId);
+  const res = await fetch(`${apiBase}/documents/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    // Newest first, one page is plenty: reconcile runs minutes after payment.
+    body: JSON.stringify({ pageSize: 50, page: 1, sort: 'creationDate', order: 'desc' }),
+  });
+  if (!res.ok) return null;
+  const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  const items = (body.items as Array<Record<string, unknown>> | undefined) ?? [];
 
-  // Newest first. Stay pay links live up to 14 days, so one page of 50 is not
-  // always enough — walk a few pages. A failed search THROWS: callers must not
-  // read "Green Invoice could not answer" as "nothing was paid" (the checkout
-  // pre-check would then open a second payment page and double-charge).
+  const marker = bookingRemark(bookingId);
+  const hit = items.find((d) => String(d.remarks ?? '').trim() === marker && documentIsPaid(d));
+  if (!hit) return null;
+
+  return {
+    paid: true,
+    amount: Number(hit.amount ?? 0) || undefined,
+    invoiceUrl: giUrl(hit.url),
+    customRef: bookingId,
+    remarks: String(hit.remarks ?? ''),
+    raw: hit,
+  };
+}
+
+/** A paid document for a stay booking, with the id it is recorded under. */
+export interface PaidStayDocument extends VerifiedPayment {
+  /** GI document id, or a stable fallback built from the document number. */
+  docKey: string;
+}
+
+/**
+ * EVERY paid document for one stay booking (spec 2026-11-10-stay-pay-link).
+ *
+ * Stays are separate from the appointment reconcile above on purpose:
+ * - a guest can pay twice (two open payment pages), so all matches are returned
+ *   and each is recorded on its own;
+ * - a pay link lives up to 14 days, so several pages are walked;
+ * - a failed search THROWS: "Green Invoice could not answer" must never read as
+ *   "nothing was paid" (the checkout pre-check would open a second payment page);
+ * - the amount is what was actually paid (sum of payment rows).
+ */
+export async function findPaidDocumentsForBooking(
+  businessId: string,
+  bookingId: string,
+): Promise<PaidStayDocument[]> {
+  if (!bookingId) return [];
+  const { token, apiBase } = await getBusinessGiContext(businessId);
+  const marker = bookingRemark(bookingId);
   const PAGE_SIZE = 50;
   const MAX_PAGES = 6;
+  const found: PaidStayDocument[] = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
     const res = await fetch(`${apiBase}/documents/search`, {
       method: 'POST',
@@ -390,21 +433,24 @@ export async function findPaidDocumentForBooking(
     if (!res.ok) throw new Error(`GI /documents/search failed (${res.status})`);
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     const items = (body.items as Array<Record<string, unknown>> | undefined) ?? [];
-
-    const hit = items.find((d) => String(d.remarks ?? '').trim() === marker && documentIsPaid(d));
-    if (hit) {
-      return {
+    for (const d of items) {
+      if (String(d.remarks ?? '').trim() !== marker || !documentIsPaid(d)) continue;
+      const id = documentIdOf(d);
+      const docKey = id || (d.number != null ? `${bookingId}:doc:${String(d.number)}` : '');
+      if (!docKey) continue;
+      found.push({
         paid: true,
-        amount: documentPaidAmount(hit) || undefined,
-        invoiceUrl: giUrl(hit.url),
+        amount: documentPaidAmount(d) || undefined,
+        invoiceUrl: giUrl(d.url),
         customRef: bookingId,
-        remarks: String(hit.remarks ?? ''),
-        raw: hit,
-      };
+        remarks: String(d.remarks ?? ''),
+        raw: d,
+        docKey,
+      });
     }
     if (items.length < PAGE_SIZE) break;
   }
-  return null;
+  return found;
 }
 
 /**

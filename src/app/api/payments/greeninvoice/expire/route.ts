@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sweepExpiredDemos } from "@/lib/outreach/sweep";
+import { findPaidDocumentsForBooking } from "@/lib/greeninvoice";
+import { settleStayDocuments } from "@/lib/stay-payment-settle";
 
 // Releases slots held by unpaid deposit bookings. A booking left in
 // payment_status='pending_payment' past the window is expired (slot freed).
@@ -50,7 +52,44 @@ async function run() {
     demos = { error: String(e) };
   }
 
-  return NextResponse.json({ ok: true, expired: data?.length ?? 0, demos });
+  // Stay pay links: catch a payment whose callback never landed and whose guest
+  // closed the tab before the success page could reconcile. Same non-fatal rule.
+  let stays: { checked: number; settled: number } | { error: string };
+  try {
+    stays = await sweepStayPayments(supabase);
+  } catch (e) {
+    console.error("stay payment sweep failed:", e);
+    stays = { error: String(e) };
+  }
+
+  return NextResponse.json({ ok: true, expired: data?.length ?? 0, demos, stays });
+}
+
+async function sweepStayPayments(supabase: ReturnType<typeof createServiceClient>) {
+  const since = new Date(Date.now() - 15 * 24 * 3600 * 1000).toISOString();
+  const { data: links } = await supabase
+    .from("payment_links")
+    .select("booking_id, business_id, booking:bookings(payment_status)")
+    .gte("created_at", since)
+    .limit(200);
+  const seen = new Set<string>();
+  let checked = 0, settled = 0;
+  for (const l of links ?? []) {
+    const b = Array.isArray(l.booking) ? l.booking[0] : l.booking;
+    if (!b || (b as { payment_status?: string }).payment_status !== "none" || seen.has(l.booking_id as string)) continue;
+    seen.add(l.booking_id as string);
+    if (++checked > 50) break;
+    try {
+      const docs = await findPaidDocumentsForBooking(l.business_id as string, l.booking_id as string);
+      if (docs.length) {
+        const r = await settleStayDocuments(supabase, l.booking_id as string, docs);
+        if (r.anyPaid) settled++;
+      }
+    } catch (e) {
+      console.error("stay sweep: lookup failed for booking", l.booking_id, e);
+    }
+  }
+  return { checked: Math.min(checked, 50), settled };
 }
 
 export async function GET(req: NextRequest) {

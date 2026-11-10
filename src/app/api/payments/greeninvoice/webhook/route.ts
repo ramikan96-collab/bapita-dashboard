@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { verifyPayment, findPaidDocumentForBooking, documentIdOf } from "@/lib/greeninvoice";
+import { verifyPayment, findPaidDocumentsForBooking } from "@/lib/greeninvoice";
 import { settlePaidBooking, type SettleBookingRow } from "@/lib/payment-settle";
-import { settleStayPayment } from "@/lib/stay-payment-settle";
+import { settleStayDocuments } from "@/lib/stay-payment-settle";
 
 // Green Invoice payment callback (the per-form `notifyUrl` — Green Invoice has
 // no webhook subscription endpoint, verified 404 in sandbox).
@@ -84,13 +84,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "slow down" }, { status: 429 });
     }
     try {
-      const doc = await findPaidDocumentForBooking((booking as SettleBookingRow).business_id, bookingId);
-      if (!doc?.paid) return NextResponse.json({ ok: true, paid: false });
-      const docId = documentIdOf(doc.raw);
-      if (!docId) return NextResponse.json({ ok: true, paid: false, reason: "no document id" });
-      const result = await settleStayPayment({ supabase, bookingId, verified: doc, providerTxnId: docId });
-      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 500 });
-      return NextResponse.json(result);
+      const docs = await findPaidDocumentsForBooking((booking as SettleBookingRow).business_id, bookingId);
+      if (docs.length === 0) {
+        // The receipt may not be searchable yet. 503 asks Green Invoice to
+        // retry; the success-page poll and the daily sweep also catch it.
+        return NextResponse.json({ ok: true, paid: false, retry: true }, { status: 503 });
+      }
+      const r = await settleStayDocuments(supabase, bookingId, docs);
+      if (!r.ok) return NextResponse.json({ error: "settle failed" }, { status: 500 });
+      return NextResponse.json({ ok: true, paid: r.anyPaid });
     } catch (e) {
       // 500 so Green Invoice retries; the success-page poll is the safety net.
       console.error("stay callback failed:", e);
