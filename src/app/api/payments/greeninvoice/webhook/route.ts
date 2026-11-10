@@ -16,6 +16,19 @@ import { settleStayPayment } from "@/lib/stay-payment-settle";
 const BOOKING_SELECT =
   "id, business_id, payment_status, status, customer_name, customer_email, appointment_date, appointment_time, check_out, service:services(name, price, deposit_required, deposit_type, deposit_value)";
 
+// Per-instance throttle for the stay branch (see POST).
+const lastLookup = new Map<string, number>();
+const LOOKUP_MIN_MS = 4000;
+function mayLookUp(bookingId: string): boolean {
+  const now = Date.now();
+  if (now - (lastLookup.get(bookingId) ?? 0) < LOOKUP_MIN_MS) return false;
+  lastLookup.set(bookingId, now);
+  if (lastLookup.size > 500) {
+    for (const [k, t] of lastLookup) if (now - t > 60_000) lastLookup.delete(k);
+  }
+  return true;
+}
+
 async function readPayload(req: NextRequest): Promise<Record<string, unknown>> {
   try {
     const ct = req.headers.get("content-type") || "";
@@ -56,6 +69,20 @@ export async function POST(req: NextRequest) {
   // PAID DOCUMENT for this booking — a receipt exists only for money that
   // landed — and settle on its document id, the same id every other path uses.
   if ((booking as SettleBookingRow).check_out) {
+    // This endpoint is public. Only stays that actually had a pay link can be
+    // waiting for a payment, and each booking may trigger at most one Green
+    // Invoice lookup per few seconds — a script replaying a booking id must not
+    // burn the business's Green Invoice quota.
+    const { count } = await supabase
+      .from("payment_links")
+      .select("id", { count: "exact", head: true })
+      .eq("booking_id", bookingId);
+    if (!count) return NextResponse.json({ ok: true, ignored: "no pay link" });
+    if (!mayLookUp(bookingId)) {
+      // 429 so a genuine Green Invoice delivery retries; the success-page poll
+      // is the safety net either way.
+      return NextResponse.json({ error: "slow down" }, { status: 429 });
+    }
     try {
       const doc = await findPaidDocumentForBooking((booking as SettleBookingRow).business_id, bookingId);
       if (!doc?.paid) return NextResponse.json({ ok: true, paid: false });
