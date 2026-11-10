@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Business } from "@/types";
 import { IgIcon, WaIcon, FbIcon, TkIcon } from "./icons";
 import { AccessibilityMenu } from "@/components/AccessibilityMenu";
+import { displayIlPhone } from "@/lib/phone-display";
 
 interface Props {
   business: Business;
@@ -110,7 +111,7 @@ export function ThemeFooter({
             <div>
               {business.whatsapp_number && !business.phone && (
                 <a href={`tel:${business.whatsapp_number.replace(/[^\d+]/g, "")}`} dir="ltr" style={{ color: "inherit", textDecoration: "none" }}>
-                  {seller.tel} {business.whatsapp_number}
+                  {seller.tel} {displayIlPhone(business.whatsapp_number)}
                 </a>
               )}
               {business.whatsapp_number && !business.phone && business.email && " · "}

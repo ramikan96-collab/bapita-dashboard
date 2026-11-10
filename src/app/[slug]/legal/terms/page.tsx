@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { STAY_CHECK_IN_TIME } from "@/lib/stay";
+import { displayIlPhone } from "@/lib/phone-display";
 
 // A stay business's own booking terms: who the seller is, how booking and
 // payment work, and how cancellations are handled. Required for Grow's clearing
@@ -63,7 +64,8 @@ type Section = { h: string; p: (string | false | null | undefined)[] };
 function content(b: Biz, he: boolean): { title: string; updated: string; sections: Section[]; back: string; other: string } {
   const name = (he && b.name_he) || b.name;
   const seller = b.legal_name || name;
-  const phone = b.phone || b.whatsapp_number;
+  const rawPhone = b.phone || b.whatsapp_number;
+  const phone = rawPhone ? displayIlPhone(rawPhone) : null;
   if (he) {
     return {
       title: `תנאי הזמנה — ${name}`,
