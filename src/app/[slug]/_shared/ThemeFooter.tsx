@@ -30,13 +30,13 @@ interface Props {
   lang?: "en" | "he";
 }
 
-// Stays take payment through host pay links, so their footer names the legal
-// seller and links to the business's own booking terms (Grow's site review and
+// Stays take payment through host pay links, so their footer shows contact
+// details and links to the business's own booking terms (which name the legal seller) (Grow's site review and
 // Israeli distance-sale rules). Custom-domain sites keep the old links: the
 // tenant /legal route is not mapped on custom domains.
 const SELLER = {
-  en: { by: "Operated by", id: "Business ID", tel: "Tel", terms: "Booking terms" },
-  he: { by: "מופעל על ידי", id: "מספר עוסק", tel: "טל׳", terms: "תנאי הזמנה" },
+  en: { tel: "Tel", terms: "Booking terms" },
+  he: { tel: "טל׳", terms: "תנאי הזמנה" },
 };
 
 export function ThemeFooter({
@@ -98,27 +98,19 @@ export function ThemeFooter({
           )}
         </div>
       )}
-      {stayLegal && (business.legal_name || business.business_id_number || business.email) && (
+      {/* Contact only. The legal seller (name, business ID, registered address)
+          lives on the booking terms page, linked below — owner's choice to keep
+          personal details out of every page footer. */}
+      {stayLegal && ((business.whatsapp_number && !business.phone) || business.email) && (
         <div style={{ fontSize: 12, color: colors.muted, lineHeight: 1.7, marginBottom: 14 }}>
-          {(business.legal_name || business.business_id_number) && (
-            <div>
-              {business.legal_name && <>{seller.by} {business.legal_name}</>}
-              {business.legal_name && business.business_id_number && " · "}
-              {business.business_id_number && <>{seller.id} {business.business_id_number}</>}
-            </div>
+          {business.whatsapp_number && !business.phone && (
+            <a href={`tel:${business.whatsapp_number.replace(/[^\d+]/g, "")}`} dir="ltr" style={{ color: "inherit", textDecoration: "none" }}>
+              {seller.tel} {displayIlPhone(business.whatsapp_number)}
+            </a>
           )}
-          {(business.whatsapp_number || business.email) && (
-            <div>
-              {business.whatsapp_number && !business.phone && (
-                <a href={`tel:${business.whatsapp_number.replace(/[^\d+]/g, "")}`} dir="ltr" style={{ color: "inherit", textDecoration: "none" }}>
-                  {seller.tel} {displayIlPhone(business.whatsapp_number)}
-                </a>
-              )}
-              {business.whatsapp_number && !business.phone && business.email && " · "}
-              {business.email && (
-                <a href={`mailto:${business.email}`} dir="ltr" style={{ color: "inherit", textDecoration: "none" }}>{business.email}</a>
-              )}
-            </div>
+          {business.whatsapp_number && !business.phone && business.email && " · "}
+          {business.email && (
+            <a href={`mailto:${business.email}`} dir="ltr" style={{ color: "inherit", textDecoration: "none" }}>{business.email}</a>
           )}
         </div>
       )}

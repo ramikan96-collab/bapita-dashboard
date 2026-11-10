@@ -162,7 +162,7 @@ export default async function PayLinkPage({ params, searchParams }: Props) {
       <p style={{ margin: "12px 0 0", fontSize: 12, color: "#6B6257" }}>{t.expires(expires)}</p>
       {biz?.name && (
         <p style={{ margin: "4px 0 0", fontSize: 12, color: "#6B6257" }}>
-          {t.seller(String(biz.legal_name ?? "").trim() || biz.name, String(biz.business_id_number ?? "").trim())}
+          {t.seller(biz.name, "")}
         </p>
       )}
       {biz?.slug && (
