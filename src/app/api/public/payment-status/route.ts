@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { findPaidDocumentForBooking, documentIdOf } from "@/lib/greeninvoice";
 import { settlePaidBooking, type SettleBookingRow } from "@/lib/payment-settle";
+import { loadLinkForBooking } from "@/lib/payment-links";
+import { settleStayPayment } from "@/lib/stay-payment-settle";
 import { holdIsLive } from "@/lib/payment-holds";
 
 // Public payment status for one booking, polled by /pay/success.
@@ -19,7 +21,7 @@ import { holdIsLive } from "@/lib/payment-holds";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const BOOKING_SELECT =
-  "id, business_id, payment_status, status, created_at, customer_name, customer_email, appointment_date, appointment_time, service:services(name, price, deposit_required, deposit_type, deposit_value)";
+  "id, business_id, payment_status, status, created_at, customer_name, customer_email, appointment_date, appointment_time, check_out, service:services(name, price, deposit_required, deposit_type, deposit_value)";
 
 // Throttle: at most one Green Invoice reconcile per booking per 4s, no matter
 // how fast the page polls.
@@ -60,6 +62,8 @@ export async function GET(req: NextRequest) {
       .select("amount, invoice_url")
       .eq("booking_id", bookingId)
       .eq("status", "paid")
+      .order("created_at", { ascending: true })
+      .limit(1)
       .maybeSingle();
     return NextResponse.json({
       status: "paid",
@@ -70,11 +74,23 @@ export async function GET(req: NextRequest) {
 
   if (booking.payment_status === "deposit_paid") return paidResponse();
 
-  if (booking.payment_status === "pending_payment") {
+  // A stay with an open pay link is waiting for payment too, but it is NOT a
+  // pending_payment hold (those are swept after 15 min) — it stays payable
+  // until the link expires.
+  const link = booking.payment_status === "none" ? await loadLinkForBooking(supabase, bookingId) : null;
+  const linkOpen = link?.status === "active";
+
+  if (booking.payment_status === "pending_payment" || linkOpen) {
     if (mayReconcile(bookingId)) {
       try {
         const verified = await findPaidDocumentForBooking(booking.business_id, bookingId);
-        if (verified?.paid) {
+        if (verified?.paid && booking.check_out) {
+          const docId = documentIdOf(verified.raw);
+          if (docId) {
+            const result = await settleStayPayment({ supabase, bookingId, verified, providerTxnId: docId });
+            if (result.ok && result.paid) return paidResponse();
+          }
+        } else if (verified?.paid) {
           const result = await settlePaidBooking({
             supabase,
             booking,
@@ -91,7 +107,9 @@ export async function GET(req: NextRequest) {
     }
 
     // Still unpaid: report whether the hold is alive so the page can stop polling.
-    const live = holdIsLive({ payment_status: booking.payment_status, created_at: booking.created_at });
+    const live = linkOpen
+      ? new Date(link!.expires_at).getTime() > Date.now()
+      : holdIsLive({ payment_status: booking.payment_status, created_at: booking.created_at });
     return NextResponse.json({ status: live ? "pending" : "expired" });
   }
 

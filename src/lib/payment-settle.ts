@@ -25,6 +25,8 @@ export interface SettleBookingRow {
   customer_email: string | null;
   appointment_date: string | null;
   appointment_time: string | null;
+  /** Stay bookings only: checkout date (exclusive). */
+  check_out?: string | null;
   service: ServiceRow | ServiceRow[] | null;
 }
 
@@ -135,7 +137,7 @@ export async function settlePaidBooking(params: {
  * api/public/book because it must state what was paid and what is still owed at
  * the business — the single most common support question after online payment.
  */
-async function sendPaidConfirmation(p: {
+export async function sendPaidConfirmation(p: {
   booking: SettleBookingRow;
   service: ServiceRow | null;
   paidAmount: number;
@@ -156,8 +158,25 @@ async function sendPaidConfirmation(p: {
   const he = p.lang === "he";
   const subject = he ? "התשלום התקבל וההזמנה אושרה" : "Payment received — booking confirmed";
   const dir = he ? "direction:rtl;text-align:right;" : "";
+  const checkOut = p.booking.check_out ?? null;
 
-  const rows = he
+  const rows = checkOut
+    ? (he
+      ? `
+        <div style="margin-bottom:8px;"><strong>יחידה:</strong> ${esc(serviceName)}</div>
+        <div style="margin-bottom:8px;"><strong>צ׳ק אין:</strong> ${esc(p.booking.appointment_date)}</div>
+        <div style="margin-bottom:8px;"><strong>צ׳ק אאוט:</strong> ${esc(checkOut)}</div>
+        <div style="margin-bottom:8px;"><strong>שולם:</strong> ${esc(paid)}</div>
+        ${p.balanceDue > 0 ? `<div><strong>יתרה לתשלום:</strong> ${esc(balance)}</div>` : `<div><strong>שולם במלואו</strong></div>`}
+        ${invoiceLink ? `<div style="margin-top:8px;"><a href="${invoiceLink}">קבלה</a></div>` : ""}`
+      : `
+        <div style="margin-bottom:8px;"><strong>Unit:</strong> ${esc(serviceName)}</div>
+        <div style="margin-bottom:8px;"><strong>Check-in:</strong> ${esc(p.booking.appointment_date)}</div>
+        <div style="margin-bottom:8px;"><strong>Check-out:</strong> ${esc(checkOut)}</div>
+        <div style="margin-bottom:8px;"><strong>Paid:</strong> ${esc(paid)}</div>
+        ${p.balanceDue > 0 ? `<div><strong>Balance due:</strong> ${esc(balance)}</div>` : `<div><strong>Paid in full</strong></div>`}
+        ${invoiceLink ? `<div style="margin-top:8px;"><a href="${invoiceLink}">View receipt</a></div>` : ""}`)
+    : he
     ? `
         <div style="margin-bottom:8px;"><strong>שירות:</strong> ${esc(serviceName)}</div>
         <div style="margin-bottom:8px;"><strong>תאריך:</strong> ${esc(p.booking.appointment_date)}</div>
@@ -174,8 +193,8 @@ async function sendPaidConfirmation(p: {
         ${invoiceLink ? `<div style="margin-top:8px;"><a href="${invoiceLink}">View invoice</a></div>` : ""}`;
 
   const intro = he
-    ? `שלום ${esc(p.booking.customer_name)}, התשלום התקבל והתור אושר.`
-    : `Hi ${esc(p.booking.customer_name)}, your payment went through and your appointment is confirmed.`;
+    ? `שלום ${esc(p.booking.customer_name)}, התשלום התקבל ${checkOut ? "וההזמנה אושרה" : "והתור אושר"}.`
+    : `Hi ${esc(p.booking.customer_name)}, your payment went through and your ${checkOut ? "stay" : "appointment"} is confirmed.`;
 
   try {
     await sendTenantMail({

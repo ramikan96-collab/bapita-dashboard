@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 import { STATUS_COLOR, STATUS_BG, STATUS_LABEL } from "@/types";
 import { isStayBooking, nightsBetween, stayTotal } from "@/lib/stay";
+import PayLinkPanel from "./PayLinkPanel";
 import RescheduleSheet from "./RescheduleSheet";
 import EditBookingSheet from "./EditBookingSheet";
 import LabelPickerSheet from "./LabelPickerSheet";
@@ -630,7 +631,11 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
     const ps = current.payment_status;
 
     const paidOnline = onlinePayment?.amount ?? 0;
-    const balance = price != null ? Math.max(0, Math.round((Number(price) - paidOnline) * 100) / 100) : 0;
+    // A stay is only ever paid online through a host pay link, which carries the
+    // agreed total — so a paid stay owes nothing, whatever the nightly rates say.
+    const balance = stay && ps === "deposit_paid"
+      ? 0
+      : price != null ? Math.max(0, Math.round((Number(price) - paidOnline) * 100) / 100) : 0;
     const fullyPaidOnline = ps === "deposit_paid" && balance <= 0;
 
     const paymentLabel: Record<PaymentStatus, string> = {
@@ -690,7 +695,7 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
               </div>
               <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
                 <span className="text-[14px]" style={{ color: "var(--color-muted)" }}>
-                  {balance > 0 ? "Collect at the salon" : "Nothing left to collect"}
+                  {balance > 0 ? (stay ? "Collect on arrival" : "Collect at the salon") : "Nothing left to collect"}
                 </span>
                 <span className="text-[15px] font-bold" style={{ color: balance > 0 ? "var(--color-dark)" : STATUS_COLOR.completed }}>
                   {balance > 0 ? `₪${balance}` : "—"}
@@ -705,6 +710,16 @@ export default function BookingDrawer({ booking, onClose, onUpdated, onDeleted }
             </div>
           )}
         </div>
+        {stay && ps === "none" && (current.status === "pending" || current.status === "confirmed") && (
+          <PayLinkPanel
+            bookingId={current.id}
+            defaultAmount={price != null ? Number(price) : null}
+            defaultLang="en"
+            guestPhone={current.customer_phone ?? null}
+            guestEmail={current.customer_email ?? null}
+            summary={`${current.service?.name ?? "your stay"}, ${current.appointment_date} → ${current.check_out}`}
+          />
+        )}
         {(ps === "none" || (ps === "deposit_paid" && balance > 0)) && (
           <button
             onClick={() => setShowCheckout(true)}

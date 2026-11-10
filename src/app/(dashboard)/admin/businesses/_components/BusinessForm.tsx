@@ -13,6 +13,7 @@ import { SmartImg } from "@/components/SmartImg";
 import { FontPicker } from "@/components/FontPicker";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { AMENITIES } from "@/lib/amenities";
+import StayPayLinks from "./StayPayLinks";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1742,6 +1743,12 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                   );
                 })()}
               </SectionCard>
+
+              {businessId && form.business_type === "stay" && (
+                <SectionCard title="Payment links — stays">
+                  <StayPayLinks businessId={businessId} defaultLang={form.default_lang === "he" ? "he" : "en"} />
+                </SectionCard>
+              )}
             </div>
           )}
 

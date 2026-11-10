@@ -373,28 +373,48 @@ export async function findPaidDocumentForBooking(
 ): Promise<VerifiedPayment | null> {
   if (!bookingId) return null;
   const { token, apiBase } = await getBusinessGiContext(businessId);
-  const res = await fetch(`${apiBase}/documents/search`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    // Newest first, one page is plenty: reconcile runs minutes after payment.
-    body: JSON.stringify({ pageSize: 50, page: 1, sort: 'creationDate', order: 'desc' }),
-  });
-  if (!res.ok) return null;
-  const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  const items = (body.items as Array<Record<string, unknown>> | undefined) ?? [];
-
   const marker = bookingRemark(bookingId);
-  const hit = items.find((d) => String(d.remarks ?? '').trim() === marker && documentIsPaid(d));
-  if (!hit) return null;
 
-  return {
-    paid: true,
-    amount: Number(hit.amount ?? 0) || undefined,
-    invoiceUrl: giUrl(hit.url),
-    customRef: bookingId,
-    remarks: String(hit.remarks ?? ''),
-    raw: hit,
-  };
+  // Newest first. Stay pay links live up to 14 days, so one page of 50 is not
+  // always enough — walk a few pages. A failed search THROWS: callers must not
+  // read "Green Invoice could not answer" as "nothing was paid" (the checkout
+  // pre-check would then open a second payment page and double-charge).
+  const PAGE_SIZE = 50;
+  const MAX_PAGES = 6;
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const res = await fetch(`${apiBase}/documents/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ pageSize: PAGE_SIZE, page, sort: 'creationDate', order: 'desc' }),
+    });
+    if (!res.ok) throw new Error(`GI /documents/search failed (${res.status})`);
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const items = (body.items as Array<Record<string, unknown>> | undefined) ?? [];
+
+    const hit = items.find((d) => String(d.remarks ?? '').trim() === marker && documentIsPaid(d));
+    if (hit) {
+      return {
+        paid: true,
+        amount: documentPaidAmount(hit) || undefined,
+        invoiceUrl: giUrl(hit.url),
+        customRef: bookingId,
+        remarks: String(hit.remarks ?? ''),
+        raw: hit,
+      };
+    }
+    if (items.length < PAGE_SIZE) break;
+  }
+  return null;
+}
+
+/**
+ * What was actually paid on a document: the sum of its payment rows, falling
+ * back to the document total when the rows carry no amounts.
+ */
+export function documentPaidAmount(doc: Record<string, unknown>): number {
+  const payments = (doc.payment as Array<Record<string, unknown>> | undefined) ?? [];
+  const paidSum = payments.reduce((sum, row) => sum + (Number(row.price ?? row.amount ?? 0) || 0), 0);
+  return paidSum > 0 ? Math.round(paidSum * 100) / 100 : Number(doc.amount ?? 0) || 0;
 }
 
 /**
