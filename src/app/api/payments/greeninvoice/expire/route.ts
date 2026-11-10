@@ -67,18 +67,23 @@ async function run() {
 
 async function sweepStayPayments(supabase: ReturnType<typeof createServiceClient>) {
   const since = new Date(Date.now() - 15 * 24 * 3600 * 1000).toISOString();
+  // Newest first, unpaid bookings only, and a time budget so one daily run can
+  // never eat the whole function limit on Green Invoice lookups.
+  const started = Date.now();
+  const BUDGET_MS = 40_000;
   const { data: links } = await supabase
     .from("payment_links")
-    .select("booking_id, business_id, booking:bookings(payment_status)")
+    .select("booking_id, business_id, booking:bookings!inner(payment_status)")
+    .eq("booking.payment_status", "none")
     .gte("created_at", since)
+    .order("created_at", { ascending: false })
     .limit(200);
   const seen = new Set<string>();
   let checked = 0, settled = 0;
   for (const l of links ?? []) {
-    const b = Array.isArray(l.booking) ? l.booking[0] : l.booking;
-    if (!b || (b as { payment_status?: string }).payment_status !== "none" || seen.has(l.booking_id as string)) continue;
+    if (seen.has(l.booking_id as string)) continue;
     seen.add(l.booking_id as string);
-    if (++checked > 50) break;
+    if (++checked > 50 || Date.now() - started > BUDGET_MS) break;
     try {
       const docs = await findPaidDocumentsForBooking(l.business_id as string, l.booking_id as string);
       if (docs.length) {

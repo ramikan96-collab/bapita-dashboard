@@ -103,8 +103,13 @@ export async function settleStayPayment(params: {
   // Already recorded. If the booking already reflects money, an earlier run
   // finished — stop. If it still shows none, an earlier run died between the
   // insert and the confirm: carry on and finish it.
-  if (duplicate && booking.payment_status !== "none") {
-    return { ok: true, paid: true, duplicate: true, confirmed: booking.status === "confirmed" };
+  if (duplicate) {
+    // Re-read: a parallel run (callback vs. success-page poll) may have just
+    // finished with this same document.
+    const { data: fresh } = await supabase.from("bookings").select("status, payment_status").eq("id", booking.id).single();
+    if (!fresh || fresh.payment_status !== "none") {
+      return { ok: true, paid: true, duplicate: true, confirmed: fresh?.status === "confirmed" };
+    }
   }
 
   // 2. Decide whether this payment may confirm the booking.
@@ -163,6 +168,8 @@ export async function settleStayPayment(params: {
       return { ok: false, error: "failed to confirm booking" };
     }
     if (!claimed || claimed.length === 0) {
+      // Same document already handled by a parallel run → not a second payment.
+      if (duplicate) return { ok: true, paid: true, duplicate: true, confirmed: true };
       problem = `This booking was already paid — this is a second payment of ${formatIls(paidAmount)}.`;
     }
   }
@@ -198,8 +205,16 @@ export async function settleStayPayment(params: {
 
   // 3. Money in, booking not confirmed. Make the money visible on the booking
   //    (only if it showed none) and tell the host.
-  if (booking.payment_status === "none") {
-    await supabase.from("bookings").update({ payment_status: "deposit_paid" }).eq("id", booking.id).eq("payment_status", "none");
+  const { data: marked } = await supabase
+    .from("bookings")
+    .update({ payment_status: "deposit_paid" })
+    .eq("id", booking.id)
+    .eq("payment_status", "none")
+    .select("id");
+  // A re-delivered document that a parallel run already flagged must not alert
+  // the host twice. A NEW document always alerts (e.g. a real second payment).
+  if (duplicate && (!marked || marked.length === 0)) {
+    return { ok: true, paid: true, duplicate: true, confirmed: false, problem: problem! };
   }
   if (link && link.status === "active") {
     await supabase.from("payment_links").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", link.id);

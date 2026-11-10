@@ -84,7 +84,9 @@ export async function GET(req: NextRequest) {
       }
       return null;
     };
-    if (booking.payment_status === "deposit_paid") return (await stayAnswer())!;
+    if (booking.payment_status === "deposit_paid") {
+      return (await stayAnswer()) ?? paidResponse(booking.status === "confirmed" ? "paid" : "received");
+    }
     if (booking.payment_status !== "none") {
       return NextResponse.json({ status: booking.status === "confirmed" ? "confirmed" : "pending" });
     }
