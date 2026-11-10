@@ -104,6 +104,18 @@ export async function settleStayPayment(params: {
   // finished — stop. If it still shows none, an earlier run died between the
   // insert and the confirm: carry on and finish it.
   if (duplicate) {
+    // A recorded payment the host has since REFUNDED (refund route sets the
+    // row to 'refunded' and the booking back to none) must never be revived by
+    // a retry or the daily sweep.
+    const { data: existing } = await supabase
+      .from("transactions")
+      .select("status")
+      .eq("provider", "greeninvoice")
+      .eq("provider_txn_id", providerTxnId)
+      .maybeSingle();
+    if (!existing || existing.status !== "paid") {
+      return { ok: true, paid: false, reason: "already handled (refunded or not paid)" };
+    }
     // Re-read: a parallel run (callback vs. success-page poll) may have just
     // finished with this same document.
     const { data: fresh } = await supabase.from("bookings").select("status, payment_status").eq("id", booking.id).single();
