@@ -272,6 +272,7 @@ export function PageShell({ business, page, service, services, photos, siblings,
           brandLabel={t.footer.brand}
           privacyLabel={t.footer.privacy}
           termsLabel={t.footer.terms}
+          lang={lang}
           topBorder
         />
       </div>

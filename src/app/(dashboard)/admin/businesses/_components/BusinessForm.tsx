@@ -72,6 +72,8 @@ interface FormData {
   phone:              string;
   address:            string;
   business_id_number: string;
+  legal_name:         string;
+  legal_address:      string;
   cancellation_policy: string;
   email:              string;
   owner_email:        string;
@@ -136,7 +138,7 @@ type Tab = "profile" | "design" | "gallery" | "services" | "plan" | "hours" | "r
 
 const EMPTY_FORM: FormData = {
   name: "", name_he: "", slug: "", template_style: "classic", business_type: "appointment", default_lang: "he",
-  tagline: "", tagline_he: "", phone: "", address: "", business_id_number: "", cancellation_policy: "", email: "", owner_email: "",
+  tagline: "", tagline_he: "", phone: "", address: "", business_id_number: "", legal_name: "", legal_address: "", cancellation_policy: "", email: "", owner_email: "",
   instagram_url: "", facebook_url: "", tiktok_url: "", whatsapp_number: "",
   external_booking_url: "", cta_label: "", cta_label_he: "",
   google_review_link: "", google_maps_url: "", waze_url: "",
@@ -207,6 +209,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
           phone:              b.phone               || "",
           address:            b.address             || "",
           business_id_number: b.business_id_number  || "",
+          legal_name:         b.legal_name          || "",
+          legal_address:      b.legal_address       || "",
           cancellation_policy: b.cancellation_policy || "",
           email:              b.email               || "",
           owner_email:        (b as unknown as { owner_email?: string | null }).owner_email || "",
@@ -423,6 +427,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       phone:              form.phone              || null,
       address:            form.address            || null,
       business_id_number: form.business_id_number || null,
+      legal_name:         form.legal_name?.trim() || null,
+      legal_address:      form.legal_address?.trim() || null,
       cancellation_policy: form.cancellation_policy || null,
       email:              form.email              || null,
       owner_email:        form.owner_email        || null,
@@ -583,6 +589,8 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
       phone:              form.phone              || null,
       address:            form.address            || null,
       business_id_number: form.business_id_number || null,
+      legal_name:         form.legal_name?.trim() || null,
+      legal_address:      form.legal_address?.trim() || null,
       cancellation_policy: form.cancellation_policy || null,
       email:              form.email              || null,
       owner_email:        form.owner_email        || null,
@@ -1090,6 +1098,12 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
                 <Row>
                   <Field label="Business ID (ת.ז / ח.פ) — required before payments can connect">
                     <input value={form.business_id_number} onChange={e => set("business_id_number", e.target.value)} placeholder="123456789" style={inputStyle} />
+                  </Field>
+                  <Field label="Legal name — as on the tax registration (shown on booking terms + footer)">
+                    <input value={form.legal_name} onChange={e => set("legal_name", e.target.value)} placeholder="קנדיוטי רמי מרט" style={inputStyle} />
+                  </Field>
+                  <Field label="Registered address — as on the tax registration">
+                    <input value={form.legal_address} onChange={e => set("legal_address", e.target.value)} placeholder="צובה" style={inputStyle} />
                   </Field>
                   <Field label="Cancellation policy — shown to customers at payment, blank = default 24h">
                     <input value={form.cancellation_policy} onChange={e => set("cancellation_policy", e.target.value)} placeholder="Free cancellation up to 24 hours before your appointment." style={inputStyle} />

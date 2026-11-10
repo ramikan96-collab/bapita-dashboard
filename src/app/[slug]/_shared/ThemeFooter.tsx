@@ -25,12 +25,26 @@ interface Props {
   topBorder?: boolean;
   /** Extra styles for the "powered by" label (Dark: Oswald/uppercase) */
   footerLabelStyle?: React.CSSProperties;
+  /** Page language — picks the seller-line labels and the booking-terms URL. */
+  lang?: "en" | "he";
 }
+
+// Stays take payment through host pay links, so their footer names the legal
+// seller and links to the business's own booking terms (Grow's site review and
+// Israeli distance-sale rules). Custom-domain sites keep the old links: the
+// tenant /legal route is not mapped on custom domains.
+const SELLER = {
+  en: { by: "Operated by", id: "Business ID", tel: "Tel", terms: "Booking terms" },
+  he: { by: "מופעל על ידי", id: "מספר עוסק", tel: "טל׳", terms: "תנאי הזמנה" },
+};
 
 export function ThemeFooter({
   business, accent, colors, socialShape, socialBg, iconColor,
-  footerLabel, brandLabel, privacyLabel, termsLabel, topBorder, footerLabelStyle,
+  footerLabel, brandLabel, privacyLabel, termsLabel, topBorder, footerLabelStyle, lang = "en",
 }: Props) {
+  const stayLegal = business.business_type === "stay" && !business.custom_domain_verified;
+  const seller = SELLER[lang];
+  const termsHref = stayLegal ? `/${business.slug}/legal/terms${lang === "he" ? "?lang=he" : ""}` : "/terms";
   const radius    = socialShape === "circle" ? "50%" : 2;
   const showBorder = socialShape === "circle" && colors.border !== "transparent";
   const hasSocials = !!(business.instagram_url || business.whatsapp_number || business.facebook_url || business.tiktok_url);
@@ -83,6 +97,30 @@ export function ThemeFooter({
           )}
         </div>
       )}
+      {stayLegal && (business.legal_name || business.business_id_number || business.email) && (
+        <div style={{ fontSize: 12, color: colors.muted, lineHeight: 1.7, marginBottom: 14 }}>
+          {(business.legal_name || business.business_id_number) && (
+            <div>
+              {business.legal_name && <>{seller.by} {business.legal_name}</>}
+              {business.legal_name && business.business_id_number && " · "}
+              {business.business_id_number && <>{seller.id} {business.business_id_number}</>}
+            </div>
+          )}
+          {(business.whatsapp_number || business.email) && (
+            <div>
+              {business.whatsapp_number && !business.phone && (
+                <a href={`tel:${business.whatsapp_number.replace(/[^\d+]/g, "")}`} dir="ltr" style={{ color: "inherit", textDecoration: "none" }}>
+                  {seller.tel} {business.whatsapp_number}
+                </a>
+              )}
+              {business.whatsapp_number && !business.phone && business.email && " · "}
+              {business.email && (
+                <a href={`mailto:${business.email}`} dir="ltr" style={{ color: "inherit", textDecoration: "none" }}>{business.email}</a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       <div style={{ fontSize: 12, color: colors.muted, ...footerLabelStyle }}>
         {footerLabel}{" "}
         <a href="https://bapita.com" style={{ color: accent, textDecoration: "none", fontWeight: 700 }}>
@@ -97,8 +135,8 @@ export function ThemeFooter({
           {privacyLabel}
         </Link>
         <span style={{ opacity: 0.4 }}>·</span>
-        <Link href="/terms" style={{ color: "inherit", opacity: 0.6, textDecoration: "underline", textUnderlineOffset: 2 }}>
-          {termsLabel}
+        <Link href={termsHref} style={{ color: "inherit", opacity: 0.6, textDecoration: "underline", textUnderlineOffset: 2 }}>
+          {stayLegal ? seller.terms : termsLabel}
         </Link>
       </div>
     </footer>

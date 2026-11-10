@@ -25,7 +25,7 @@ function getPublicClient() {
 }
 
 const BUSINESS_COLUMNS =
-  "id, name, name_he, slug, status, business_type, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, template_style, hero_image_url, image_focal, accent_color, external_booking_url, cta_label, cta_label_he, default_lang, heading_font, body_font, custom_domain, custom_domain_verified, gallery_images, gallery_hidden, gallery_groups";
+  "id, name, name_he, slug, status, business_type, phone, email, address, instagram_url, facebook_url, tiktok_url, whatsapp_number, google_review_link, google_maps_url, waze_url, template_style, hero_image_url, image_focal, accent_color, external_booking_url, cta_label, cta_label_he, default_lang, heading_font, body_font, custom_domain, custom_domain_verified, gallery_images, gallery_hidden, gallery_groups, business_id_number, legal_name, legal_address";
 
 interface Loaded {
   business: Business;

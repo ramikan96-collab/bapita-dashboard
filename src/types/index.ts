@@ -95,6 +95,10 @@ export interface Business {
   address: string | null;
   /** ת.ז / ח.פ / עוסק. Required before Green Invoice can be connected. */
   business_id_number: string | null;
+  /** Legal seller name (e.g. the עוסק's registered name). Public: printed on booking terms + footer. */
+  legal_name?: string | null;
+  /** Registered business address from the tax registration. Public. */
+  legal_address?: string | null;
   /** Free text shown on the payment disclosure; empty falls back to a default 24h line. */
   cancellation_policy: string | null;
   instagram_url: string | null;

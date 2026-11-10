@@ -379,6 +379,7 @@ export function CleanPage({ business, services, pages }: Props) {
           brandLabel={t.footer.brand}
           privacyLabel={t.footer.privacy}
           termsLabel={t.footer.terms}
+          lang={lang}
           topBorder
         />
       </div>

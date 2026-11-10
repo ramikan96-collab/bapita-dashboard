@@ -485,6 +485,7 @@ export function DarkPage({ business, services, pages, copy }: Props) {
           brandLabel={t.footer.brand}
           privacyLabel={t.footer.privacy}
           termsLabel={t.footer.terms}
+          lang={lang}
           topBorder
           footerLabelStyle={{ fontFamily: headingFont, letterSpacing: "0.08em", textTransform: "uppercase" }}
         />

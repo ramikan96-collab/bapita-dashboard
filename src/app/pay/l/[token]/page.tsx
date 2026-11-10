@@ -42,6 +42,7 @@ const COPY = {
     } as Record<string, string>,
     expires: (d: string) => `Link valid until ${d}`,
     seller: (n: string, id: string) => `Seller: ${n}${id ? ` · Business ID ${id}` : ""}`,
+    terms: "Booking terms and cancellations",
   },
   he: {
     title: "השלמת ההזמנה",
@@ -62,6 +63,7 @@ const COPY = {
     } as Record<string, string>,
     expires: (d: string) => `הקישור בתוקף עד ${d}`,
     seller: (n: string, id: string) => `המוכר: ${n}${id ? ` · מספר עוסק ${id}` : ""}`,
+    terms: "תנאי הזמנה וביטולים",
   },
 };
 
@@ -89,7 +91,7 @@ export default async function PayLinkPage({ params, searchParams }: Props) {
     .select("id, business_id, status, payment_status, appointment_date, check_out, guests, service:services(name, name_he)")
     .eq("id", link.booking_id)
     .single();
-  const { data: biz } = await supabase.from("businesses").select("name, business_id_number").eq("id", link.business_id).single();
+  const { data: biz } = await supabase.from("businesses").select("name, slug, business_id_number, legal_name").eq("id", link.business_id).single();
 
   if (!booking || booking.business_id !== link.business_id || !booking.check_out) {
     return <PayCard lang={lang} icon="🔒" title={t.closedTitle} body={t.closedBody} />;
@@ -160,7 +162,12 @@ export default async function PayLinkPage({ params, searchParams }: Props) {
       <p style={{ margin: "12px 0 0", fontSize: 12, color: "#6B6257" }}>{t.expires(expires)}</p>
       {biz?.name && (
         <p style={{ margin: "4px 0 0", fontSize: 12, color: "#6B6257" }}>
-          {t.seller(biz.name, String(biz.business_id_number ?? "").trim())}
+          {t.seller(String(biz.legal_name ?? "").trim() || biz.name, String(biz.business_id_number ?? "").trim())}
+        </p>
+      )}
+      {biz?.slug && (
+        <p style={{ margin: "4px 0 0", fontSize: 12 }}>
+          <a href={`/${biz.slug}/legal/terms?lang=${lang}`} target="_blank" rel="noopener noreferrer" style={{ color: "#6B6257" }}>{t.terms}</a>
         </p>
       )}
     </PayCard>
