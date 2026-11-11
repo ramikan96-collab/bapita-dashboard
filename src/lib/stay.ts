@@ -20,7 +20,7 @@ export const STAY_CHECK_IN_TIME = "16:00";
 export const STAY_CHECK_OUT_TIME = "11:00";
 
 /** Version of the stay booking terms a guest accepts; stored with each acceptance. Bump when the terms change. */
-export const STAY_TERMS_VERSION = "2026-11-11b";
+export const STAY_TERMS_VERSION = "2026-11-11c";
 
 /** Upper bound on a single reservation. Guards against a fat-fingered date range. */
 export const MAX_STAY_NIGHTS = 90;

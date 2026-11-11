@@ -73,16 +73,17 @@ function content(b: LegalBiz, he: boolean): { title: string; updated: string; ba
         { h: "מי מעבד מידע בשמנו", p: [
           "המידע מעובד בשמנו על ידי ספקים שמסייעים לנו להפעיל את האתר וההזמנות:",
           <>Bapita, פלטפורמת ההזמנות שמארחת את האתר. למדיניות הפרטיות של Bapita עצמה ראו <a href={`${SITE_URL}/privacy`} style={linkStyle}>bapita.com/privacy</a>.</>,
-          "ספקי אחסון ומסד נתונים.",
+          "Vercel (אחסון האתר) ו-Supabase (מסד הנתונים).",
           "חשבונית ירוקה (morning) וחברת הסליקה Grow, לצורך תשלום והנפקת קבלות.",
-          "ספק לשליחת מיילים.",
+          "Resend, לשליחת מיילים.",
           "כלי ניתוח נתונים, כגון Google Analytics ו-Umami.",
         ] },
         { h: "כמה זמן נשמור את המידע", p: [
-          "נשמור את המידע כל עוד הוא נחוץ לטיפול בהזמנה, ולפי הנדרש בדין, למשל חובות שמירת מסמכים לפי דיני המס.",
+          "נשמור את פרטי ההזמנה כל עוד הם נחוצים לטיפול בה ולמתן שירות, ולא יותר מ-7 שנים מסיום השהייה.",
+          "קבלות ומסמכי הנהלת חשבונות נשמרים לפחות 7 שנים, כנדרש לפי דיני המס.",
         ] },
         { h: "הזכויות שלכם", p: [
-          <>לפי חוק הגנת הפרטיות, התשמ״א-1981, אפשר לבקש לעיין במידע שנשמר עליכם, לתקן אותו או למחוק אותו.{hasContact ? <> לשם כך פנו אלינו: {contact}</> : null}</>,
+          <>לפי חוק הגנת הפרטיות, התשמ״א-1981, אפשר לבקש לעיין במידע שנשמר עליכם, ולבקש לתקן או למחוק מידע שאינו נכון, שלם, ברור או מעודכן. מידע שחובה לשמור לפי דין, כמו קבלות, לא יימחק לפני תום תקופת השמירה.{hasContact ? <> לשם כך פנו אלינו: {contact}</> : null}</>,
         ] },
         { h: "עוגיות (Cookies)", p: [
           "האתר משתמש בעוגיות חיוניות, הנדרשות לתפקודו.",
@@ -123,16 +124,17 @@ function content(b: LegalBiz, he: boolean): { title: string; updated: string; ba
       { h: "Who processes your details for us", p: [
         "Providers that help us run the site and the bookings process the details on our behalf:",
         <>Bapita, the booking platform that hosts this site. For Bapita&apos;s own policy see <a href={`${SITE_URL}/privacy`} style={linkStyle}>bapita.com/privacy</a>.</>,
-        "Hosting and database providers.",
+        "Vercel (site hosting) and Supabase (database).",
         "Green Invoice (morning) and the clearing company Grow, for payment and receipts.",
-        "An email delivery provider.",
+        "Resend, for sending emails.",
         "Analytics tools such as Google Analytics and Umami.",
       ] },
       { h: "How long we keep your details", p: [
-        "We keep them as long as needed to handle the booking, and as required by law, for example the tax law's record-keeping rules.",
+        "We keep booking details as long as needed to handle the booking and serve you, and no longer than 7 years after the stay.",
+        "Receipts and accounting records are kept for at least 7 years, as tax law requires.",
       ] },
       { h: "Your rights", p: [
-        <>Under the Israeli Privacy Protection Law, 5741-1981, you can ask to review the information we hold about you, correct it or delete it.{hasContact ? <> To do so, contact us: {contact}</> : null}</>,
+        <>Under the Israeli Privacy Protection Law, 5741-1981, you can ask to review the information we hold about you, and ask us to correct or delete information that is inaccurate, incomplete, unclear or out of date. Information we must keep by law, such as receipts, is not deleted before its retention period ends.{hasContact ? <> To do so, contact us: {contact}</> : null}</>,
       ] },
       { h: "Cookies", p: [
         "This site uses essential cookies, which it needs to work.",

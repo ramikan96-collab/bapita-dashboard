@@ -98,10 +98,9 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
         { h: "שינויים וביטולים", p: [
           "רק המארח יכול לשנות או לבטל הזמנה מאושרת.",
           `אורח שרוצה לבטל או לשנות שולח בקשה בוואטסאפ או במייל${phone || b.email ? ` (${[phone, b.email].filter(Boolean).join(" / ")})` : ""}.`,
-          "ביטול על ידי האורח כפוף לחוק הגנת הצרכן, התשמ״א-1981, ולתקנות לפיו:",
-          "אורח רשאי לבטל הזמנה בתוך 14 ימים מיום ההזמנה (או מיום קבלת אישור ההזמנה), ובלבד שנותרו עד מועד ההגעה יותר מ-7 ימים שאינם שבתות או חגים. במקרה כזה דמי הביטול לא יעלו על 5% ממחיר ההזמנה או 100 ₪, לפי הנמוך מביניהם (בתוספת עמלות סליקה, אם חויב בהן העסק). החזר כספי יינתן בתוך 14 ימים ממועד הודעת הביטול.",
-          "אורח בן 65 ומעלה, אדם עם מוגבלות או עולה חדש, שההזמנה שלו נעשתה בעקבות שיחה (טלפון, צ׳אט או וואטסאפ), רשאי לבטל בתוך 4 חודשים מיום ההזמנה, ובלבד שנותרו עד מועד ההגעה לפחות 7 ימי עסקים.",
-          "מחוץ למסגרות אלה החזר כספי אינו מובטח, והוא לשיקול דעת המארח. מומלץ לברר עם המארח לגבי התאריכים לפני ההזמנה.",
+          "ביטול הזמנה כפוף לחוק הגנת הצרכן, התשמ״א-1981, ולתקנות לפיו.",
+          "תנאי הביטול משתנים לפי התאריכים ומועד הביטול. לפרטים על התנאים שחלים על ההזמנה שלכם, פנו למארח לפני ההזמנה.",
+          "מעבר למה שקובע החוק, החזר כספי אינו מובטח והוא לשיקול דעת המארח.",
           b.cancellation_policy && `מדיניות הביטולים של העסק: ${b.cancellation_policy}`,
         ] },
         { h: "אספקת השירות", p: [
@@ -174,10 +173,9 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
       { h: "Changes and cancellations", p: [
         "Only the host can change or cancel a confirmed booking.",
         `A guest who wants to cancel or change a booking sends a request by WhatsApp or email${phone || b.email ? ` (${[phone, b.email].filter(Boolean).join(" / ")})` : ""}.`,
-        "Cancellation by the guest is subject to the Israeli Consumer Protection Law, 5741-1981, and its regulations:",
-        "A guest may cancel within 14 days of booking (or of receiving the booking confirmation), provided that more than 7 days that are not Shabbat or holidays remain before check-in. In that case the cancellation fee is at most 5% of the price or ₪100, whichever is lower (plus card-clearing fees, if charged to the business). Any refund is made within 14 days of the cancellation notice.",
-        "A guest aged 65 or over, a person with a disability or a new immigrant, whose booking was made after a conversation (phone, chat or WhatsApp), may cancel within 4 months of booking, provided that at least 7 business days remain before check-in.",
-        "Outside these windows a refund is not guaranteed and is at the host's discretion. Please check with the host about your dates before booking.",
+        "Cancellation is subject to the Israeli Consumer Protection Law, 5741-1981, and its regulations.",
+        "Cancellation terms depend on the dates and on when you cancel. For the terms that apply to your booking, contact the host before booking.",
+        "Beyond what the law requires, a refund is not guaranteed and is at the host's discretion.",
         b.cancellation_policy && `The business's cancellation policy: ${b.cancellation_policy}`,
       ] },
       { h: "Delivery of the service", p: [
