@@ -7,7 +7,7 @@ import { resolvePayment, NO_PAYMENT } from "@/lib/payments";
 import { withoutExpiredHolds, releaseExpiredHolds } from "@/lib/payment-holds";
 import { loadBusinessPaymentsConfig } from "@/lib/payments-server";
 import {
-  STAY_CHECK_IN_TIME, isIsoDate, nightsBetween, stayTotal,
+  STAY_CHECK_IN_TIME, STAY_TERMS_VERSION, isIsoDate, nightsBetween, stayTotal,
   unavailableRanges, validateStayRequest,
   type StayBookingRow, type StayValidationError,
 } from "@/lib/stay";
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
     date, time,
     customerName, customerPhone, customerEmail,
     lang, staffId,
-    checkOut, guests, notes,
+    checkOut, guests, notes, termsAccepted,
   } = await req.json();
 
   if (!businessId || !serviceId || !date || !time || !customerName || !customerPhone) {
@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
     return handleStayRequest({
       supabase, businessId, serviceId,
       checkIn: date, checkOut,
-      guests, customerName, customerPhone, customerEmail, notes,
+      guests, customerName, customerPhone, customerEmail, notes, termsAccepted,
       lang: lang === "he" ? "he" : "en",
       business: bizType,
     });
@@ -511,6 +511,7 @@ interface StayBiz {
 
 interface StayArgs {
   supabase: ServiceClient;
+  termsAccepted: unknown;
   businessId: string;
   serviceId: string;
   checkIn: string;
@@ -544,11 +545,17 @@ const STAY_ERROR_COPY: Record<StayValidationError, { en: string; he: string }> =
 async function handleStayRequest(args: StayArgs) {
   const {
     supabase, businessId, serviceId, checkIn, checkOut, guests,
-    customerName, customerPhone, customerEmail, notes, lang, business,
+    customerName, customerPhone, customerEmail, notes, lang, business, termsAccepted,
   } = args;
 
   const fail = (code: StayValidationError, status = 400) =>
     NextResponse.json({ error: STAY_ERROR_COPY[code][lang] }, { status });
+
+  // The request form's terms checkbox is required; enforce it here too, because
+  // the acceptance is recorded on the booking as proof (Grow review, consumer law).
+  if (termsAccepted !== true) {
+    return NextResponse.json({ error: lang === "he" ? "יש לאשר את תנאי ההזמנה." : "Please accept the booking terms." }, { status: 400 });
+  }
 
   if (!isIsoDate(checkIn) || !isIsoDate(checkOut)) return fail("invalid_dates");
 
@@ -598,7 +605,7 @@ async function handleStayRequest(args: StayArgs) {
     return NextResponse.json({ error: "failed to save customer" }, { status: 500 });
   }
 
-  const { error: insertError } = await supabase.from("bookings").insert({
+  const stayRow = {
     business_id: businessId,
     service_id: serviceId,
     customer_id: customer.id,
@@ -614,7 +621,18 @@ async function handleStayRequest(args: StayArgs) {
     // Guest-supplied free text (arrival time, requests). Trimmed and capped so a
     // request cannot be used to stuff the host's dashboard.
     notes: typeof notes === "string" && notes.trim() ? notes.trim().slice(0, 1000) : null,
+  };
+  // Proof of the guest ticking "I accept the booking terms" (when + which version).
+  // Columns come from docs/migrations/2026-11-11-terms-acceptance.sql; until that
+  // runs, PostgREST rejects unknown columns (PGRST204), so retry without them
+  // rather than lose the request.
+  let { error: insertError } = await supabase.from("bookings").insert({
+    ...stayRow, terms_accepted_at: new Date().toISOString(), terms_version: STAY_TERMS_VERSION,
   });
+  if (insertError?.code === "PGRST204") {
+    console.error("terms_accepted_at missing — run docs/migrations/2026-11-11-terms-acceptance.sql");
+    ({ error: insertError } = await supabase.from("bookings").insert(stayRow));
+  }
 
   if (insertError) {
     console.error("Stay booking insert error:", insertError);

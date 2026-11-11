@@ -224,6 +224,7 @@ export function StayOverlay({
           customerPhone: phone.trim(),
           customerEmail: email.trim() || null,
           notes: notes.trim() || null,
+          termsAccepted: agree,
           lang,
         }),
       });

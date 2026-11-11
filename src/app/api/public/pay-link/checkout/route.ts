@@ -4,7 +4,7 @@ import { createPaymentForm, bookingRemark, findPaidDocumentsForBooking } from "@
 import type { SettleBookingRow } from "@/lib/payment-settle";
 import { settleStayDocuments } from "@/lib/stay-payment-settle";
 import { linkState, loadLinkByToken, payLinkUrl } from "@/lib/payment-links";
-import { rangesOverlap, unavailableRanges, type StayBookingRow } from "@/lib/stay";
+import { rangesOverlap, unavailableRanges, STAY_TERMS_VERSION, type StayBookingRow } from "@/lib/stay";
 import { bookingUrl } from "@/lib/site-url";
 
 // Guest presses "Pay" on /pay/l/<token>. A plain form POST, so it works with no
@@ -53,6 +53,14 @@ export async function POST(req: NextRequest) {
   // The pay page's terms checkbox is `required`, but a form POST can skip it.
   // Grow's clearing review requires the guest to accept the terms before paying.
   if (form?.get("agree") !== "1") return back(token, "terms");
+  // Record the acceptance on the link as proof. Never block a payment over it
+  // (e.g. before docs/migrations/2026-11-11-terms-acceptance.sql has run).
+  {
+    const { error: proofErr } = await supabase.from("payment_links")
+      .update({ terms_accepted_at: new Date().toISOString(), terms_version: STAY_TERMS_VERSION })
+      .eq("id", link.id);
+    if (proofErr) console.error("pay-link terms proof not saved:", proofErr.message);
+  }
 
   const { data: bookingData } = await supabase.from("bookings").select(BOOKING_SELECT).eq("id", link.booking_id).single();
   const booking = bookingData as unknown as (SettleBookingRow & { service_id: string | null }) | null;
