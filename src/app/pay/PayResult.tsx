@@ -22,8 +22,9 @@ export function PayCard({
   children?: React.ReactNode;
 }) {
   return (
-    <div
+    <main
       dir={lang === "he" ? "rtl" : "ltr"}
+      lang={lang}
       style={{
         minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
         background: "#FAF5EC", padding: 24,
@@ -38,7 +39,7 @@ export function PayCard({
         <p style={{ fontSize: 15, color: "#6B6257", margin: 0, lineHeight: 1.6 }}>{body}</p>
         {children}
       </div>
-    </div>
+    </main>
   );
 }
 

@@ -132,7 +132,7 @@ export function StayRangePicker({
         {cal.weekDays.map((d) => (
           <div key={d} style={{
             textAlign: "center", fontSize: 11, fontWeight: 700,
-            color: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)", paddingBottom: 4,
+            color: isDark ? "rgba(255,255,255,0.65)" : "rgba(0,0,0,0.65)", paddingBottom: 4,
           }}>{d}</div>
         ))}
       </div>

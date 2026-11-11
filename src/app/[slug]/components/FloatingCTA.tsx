@@ -23,7 +23,7 @@ export function FloatingCTA({ shopName, bookLabel, onBook, bgColor, textColor }:
 
   return (
     <div style={{
-      position:"fixed", bottom:0,
+      position:"fixed", bottom:"var(--cookie-banner-h, 0px)",
       insetInlineStart:0, insetInlineEnd:0,
       padding:"12px 20px 20px",
       background:"linear-gradient(to top, rgba(0,0,0,0.08) 0%, transparent 100%)",

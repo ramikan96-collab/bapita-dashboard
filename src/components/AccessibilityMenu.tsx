@@ -31,7 +31,7 @@ function applyPrefs(prefs: A11yPrefs) {
  * motion, focus visibility). Renders as a plain footer link + popover —
  * no floating icon, matches how larger sites keep this understated.
  */
-export function AccessibilityMenu({ label, rtl }: { label?: string; rtl?: boolean }) {
+export function AccessibilityMenu({ label, rtl, statementHref = "/accessibility" }: { label?: string; rtl?: boolean; statementHref?: string }) {
   const [open, setOpen] = useState(false);
   const [prefs, setPrefs] = useState<A11yPrefs>(DEFAULTS);
   const [isRtl, setIsRtl] = useState(!!rtl);
@@ -86,7 +86,7 @@ export function AccessibilityMenu({ label, rtl }: { label?: string; rtl?: boolea
         aria-controls="a11y-panel"
         style={{
           background: "none", border: "none", padding: 0, font: "inherit",
-          fontSize: 12, color: "inherit", opacity: 0.6, cursor: "pointer",
+          fontSize: 12, color: "inherit", opacity: 1, cursor: "pointer",
           textDecoration: "underline", textUnderlineOffset: 2,
         }}
       >
@@ -152,7 +152,7 @@ export function AccessibilityMenu({ label, rtl }: { label?: string; rtl?: boolea
             <button type="button" onClick={reset} style={{ background: "none", border: "none", color: "#6B6259", textDecoration: "underline", cursor: "pointer", fontSize: 12, padding: 0 }}>
               {isRtl ? "איפוס" : "Reset"}
             </button>
-            <Link href="/accessibility" style={{ color: "#E8920A", fontSize: 12, fontWeight: 600 }}>
+            <Link href={statementHref} style={{ color: "#E8920A", fontSize: 12, fontWeight: 600 }}>
               {isRtl ? "הצהרת נגישות" : "Accessibility statement"}
             </Link>
           </div>

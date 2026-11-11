@@ -102,6 +102,8 @@ export const en = {
     request: "Request to Book",
     requesting: "Sending…",
     notice: "This sends a request. The host confirms availability and gets back to you.",
+    pricesFinal: "Prices are final and include all taxes.",
+    howWeUse: "How we use your details",
     requestedTitle: "Request sent",
     requestedBody: (name: string) => `Thanks ${name} — the host has your request and will confirm shortly.`,
     errors: {

@@ -69,6 +69,7 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
   const phone = rawPhone ? displayIlPhone(rawPhone) : null;
   const linkStyle = { color: "inherit", textDecoration: "underline" };
   const sampleHref = `/pay/sample/${b.slug}?lang=${he ? "he" : "en"}`;
+  const privacyHref = `/${b.slug}/legal/privacy?lang=${he ? "he" : "en"}`;
   if (he) {
     return {
       title: `תנאי הזמנה — ${name}`,
@@ -90,15 +91,18 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
           "ההזמנה מאושרת רק אחרי שהמארח אישר אותה והתשלום המלא התקבל. המארח שולח לאורח קישור תשלום אישי עם הסכום הסופי.",
         ] },
         { h: "מחירים ותשלום", p: [
-          "המחירים בשקלים חדשים.",
+          "המחירים בשקלים חדשים. המחירים סופיים וכוללים את כל המסים.",
           <>התשלום מתבצע במלואו בעמוד תשלום מאובטח של חשבונית ירוקה (morning) וחברת הסליקה Grow (<Link href={sampleHref} style={linkStyle}>דוגמה לעמוד התשלום</Link>). איננו שומרים את פרטי כרטיס האשראי.</>,
           "על כל תשלום מונפקת קבלה שנשלחת במייל.",
         ] },
         { h: "שינויים וביטולים", p: [
           "רק המארח יכול לשנות או לבטל הזמנה מאושרת.",
           `אורח שרוצה לבטל או לשנות שולח בקשה בוואטסאפ או במייל${phone || b.email ? ` (${[phone, b.email].filter(Boolean).join(" / ")})` : ""}.`,
-          "בקשות מטופלות, והחזרים ניתנים כשהם מגיעים, בהתאם לחוק הגנת הצרכן, התשמ״א-1981, ולתקנות לפיו.",
-          b.cancellation_policy && `מדיניות נוספת: ${b.cancellation_policy}`,
+          "ביטול על ידי האורח כפוף לחוק הגנת הצרכן, התשמ״א-1981, ולתקנות לפיו:",
+          "אורח רשאי לבטל הזמנה בתוך 14 ימים מיום ההזמנה (או מיום קבלת אישור ההזמנה), ובלבד שנותרו עד מועד ההגעה יותר מ-7 ימים שאינם שבתות או חגים. במקרה כזה דמי הביטול לא יעלו על 5% ממחיר ההזמנה או 100 ₪, לפי הנמוך מביניהם (בתוספת עמלות סליקה, אם חויב בהן העסק). החזר כספי יינתן בתוך 14 ימים ממועד הודעת הביטול.",
+          "אורח בן 65 ומעלה, אדם עם מוגבלות או עולה חדש, שההזמנה שלו נעשתה בעקבות שיחה (טלפון, צ׳אט או וואטסאפ), רשאי לבטל בתוך 4 חודשים מיום ההזמנה, ובלבד שנותרו עד מועד ההגעה לפחות 7 ימי עסקים.",
+          "מחוץ למסגרות אלה חלה מדיניות הביטולים של העסק, והיא מוצגת לפני התשלום.",
+          b.cancellation_policy && `מדיניות הביטולים של העסק: ${b.cancellation_policy}`,
         ] },
         { h: "אספקת השירות", p: [
           "השירות הוא לינה בנכס בתאריכים שנקבעו בהזמנה. אין משלוח של מוצר פיזי.",
@@ -113,7 +117,7 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
           "אין באמור כדי לגרוע מזכויות האורח לפי כל דין.",
         ] },
         { h: "פרטיות", p: [
-          <>פרטים אישיים שנמסרים בהזמנה משמשים רק לטיפול בהזמנה. ראו את <Link href="/privacy" style={linkStyle}>מדיניות הפרטיות</Link>.</>,
+          <>פרטים אישיים שנמסרים בהזמנה משמשים רק לטיפול בהזמנה. ראו את <Link href={privacyHref} style={linkStyle}>הודעת הפרטיות</Link>.</>,
         ] },
         { h: "דין וסמכות", p: [
           "על התנאים חלים דיני מדינת ישראל, והסמכות נתונה לבתי המשפט בישראל.",
@@ -141,15 +145,18 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
         "A booking is confirmed only after the host accepts it and full payment is received. The host sends the guest a private payment link with the final total.",
       ] },
       { h: "Prices and payment", p: [
-        "Prices are in Israeli shekels (ILS).",
+        "Prices are in Israeli shekels (ILS). Prices are final and include all taxes.",
         <>Payment is made in full on a secure payment page run by Green Invoice (morning) and the clearing company Grow (<Link href={sampleHref} style={linkStyle}>example of the payment page</Link>). We never store your card details.</>,
         "A receipt is issued for every payment and sent by email.",
       ] },
       { h: "Changes and cancellations", p: [
         "Only the host can change or cancel a confirmed booking.",
         `A guest who wants to cancel or change a booking sends a request by WhatsApp or email${phone || b.email ? ` (${[phone, b.email].filter(Boolean).join(" / ")})` : ""}.`,
-        "Requests are handled, and refunds given where due, in accordance with the Israeli Consumer Protection Law, 5741-1981, and its regulations.",
-        b.cancellation_policy && `Additional policy: ${b.cancellation_policy}`,
+        "Cancellation by the guest is subject to the Israeli Consumer Protection Law, 5741-1981, and its regulations:",
+        "A guest may cancel within 14 days of booking (or of receiving the booking confirmation), provided that more than 7 days that are not Shabbat or holidays remain before check-in. In that case the cancellation fee is at most 5% of the price or ₪100, whichever is lower (plus card-clearing fees, if charged to the business). Any refund is made within 14 days of the cancellation notice.",
+        "A guest aged 65 or over, a person with a disability or a new immigrant, whose booking was made after a conversation (phone, chat or WhatsApp), may cancel within 4 months of booking, provided that at least 7 business days remain before check-in.",
+        "Outside these windows the business's own cancellation policy applies, and it is shown before payment.",
+        b.cancellation_policy && `The business's cancellation policy: ${b.cancellation_policy}`,
       ] },
       { h: "Delivery of the service", p: [
         "The service is accommodation at the property on the dates in the booking. No physical product is shipped.",
@@ -164,7 +171,7 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
         "Nothing in these terms limits a guest's rights under Israeli law.",
       ] },
       { h: "Privacy", p: [
-        <>Personal details given when booking are used only to handle the booking. See the <Link href="/privacy" style={linkStyle}>privacy policy</Link>.</>,
+        <>Personal details given when booking are used only to handle the booking. See the <Link href={privacyHref} style={linkStyle}>privacy notice</Link>.</>,
       ] },
       { h: "Law", p: [
         "These terms are governed by the laws of the State of Israel, and the courts of Israel have jurisdiction.",
@@ -185,7 +192,7 @@ export default async function StayTermsPage({ params, searchParams }: Props) {
   const dark = "var(--color-dark, #1E1A14)";
 
   return (
-    <main dir={he ? "rtl" : "ltr"} style={{ minHeight: "100vh", background: "var(--color-cream, #FAF5EC)", padding: "40px 16px" }}>
+    <main dir={he ? "rtl" : "ltr"} lang={he ? "he" : "en"} style={{ minHeight: "100vh", background: "var(--color-cream, #FAF5EC)", padding: "40px 16px" }}>
       <article style={{ maxWidth: 720, margin: "0 auto", background: "var(--color-surface, #fff)", borderRadius: 20, padding: "28px 22px", lineHeight: 1.7, color: dark }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14, marginBottom: 16 }}>
           <Link href={`/${b.slug}${he ? "/he" : ""}`} style={{ color: muted }}>{he ? "→" : "←"} {c.back}</Link>

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
-import Script from "next/script";
 import { headers } from "next/headers";
 import "./globals.css";
 import { PushInit } from "@/components/PushInit";
+import { CookieConsent } from "@/components/CookieConsent";
 
 // `variable` as well as `className`: the dashboard keeps getting the family
 // applied directly on <html> (unchanged), while the ported marketing/hub
@@ -51,19 +51,9 @@ export default async function RootLayout({
       <body className="h-full">
         {children}
         <PushInit />
+        {/* Google Analytics (G-XESDNYB9T6) loads from here, only after the visitor accepts. */}
+        <CookieConsent />
       </body>
-      <Script
-        src="https://www.googletagmanager.com/gtag/js?id=G-XESDNYB9T6"
-        strategy="lazyOnload"
-      />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'G-XESDNYB9T6');
-        `}
-      </Script>
     </html>
   );
 }

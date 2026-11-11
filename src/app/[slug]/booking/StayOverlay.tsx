@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import Image from "next/image";
 import type { Business, Service } from "@/types";
 import { StayRangePicker } from "../components/StayRangePicker";
@@ -57,6 +57,7 @@ export function StayOverlay({
   const btnBg = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.06)";
   const dateLocale = lang === "he" ? "he-IL" : "en-US";
   const isRtl = lang === "he";
+  const fid = useId();
 
   // A page-level CTA carries no unit, so the guest picks one first. With a single
   // unit there is nothing to pick and the step is skipped.
@@ -244,7 +245,7 @@ export function StayOverlay({
     new Date(d + "T12:00:00").toLocaleDateString(dateLocale, { weekday: "short", month: "short", day: "numeric" });
 
   const label: React.CSSProperties = { fontSize: 15, fontWeight: 700, color: darkColor, marginBottom: 14, display: "block" };
-  const fieldLabel: React.CSSProperties = { fontSize: 12, fontWeight: 700, color: darkColor, opacity: 0.6, marginBottom: 6, display: "block" };
+  const fieldLabel: React.CSSProperties = { fontSize: 12, fontWeight: 700, color: darkColor, opacity: 0.75, marginBottom: 6, display: "block" };
   const input: React.CSSProperties = {
     width: "100%", padding: "12px 14px", borderRadius: 10,
     border: `1.5px solid ${borderClr}`, background: cardBg, color: darkColor,
@@ -253,7 +254,7 @@ export function StayOverlay({
   const primaryBtn = (enabled: boolean): React.CSSProperties => ({
     width: "100%", padding: "16px", borderRadius: 12, border: "none",
     background: enabled ? accentColor : btnBg,
-    color: enabled ? "#fff" : `${darkColor}66`,
+    color: enabled ? onAccent(accentColor) : `${darkColor}66`,
     fontSize: 16, fontWeight: 800,
     cursor: enabled ? "pointer" : "default",
     fontFamily: "inherit", transition: "background 0.15s ease",
@@ -289,7 +290,7 @@ export function StayOverlay({
         backdropFilter: "blur(4px)", zIndex: 100,
       }} />
 
-      <div className="bap-stay-sheet" style={{ background: bgColor }}>
+      <div className="bap-stay-sheet" style={{ background: bgColor }} role="dialog" aria-modal="true" aria-label={unitName} dir={isRtl ? "rtl" : "ltr"} lang={lang}>
         {/* Header — same shape as the appointment overlay */}
         {step !== "success" && (
           <div style={{
@@ -298,18 +299,18 @@ export function StayOverlay({
           }}>
             <button
               onClick={isFirst ? onClose : goBack}
-              aria-label={isFirst ? "Close" : "Back"}
+              aria-label={isFirst ? (isRtl ? "סגירה" : "Close") : (isRtl ? "חזרה" : "Back")}
               style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: btnBg, cursor: "pointer", fontSize: 18, color: darkColor, fontFamily: "inherit" }}
             >←</button>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: darkColor }}>{unitName}</div>
-              <div style={{ fontSize: 12, color: darkColor, opacity: 0.45, marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: darkColor, opacity: 0.7, marginTop: 2 }}>
                 {t.overlay.stepOf(stepNum, STEP_ORDER.length)}
               </div>
             </div>
             <button
               onClick={onClose}
-              aria-label="Close"
+              aria-label={isRtl ? "סגירה" : "Close"}
               style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: btnBg, cursor: "pointer", fontSize: 20, color: darkColor, fontFamily: "inherit" }}
             >×</button>
           </div>
@@ -452,7 +453,7 @@ export function StayOverlay({
                 )}
               </div>
 
-              {error && <div style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{error}</div>}
+              {error && <div role="alert" style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{error}</div>}
 
               {/* Photos sit under the calendar: the guest came here to check dates,
                   and on a phone the grid has to be the first thing on screen. */}
@@ -467,8 +468,8 @@ export function StayOverlay({
                   />
                   {photos.length > 1 && (
                     <>
-                      <PhotoNav side="start" onClick={() => setPhotoIdx((i) => (i - 1 + photos.length) % photos.length)} />
-                      <PhotoNav side="end" onClick={() => setPhotoIdx((i) => (i + 1) % photos.length)} />
+                      <PhotoNav side="start" he={isRtl} onClick={() => setPhotoIdx((i) => (i - 1 + photos.length) % photos.length)} />
+                      <PhotoNav side="end" he={isRtl} onClick={() => setPhotoIdx((i) => (i + 1) % photos.length)} />
                       <div style={{
                         position: "absolute", bottom: 10, insetInlineEnd: 10,
                         background: "rgba(0,0,0,0.55)", color: "#fff",
@@ -501,14 +502,15 @@ export function StayOverlay({
                 ) : (
                   <Row k={`₪${quote?.weekendNights ? quote.weekendRate : unit.price} × ${t.stay.nights(nights)}`} v={`₪${total}`} darkColor={darkColor} bold />
                 )}
+                <PriceNote text={t.stay.pricesFinal} darkColor={darkColor} />
               </div>
 
               <div>
                 <span style={label}>{t.stay.guests}{maxGuests ? ` · ${t.stay.sleeps(maxGuests)}` : ""}</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                  <Stepper label="−" onClick={() => setGuests((g) => Math.max(1, g - 1))} disabled={guests <= 1} bg={btnBg} color={darkColor} />
+                  <Stepper label="−" onClick={() => setGuests((g) => Math.max(1, g - 1))} disabled={guests <= 1} bg={btnBg} color={darkColor} he={isRtl} />
                   <span style={{ fontSize: 20, fontWeight: 800, color: darkColor, minWidth: 28, textAlign: "center" }}>{guests}</span>
-                  <Stepper label="+" onClick={() => setGuests((g) => (maxGuests ? Math.min(maxGuests, g + 1) : g + 1))} disabled={!!maxGuests && guests >= maxGuests} bg={btnBg} color={darkColor} />
+                  <Stepper label="+" onClick={() => setGuests((g) => (maxGuests ? Math.min(maxGuests, g + 1) : g + 1))} disabled={!!maxGuests && guests >= maxGuests} bg={btnBg} color={darkColor} he={isRtl} />
                 </div>
               </div>
 
@@ -527,24 +529,26 @@ export function StayOverlay({
                 <Row k={t.stay.guests} v={String(guests)} darkColor={darkColor} />
                 <div style={{ height: 1, background: dividerClr, margin: "10px 0" }} />
                 <Row k={t.stay.total} v={`₪${total}`} darkColor={darkColor} bold />
+                <PriceNote text={t.stay.pricesFinal} darkColor={darkColor} />
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div>
-                  <span style={fieldLabel}>{t.steps.contact.name}</span>
-                  <input style={input} value={name} onChange={(e) => setName(e.target.value)} placeholder={t.steps.contact.namePlaceholder} autoComplete="name" />
+                  <label htmlFor={`${fid}-name`} style={fieldLabel}>{t.steps.contact.name}</label>
+                  <input id={`${fid}-name`} style={input} value={name} onChange={(e) => setName(e.target.value)} placeholder={t.steps.contact.namePlaceholder} autoComplete="name" />
                 </div>
                 <div>
-                  <span style={fieldLabel}>{t.steps.contact.phone}</span>
-                  <input style={input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t.steps.contact.phonePlaceholder} inputMode="tel" autoComplete="tel" />
+                  <label htmlFor={`${fid}-phone`} style={fieldLabel}>{t.steps.contact.phone}</label>
+                  <input id={`${fid}-phone`} style={input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t.steps.contact.phonePlaceholder} inputMode="tel" autoComplete="tel" />
                 </div>
                 <div>
-                  <span style={fieldLabel}>{t.steps.contact.email}</span>
-                  <input style={input} value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.steps.contact.emailPlaceholder} inputMode="email" autoComplete="email" />
+                  <label htmlFor={`${fid}-email`} style={fieldLabel}>{t.steps.contact.email}</label>
+                  <input id={`${fid}-email`} style={input} value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.steps.contact.emailPlaceholder} inputMode="email" autoComplete="email" />
                 </div>
                 <div>
-                  <span style={fieldLabel}>{lang === "he" ? "הערות (רשות)" : "Notes (optional)"}</span>
+                  <label htmlFor={`${fid}-notes`} style={fieldLabel}>{lang === "he" ? "הערות (רשות)" : "Notes (optional)"}</label>
                   <textarea
+                    id={`${fid}-notes`}
                     style={{ ...input, minHeight: 68, resize: "vertical" }}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -564,14 +568,19 @@ export function StayOverlay({
                 </span>
               </label>
 
-              {error && <div style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{error}</div>}
+              {error && <div role="alert" style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{error}</div>}
 
               <div>
                 <button onClick={submit} disabled={!canSubmit} style={primaryBtn(canSubmit)}>
                   {submitting ? t.stay.requesting : t.stay.request}
                 </button>
-                <p style={{ marginTop: 10, fontSize: 12, lineHeight: 1.5, color: darkColor, opacity: 0.5, textAlign: "center" }}>
+                <p style={{ marginTop: 10, fontSize: 12, lineHeight: 1.5, color: darkColor, opacity: 0.65, textAlign: "center" }}>
                   {t.stay.notice}
+                </p>
+                <p style={{ marginTop: 4, fontSize: 12, textAlign: "center" }}>
+                  <a href={`/${business.slug}/legal/privacy?lang=${lang}`} target="_blank" rel="noopener noreferrer" style={{ color: darkColor, opacity: 0.8, textDecoration: "underline" }}>
+                    {t.stay.howWeUse}
+                  </a>
                 </p>
               </div>
             </div>
@@ -638,6 +647,20 @@ function DateLine({
   );
 }
 
+/** Dark text on a light accent, white on a dark one (a cream accent made the white button label unreadable). */
+function onAccent(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return "#fff";
+  const n = parseInt(m[1], 16);
+  const lin = (c: number) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const lum = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  return lum > 0.4 ? "#1A1A1A" : "#fff";
+}
+
+function PriceNote({ text, darkColor }: { text: string; darkColor: string }) {
+  return <p style={{ margin: "8px 0 0", fontSize: 12, color: darkColor, opacity: 0.7 }}>{text}</p>;
+}
+
 function Row({ k, v, darkColor, bold }: { k: string; v: string; darkColor: string; bold?: boolean }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14, marginBottom: 6 }}>
@@ -647,13 +670,13 @@ function Row({ k, v, darkColor, bold }: { k: string; v: string; darkColor: strin
   );
 }
 
-function Stepper({ label, onClick, disabled, bg, color }: { label: string; onClick: () => void; disabled: boolean; bg: string; color: string }) {
+function Stepper({ label, onClick, disabled, bg, color, he }: { label: string; onClick: () => void; disabled: boolean; bg: string; color: string; he: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label={label === "+" ? "Add guest" : "Remove guest"}
+      aria-label={label === "+" ? (he ? "הוספת אורח" : "Add guest") : (he ? "הפחתת אורח" : "Remove guest")}
       style={{
         width: 42, height: 42, borderRadius: "50%", border: "none", background: bg,
         color, fontSize: 20, cursor: disabled ? "default" : "pointer",
@@ -663,12 +686,12 @@ function Stepper({ label, onClick, disabled, bg, color }: { label: string; onCli
   );
 }
 
-function PhotoNav({ side, onClick }: { side: "start" | "end"; onClick: () => void }) {
+function PhotoNav({ side, onClick, he }: { side: "start" | "end"; onClick: () => void; he: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={side === "start" ? "Previous photo" : "Next photo"}
+      aria-label={side === "start" ? (he ? "התמונה הקודמת" : "Previous photo") : (he ? "התמונה הבאה" : "Next photo")}
       style={{
         position: "absolute", top: "50%", transform: "translateY(-50%)",
         [side === "start" ? "insetInlineStart" : "insetInlineEnd"]: 10,

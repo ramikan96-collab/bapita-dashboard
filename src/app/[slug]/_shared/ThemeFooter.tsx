@@ -35,8 +35,8 @@ interface Props {
 // Israeli distance-sale rules). Custom-domain sites keep the old links: the
 // tenant /legal route is not mapped on custom domains.
 const SELLER = {
-  en: { tel: "Tel", terms: "Booking terms" },
-  he: { tel: "טל׳", terms: "תנאי הזמנה" },
+  en: { tel: "Tel", terms: "Booking terms", a11y: "Accessibility statement" },
+  he: { tel: "טל׳", terms: "תנאי הזמנה", a11y: "הצהרת נגישות" },
 };
 
 export function ThemeFooter({
@@ -46,6 +46,12 @@ export function ThemeFooter({
   const stayLegal = business.business_type === "stay" && !business.custom_domain_verified;
   const seller = SELLER[lang];
   const termsHref = stayLegal ? `/${business.slug}/legal/terms${lang === "he" ? "?lang=he" : ""}` : "/terms";
+  // Every business gets its own privacy notice and accessibility statement. The
+  // privacy link used to point at Bapita's platform policy, which names Bapita,
+  // not the business, as the party holding the guest's details.
+  const langQuery = lang === "he" ? "?lang=he" : "";
+  const privacyHref = `/${business.slug}/legal/privacy${langQuery}`;
+  const a11yHref = `/${business.slug}/legal/accessibility${langQuery}`;
   const radius    = socialShape === "circle" ? "50%" : 2;
   const showBorder = socialShape === "circle" && colors.border !== "transparent";
   const hasSocials = !!(business.instagram_url || business.whatsapp_number || business.facebook_url || business.tiktok_url);
@@ -121,15 +127,19 @@ export function ThemeFooter({
         </a>
       </div>
 
-      <div style={{ marginTop: 14, color: colors.muted, display: "flex", justifyContent: "center", alignItems: "center", gap: 10, fontSize: 12 }}>
-        <AccessibilityMenu />
+      <div style={{ marginTop: 14, color: colors.muted, display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: 10, fontSize: 12 }}>
+        <AccessibilityMenu rtl={lang === "he"} statementHref={a11yHref} />
         <span style={{ opacity: 0.4 }}>·</span>
-        <Link href="/privacy" style={{ color: "inherit", opacity: 0.6, textDecoration: "underline", textUnderlineOffset: 2 }}>
+        <Link href={privacyHref} style={{ color: "inherit", opacity: 1, textDecoration: "underline", textUnderlineOffset: 2 }}>
           {privacyLabel}
         </Link>
         <span style={{ opacity: 0.4 }}>·</span>
-        <Link href={termsHref} style={{ color: "inherit", opacity: 0.6, textDecoration: "underline", textUnderlineOffset: 2 }}>
+        <Link href={termsHref} style={{ color: "inherit", opacity: 1, textDecoration: "underline", textUnderlineOffset: 2 }}>
           {stayLegal ? seller.terms : termsLabel}
+        </Link>
+        <span style={{ opacity: 0.4 }}>·</span>
+        <Link href={a11yHref} style={{ color: "inherit", opacity: 1, textDecoration: "underline", textUnderlineOffset: 2 }}>
+          {seller.a11y}
         </Link>
       </div>
     </footer>

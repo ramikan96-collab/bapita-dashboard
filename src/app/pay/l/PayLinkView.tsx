@@ -27,6 +27,7 @@ export const COPY = {
     expires: (d: string) => `Link valid until ${d}`,
     seller: (n: string, id: string) => `Seller: ${n}${id ? ` · Business ID ${id}` : ""}`,
     terms: "Booking terms and cancellations",
+    pricesFinal: "Prices are final and include all taxes.",
     sampleNote: "Sample page — this is how a guest's private payment page looks. No booking, no charge.",
     sampleButton: "Pay button (sample — no charge)",
     agree: ["I have read and accept the ", "booking terms and cancellation policy", ", and I am 18 or older."],
@@ -52,6 +53,7 @@ export const COPY = {
     expires: (d: string) => `הקישור בתוקף עד ${d}`,
     seller: (n: string, id: string) => `המוכר: ${n}${id ? ` · מספר עוסק ${id}` : ""}`,
     terms: "תנאי הזמנה וביטולים",
+    pricesFinal: "המחירים סופיים וכוללים את כל המסים.",
     sampleNote: "עמוד לדוגמה — כך נראה עמוד התשלום האישי שהאורח מקבל. אין הזמנה ואין חיוב.",
     sampleButton: "כפתור תשלום (דוגמה — ללא חיוב)",
     agree: ["קראתי ואני מאשר/ת את ", "תנאי ההזמנה ומדיניות הביטולים", ", ואני בן/בת 18 ומעלה."],
@@ -90,6 +92,7 @@ export function PayLinkView({ lang, bizName, bizSlug, rows, amount, expires, err
           <dd style={{ margin: 0, color: "#1E1A14", fontWeight: 800 }}>{amount}</dd>
         </div>
       </dl>
+      <p style={{ margin: "8px 0 0", fontSize: 12, color: "#6B6257", textAlign: "start" }}>{t.pricesFinal}</p>
 
       {errorMsg && (
         <p role="alert" style={{ margin: "16px 0 0", padding: "10px 12px", borderRadius: 10, background: "#FDECEA", color: "#A3261B", fontSize: 14 }}>

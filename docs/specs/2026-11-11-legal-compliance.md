@@ -1,0 +1,9 @@
+# Legal compliance fixes, 2026-11-11 (branch fix/legal-compliance)
+Source: docs/legal-review-2026-11 (branch docs/legal-review-2026-11). Not shipped: no push, deploy or migration.
+- Terms: cancellation section spells out the 14-day / 7-day / 5% or ₪100 / 14-day-refund rule and the 65+/disability/new-immigrant 4-month rule; "prices final, include all taxes" on terms, request form (guests + contact steps) and pay view. No "includes VAT".
+- New /<slug>/legal/accessibility (EN/HE, any business type): IS 5568 / 2013 regulations, what was done, limits, contact from the row, no day-count promise. Linked from the tenant footer and the accessibility menu (its old /accessibility link 404ed).
+- New /<slug>/legal/privacy (EN/HE): the business is the data holder; collection, purpose, processors, retention, rights, cookies, marketing/§30A section ready for a later newsletter. Footer, terms and a "How we use your details" link under the request submit button point here; /privacy untouched.
+- Cookie consent: GA (G-XESDNYB9T6) now loads only after Accept (src/components/CookieConsent.tsx, mounted in the root layout). Choice in localStorage; reset link on the privacy notice. Floating booking button sits above the bar.
+- A11y fixes: real <label for> on the request form, dialog role, localized aria-labels, contrast (step counter, weekday header, footer links, button text on a light accent), <main lang> on legal and pay pages.
+- Not built (owner supplies / needs migration): house rules, check-out time, deposit text, terms-acceptance in DB, newsletter signup/opt-in box.
+Acceptance: lint + build pass; axe (wcag2a/2aa/21aa) = 0 violations on home EN/HE, terms, accessibility, privacy, pay sample, request overlay steps; no googletagmanager request before Accept; both terms checkboxes (name="agree" value="1" required) and the checkout server check unchanged.

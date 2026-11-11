@@ -102,6 +102,8 @@ export const he = {
     request: "שליחת בקשה",
     requesting: "שולח…",
     notice: "זו בקשה בלבד. המארח יאשר זמינות ויחזור אליכם.",
+    pricesFinal: "המחירים סופיים וכוללים את כל המסים.",
+    howWeUse: "איך אנחנו משתמשים בפרטים שלך",
     requestedTitle: "הבקשה נשלחה",
     requestedBody: (name: string) => `תודה ${name} — הבקשה הגיעה למארח והוא יחזור אליכם בהקדם.`,
     errors: {
