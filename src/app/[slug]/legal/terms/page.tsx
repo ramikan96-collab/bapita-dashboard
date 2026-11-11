@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
@@ -59,13 +60,15 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   };
 }
 
-type Section = { h: string; p: (string | false | null | undefined)[] };
+type Section = { h: string; p: (ReactNode | false | null | undefined)[] };
 
 function content(b: Biz, he: boolean): { title: string; updated: string; sections: Section[]; back: string; other: string } {
   const name = (he && b.name_he) || b.name;
   const seller = b.legal_name || name;
   const rawPhone = b.phone || b.whatsapp_number;
   const phone = rawPhone ? displayIlPhone(rawPhone) : null;
+  const linkStyle = { color: "inherit", textDecoration: "underline" };
+  const sampleHref = `/pay/sample/${b.slug}?lang=${he ? "he" : "en"}`;
   if (he) {
     return {
       title: `תנאי הזמנה — ${name}`,
@@ -88,7 +91,7 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
         ] },
         { h: "מחירים ותשלום", p: [
           "המחירים בשקלים חדשים.",
-          "התשלום מתבצע במלואו בעמוד תשלום מאובטח של חשבונית ירוקה (morning) וחברת הסליקה Grow. איננו שומרים את פרטי כרטיס האשראי.",
+          <>התשלום מתבצע במלואו בעמוד תשלום מאובטח של חשבונית ירוקה (morning) וחברת הסליקה Grow (<Link href={sampleHref} style={linkStyle}>דוגמה לעמוד התשלום</Link>). איננו שומרים את פרטי כרטיס האשראי.</>,
           "על כל תשלום מונפקת קבלה שנשלחת במייל.",
         ] },
         { h: "שינויים וביטולים", p: [
@@ -110,7 +113,7 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
           "אין באמור כדי לגרוע מזכויות האורח לפי כל דין.",
         ] },
         { h: "פרטיות", p: [
-          "פרטים אישיים שנמסרים בהזמנה משמשים רק לטיפול בהזמנה. ראו את מדיניות הפרטיות.",
+          <>פרטים אישיים שנמסרים בהזמנה משמשים רק לטיפול בהזמנה. ראו את <Link href="/privacy" style={linkStyle}>מדיניות הפרטיות</Link>.</>,
         ] },
         { h: "דין וסמכות", p: [
           "על התנאים חלים דיני מדינת ישראל, והסמכות נתונה לבתי המשפט בישראל.",
@@ -139,7 +142,7 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
       ] },
       { h: "Prices and payment", p: [
         "Prices are in Israeli shekels (ILS).",
-        "Payment is made in full on a secure payment page run by Green Invoice (morning) and the clearing company Grow. We never store your card details.",
+        <>Payment is made in full on a secure payment page run by Green Invoice (morning) and the clearing company Grow (<Link href={sampleHref} style={linkStyle}>example of the payment page</Link>). We never store your card details.</>,
         "A receipt is issued for every payment and sent by email.",
       ] },
       { h: "Changes and cancellations", p: [
@@ -161,7 +164,7 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
         "Nothing in these terms limits a guest's rights under Israeli law.",
       ] },
       { h: "Privacy", p: [
-        "Personal details given when booking are used only to handle the booking. See the privacy policy.",
+        <>Personal details given when booking are used only to handle the booking. See the <Link href="/privacy" style={linkStyle}>privacy policy</Link>.</>,
       ] },
       { h: "Law", p: [
         "These terms are governed by the laws of the State of Israel, and the courts of Israel have jurisdiction.",
@@ -198,10 +201,6 @@ export default async function StayTermsPage({ params, searchParams }: Props) {
             ))}
           </section>
         ))}
-        <p style={{ fontSize: 14, margin: "20px 0 0", display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <Link href="/privacy" style={{ color: muted }}>{he ? "מדיניות פרטיות" : "Privacy policy"}</Link>
-          <Link href={`/pay/sample/${b.slug}?lang=${he ? "he" : "en"}`} style={{ color: muted }}>{he ? "דוגמה לעמוד התשלום" : "Example of the payment page"}</Link>
-        </p>
       </article>
     </main>
   );
