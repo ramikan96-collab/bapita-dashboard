@@ -219,7 +219,7 @@ export function StayOverlay({
           date: checkIn,
           checkOut,
           guests,
-          time: "15:00", // ignored server-side for stays; keeps the payload shape stable
+          time: "16:00", // ignored server-side for stays; keeps the payload shape stable
           customerName: name.trim(),
           customerPhone: phone.trim(),
           customerEmail: email.trim() || null,

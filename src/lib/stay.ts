@@ -16,7 +16,7 @@
 import type { Business, Service } from "@/types";
 
 /** Check-in time stamped on every stay, so the row satisfies NOT NULL appointment_time. */
-export const STAY_CHECK_IN_TIME = "15:00";
+export const STAY_CHECK_IN_TIME = "16:00";
 export const STAY_CHECK_OUT_TIME = "11:00";
 
 /** Version of the stay booking terms a guest accepts; stored with each acceptance. Bump when the terms change. */
