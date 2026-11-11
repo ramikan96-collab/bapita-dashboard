@@ -9,9 +9,10 @@ import { payLinkUrl, LINK_DEFAULT_HOURS } from "@/lib/payment-links-shared";
 // Admin → Businesses → <stay business> → Payment links
 // (spec: docs/specs/2026-11-10-stay-pay-link.md)
 //
-// 1. Connect the business's own Green Invoice account (keys typed by the host).
-// 2. New link with no guest request: apartment, dates, guest, price → link.
-// 3. Open requests and host-made bookings: price them and send a link.
+// 1. Requests and open bookings, newest received first: price them and send a link.
+// 2. "Create a link from scratch" (no guest request): apartment, dates, guest, price.
+// 3. Green Invoice connection: full form until connected, then one line.
+// Plus a link to the sample pay page (/pay/sample/<slug>), which cannot charge.
 
 interface Unit {
   id: string;
@@ -32,6 +33,7 @@ interface Row {
   payment_status: string;
   service_id: string | null;
   notes: string | null;
+  created_at: string;
 }
 
 interface LinkRow {
@@ -56,13 +58,19 @@ const btn = (primary: boolean, busy = false): React.CSSProperties => ({
   background: primary ? "var(--color-amber)" : "var(--color-cream-2)", color: primary ? "#fff" : "var(--color-dark)",
 });
 
-export default function StayPayLinks({ businessId, defaultLang }: { businessId: string; defaultLang: "en" | "he" }) {
+const pill = (color: string): React.CSSProperties => ({
+  fontSize: 12, fontWeight: 700, color, whiteSpace: "nowrap", padding: "3px 10px", borderRadius: 9999,
+  border: `1.5px solid ${color}`,
+});
+
+export default function StayPayLinks({ businessId, slug, defaultLang }: { businessId: string; slug: string; defaultLang: "en" | "he" }) {
   const supabase = useMemo(() => createClient(), []);
   const [connected, setConnected] = useState<boolean | null>(null);
   const [units, setUnits] = useState<Unit[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [links, setLinks] = useState<LinkRow[]>([]);
   const [open, setOpen] = useState<string | null>(null);
+  const [showNew, setShowNew] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [loadedAt, setLoadedAt] = useState(0);
@@ -73,12 +81,12 @@ export default function StayPayLinks({ businessId, defaultLang }: { businessId: 
       supabase.from("payment_credentials").select("business_id").eq("business_id", businessId).maybeSingle(),
       supabase.from("services").select("id, name, price, weekend_price").eq("business_id", businessId).order("name"),
       supabase.from("bookings")
-        .select("id, customer_name, customer_phone, customer_email, appointment_date, check_out, guests, status, payment_status, service_id, notes")
+        .select("id, customer_name, customer_phone, customer_email, appointment_date, check_out, guests, status, payment_status, service_id, notes, created_at")
         .eq("business_id", businessId)
         .not("check_out", "is", null)
         .gte("check_out", today)
         .in("status", ["pending", "confirmed"])
-        .order("appointment_date"),
+        .order("created_at", { ascending: false }),
       supabase.from("payment_links")
         .select("booking_id, token, amount, status, expires_at, paid_at")
         .eq("business_id", businessId)
@@ -109,19 +117,37 @@ export default function StayPayLinks({ businessId, defaultLang }: { businessId: 
 
   return (
     <div>
-      <ConnectBox businessId={businessId} connected={connected} onConnected={load} />
+      {connected === null && <p style={{ fontSize: 13, color: "var(--color-muted)" }}>Loading…</p>}
+      {connected === false && <ConnectBox businessId={businessId} connected={connected} onConnected={load} />}
 
-      <NewLinkForm
-        businessId={businessId}
-        units={units}
-        defaultLang={defaultLang}
-        disabled={!connected}
-        onCreated={async (bookingId) => { await load(); setOpen(bookingId); }}
-      />
+      <div style={{ ...sub, marginTop: connected === false ? 18 : 0, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span>Requests and bookings · newest first{rows.length ? ` (${rows.length})` : ""}</span>
+        <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {slug && (
+            <a href={`/pay/sample/${slug}`} target="_blank" rel="noopener noreferrer" style={{ ...btn(false), display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
+              Preview guest pay page
+            </a>
+          )}
+          <button type="button" style={btn(!showNew)} onClick={() => setShowNew(!showNew)}>
+            {showNew ? "Close" : "+ Create a link from scratch"}
+          </button>
+        </span>
+      </div>
 
-      <div style={sub}>Requests and open bookings</div>
+      {showNew && (
+        <div style={{ border: "1px solid var(--color-cream-2)", borderRadius: 12, padding: 12, marginBottom: 12, background: "var(--color-surface)" }}>
+          <NewLinkForm
+            businessId={businessId}
+            units={units}
+            defaultLang={defaultLang}
+            disabled={!connected}
+            onCreated={async (bookingId) => { await load(); setOpen(bookingId); }}
+          />
+        </div>
+      )}
+
       {loadError && <p style={{ fontSize: 13, color: "var(--color-danger)" }}>{loadError}</p>}
-      {rows.length === 0 && !loadError && (
+      {rows.length === 0 && !loadError && connected !== null && (
         <p style={{ fontSize: 13, color: "var(--color-muted)", margin: 0 }}>No upcoming requests.</p>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -132,11 +158,17 @@ export default function StayPayLinks({ businessId, defaultLang }: { businessId: 
           const link = links.find((l) => l.booking_id === r.id && (l.status === "active" || l.status === "paid"));
           const paid = r.payment_status === "deposit_paid";
           const linkLive = link?.status === "active" && new Date(link.expires_at).getTime() > loadedAt;
+          const linkExpired = link?.status === "active" && !linkLive;
           const tag = paid ? `Paid ₪${link?.amount ?? ""}`.trim()
-            : r.payment_status !== "none" ? r.payment_status
-            : linkLive ? `Link sent ₪${link!.amount}`
-            : r.status === "confirmed" ? "Confirmed, unpaid" : "Request";
-          const tagColor = paid ? "var(--color-success, #16A34A)" : linkLive ? "var(--color-amber)" : "var(--color-muted)";
+            : r.payment_status !== "none" ? "Payment recorded"
+            : linkLive ? `Link sent · ₪${link!.amount}`
+            : linkExpired ? "Link expired"
+            : r.status === "confirmed" ? "Confirmed, unpaid" : "New request";
+          const tagColor = paid ? "var(--color-success, #16A34A)"
+            : linkLive ? "var(--color-amber)"
+            : linkExpired || tag === "New request" ? "var(--color-danger)"
+            : "var(--color-muted)";
+          const received = new Date(r.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jerusalem" });
           return (
             <div key={r.id} style={{ border: "1px solid var(--color-cream-2)", borderRadius: 12, padding: 12, background: "var(--color-surface)" }}>
               <button
@@ -144,10 +176,14 @@ export default function StayPayLinks({ businessId, defaultLang }: { businessId: 
                 onClick={() => setOpen(open === r.id ? null : r.id)}
                 style={{ all: "unset", cursor: "pointer", display: "flex", width: "100%", justifyContent: "space-between", gap: 8, alignItems: "center" }}
               >
-                <span style={{ fontSize: 14, color: "var(--color-dark)" }}>
-                  <strong>{r.customer_name || "Guest"}</strong> · {unit?.name ?? "—"} · {r.appointment_date} → {r.check_out} ({nights}n{r.guests ? `, ${r.guests}g` : ""})
+                <span style={{ fontSize: 14, color: "var(--color-dark)", lineHeight: 1.5 }}>
+                  <strong>{r.customer_name || "Guest"}</strong> · {unit?.name ?? "—"}
+                  <br />
+                  {r.appointment_date} → {r.check_out} · {nights} {nights === 1 ? "night" : "nights"}{r.guests ? ` · ${r.guests} guests` : ""}
+                  <br />
+                  <span style={{ fontSize: 12, color: "var(--color-muted)" }}>Received {received}</span>
                 </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: tagColor, whiteSpace: "nowrap" }}>{tag}</span>
+                <span style={pill(tagColor)}>{tag}</span>
               </button>
               {open === r.id && (
                 <div style={{ marginTop: 10 }}>
@@ -159,7 +195,7 @@ export default function StayPayLinks({ businessId, defaultLang }: { businessId: 
                   ) : r.payment_status !== "none" ? (
                     <p style={{ fontSize: 13, color: "var(--color-muted)", margin: 0 }}>This booking already has a payment recorded.</p>
                   ) : !connected ? (
-                    <p style={{ fontSize: 13, color: "var(--color-muted)", margin: 0 }}>Connect Green Invoice above first.</p>
+                    <p style={{ fontSize: 13, color: "var(--color-muted)", margin: 0 }}>Connect Green Invoice first (box at the top) to send a pay link.</p>
                   ) : (
                     <PayLinkPanel
                       bookingId={r.id}
@@ -177,6 +213,12 @@ export default function StayPayLinks({ businessId, defaultLang }: { businessId: 
           );
         })}
       </div>
+
+      {connected && (
+        <div style={{ marginTop: 18, paddingTop: 12, borderTop: "1px solid var(--color-cream-2)" }}>
+          <ConnectBox businessId={businessId} connected={connected} onConnected={load} />
+        </div>
+      )}
     </div>
   );
 }
@@ -298,7 +340,7 @@ function NewLinkForm({
 
   return (
     <div>
-      <div style={sub}>New payment link (no request needed)</div>
+      <div style={{ ...sub, marginTop: 0 }}>New payment link (no request needed)</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
         <div>
           <label style={label} htmlFor="npl-unit">Apartment</label>

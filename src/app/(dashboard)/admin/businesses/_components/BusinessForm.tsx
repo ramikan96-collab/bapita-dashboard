@@ -1760,7 +1760,7 @@ export default function BusinessForm({ mode, businessId, onSaved, onCancel }: Pr
 
               {businessId && form.business_type === "stay" && (
                 <SectionCard title="Payment links — stays">
-                  <StayPayLinks businessId={businessId} defaultLang={form.default_lang === "he" ? "he" : "en"} />
+                  <StayPayLinks businessId={businessId} slug={form.slug} defaultLang={form.default_lang === "he" ? "he" : "en"} />
                 </SectionCard>
               )}
             </div>
