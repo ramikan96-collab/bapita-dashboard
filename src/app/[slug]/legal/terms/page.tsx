@@ -110,6 +110,19 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
           `פרטי הגעה, קוד או מפתח כניסה וכללי הבית נשלחים במייל או בוואטסאפ עד 24 שעות לפני ההגעה. הצ׳ק אין מהשעה ${STAY_CHECK_IN_TIME}, והצ׳ק אאוט עד השעה ${STAY_CHECK_OUT_TIME}.`,
           "אם הנכס אינו זמין מסיבה שבשליטתנו, יוצע לאורח נכס חלופי שווה ערך או החזר מלא של הסכום ששולם.",
         ] },
+        { h: "כללי הבית", p: [
+          "מספר האורחים לא יעלה על המספר שאושר בהזמנה ועל הקיבולת של הדירה.",
+          "אין לקיים מסיבות, אירועים או התכנסויות בדירה.",
+          "חיות מחמד מותרות רק באישור מראש מהמארח.",
+          "יש לשמור על השקט ועל כללי הבניין ולכבד את השכנים.",
+          "כניסה מוקדמת או יציאה מאוחרת אפשריות רק בתיאום מראש ובהתאם לזמינות.",
+          "בהפרה חמורה של כללי הבית (למשל מסיבה או חריגה ממספר האורחים) המארח רשאי להפסיק את השהייה, וההחזר הכספי אינו מובטח.",
+          "על לילות שלא נוצלו בשל עזיבה מוקדמת ביוזמת האורח לא מובטח החזר.",
+        ] },
+        { h: "פיקדון", p: [
+          "המארח רשאי לבקש פיקדון לביטחון. אם נדרש פיקדון, הסכום ואופן התשלום יימסרו לאורח לפני התשלום.",
+          "הפיקדון יוחזר בתוך 14 ימים מהיציאה, בניכוי עלות נזק או חוסר שנגרמו בשהייה ושתועדו ונמסרו לאורח.",
+        ] },
         { h: "אחריות", p: [
           "האורח אחראי לנזק שנגרם לנכס ולתכולתו במהלך השהייה, על ידו או על ידי מי מאורחיו.",
           "איננו אחראים לאובדן, גניבה או נזק לחפצים אישיים של האורחים, ולא לנזק ישיר או עקיף שנגרם משימוש בנכס שלא בהתאם לכללי הבית.",
@@ -118,6 +131,15 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
         ] },
         { h: "פרטיות", p: [
           <>פרטים אישיים שנמסרים בהזמנה משמשים רק לטיפול בהזמנה. ראו את <Link href={privacyHref} style={linkStyle}>הודעת הפרטיות</Link>.</>,
+        ] },
+        { h: "תמונות ותוכן באתר", p: [
+          "התמונות והתיאורים באתר נועדו להמחשה. ייתכנו הבדלים קלים בריהוט ובפריטים, שאינם פוגעים באופי הדירה.",
+          "התכנים באתר, כולל תמונות וטקסטים, שייכים לעסק או לבעלי הזכויות בהם, ואין להעתיקם ללא רשות.",
+          "איננו מתחייבים שהאתר יהיה זמין תמיד וללא תקלות.",
+        ] },
+        { h: "שינוי התנאים", p: [
+          "אנו רשאים לעדכן את התנאים מעת לעת. על כל הזמנה חלים התנאים שהיו בתוקף ושאושרו בעת ביצועה.",
+          "אם סעיף בתנאים יימצא בלתי תקף, יתר הסעיפים ימשיכו לחול.",
         ] },
         { h: "דין וסמכות", p: [
           "על התנאים חלים דיני מדינת ישראל, והסמכות נתונה לבתי המשפט בישראל.",
@@ -164,6 +186,19 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
         `Arrival details, the entry code or key, and house rules are sent by email or WhatsApp no later than 24 hours before arrival. Check-in is from ${STAY_CHECK_IN_TIME} and check-out is by ${STAY_CHECK_OUT_TIME}.`,
         "If the property is unavailable for a reason within our control, the guest is offered an equivalent alternative or a full refund of the amount paid.",
       ] },
+      { h: "House rules", p: [
+        "The number of guests may not exceed the number approved in the booking or the property's capacity.",
+        "No parties, events or gatherings are allowed.",
+        "Pets are allowed only with the host's prior approval.",
+        "Please keep noise down, follow the building's rules and respect the neighbours.",
+        "Early check-in or late check-out is possible only if arranged in advance and subject to availability.",
+        "In a serious breach of the house rules (for example a party or more guests than approved), the host may end the stay, and a refund is not guaranteed.",
+        "A refund is not guaranteed for unused nights if the guest chooses to leave early.",
+      ] },
+      { h: "Security deposit", p: [
+        "The host may ask for a security deposit. If one is required, the amount and how to pay it are given to the guest before payment.",
+        "The deposit is returned within 14 days of check-out, less the cost of any damage or missing items from the stay that were documented and shared with the guest.",
+      ] },
       { h: "Liability", p: [
         "The guest is responsible for damage to the property and its contents caused during the stay by the guest or anyone in their party.",
         "We are not responsible for loss, theft or damage to guests' personal belongings, or for direct or indirect damage caused by using the property against the house rules.",
@@ -172,6 +207,15 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
       ] },
       { h: "Privacy", p: [
         <>Personal details given when booking are used only to handle the booking. See the <Link href={privacyHref} style={linkStyle}>privacy notice</Link>.</>,
+      ] },
+      { h: "Photos and site content", p: [
+        "Photos and descriptions on this site are for illustration. Minor differences in furniture and items may occur and do not change the nature of the property.",
+        "Content on this site, including photos and text, belongs to the business or its licensors and may not be copied without permission.",
+        "We do not guarantee that the site will always be available or free of errors.",
+      ] },
+      { h: "Changes to these terms", p: [
+        "We may update these terms from time to time. Each booking is governed by the terms in force, and accepted, when it was made.",
+        "If any provision is found invalid, the remaining provisions continue to apply.",
       ] },
       { h: "Law", p: [
         "These terms are governed by the laws of the State of Israel, and the courts of Israel have jurisdiction.",
