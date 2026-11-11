@@ -198,8 +198,9 @@ export default async function StayTermsPage({ params, searchParams }: Props) {
             ))}
           </section>
         ))}
-        <p style={{ fontSize: 14, margin: "20px 0 0" }}>
+        <p style={{ fontSize: 14, margin: "20px 0 0", display: "flex", gap: 16, flexWrap: "wrap" }}>
           <Link href="/privacy" style={{ color: muted }}>{he ? "מדיניות פרטיות" : "Privacy policy"}</Link>
+          <Link href={`/pay/sample/${b.slug}?lang=${he ? "he" : "en"}`} style={{ color: muted }}>{he ? "דוגמה לעמוד התשלום" : "Example of the payment page"}</Link>
         </p>
       </article>
     </main>

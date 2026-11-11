@@ -42,14 +42,19 @@ export default async function SamplePayPage({ params, searchParams }: Props) {
     .from("services")
     .select("name, name_he, price, weekend_price")
     .eq("business_id", biz.id)
+    .eq("active", true)
     .order("name")
     .limit(1)
     .maybeSingle();
 
+  if (!unitRow) {
+    return <PayCard lang={lang} icon="🔗" title={t.missingTitle} body={t.missingBody} />;
+  }
+
   const checkIn = addDaysIso(todayIso(), 14);
   const checkOut = addDaysIso(checkIn, 3);
-  const total = unitRow ? stayTotal(unitRow, checkIn, checkOut) : 0;
-  const unit = (lang === "he" && unitRow?.name_he) || unitRow?.name || "—";
+  const total = stayTotal(unitRow, checkIn, checkOut);
+  const unit = (lang === "he" && unitRow.name_he) || unitRow.name;
   const expires = fmtDate(addDaysIso(todayIso(), 2), lang);
 
   const rows: [string, string][] = [

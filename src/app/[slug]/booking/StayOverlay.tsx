@@ -75,6 +75,7 @@ export function StayOverlay({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [agree, setAgree] = useState(false);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -200,7 +201,7 @@ export function StayOverlay({
 
   const canSubmit =
     !!unit && !!checkIn && !!checkOut && nights >= minNights &&
-    name.trim().length > 1 && phone.trim().length > 5 && !submitting;
+    name.trim().length > 1 && phone.trim().length > 5 && agree && !submitting;
 
   async function submit() {
     if (!canSubmit || !unit) return;
@@ -551,6 +552,17 @@ export function StayOverlay({
                   />
                 </div>
               </div>
+
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, lineHeight: 1.5, color: darkColor, cursor: "pointer" }}>
+                <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0, accentColor }} />
+                <span>
+                  {lang === "he" ? "קראתי ואני מאשר/ת את " : "I have read and accept the "}
+                  <a href={`/${business.slug}/legal/terms?lang=${lang}`} target="_blank" rel="noopener noreferrer" style={{ color: darkColor, textDecoration: "underline" }}>
+                    {lang === "he" ? "תנאי ההזמנה ומדיניות הביטולים" : "booking terms and cancellation policy"}
+                  </a>
+                  {lang === "he" ? ", ואני בן/בת 18 ומעלה." : ", and I am 18 or older."}
+                </span>
+              </label>
 
               {error && <div style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{error}</div>}
 
