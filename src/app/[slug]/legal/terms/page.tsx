@@ -79,6 +79,9 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
           b.address && `כתובת הנכס: ${b.address}.`,
           (phone || b.email) && `יצירת קשר: ${[phone && `טלפון / וואטסאפ ${phone}`, b.email && `מייל ${b.email}`].filter(Boolean).join(", ")}.`,
         ] },
+        { h: "גיל המזמין", p: [
+          "ביצוע הזמנה ותשלום באתר מותרים רק למי שמלאו לו 18 שנים ומעלה. המזמין אחראי לכל האורחים בהזמנה.",
+        ] },
         { h: "הזמנה", p: [
           "בקשה שנשלחת דרך האתר אינה הזמנה סופית.",
           "ההזמנה מאושרת רק אחרי שהמארח אישר אותה והתשלום המלא התקבל. המארח שולח לאורח קישור תשלום אישי עם הסכום הסופי.",
@@ -94,8 +97,17 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
           "בקשות מטופלות, והחזרים ניתנים כשהם מגיעים, בהתאם לחוק הגנת הצרכן, התשמ״א-1981, ולתקנות לפיו.",
           b.cancellation_policy && `מדיניות נוספת: ${b.cancellation_policy}`,
         ] },
-        { h: "הגעה ושהייה", p: [
-          `הצ׳ק אין מהשעה ${STAY_CHECK_IN_TIME}. פרטי הגעה וכללי הבית נשלחים עם אישור ההזמנה.`,
+        { h: "אספקת השירות", p: [
+          "השירות הוא לינה בנכס בתאריכים שנקבעו בהזמנה. אין משלוח של מוצר פיזי.",
+          "אישור הזמנה וקבלה נשלחים במייל מיד לאחר שהתשלום מתקבל.",
+          `פרטי הגעה, קוד או מפתח כניסה וכללי הבית נשלחים במייל או בוואטסאפ עד 24 שעות לפני ההגעה. הצ׳ק אין מהשעה ${STAY_CHECK_IN_TIME}.`,
+          "אם הנכס אינו זמין מסיבה שבשליטתנו, יוצע לאורח נכס חלופי שווה ערך או החזר מלא של הסכום ששולם.",
+        ] },
+        { h: "אחריות", p: [
+          "האורח אחראי לנזק שנגרם לנכס ולתכולתו במהלך השהייה, על ידו או על ידי מי מאורחיו.",
+          "איננו אחראים לאובדן, גניבה או נזק לחפצים אישיים של האורחים, ולא לנזק ישיר או עקיף שנגרם משימוש בנכס שלא בהתאם לכללי הבית.",
+          "איננו אחראים לתקלה או לעיכוב שנגרמו מכוח עליון או מגורם חיצוני שאינו בשליטתנו (כגון הפסקת חשמל, מים או אינטרנט מצד ספק).",
+          "אין באמור כדי לגרוע מזכויות האורח לפי כל דין.",
         ] },
         { h: "פרטיות", p: [
           "פרטים אישיים שנמסרים בהזמנה משמשים רק לטיפול בהזמנה. ראו את מדיניות הפרטיות.",
@@ -118,6 +130,9 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
         b.address && `Property address: ${b.address}.`,
         (phone || b.email) && `Contact: ${[phone && `phone / WhatsApp ${phone}`, b.email && `email ${b.email}`].filter(Boolean).join(", ")}.`,
       ] },
+      { h: "Age", p: [
+        "You must be 18 or older to book and pay on this site. The person booking is responsible for all guests on the booking.",
+      ] },
       { h: "Booking", p: [
         "A request sent through this site is not a reservation.",
         "A booking is confirmed only after the host accepts it and full payment is received. The host sends the guest a private payment link with the final total.",
@@ -133,8 +148,17 @@ function content(b: Biz, he: boolean): { title: string; updated: string; section
         "Requests are handled, and refunds given where due, in accordance with the Israeli Consumer Protection Law, 5741-1981, and its regulations.",
         b.cancellation_policy && `Additional policy: ${b.cancellation_policy}`,
       ] },
-      { h: "Arrival and stay", p: [
-        `Check-in is from ${STAY_CHECK_IN_TIME}. Arrival details and house rules are sent with the booking confirmation.`,
+      { h: "Delivery of the service", p: [
+        "The service is accommodation at the property on the dates in the booking. No physical product is shipped.",
+        "A booking confirmation and receipt are sent by email as soon as payment is received.",
+        `Arrival details, the entry code or key, and house rules are sent by email or WhatsApp no later than 24 hours before arrival. Check-in is from ${STAY_CHECK_IN_TIME}.`,
+        "If the property is unavailable for a reason within our control, the guest is offered an equivalent alternative or a full refund of the amount paid.",
+      ] },
+      { h: "Liability", p: [
+        "The guest is responsible for damage to the property and its contents caused during the stay by the guest or anyone in their party.",
+        "We are not responsible for loss, theft or damage to guests' personal belongings, or for direct or indirect damage caused by using the property against the house rules.",
+        "We are not responsible for faults or delays caused by force majeure or by outside providers beyond our control (such as power, water or internet outages).",
+        "Nothing in these terms limits a guest's rights under Israeli law.",
       ] },
       { h: "Privacy", p: [
         "Personal details given when booking are used only to handle the booking. See the privacy policy.",

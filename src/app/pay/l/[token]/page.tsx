@@ -39,10 +39,12 @@ const COPY = {
       busy: "One moment — a payment page is already opening. Try again in a few seconds.",
       error: "We could not open the payment page. Please try again in a minute.",
       closed: "This booking can no longer be paid online. Please contact your host.",
+      terms: "Please confirm you accept the booking terms before paying.",
     } as Record<string, string>,
     expires: (d: string) => `Link valid until ${d}`,
     seller: (n: string, id: string) => `Seller: ${n}${id ? ` · Business ID ${id}` : ""}`,
     terms: "Booking terms and cancellations",
+    agree: ["I have read and accept the ", "booking terms and cancellation policy", ", and I am 18 or older."],
   },
   he: {
     title: "השלמת ההזמנה",
@@ -60,10 +62,12 @@ const COPY = {
       busy: "רגע — עמוד התשלום כבר נפתח. נסו שוב בעוד כמה שניות.",
       error: "לא הצלחנו לפתוח את עמוד התשלום. נסו שוב בעוד דקה.",
       closed: "לא ניתן לשלם על ההזמנה הזו אונליין. צרו קשר עם המארח.",
+      terms: "יש לאשר את תנאי ההזמנה לפני התשלום.",
     } as Record<string, string>,
     expires: (d: string) => `הקישור בתוקף עד ${d}`,
     seller: (n: string, id: string) => `המוכר: ${n}${id ? ` · מספר עוסק ${id}` : ""}`,
     terms: "תנאי הזמנה וביטולים",
+    agree: ["קראתי ואני מאשר/ת את ", "תנאי ההזמנה ומדיניות הביטולים", ", ואני בן/בת 18 ומעלה."],
   },
 };
 
@@ -149,6 +153,16 @@ export default async function PayLinkPage({ params, searchParams }: Props) {
 
       <form method="post" action="/api/public/pay-link/checkout" style={{ marginTop: 20 }}>
         <input type="hidden" name="token" value={link.token} />
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14, fontSize: 14, color: "#1E1A14", textAlign: "start", cursor: "pointer" }}>
+          <input type="checkbox" name="agree" value="1" required style={{ width: 18, height: 18, marginTop: 2, flexShrink: 0 }} />
+          <span>
+            {t.agree[0]}
+            {biz?.slug
+              ? <a href={`/${biz.slug}/legal/terms?lang=${lang}`} target="_blank" rel="noopener noreferrer" style={{ color: "#1E1A14", textDecoration: "underline" }}>{t.agree[1]}</a>
+              : t.agree[1]}
+            {t.agree[2]}
+          </span>
+        </label>
         <button
           type="submit"
           style={{

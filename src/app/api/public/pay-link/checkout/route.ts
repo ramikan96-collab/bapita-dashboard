@@ -13,7 +13,7 @@ import { bookingUrl } from "@/lib/site-url";
 //
 // SECURITY
 // - The amount comes from the payment_links row only. Nothing in the request
-//   body except the token is read.
+//   body except the token (and the terms checkbox) is read.
 // - A paid document for this booking is looked up FIRST, so a guest who already
 //   paid (and pressed back, or opened the link twice) is settled, not charged again.
 // - Another confirmed booking on the same unit and dates blocks the charge.
@@ -50,6 +50,9 @@ export async function POST(req: NextRequest) {
   const supabase = createServiceClient();
   const link = await loadLinkByToken(supabase, token);
   if (!link) return NextResponse.redirect(bookingUrl("/"), 303);
+  // The pay page's terms checkbox is `required`, but a form POST can skip it.
+  // Grow's clearing review requires the guest to accept the terms before paying.
+  if (form?.get("agree") !== "1") return back(token, "terms");
 
   const { data: bookingData } = await supabase.from("bookings").select(BOOKING_SELECT).eq("id", link.booking_id).single();
   const booking = bookingData as unknown as (SettleBookingRow & { service_id: string | null }) | null;
