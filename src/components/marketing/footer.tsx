@@ -130,6 +130,14 @@ export function MarketingFooter({ locale = "en" }: { locale?: Locale }) {
                   {t.nav.login}
                 </Link>
               </li>
+              <li>
+                <a
+                  href="https://cohost.bapita.com/"
+                  className="-mx-2 flex min-h-10 items-center rounded-hub-md px-2 text-[0.875rem] font-medium text-clay/50 transition-colors hover:text-clay"
+                >
+                  {t.footer.cohost}
+                </a>
+              </li>
             </ul>
           </div>
 

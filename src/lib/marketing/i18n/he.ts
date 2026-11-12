@@ -594,6 +594,7 @@ export const he: Dict = {
     builtForTitle: "בנוי עבור",
     getStartedTitle: "התחל",
     faq: "שאלות נפוצות",
+    cohost: "Bapita Co-Hosting",
     rights: "כל הזכויות שמורות",
     builtFor: {
       a: "ברברים",

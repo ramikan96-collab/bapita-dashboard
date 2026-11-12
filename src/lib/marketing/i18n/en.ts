@@ -598,6 +598,7 @@ export const en = {
     builtForTitle: "Built for",
     getStartedTitle: "Get started",
     faq: "FAQ",
+    cohost: "Bapita Co-Hosting",
     rights: "All rights reserved.",
     /* Ten entries, and it stays ten. "Restaurants & bars" left on 2026-08-28
        with the product; the nail, lash and tattoo trades that took its place
