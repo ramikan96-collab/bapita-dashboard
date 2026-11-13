@@ -87,6 +87,7 @@ function content(b: LegalBiz, he: boolean): { title: string; updated: string; ba
         { h: "עוגיות (Cookies)", p: [
           "האתר משתמש בעוגיות חיוניות, הנדרשות לתפקודו.",
           "עוגיות ניתוח (Google Analytics) נטענות רק אם אישרתם אותן בהודעת העוגיות.",
+          "Umami, במקומות שבהם הוא בשימוש, לא שומר עוגיות ולא מזהה מבקרים. הוא סופר צפיות בעמודים ולחיצות על כפתורי הוואטסאפ וההזמנה ושומר את הנתונים בשרתים באיחוד האירופי.",
           <><CookieChoiceReset label="שינוי הבחירה שלי בנושא עוגיות" /></>,
         ] },
         { h: "הודעות שיווקיות וניוזלטר", p: [
@@ -137,6 +138,7 @@ function content(b: LegalBiz, he: boolean): { title: string; updated: string; ba
       { h: "Cookies", p: [
         "This site uses essential cookies, which it needs to work.",
         "Analytics cookies (Google Analytics) are used only if you accept them in the cookie banner.",
+        "Umami, where used, sets no cookies and doesn't identify you. It counts page views and taps on the WhatsApp and booking buttons, stored on servers in the European Union.",
         <><CookieChoiceReset label="Change my cookie choice" /></>,
       ] },
       { h: "Marketing messages and newsletter", p: [
