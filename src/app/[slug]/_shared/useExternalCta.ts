@@ -5,6 +5,7 @@ import type { Business } from "@/types";
 import type { Translations, Lang } from "../translations";
 import { resolveCta, type ResolvedCta } from "@/lib/cta";
 import { track } from "@/lib/analytics/track";
+import { pageLang, umamiTrack } from "@/lib/analytics/umami";
 
 interface Options {
   stayMode?: boolean;
@@ -37,6 +38,8 @@ export function useExternalCta(
 
   const handledExternally = useCallback(
     (serviceId?: string) => {
+      // Every booking-button click, native overlay or external hand-off (Umami; no-op on tenants without a tag).
+      umamiTrack("cta_book", { placement: serviceId ? "service" : "cta", lang: pageLang(), page: location.pathname });
       if (cta.mode !== "external" || !cta.url) return false;
 
       // Record the click before navigating away: for an external-CTA business
