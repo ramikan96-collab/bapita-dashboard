@@ -2,7 +2,7 @@
 // An empty ID = no tag, no events. Umami's free plan is one website per account, so each brand has its own;
 // add a tenant by adding its slug here. Cloud posts events to gateway.umami.is (no CSP on this app).
 export const UMAMI_SITES: Record<string, string> = {
-  "good-living-herzeliya": "",
+  "good-living-herzeliya": "a0410ea8-451b-47e5-b2ba-fd60b0522d1d",
 };
 
 type Umami = { track: (event: string, data?: Record<string, string | number>) => void };
