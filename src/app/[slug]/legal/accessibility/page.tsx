@@ -25,8 +25,12 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   };
 }
 
+// Good Living's own statement text (Debby/Rami 2026-11-13). Other tenants keep the shared text and date.
+const GOOD_LIVING = "good-living-herzeliya";
+
 function content(b: LegalBiz, he: boolean): { title: string; updated: string; back: string; other: string; sections: LegalSection[] } {
   const name = (he && b.name_he) || b.name;
+  const gl = b.slug === GOOD_LIVING;
   const { phone, email } = bizContact(b);
   const ltr = { unicodeBidi: "isolate" as const, direction: "ltr" as const };
   const contact = (
@@ -40,7 +44,7 @@ function content(b: LegalBiz, he: boolean): { title: string; updated: string; ba
   if (he) {
     return {
       title: `הצהרת נגישות — ${name}`,
-      updated: "ההצהרה עודכנה: נובמבר 2026",
+      updated: gl ? "ההצהרה עודכנה: 13 בנובמבר 2026" : "ההצהרה עודכנה: נובמבר 2026",
       back: "חזרה לעמוד",
       other: "English",
       sections: [
@@ -61,6 +65,9 @@ function content(b: LegalBiz, he: boolean): { title: string; updated: string; ba
           "חלק מהעמודים אינם בשליטתנו, למשל עמוד התשלום בכרטיס אשראי שמופעל על ידי חשבונית ירוקה (morning) וחברת הסליקה Grow.",
           "תכנים שמעלה בעל העסק, כגון תמונות, עשויים להיות חסרים תיאור טקסטואלי.",
         ] },
+        ...(gl ? [{ h: "הדירות", p: [
+          "אף אחת משלוש הדירות אינה מותאמת לכיסאות גלגלים. אם צריך עזרה בנגישות או יש שאלה לפני ההזמנה, פנו אלינו ונפרט בדיוק מה מחכה לכם.",
+        ] }] : []),
         { h: "יצירת קשר בנושא נגישות", p: [
           "נתקלתם בבעיית נגישות, או שאתם זקוקים לעזרה בהזמנה? פנו אלינו ונעשה כמיטב יכולתנו לעזור.",
           <>רכז הנגישות: {name}. {contact}</>,
@@ -70,7 +77,7 @@ function content(b: LegalBiz, he: boolean): { title: string; updated: string; ba
   }
   return {
     title: `Accessibility statement — ${name}`,
-    updated: "Statement updated: November 2026",
+    updated: gl ? "Statement updated: 13 November 2026" : "Statement updated: November 2026",
     back: "Back to the page",
     other: "עברית",
     sections: [
@@ -91,6 +98,9 @@ function content(b: LegalBiz, he: boolean): { title: string; updated: string; ba
         "Some third-party pages, such as the card payment page run by Green Invoice (morning) and Grow, are not under our control.",
         "Content added by the business owner, such as photos, may lack a text alternative.",
       ] },
+      ...(gl ? [{ h: "The apartments", p: [
+        "None of the three apartments is adapted for wheelchair users. If you need help with access or have a question before booking, contact us and we'll tell you exactly what to expect.",
+      ] }] : []),
       { h: "Accessibility contact", p: [
         "If you run into an accessibility barrier, or need help making a booking, contact us and we will do our best to help.",
         <>Accessibility contact: {name}. {contact}</>,
